@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml"
+	            showCloseButton="true"
+	            close="PopUpManager.removePopUp(this);"
+	            creationComplete="this.focusManager.setFocus(addressInput); this.focusManager.defaultButton=addressSearchButton;">
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			
+			private function onKeyDown(event:KeyboardEvent):void
+			{
+				if (event.keyCode == Keyboard.ENTER) {
+					trace(focusManager.getFocus());
+					if (focusManager.getFocus() == addressSearchButton) {
+						addressSearchButton.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					} else if (focusManager.getFocus() == addressCancelButton) {
+						addressCancelButton.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					} 
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:HBox width="400">
+		 <mx:Text text="Enter an address:"/>
+		 <mx:TextInput id="addressInput" enter="GoTo.address(addressInput.text); PopUpManager.removePopUp(this);" width="100%"/>
+	</mx:HBox>
+	
+	<mx:HBox width="400">
+		<mx:Spacer width="80%" />
+		<mx:Button id="addressSearchButton"
+			       label="Search"
+			       click="GoTo.address(addressInput.text); PopUpManager.removePopUp(this);"
+			       keyDown="onKeyDown(event);"/>
+		<mx:Button id="addressCancelButton"
+			       label="Cancel"
+			       click="PopUpManager.removePopUp(this);"
+			       keyDown="onKeyDown(event);"/>
+	</mx:HBox>
+</mx:TitleWindow>

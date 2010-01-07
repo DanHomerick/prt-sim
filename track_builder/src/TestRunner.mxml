@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication width="1400" height="800"
+						xmlns:mx="http://www.adobe.com/2006/mxml"
+	                    xmlns:flexunit="flexunit.flexui.*"
+	                    creationComplete="onCreationComplete()">
+	<mx:Script>
+		<![CDATA[
+			import edu.ucsc.track_builder.gtf_import.TimeTest;
+			import edu.ucsc.graph.GraphTest;
+			import edu.ucsc.neartree.NearTreeTest;
+			import edu.ucsc.track_builder.gtf_import.ServiceTest;
+			import edu.ucsc.track_builder.gtf_import.GtfImporterTest;
+			import edu.ucsc.graph.GraphTest;
+			import flexunit.framework.TestSuite;
+			private function onCreationComplete():void {
+				testRunner.test = createSuite();
+				testRunner.startTest();
+			}
+			
+			private function createSuite():TestSuite {
+				var testSuite:TestSuite = new TestSuite();
+				testSuite.addTestSuite(NearTreeTest);
+				testSuite.addTestSuite(ServiceTest);
+				testSuite.addTestSuite(GtfImporterTest);
+				testSuite.addTestSuite(GraphTest);
+				testSuite.addTestSuite(TimeTest);			
+				return testSuite;
+			}
+		]]>
+	</mx:Script>
+	
+	<flexunit:TestRunnerBase id="testRunner" width="100%" height="100%" />
+</mx:WindowedApplication>

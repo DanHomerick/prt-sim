@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\Adobe\Flex Builder 3\sdks\3.2.0\bin\asdoc.exe" -doc-sources . -package edu.ucsc.track_builder "Contains TrackBuilder project" -external-library-path="lib" +configname=air %*

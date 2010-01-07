@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Window xmlns:mx="http://www.adobe.com/2006/mxml" layout="vertical" title="Preferences" width="355" height="440" showStatusBar="false" xmlns:components="com.mariosh.components.*">
+	<mx:Script>
+		<![CDATA[
+			[Bindable] public var cacheSize:String = (ElevationService.getCacheSizeOnDisk() / 101048576).toFixed(1) + ' MB';
+		]]>
+	</mx:Script>
+	
+	<mx:TabNavigator id="tn" color="0x323232" width="100%" height="100%">				
+		<mx:VBox label="General">
+			<mx:Form>
+				<mx:FormHeading label="Units" />
+				<mx:FormItem label="Choose units:" toolTip="UNIMPLEMENTED. Control does nothing.">
+					<mx:ComboBox dataProvider="['m/kg/sec', 'ft/lb/sec']">
+					</mx:ComboBox>
+				</mx:FormItem>
+				<mx:Label text="Note that the XML save-file will always be in metric units." />
+			</mx:Form>
+		
+			<mx:HRule width="100%" />
+			
+			<mx:HBox width="100%" paddingLeft="10">
+				<mx:Button label="Clear Elevation Cache"
+						   click="ElevationService.clearCache();
+						          cacheSize = '0.0 MB';"
+                           toolTip="Current cache size" />
+				<mx:Label text="{cacheSize}" />
+			</mx:HBox>
+		
+			<mx:HRule width="100%" />
+			
+			<mx:HBox width="100%" paddingRight="20" horizontalAlign="right">
+				<mx:Button label="Restore Defaults"
+					       toolTip="Restore all preferences to default values."
+					       click="XMLHandler.parsePrefsXML(XMLHandler.generateDefaultPrefsXML());" />					  
+			</mx:HBox>
+		</mx:VBox>
+		
+		<mx:VBox label="Display">
+			<mx:Form>
+				<mx:FormHeading label="Tracks" />
+				<mx:FormItem label="Line" toolTip="Choose the color of the track segments.">
+					<mx:ColorPicker id="track_cp"
+						initialize="track_cp.selectedColor = TrackOverlay.normalLineColor;"
+						change="TrackOverlay.normalLineColor = track_cp.selectedColor;
+						        Utility.refreshScreen()"/>		
+				</mx:FormItem>
+				<mx:FormItem label="Arrowhead" toolTip="Choose the color of the arrowheads.">
+					<mx:ColorPicker id="arrowhead_cp"
+						 initialize="arrowhead_cp.selectedColor = TrackOverlay.head_color;"
+						 change="TrackOverlay.head_color = arrowhead_cp.selectedColor;
+						         Utility.refreshScreen();"/>
+				</mx:FormItem>
+			
+				<mx:HRule width="100%"/>					
+			
+				<mx:FormHeading label="Stations" />
+				<mx:FormItem label="Coverage" toolTip="Choose how the coverage area is displayed.">
+					<components:GradientEditor id="station_gradient"
+						width="200"
+						height="50"						
+						initialize="{station_gradient.colors = StationOverlay.coverageColors;
+						            station_gradient.alphas = StationOverlay.coverageAlphas;
+						            station_gradient.ratios = StationOverlay.coverageRatios;}"						            
+						thumbChange="trace('thumbChange');
+									  StationOverlay.coverageRatios = station_gradient.ratios;
+									  Utility.refreshScreen();"
+						selectedAlphaChange="trace('selectedAlphaChange');
+						              StationOverlay.coverageAlphas = station_gradient.alphas;
+						              Utility.refreshScreen();"
+						selectedColorChange="trace('selectedColorChange');
+						              StationOverlay.coverageColors = station_gradient.colors;
+						              Utility.refreshScreen();" />
+					<mx:HBox>
+					    <mx:HSlider id="station_ap"
+					    	toolTip="Adjusts alpha value (transparency) for the selected slider." 
+					        minimum="0" 
+					        maximum="1"
+					        change="station_gradient.selectedAlpha=station_ap.value;"
+					        value="{station_gradient.selectedAlpha}"/>
+					    <mx:ColorPicker id="station_cp"
+					    	toolTip="Adjusts color for the selected slider."
+					        change="station_gradient.selectedColor = station_cp.selectedColor;"
+					        selectedColor="{station_gradient.selectedColor}"/>
+					</mx:HBox>			
+				</mx:FormItem>
+
+				<mx:HRule width="100%"/>	
+
+				<mx:FormHeading label="Vehicles" />
+				<mx:FormItem label="Outline" toolTip="Choose color for vehicle outline">
+					<mx:ColorPicker id="v_cp_line"						
+						initialize="v_cp_line.selectedColor = VehicleOverlay.line_color;"
+						change="VehicleOverlay.line_color = v_cp_line.selectedColor;
+						        Utility.refreshScreen();" />
+				</mx:FormItem>
+				<mx:FormItem label="Fill" toolTip="Choose color for vehicle fill">
+					<mx:ColorPicker id="v_cp_fill"
+						initialize="v_cp_fill.selectedColor = VehicleOverlay.fill_color;"
+						change="VehicleOverlay.fill_color = v_cp_fill.selectedColor;
+								Utility.refreshScreen();" />
+				</mx:FormItem>
+				<mx:FormItem label="Small size" toolTip="Choose how many pixels across for the small marker">
+					<mx:NumericStepper id="v_lr_size_picker"
+						stepSize="1"
+						minimum="1"
+						maximum="20"
+						initialize="v_lr_size_picker.value = VehicleOverlay.v_lr_size;"						
+						change="VehicleOverlay.v_lr_size = v_lr_size_picker.value;
+								Utility.refreshScreen();" /> 					
+				</mx:FormItem>
+				<mx:FormItem label="Zoom threshold" toolTip="Choose the zoom level to transition from small to large markers. Higher numbers are closer in.">
+					<mx:NumericStepper id="v_zoom_picker"						
+						stepSize="1"
+						minimum="1"
+						maximum="20"
+						initialize="v_zoom_picker.value = VehicleOverlay.zoomThreshold;"
+						change="VehicleOverlay.zoomThreshold = v_zoom_picker.value;
+								Utility.refreshScreen();" />
+				</mx:FormItem>
+			</mx:Form>	
+		</mx:VBox>
+		
+		<mx:VBox label="Debug">
+			<mx:Form>
+				<mx:FormItem label="Show HitLine">
+					<mx:CheckBox id="showHitLine"
+						initialize="showHitLine.selected = TrackOverlay.showHitLine;"
+						change="TrackOverlay.showHitLine = showHitLine.selected;
+								Utility.refreshScreen();" />
+				</mx:FormItem>
+				<mx:FormItem label="Show curve circles">
+					<mx:CheckBox id="showCurveCircles"
+						initialize="showCurveCircles.selected = TrackOverlay.showCurveCircles;"
+						change="TrackOverlay.showCurveCircles = showCurveCircles.selected;
+								Utility.refreshScreen();" />
+				</mx:FormItem>
+			</mx:Form>
+		</mx:VBox>
+		
+	</mx:TabNavigator>
+	
+</mx:Window>

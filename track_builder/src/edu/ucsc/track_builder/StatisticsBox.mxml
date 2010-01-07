@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml"
+				layout="vertical"
+				showCloseButton="true"
+				close="PopUpManager.removePopUp(this);"
+				initialize="updateStats();"
+	            >
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			
+			public function updateStats():void {
+				statTotalTrackLength.text = Globals.tracks.totalLength.toFixed(1);
+				statTotalROW.text = Globals.tracks.totalROW.toFixed(1);
+				statTotalElevationChange.text = Globals.tracks.totalElevationChange.toFixed(1);
+				statMaxGrade.text = (Globals.tracks.getMaxGrade()*100).toFixed(1) + '%';
+				statNumberOfStations.text = Globals.stations.getNumberOfStations().toString();
+				statStationCoverage.text = Globals.stations.getStationCoverage().toFixed(0);
+				statNumberOfVehicles.text = Globals.vehicles.getNumberOfVehicles().toString();
+			}
+		]]>
+	</mx:Script>
+
+    <mx:Form>
+        <mx:FormItem label="Total Track Length:">
+            <mx:Label id="statTotalTrackLength" />
+        </mx:FormItem>
+        <mx:FormItem label="Total Right Of Way:">
+        	<mx:Label id="statTotalROW" />
+        </mx:FormItem>
+        <mx:FormItem label="Total Elevation Change:">
+            <mx:Text id="statTotalElevationChange" />
+        </mx:FormItem>
+        <mx:FormItem label="Max Grade:">
+            <mx:Text id="statMaxGrade" />
+        </mx:FormItem>
+        <mx:FormItem label="Number of Stations:">
+            <mx:Text id="statNumberOfStations" />
+        </mx:FormItem>
+        <mx:FormItem label="Station Coverage:">
+            <mx:Text id="statStationCoverage" />
+        </mx:FormItem>
+        <mx:FormItem label="Number of Vehicles:">
+            <mx:Text id="statNumberOfVehicles" />
+        </mx:FormItem>
+    </mx:Form>
+    
+    <mx:HBox width="100%" paddingRight="20" horizontalAlign="right" >
+    	<mx:Button label="Update" click="updateStats();" /> 
+	</mx:HBox>
+	
+</mx:TitleWindow>
