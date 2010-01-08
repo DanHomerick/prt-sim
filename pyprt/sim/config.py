@@ -70,6 +70,10 @@ class ConfigManager(object):
         group.add_option("--pax_will_share", dest="pax_will_share",
                   choices=['yes', 'y', 'no', 'n'],
                   help="Default passenger behavior. 'yes' means the passenger will share a vehicle, when given the opportunity. Choices are: yes, y, no, n")
+        group.add_option("--track_switch_time", type="float", dest="track_switch_time",
+                  help="Time for track-based switching to switch between lines.")
+        group.add_option("--vehicle_switch_time", type="float", dest="vehicle_switch_time",
+                  help="Time for vehicle-based switching to switch between lines.")
         optpar.add_option_group(group)
 
         return optpar.parse_args()
@@ -186,3 +190,9 @@ class ConfigManager(object):
             return self.options.fps
         else:
             return self.config_parser.getfloat('Visualization', 'fps')            
+
+    def get_track_switch_time(self):
+        if self.options.track_switch_time != None:
+            return self.options.track_switch_time
+        else:
+            return self.config_parser.getfloat('Switch', 'track_switch_time')

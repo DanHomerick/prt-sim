@@ -15,7 +15,7 @@ import pyprt.shared.api_pb2 as api
 import globals
 import events
 import station
-#from SpeedProfiler import SpeedProfiler
+from comm import AlarmClock
 
 # arbitrarily chosen
 TRACK_CAPACITY = 1000
@@ -41,6 +41,7 @@ class Node(traits.HasTraits):
     y_start   = traits.CFloat
     x_end     = traits.CFloat
     y_end     = traits.CFloat
+    next      = traits.This # The default next location. May be a Node, or a subclass of Node.
 
     # A default view
     traits_view =  ui.View(ui.Item(name='ID'),
@@ -105,36 +106,18 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     score.
     """
     # The CType indicates that the Type can be coerced from a string.
-    ID              = traits.CInt     # Unique numeric ID.
-#    length          = traits.CFloat   # Vehicle length, in meters
-#    jerk_max_norm   = traits.CFloat   # in m/s**3
-#    jerk_min_norm   = traits.CFloat
-#    accel_max_norm  = traits.CFloat   # in m/s**2
-#    accel_min_norm  = traits.CFloat
-#    vel_max_norm    = traits.CFloat   # in m/s
-#    vel_min_norm    = traits.CFloat
-#
-#    jerk_max_emerg  = traits.CFloat
-#    jerk_min_emerg  = traits.CFloat
-#    accel_max_emerg = traits.CFloat
-#    accel_min_emerg = traits.CFloat
-#    vel_max_emerg   = traits.CFloat
-#    vel_min_emerg   = traits.CFloat
-    
+    ID              = traits.CInt     # Unique numeric ID.    
     v_mass          = traits.CInt   # mass of vehicle, in kg
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg
-#    target_speed    = traits.CFloat # current desired speed, in m/s
     max_pax_capacity = traits.CInt
     passengers       = traits.List(traits.Instance('events.Passenger'))
-    itinerary        = traits.List(traits.Int)
 
     # A default view for vehicles.
     traits_view =  ui.View('ID', 'length',
                         ui.Item(name='pos', label='Position'),
                         ui.Item(name='loc'),
                         ui.Item(name='speed'),
-#                        ui.Item(name='target_speed'),
                         ui.Item(name='v_mass'),
                         ui.Item(name='passenger_mass'),
                         ui.Item(name='total_mass'),
@@ -147,33 +130,18 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                         ui.Item(name='path', style='custom'), # multiline
 
                         kind='live'
-
                     )
 
-#    def __init__(self, ID, loc, length, max_pax_capacity,
-#                 accel_max_norm, accel_min_norm, jerk_max_norm,
-#                 accel_max_emerg, accel_min_emerg, jerk_max_emerg,
-#                 v_mass, position=0, speed=0, **tr):
     def __init__(self, ID, loc, position, speed, **tr):
         Sim.Process.__init__(self, name='vehicle'+str(ID))
         traits.HasTraits.__init__(self, **tr)
 
         self.ID = ID
-#        self.length = length
-#        self.max_pax_capacity = max_pax_capacity
         self.door = 0 # 0=closed, 1=open
-#        self.accel_max_norm = accel_max_norm
-#        self.accel_min_norm = accel_min_norm
-#        self.jerk_max_norm = jerk_max_norm
-#        self.accel_max_emerg = accel_max_emerg
-#        self.accel_min_emerg = accel_min_emerg
-#        self.jerk_max_emerg = jerk_max_emerg
-#        self.v_mass = v_mass #  unloaded vehicle mass
 
         seg = Segment(poly1d([0,0,float(speed),float(position)]), inf, Sim.now(), self.total_mass)
         self.path = Path(loc, seg, self)
 
-#        self.target_speed = float(speed)
         self.emergency = False
         self.disabled = False
 
@@ -610,80 +578,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         old_loc = self.path.get_active_loc()
 
         # --- Decide what location will be next ---
-        try:
-        # Next location has already been decided
+        try:    # Next location has already been decided (vehicle switching)
             new_loc = self.path.traversals[self.path.active_idx+1].loc
-        except IndexError:
-            # Need to use Graph to determine next location
-            if isinstance(old_loc, TrackSegment): # TODO: Remove. Always true
-                neighbors = globals.DiGraph.neighbors(old_loc)
-                if len(neighbors) == 1:
-                    new_loc = neighbors[0]
-                else:
-                    # TODO: Temp hack
-                    new_loc = neighbors[0] #
-#            else: # old_loc is a node
-#                # TODO: Refactor! Problem is that a Switch is a resource, not
-#                # a process, so sending the message and waiting for the response
-#                # can't be handled in the psuedo multithreaded approach I've
-#                # used here and elsewhere. Likely soln is to make communication
-#                # it's own 'real' thread. Probably use Queing library.
-#                if isinstance(old_loc, Switch):
-#                    new_loc = None
-#                    rt_entry = old_loc.routing_table.get(self.ID)
-#                    complete_msg = api.SimCompleteSwitch()
-#                    complete_msg.swID = old_loc.ID
-#                    complete_msg.vID = self.ID
-#                    if rt_entry: # vehicle was already in switches routing table. Follow the table
-#                        new_loc, msgID = rt_entry
-#                        # clear the routing entry just used
-#                        del old_loc.routing_table[self.ID]
-#                        complete_msg.msgID = msgID
-#                        complete_msg.eID = new_loc.ID
-#                        globals.Interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
-#                    else: # vehicle did not have an entry in the switch's routing table. Ask the controller for direction.
-#                        # Ask controller to update the switch's routing table
-#                        logging.info("T=%4.3f %s at %s placing a switch request.",
-#                                     Sim.now(), self, old_loc)
-#                        next_edges = [data for src, sink, data in globals.DiGraph.edges(old_loc, data=True)]
-#                        sw_req = api.SimRequestSwitchCmd()
-#                        sw_req.swID = old_loc.ID
-#                        sw_req.vID = self.ID
-#                        sw_req.ts1ID = next_edges[0].ID
-#                        sw_req.ts2ID = next_edges[1].ID
-#                        globals.Interface.send(api.SIM_REQUEST_SWITCH_CMD, sw_req)
-#
-#                        # yield to allow comm to get the response
-#                        yield Sim.hold, self
-#
-#                        # Controller activated, and was told to resume, allowing
-#                        # this vehicle to have a turn again. If controller
-#                        # sent a SwitchCmd, the routing table will be updated now.
-#
-#                        # try again
-#                        rt_entry = old_loc.routing_table.get(self.ID)
-#                        if rt_entry: # it worked, everything's fine.
-#                            new_loc, msgID = rt_entry
-#                            # clear the routing entry just used
-#                            del old_loc.routing_table[self.ID]
-#                            complete_msg.msgID = msgID
-#                            complete_msg.eID = new_loc.ID
-#                            globals.Interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
-#                        else: # controller didn't respond to SimRequstSwitchCmd
-#                            # chose an edge arbitrarily to allow simulation to continue
-#                            new_loc = next_edges[0]
-#                            logging.error("T=%4.3f %s was not supplied with routing information for %s. Arbitrarily chose %s as output edge.", \
-#                                           Sim.now(), old_loc, self, new_loc)
-#                            print "T=%4.3f %s was not supplied with routing information for %s. Arbitrarily chose %s as output edge." \
-#                                           % (Sim.now(), old_loc, self, new_loc)
-#                            old_loc.errors += 1
-#                            complete_msg.msgID = api.NONE_ID
-#                            complete_msg.eID = new_loc.ID
-#                            globals.Interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
-#
-#                # All other cases have only one choice.
-#                else:
-#                    new_loc = globals.DiGraph.edges(old_loc, data=True)[0][2]
+        except IndexError:            
+            new_loc = old_loc.next
+            if new_loc is None: # can be caused by a dead-end track or a track switch in mid-throw
+                # TODO: Consistant collision handling through a single function!!!!
+                raise Exception("Vehicle hit a dead end, or a track switch in mid-throw!")
 
         # --- Handle that new location ---
         self.path.append_loc(new_loc)
@@ -2075,6 +1976,31 @@ class Path(traits.HasTraits):
 class TrackSegment(Node):
     def __init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, label='', **tr):
         Node.__init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, TRACK_CAPACITY, label)
+
+    def switch(self, new_next):
+        """Applicable for TrackSegments which have two or more downstream neighbors.
+        Switches the default 'next' Tracksegment to new_next after a delay
+        specifed in the sim configuration. If a vehicle is on
+        the switch (straddling tsID and nextID) or attempts
+        to use it during the transition delay, a crash will result."""
+        if self.next is not new_next: # if not already set to this track
+            # Check if a vehicle is currently straddling the switch point
+            if len(self.activeQ) != 0:
+                lv = self.activeQ[0]
+                tail_pos, tail_loc = lv.tail
+                if tail_loc is self:
+                    if tail_pos > self.length - lv.length:
+                        # TODO: Handle Collisions in a consistant manner, and through a single function!!!
+                        # !!!!!!!!!
+                        raise Exception("Crash. Threw a track switch while a vehicle was on top of it.")
+
+            # transitioning
+            self.next = None
+            AlarmClock(self._delayed_switch, new_next)
+
+    def _delayed_switch(self, new_next):
+        self.next = new_next
+
     def fill_TrackSegmentStatus(self, ts):
         """Fills an api.TrackSegmentStatus instance with current information."""
         ts.tsID = self.ID

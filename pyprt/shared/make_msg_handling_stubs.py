@@ -10,7 +10,6 @@ if len(sys.argv) != 3:
     print "usage: %prog PROTO OUTPUT"
     sys.exit(1)
 
-print sys.argv
 input = open(sys.argv[1], 'rU')
 output = open(sys.argv[2], 'w')
 
@@ -30,12 +29,19 @@ for line in input:
 
     faux_dict += '      api.%s : self.on_%s,\n' %(line, line)
 
-    print >> output, """        def on_%s(self, msg_type, msgID, msg_time, msg_str):
+    stub = """        def on_%s(self, msg_type, msgID, msg_time, msg_str):
             msg = api.%s()
             msg.MergeFromString(msg_str)
             self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-            self.send_resume()
-            """ % (line, TitleCase)
+            self.send_resume()""" % (line, TitleCase)
+
+    if TitleCase.find('Invalid') != -1:
+        stub += '\n            raise Exception("Message rejected by Sim")'
+
+    stub += '\n'
+
+    print >> output, stub
+
 
 faux_dict += '}'
 print >> output, faux_dict

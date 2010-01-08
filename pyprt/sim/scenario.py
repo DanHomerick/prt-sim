@@ -27,6 +27,15 @@ class ScenarioManager(object):
         globals.TrackSegments = self.load_track_segments(tracks_xml)
         globals.DiGraph = self.build_graph(tracks_xml, globals.TrackSegments)
 
+        # Fill in the next fields for the TrackSegments. Arbitrarily choosen
+        # when there is more then one neighbor.
+        graph = globals.DiGraph()
+        for n in graph.nodes_iter():
+            neighbors = graph.neighbors(n)
+            if neighbors:
+                n.next = neighbors[0]
+            # else n.next is left as None
+
         # Stations
         globals.Stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
 

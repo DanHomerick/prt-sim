@@ -471,54 +471,63 @@ class BaseController(object):
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_HDR_INVALID_TYPE(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgHdrInvalidType()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_HDR_INVALID_ID(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgHdrInvalidId()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_HDR_INVALID_TIME(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgHdrInvalidTime()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_HDR_INVALID_SIZE(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgHdrInvalidSize()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_HDR_INVALID_PBSTR(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgHdrInvalidPbstr()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_BODY_INVALID_ID(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgBodyInvalidId()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_BODY_INVALID_ACCEL(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgBodyInvalidAccel()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_MSG_BODY_INVALID_JERK(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimMsgBodyInvalidJerk()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()
+        raise Exception("Message rejected by Sim")
 
     def on_SIM_ABORT_VEHICLE_SPEED(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimAbortVehicleSpeed()

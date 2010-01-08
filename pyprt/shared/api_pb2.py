@@ -38,55 +38,59 @@ _CTRLMSGTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_CMD_SWITCH', index=1, number=3,
+      name='CTRL_CMD_VEHICLE_ITINERARY', index=1, number=2,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_CMD_PASSENGERS_EMBARK', index=2, number=4,
+      name='CTRL_CMD_SWITCH', index=2, number=3,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_CMD_PASSENGERS_DISEMBARK', index=3, number=5,
+      name='CTRL_CMD_PASSENGERS_EMBARK', index=3, number=4,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_VEHICLE_STATUS', index=4, number=10,
+      name='CTRL_CMD_PASSENGERS_DISEMBARK', index=4, number=5,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_STATION_STATUS', index=5, number=11,
+      name='CTRL_REQUEST_VEHICLE_STATUS', index=5, number=10,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_STATION_SUMMARY', index=6, number=12,
+      name='CTRL_REQUEST_STATION_STATUS', index=6, number=11,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_PASSENGER_STATUS', index=7, number=13,
+      name='CTRL_REQUEST_STATION_SUMMARY', index=7, number=12,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_SWITCH_STATUS', index=8, number=14,
+      name='CTRL_REQUEST_PASSENGER_STATUS', index=8, number=13,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_TRACKSEGMENT_STATUS', index=9, number=15,
+      name='CTRL_REQUEST_SWITCH_STATUS', index=9, number=14,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_TOTAL_STATUS', index=10, number=16,
+      name='CTRL_REQUEST_TRACKSEGMENT_STATUS', index=10, number=15,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_SETNOTIFY_VEHICLE_POSITION', index=11, number=20,
+      name='CTRL_REQUEST_TOTAL_STATUS', index=11, number=16,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_SETNOTIFY_TIME', index=12, number=50,
+      name='CTRL_SETNOTIFY_VEHICLE_POSITION', index=12, number=20,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_RESUME', index=13, number=91,
+      name='CTRL_SETNOTIFY_TIME', index=13, number=50,
+      options=None,
+      type=None),
+    descriptor.EnumValueDescriptor(
+      name='CTRL_RESUME', index=14, number=91,
       options=None,
       type=None),
   ],
@@ -356,6 +360,7 @@ MSG_SEP = -32123
 MSG_HEADER_SIZE = 14
 NONE_ID = -1
 CTRL_CMD_VEHICLE_TRAJECTORY = 1
+CTRL_CMD_VEHICLE_ITINERARY = 2
 CTRL_CMD_SWITCH = 3
 CTRL_CMD_PASSENGERS_EMBARK = 4
 CTRL_CMD_PASSENGERS_DISEMBARK = 5
@@ -497,6 +502,42 @@ _CTRLCMDVEHICLETRAJECTORY = descriptor.Descriptor(
       name='spline', full_name='prt.CtrlCmdVehicleTrajectory.spline', index=1,
       number=2, type=11, cpp_type=10, label=2,
       default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],  # TODO(robinson): Implement.
+  enum_types=[
+  ],
+  options=None)
+
+
+_CTRLCMDVEHICLEITINERARY = descriptor.Descriptor(
+  name='CtrlCmdVehicleItinerary',
+  full_name='prt.CtrlCmdVehicleItinerary',
+  filename='api.proto',
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='vID', full_name='prt.CtrlCmdVehicleItinerary.vID', index=0,
+      number=1, type=5, cpp_type=1, label=2,
+      default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='tsIDs', full_name='prt.CtrlCmdVehicleItinerary.tsIDs', index=1,
+      number=2, type=5, cpp_type=1, label=3,
+      default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
+    descriptor.FieldDescriptor(
+      name='clear', full_name='prt.CtrlCmdVehicleItinerary.clear', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -680,22 +721,15 @@ _CTRLCMDSWITCH = descriptor.Descriptor(
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
-      name='swID', full_name='prt.CtrlCmdSwitch.swID', index=0,
+      name='tsID', full_name='prt.CtrlCmdSwitch.tsID', index=0,
+      number=1, type=5, cpp_type=1, label=2,
+      default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='nextID', full_name='prt.CtrlCmdSwitch.nextID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='vID', full_name='prt.CtrlCmdSwitch.vID', index=1,
-      number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='tsID', full_name='prt.CtrlCmdSwitch.tsID', index=2,
-      number=4, type=5, cpp_type=1, label=2,
       default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -2298,27 +2332,27 @@ _SIMMSGHDRINVALIDSIZE = descriptor.Descriptor(
 
 
 _SIMMSGBODYINVALIDID = descriptor.Descriptor(
-  name='SimMsgBodyInvalidID',
-  full_name='prt.SimMsgBodyInvalidID',
+  name='SimMsgBodyInvalidId',
+  full_name='prt.SimMsgBodyInvalidId',
   filename='api.proto',
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
-      name='msgID', full_name='prt.SimMsgBodyInvalidID.msgID', index=0,
+      name='msgID', full_name='prt.SimMsgBodyInvalidId.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
       default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='loc_type', full_name='prt.SimMsgBodyInvalidID.loc_type', index=1,
+      name='loc_type', full_name='prt.SimMsgBodyInvalidId.loc_type', index=1,
       number=2, type=14, cpp_type=8, label=2,
       default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='locID', full_name='prt.SimMsgBodyInvalidID.locID', index=2,
+      name='locID', full_name='prt.SimMsgBodyInvalidId.locID', index=2,
       number=3, type=5, cpp_type=1, label=2,
       default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -2942,6 +2976,10 @@ class CtrlCmdVehicleTrajectory(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDVEHICLETRAJECTORY
 
+class CtrlCmdVehicleItinerary(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _CTRLCMDVEHICLEITINERARY
+
 class CtrlCmdStationLaunch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDSTATIONLAUNCH
@@ -3178,7 +3216,7 @@ class SimMsgHdrInvalidSize(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGHDRINVALIDSIZE
 
-class SimMsgBodyInvalidID(message.Message):
+class SimMsgBodyInvalidId(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGBODYINVALIDID
 

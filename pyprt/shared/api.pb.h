@@ -33,6 +33,7 @@ void protobuf_ShutdownFile_api_2eproto();
 class PolyCoeffs;
 class Spline;
 class CtrlCmdVehicleTrajectory;
+class CtrlCmdVehicleItinerary;
 class CtrlCmdStationLaunch;
 class CtrlCmdPassengersEmbark;
 class CtrlCmdPassengersDisembark;
@@ -92,7 +93,7 @@ class SimMsgHdrInvalidType;
 class SimMsgHdrInvalidID;
 class SimMsgHdrInvalidTime;
 class SimMsgHdrInvalidSize;
-class SimMsgBodyInvalidID;
+class SimMsgBodyInvalidId;
 class SimMsgBodyInvalidAccel;
 class SimMsgBodyInvalidJerk;
 class VehicleStatus;
@@ -126,6 +127,7 @@ inline bool Misc_Parse(
 }
 enum CtrlMsgType {
   CTRL_CMD_VEHICLE_TRAJECTORY = 1,
+  CTRL_CMD_VEHICLE_ITINERARY = 2,
   CTRL_CMD_SWITCH = 3,
   CTRL_CMD_PASSENGERS_EMBARK = 4,
   CTRL_CMD_PASSENGERS_DISEMBARK = 5,
@@ -548,6 +550,114 @@ class CtrlCmdVehicleTrajectory : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static CtrlCmdVehicleTrajectory* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class CtrlCmdVehicleItinerary : public ::google::protobuf::Message {
+ public:
+  CtrlCmdVehicleItinerary();
+  virtual ~CtrlCmdVehicleItinerary();
+  
+  CtrlCmdVehicleItinerary(const CtrlCmdVehicleItinerary& from);
+  
+  inline CtrlCmdVehicleItinerary& operator=(const CtrlCmdVehicleItinerary& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CtrlCmdVehicleItinerary& default_instance();
+  void Swap(CtrlCmdVehicleItinerary* other);
+  
+  // implements Message ----------------------------------------------
+  
+  CtrlCmdVehicleItinerary* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const CtrlCmdVehicleItinerary& from);
+  void MergeFrom(const CtrlCmdVehicleItinerary& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 vID = 1;
+  inline bool has_vid() const;
+  inline void clear_vid();
+  static const int kVIDFieldNumber = 1;
+  inline ::google::protobuf::int32 vid() const;
+  inline void set_vid(::google::protobuf::int32 value);
+  
+  // repeated int32 tsIDs = 2 [packed = true];
+  inline int tsids_size() const;
+  inline void clear_tsids();
+  static const int kTsIDsFieldNumber = 2;
+  inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >& tsids() const
+      ;
+  inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >* mutable_tsids();
+  inline ::google::protobuf::int32 tsids(int index) const;
+  inline void set_tsids(int index, ::google::protobuf::int32 value);
+  inline void add_tsids(::google::protobuf::int32 value);
+  
+  // optional bool clear = 3;
+  inline bool has_clear() const;
+  inline void clear_clear();
+  static const int kClearFieldNumber = 3;
+  inline bool clear() const;
+  inline void set_clear(bool value);
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 vid_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > tsids_;
+  mutable int _tsids_cached_byte_size_;
+  bool clear_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static CtrlCmdVehicleItinerary* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -987,39 +1097,31 @@ class CtrlCmdSwitch : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required int32 swID = 2;
-  inline bool has_swid() const;
-  inline void clear_swid();
-  static const int kSwIDFieldNumber = 2;
-  inline ::google::protobuf::int32 swid() const;
-  inline void set_swid(::google::protobuf::int32 value);
-  
-  // required int32 vID = 3;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 3;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 tsID = 4;
+  // required int32 tsID = 1;
   inline bool has_tsid() const;
   inline void clear_tsid();
-  static const int kTsIDFieldNumber = 4;
+  static const int kTsIDFieldNumber = 1;
   inline ::google::protobuf::int32 tsid() const;
   inline void set_tsid(::google::protobuf::int32 value);
+  
+  // required int32 nextID = 2;
+  inline bool has_nextid() const;
+  inline void clear_nextid();
+  static const int kNextIDFieldNumber = 2;
+  inline ::google::protobuf::int32 nextid() const;
+  inline void set_nextid(::google::protobuf::int32 value);
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::google::protobuf::int32 swid_;
-  ::google::protobuf::int32 vid_;
   ::google::protobuf::int32 tsid_;
+  ::google::protobuf::int32 nextid_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -6274,14 +6376,14 @@ class SimMsgHdrInvalidSize : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
-class SimMsgBodyInvalidID : public ::google::protobuf::Message {
+class SimMsgBodyInvalidId : public ::google::protobuf::Message {
  public:
-  SimMsgBodyInvalidID();
-  virtual ~SimMsgBodyInvalidID();
+  SimMsgBodyInvalidId();
+  virtual ~SimMsgBodyInvalidId();
   
-  SimMsgBodyInvalidID(const SimMsgBodyInvalidID& from);
+  SimMsgBodyInvalidId(const SimMsgBodyInvalidId& from);
   
-  inline SimMsgBodyInvalidID& operator=(const SimMsgBodyInvalidID& from) {
+  inline SimMsgBodyInvalidId& operator=(const SimMsgBodyInvalidId& from) {
     CopyFrom(from);
     return *this;
   }
@@ -6295,16 +6397,16 @@ class SimMsgBodyInvalidID : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const SimMsgBodyInvalidID& default_instance();
-  void Swap(SimMsgBodyInvalidID* other);
+  static const SimMsgBodyInvalidId& default_instance();
+  void Swap(SimMsgBodyInvalidId* other);
   
   // implements Message ----------------------------------------------
   
-  SimMsgBodyInvalidID* New() const;
+  SimMsgBodyInvalidId* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimMsgBodyInvalidID& from);
-  void MergeFrom(const SimMsgBodyInvalidID& from);
+  void CopyFrom(const SimMsgBodyInvalidId& from);
+  void MergeFrom(const SimMsgBodyInvalidId& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -6373,7 +6475,7 @@ class SimMsgBodyInvalidID : public ::google::protobuf::Message {
   }
   
   void InitAsDefaultInstance();
-  static SimMsgBodyInvalidID* default_instance_;
+  static SimMsgBodyInvalidId* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -7895,6 +7997,67 @@ inline ::prt::Spline* CtrlCmdVehicleTrajectory::mutable_spline() {
 
 // -------------------------------------------------------------------
 
+// CtrlCmdVehicleItinerary
+
+// required int32 vID = 1;
+inline bool CtrlCmdVehicleItinerary::has_vid() const {
+  return _has_bit(0);
+}
+inline void CtrlCmdVehicleItinerary::clear_vid() {
+  vid_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 CtrlCmdVehicleItinerary::vid() const {
+  return vid_;
+}
+inline void CtrlCmdVehicleItinerary::set_vid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  vid_ = value;
+}
+
+// repeated int32 tsIDs = 2 [packed = true];
+inline int CtrlCmdVehicleItinerary::tsids_size() const {
+  return tsids_.size();
+}
+inline void CtrlCmdVehicleItinerary::clear_tsids() {
+  tsids_.Clear();
+}
+inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
+CtrlCmdVehicleItinerary::tsids() const {
+  return tsids_;
+}
+inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
+CtrlCmdVehicleItinerary::mutable_tsids() {
+  return &tsids_;
+}
+inline ::google::protobuf::int32 CtrlCmdVehicleItinerary::tsids(int index) const {
+  return tsids_.Get(index);
+}
+inline void CtrlCmdVehicleItinerary::set_tsids(int index, ::google::protobuf::int32 value) {
+  tsids_.Set(index, value);
+}
+inline void CtrlCmdVehicleItinerary::add_tsids(::google::protobuf::int32 value) {
+  tsids_.Add(value);
+}
+
+// optional bool clear = 3;
+inline bool CtrlCmdVehicleItinerary::has_clear() const {
+  return _has_bit(2);
+}
+inline void CtrlCmdVehicleItinerary::clear_clear() {
+  clear_ = false;
+  _clear_bit(2);
+}
+inline bool CtrlCmdVehicleItinerary::clear() const {
+  return clear_;
+}
+inline void CtrlCmdVehicleItinerary::set_clear(bool value) {
+  _set_bit(2);
+  clear_ = value;
+}
+
+// -------------------------------------------------------------------
+
 // CtrlCmdStationLaunch
 
 // required int32 sID = 1;
@@ -8199,52 +8362,36 @@ inline void CtrlCmdPassengersDisembark::add_passengerids(::google::protobuf::int
 
 // CtrlCmdSwitch
 
-// required int32 swID = 2;
-inline bool CtrlCmdSwitch::has_swid() const {
-  return _has_bit(0);
-}
-inline void CtrlCmdSwitch::clear_swid() {
-  swid_ = 0;
-  _clear_bit(0);
-}
-inline ::google::protobuf::int32 CtrlCmdSwitch::swid() const {
-  return swid_;
-}
-inline void CtrlCmdSwitch::set_swid(::google::protobuf::int32 value) {
-  _set_bit(0);
-  swid_ = value;
-}
-
-// required int32 vID = 3;
-inline bool CtrlCmdSwitch::has_vid() const {
-  return _has_bit(1);
-}
-inline void CtrlCmdSwitch::clear_vid() {
-  vid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 CtrlCmdSwitch::vid() const {
-  return vid_;
-}
-inline void CtrlCmdSwitch::set_vid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  vid_ = value;
-}
-
-// required int32 tsID = 4;
+// required int32 tsID = 1;
 inline bool CtrlCmdSwitch::has_tsid() const {
-  return _has_bit(2);
+  return _has_bit(0);
 }
 inline void CtrlCmdSwitch::clear_tsid() {
   tsid_ = 0;
-  _clear_bit(2);
+  _clear_bit(0);
 }
 inline ::google::protobuf::int32 CtrlCmdSwitch::tsid() const {
   return tsid_;
 }
 inline void CtrlCmdSwitch::set_tsid(::google::protobuf::int32 value) {
-  _set_bit(2);
+  _set_bit(0);
   tsid_ = value;
+}
+
+// required int32 nextID = 2;
+inline bool CtrlCmdSwitch::has_nextid() const {
+  return _has_bit(1);
+}
+inline void CtrlCmdSwitch::clear_nextid() {
+  nextid_ = 0;
+  _clear_bit(1);
+}
+inline ::google::protobuf::int32 CtrlCmdSwitch::nextid() const {
+  return nextid_;
+}
+inline void CtrlCmdSwitch::set_nextid(::google::protobuf::int32 value) {
+  _set_bit(1);
+  nextid_ = value;
 }
 
 // -------------------------------------------------------------------
@@ -10277,53 +10424,53 @@ inline void SimMsgHdrInvalidSize::set_msg_size(::google::protobuf::int32 value) 
 
 // -------------------------------------------------------------------
 
-// SimMsgBodyInvalidID
+// SimMsgBodyInvalidId
 
 // required int32 msgID = 1;
-inline bool SimMsgBodyInvalidID::has_msgid() const {
+inline bool SimMsgBodyInvalidId::has_msgid() const {
   return _has_bit(0);
 }
-inline void SimMsgBodyInvalidID::clear_msgid() {
+inline void SimMsgBodyInvalidId::clear_msgid() {
   msgid_ = 0;
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimMsgBodyInvalidID::msgid() const {
+inline ::google::protobuf::int32 SimMsgBodyInvalidId::msgid() const {
   return msgid_;
 }
-inline void SimMsgBodyInvalidID::set_msgid(::google::protobuf::int32 value) {
+inline void SimMsgBodyInvalidId::set_msgid(::google::protobuf::int32 value) {
   _set_bit(0);
   msgid_ = value;
 }
 
 // required .prt.LocationType loc_type = 2;
-inline bool SimMsgBodyInvalidID::has_loc_type() const {
+inline bool SimMsgBodyInvalidId::has_loc_type() const {
   return _has_bit(1);
 }
-inline void SimMsgBodyInvalidID::clear_loc_type() {
+inline void SimMsgBodyInvalidId::clear_loc_type() {
   loc_type_ = 0;
   _clear_bit(1);
 }
-inline prt::LocationType SimMsgBodyInvalidID::loc_type() const {
+inline prt::LocationType SimMsgBodyInvalidId::loc_type() const {
   return static_cast< prt::LocationType >(loc_type_);
 }
-inline void SimMsgBodyInvalidID::set_loc_type(prt::LocationType value) {
+inline void SimMsgBodyInvalidId::set_loc_type(prt::LocationType value) {
   GOOGLE_DCHECK(prt::LocationType_IsValid(value));
   _set_bit(1);
   loc_type_ = value;
 }
 
 // required int32 locID = 3;
-inline bool SimMsgBodyInvalidID::has_locid() const {
+inline bool SimMsgBodyInvalidId::has_locid() const {
   return _has_bit(2);
 }
-inline void SimMsgBodyInvalidID::clear_locid() {
+inline void SimMsgBodyInvalidId::clear_locid() {
   locid_ = 0;
   _clear_bit(2);
 }
-inline ::google::protobuf::int32 SimMsgBodyInvalidID::locid() const {
+inline ::google::protobuf::int32 SimMsgBodyInvalidId::locid() const {
   return locid_;
 }
-inline void SimMsgBodyInvalidID::set_locid(::google::protobuf::int32 value) {
+inline void SimMsgBodyInvalidId::set_locid(::google::protobuf::int32 value) {
   _set_bit(2);
   locid_ = value;
 }

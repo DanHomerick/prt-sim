@@ -58,17 +58,22 @@ class DebugController(base_controller.BaseController):
                                          msg.v_status.vel,
                                          msg.v_status.accel,
                                          msg_time/1000) # ms -> seconds
-        final_knot = cubic_spline.Knot(None, self.V_MAX, 0, None)
-        spline = self.traj_solver.target_velocity(initial_knot, final_knot)
+        final_knot = cubic_spline.Knot(msg.v_status.nose_pos + 200, 0, 0, None)
+        spline = self.traj_solver.target_position(initial_knot, final_knot)
 
-        # Continue at this speed for forever
-        inf = 1E100000
-        spline.append(cubic_spline.Knot(inf, self.V_MAX, 0, inf))
+        inf = 1E10000
+        spline.append(cubic_spline.Knot(msg.v_status.nose_pos + 250, 0, 0, inf)) # stay stopped here
 
-        cmd = api.CtrlCmdVehicleTrajectory()
-        cmd.vID = msg.v_status.vID
-        self.fill_spline_msg(spline, cmd.spline)
-        self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, self.sim_time, cmd)
+        traj_cmd = api.CtrlCmdVehicleTrajectory()
+        traj_cmd.vID = msg.v_status.vID
+        self.fill_spline_msg(spline, traj_cmd.spline)
+        self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, self.sim_time, traj_cmd)
+        
+        itin_cmd = api.CtrlCmdVehicleItinerary()
+        itin_cmd.vID = msg.v_status.vID
+        itin_cmd.tsIDs.extend([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1])
+        self.send(api.CTRL_CMD_VEHICLE_ITINERARY, self.sim_time, itin_cmd)
+
         self.send_resume()
 
     def fill_spline_msg(self, spline, spline_msg):
