@@ -261,6 +261,12 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.assertRaises(trajectory_solver.FatalTrajectoryError,
                           solver.target_position, Knot(0,0,0,0), Knot(0,0,0,0) )
 
+    def test_target_position_II(self):
+        """Can't backup due to v_min=0, but final position is behind start position."""
+        solver = trajectory_solver.TrajectorySolver(20, 5, 2.5, 0, -5, -2.5)
+        self.assertRaises(trajectory_solver.FatalTrajectoryError,
+                          solver.target_position, Knot(100, 0, 0, 0), Knot(90, 0, 0, 0) )
+
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
         solver = trajectory_solver.TrajectorySolver(40, 5, 2.5)

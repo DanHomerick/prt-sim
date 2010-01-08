@@ -104,6 +104,7 @@ class TrajectorySolver(object):
         Returns a cubic_spline.CSpline.
         """
         knot_final = knot_final.copy() # don't alter the original
+        knot_final.time = inf
 
         if knot_final.pos > knot_initial.pos:
             flip = True
@@ -384,8 +385,15 @@ class TrajectorySolver(object):
         A = an/2 - an**2/(2*ax)
         B = -k1.vel + alpha*an - alpha*ax + an+ax**2/(2*jn) + an*k1.vel/ax - an*ax/jn
         C = k4.pos - k1.pos - alpha*k1.vel + (alpha*ax**2 + ax*k1.vel - an*k1.vel - alpha*an*ax)/jn - ax*alpha**2/2 - ax*(an - ax)**2/(2*jn**2) - (an - ax)**3/(6*jn**2)
-        
-        h3 = min(self.nonnegative_roots(A, B, C))
+
+        try:
+            h3 = min(self.nonnegative_roots(A, B, C))
+        except ValueError: # No nonnegative, real solutions. Could be caused by
+                            # targetting behind the vehicle when v_min=0, for example.
+            assert len(self.nonnegative_roots(A, B, C)) == 0
+            raise TrajectoryError('No nonnegative, real solutions') # TODO: Should this be Fatal?
+
+
         h1 = alpha - an/ax*h3
 
         k2 = self.create_knot_after(k1, h1, ax)
@@ -522,7 +530,7 @@ class TrajectorySolver(object):
 
     def target_velocity(self, initial, final):
         """Similar to target_position, but the final position is ignored."""
-        initial = initial.copy()
+        final = final.copy() # don't alter the original
         final.time = inf
 
         if __debug__:
