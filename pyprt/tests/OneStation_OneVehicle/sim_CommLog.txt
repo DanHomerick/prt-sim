@@ -1,0 +1,251 @@
+Now:1262902208.33, SENT, SimStart, MsgType:1200, MsgID:1, MsgTime:0
+--
+Now:1262902208.33, RCVD, CtrlRequestVehicleStatus, MsgType:10, MsgID:0, MsgTime:0
+vID: 0
+--
+Now:1262902208.34, SENT, SimResponseVehicleStatus, MsgType:1010, MsgID:2, MsgTime:0
+msgID: 0
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 0
+  nose_pos: 133.123
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 0
+  tail_pos: 131.123
+  vel: 0.0
+  accel: 0.0
+}
+--
+Now:1262902208.34, RCVD, CtrlResume, MsgType:91, MsgID:1, MsgTime:0
+last_sim_msgID: 1
+--
+Now:1262902208.34, RCVD, CtrlCmdVehicleTrajectory, MsgType:1, MsgID:2, MsgTime:0
+vID: 0
+spline {
+  polys {
+    coeffs: 0.416666656733
+    coeffs: 0.0
+    coeffs: 0.0
+    coeffs: 133.123001099
+  }
+  polys {
+    coeffs: 0.0
+    coeffs: 2.5
+    coeffs: 5.0
+    coeffs: 136.456329346
+  }
+  polys {
+    coeffs: -0.416666656733
+    coeffs: 2.5
+    coeffs: 15.0
+    coeffs: 156.456329346
+  }
+  polys {
+    coeffs: 0.0
+    coeffs: 0.0
+    coeffs: 20.0
+    coeffs: 193.123001099
+  }
+  times: 0.0
+  times: 2.0
+  times: 4.0
+  times: 6.0
+  times: 1.#INF
+}
+--
+Now:1262902208.35, RCVD, CtrlResume, MsgType:91, MsgID:3, MsgTime:0
+last_sim_msgID: 2
+--
+Now:1262902215.25, SENT, SimNotifyVehicleArrive, MsgType:1021, MsgID:3, MsgTime:6270
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 8
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 0
+  tail_pos: 118.025564027
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902215.26, RCVD, CtrlResume, MsgType:91, MsgID:4, MsgTime:6270
+last_sim_msgID: 3
+--
+Now:1262902215.36, SENT, SimNotifyVehicleExit, MsgType:1022, MsgID:4, MsgTime:6370
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 8
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 8
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902215.36, RCVD, CtrlResume, MsgType:91, MsgID:5, MsgTime:6370
+last_sim_msgID: 4
+--
+Now:1262902221.8, SENT, SimNotifyVehicleArrive, MsgType:1021, MsgID:5, MsgTime:12271
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 18
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 8
+  tail_pos: 181.509198053
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902221.81, RCVD, CtrlResume, MsgType:91, MsgID:6, MsgTime:12271
+last_sim_msgID: 5
+--
+Now:1262902221.91, SENT, SimNotifyVehicleExit, MsgType:1022, MsgID:6, MsgTime:12371
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 18
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 18
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902221.91, RCVD, CtrlResume, MsgType:91, MsgID:7, MsgTime:12371
+last_sim_msgID: 6
+--
+Now:1262902231.78, SENT, SimNotifyVehicleArrive, MsgType:1021, MsgID:7, MsgTime:21446
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 1
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 18
+  tail_pos: 75.1874550635
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902231.78, RCVD, CtrlResume, MsgType:91, MsgID:8, MsgTime:21446
+last_sim_msgID: 7
+--
+Now:1262902231.88, SENT, SimNotifyVehicleExit, MsgType:1022, MsgID:8, MsgTime:21546
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 1
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 1
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902231.88, RCVD, CtrlResume, MsgType:91, MsgID:9, MsgTime:21546
+last_sim_msgID: 8
+--
+Now:1262902235.78, SENT, SimNotifyVehicleArrive, MsgType:1021, MsgID:9, MsgTime:25306
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 2
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 1
+  tail_pos: 197.281100623
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902235.79, RCVD, CtrlResume, MsgType:91, MsgID:10, MsgTime:25306
+last_sim_msgID: 9
+--
+Now:1262902235.89, SENT, SimNotifyVehicleExit, MsgType:1022, MsgID:10, MsgTime:25406
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 2
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 2
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902235.89, RCVD, CtrlResume, MsgType:91, MsgID:11, MsgTime:25406
+last_sim_msgID: 10
+--
+Now:1262902246.54, SENT, SimNotifyVehicleArrive, MsgType:1021, MsgID:11, MsgTime:35270
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 3
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 2
+  tail_pos: 78.0278055517
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902246.54, RCVD, CtrlResume, MsgType:91, MsgID:12, MsgTime:35270
+last_sim_msgID: 11
+--
+Now:1262902246.65, SENT, SimNotifyVehicleExit, MsgType:1022, MsgID:12, MsgTime:35370
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 3
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 3
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902246.65, RCVD, CtrlResume, MsgType:91, MsgID:13, MsgTime:35370
+last_sim_msgID: 12
+--
+Now:1262902250.56, SENT, SimNotifyVehicleArrive, MsgType:1021, MsgID:13, MsgTime:39271
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 4
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 3
+  tail_pos: 507.696095124
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902250.56, RCVD, CtrlResume, MsgType:91, MsgID:14, MsgTime:39271
+last_sim_msgID: 13
+--
+Now:1262902250.66, SENT, SimNotifyVehicleExit, MsgType:1022, MsgID:14, MsgTime:39371
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 4
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 4
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+--
+Now:1262902250.67, RCVD, CtrlResume, MsgType:91, MsgID:15, MsgTime:39371
+last_sim_msgID: 14
+--

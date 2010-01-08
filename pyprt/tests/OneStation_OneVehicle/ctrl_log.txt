@@ -1,0 +1,17 @@
+base_controller.py              connect line:125    INFO 659ms: Connected to server: localhost:64444
+base_controller.py              receive line:163   DEBUG 4151ms: new sim time T=0.000 msg_time = 0.000
+debug_controller.py         on_SIM_START line:45    INFO 4151ms: Sim Start message received.
+base_controller.py              receive line:163   DEBUG 4158ms: new sim time T=0.000 msg_time = 0.000
+base_controller.py              receive line:163   DEBUG 11075ms: new sim time T=6.270 msg_time = 6.270
+base_controller.py              receive line:163   DEBUG 11182ms: new sim time T=6.370 msg_time = 6.370
+base_controller.py              receive line:163   DEBUG 17626ms: new sim time T=12.271 msg_time = 12.271
+base_controller.py              receive line:163   DEBUG 17733ms: new sim time T=12.371 msg_time = 12.371
+base_controller.py              receive line:163   DEBUG 27599ms: new sim time T=21.446 msg_time = 21.446
+base_controller.py              receive line:163   DEBUG 27703ms: new sim time T=21.546 msg_time = 21.546
+base_controller.py              receive line:163   DEBUG 31603ms: new sim time T=25.306 msg_time = 25.306
+base_controller.py              receive line:163   DEBUG 31713ms: new sim time T=25.406 msg_time = 25.406
+base_controller.py              receive line:163   DEBUG 42365ms: new sim time T=35.270 msg_time = 35.270
+base_controller.py              receive line:163   DEBUG 42467ms: new sim time T=35.370 msg_time = 35.370
+base_controller.py              receive line:163   DEBUG 46381ms: new sim time T=39.271 msg_time = 39.271
+base_controller.py              receive line:163   DEBUG 46486ms: new sim time T=39.371 msg_time = 39.371
+base_controller.py              receive line:163   DEBUG 68832ms: new sim time T=60.000 msg_time = 60.000

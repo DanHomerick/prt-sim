@@ -1,0 +1,253 @@
+RCVD, SimStart, 1200, 1, 0
+---- 4151ms
+SENT, CtrlRequestVehicleStatus, 10, 0, 0
+vID: 0
+---- 4151ms
+SENT, CtrlResume, 91, 1, 0
+last_sim_msgID: 1
+---- 4152ms
+RCVD, SimResponseVehicleStatus, 1010, 2, 0
+msgID: 0
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 0
+  nose_pos: 133.123001099
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 0
+  tail_pos: 131.123001099
+  vel: 0.0
+  accel: 0.0
+}
+---- 4161ms
+SENT, CtrlCmdVehicleTrajectory, 1, 2, 0
+vID: 0
+spline {
+  polys {
+    coeffs: 0.416666666667
+    coeffs: 0.0
+    coeffs: 0.0
+    coeffs: 133.123001099
+  }
+  polys {
+    coeffs: 0.0
+    coeffs: 2.5
+    coeffs: 5.0
+    coeffs: 136.456334432
+  }
+  polys {
+    coeffs: -0.416666666667
+    coeffs: 2.5
+    coeffs: 15.0
+    coeffs: 156.456334432
+  }
+  polys {
+    coeffs: 0.0
+    coeffs: 0.0
+    coeffs: 20.0
+    coeffs: 193.123001099
+  }
+  times: 0.0
+  times: 2.0
+  times: 4.0
+  times: 6.0
+  times: 1.#INF
+}
+---- 4162ms
+SENT, CtrlResume, 91, 3, 0
+last_sim_msgID: 2
+---- 4162ms
+RCVD, SimNotifyVehicleArrive, 1021, 3, 6270
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 8
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 0
+  tail_pos: 118.025566101
+  vel: 20.0
+  accel: 0.0
+}
+---- 11075ms
+SENT, CtrlResume, 91, 4, 6270
+last_sim_msgID: 3
+---- 11076ms
+RCVD, SimNotifyVehicleExit, 1022, 4, 6370
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 8
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 8
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+---- 11184ms
+SENT, CtrlResume, 91, 5, 6370
+last_sim_msgID: 4
+---- 11184ms
+RCVD, SimNotifyVehicleArrive, 1021, 5, 12271
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 18
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 8
+  tail_pos: 181.50920105
+  vel: 20.0
+  accel: 0.0
+}
+---- 17628ms
+SENT, CtrlResume, 91, 6, 12271
+last_sim_msgID: 5
+---- 17628ms
+RCVD, SimNotifyVehicleExit, 1022, 6, 12371
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 18
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 18
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+---- 17733ms
+SENT, CtrlResume, 91, 7, 12371
+last_sim_msgID: 6
+---- 17734ms
+RCVD, SimNotifyVehicleArrive, 1021, 7, 21446
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 1
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 18
+  tail_pos: 75.1874542236
+  vel: 20.0
+  accel: 0.0
+}
+---- 27601ms
+SENT, CtrlResume, 91, 8, 21446
+last_sim_msgID: 7
+---- 27601ms
+RCVD, SimNotifyVehicleExit, 1022, 8, 21546
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 1
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 1
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+---- 27704ms
+SENT, CtrlResume, 91, 9, 21546
+last_sim_msgID: 8
+---- 27704ms
+RCVD, SimNotifyVehicleArrive, 1021, 9, 25306
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 2
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 1
+  tail_pos: 197.281097412
+  vel: 20.0
+  accel: 0.0
+}
+---- 31605ms
+SENT, CtrlResume, 91, 10, 25306
+last_sim_msgID: 9
+---- 31605ms
+RCVD, SimNotifyVehicleExit, 1022, 10, 25406
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 2
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 2
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+---- 31713ms
+SENT, CtrlResume, 91, 11, 25406
+last_sim_msgID: 10
+---- 31713ms
+RCVD, SimNotifyVehicleArrive, 1021, 11, 35270
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 3
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 2
+  tail_pos: 78.0278091431
+  vel: 20.0
+  accel: 0.0
+}
+---- 42365ms
+SENT, CtrlResume, 91, 12, 35270
+last_sim_msgID: 11
+---- 42365ms
+RCVD, SimNotifyVehicleExit, 1022, 12, 35370
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 3
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 3
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+---- 42468ms
+SENT, CtrlResume, 91, 13, 35370
+last_sim_msgID: 12
+---- 42468ms
+RCVD, SimNotifyVehicleArrive, 1021, 13, 39271
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 4
+  nose_pos: 0.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 3
+  tail_pos: 507.696105957
+  vel: 20.0
+  accel: 0.0
+}
+---- 46382ms
+SENT, CtrlResume, 91, 14, 39271
+last_sim_msgID: 13
+---- 46382ms
+RCVD, SimNotifyVehicleExit, 1022, 14, 39371
+v_status {
+  vID: 0
+  nose_loc_type: TRACK_SEGMENT
+  nose_locID: 4
+  nose_pos: 2.0
+  tail_loc_type: TRACK_SEGMENT
+  tail_locID: 4
+  tail_pos: 0.0
+  vel: 20.0
+  accel: 0.0
+}
+---- 46486ms
+SENT, CtrlResume, 91, 15, 39371
+last_sim_msgID: 14
+---- 46487ms
+RCVD, SimEnd, 1201, 15, 60000
+---- 68832ms
