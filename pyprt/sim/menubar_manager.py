@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 import wx
 
-import gui_visual
-
-
 class MenuBarManager(object):
     def __init__(self, parent_window):
         self.parent_window = parent_window # parent window

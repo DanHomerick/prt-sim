@@ -15,7 +15,7 @@ import pyprt.shared.api_pb2 as api
 import globals
 import events
 import station
-from SpeedProfiler import SpeedProfiler
+#from SpeedProfiler import SpeedProfiler
 
 # arbitrarily chosen
 TRACK_CAPACITY = 1000
@@ -306,64 +306,64 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
 
     # DEPRECATED
-    def set_speed(self, target_speed, max_accel=None, max_decel=None,
-                  max_jerk=None, msgID=0):
-        """Uses SpeedProfiler to generate a sequence of Segments.
-
-        If max_accel, max_decel, or max_jerk are ommitted, the norm values for
-        this vehicle will be used.
-
-        msgID refers to the CtrlCmdVehicleSpeed message ID.
-        """
-        warnings.warn("deprecated", DeprecationWarning)
-        self.target_speed = target_speed
-        if max_accel is None:
-            max_accel = self.accel_max_norm
-        if max_decel is None:
-            max_decel = self.accel_min_norm
-        if max_jerk is None:
-            max_jerk = self.jerk_max_norm
-
-        logging.info("T=%4.3f %s starting speed change. Loc: %s, pos: %s, vi: %s, vf: %s, ai: %s, max_accel: %s, max_decel: %s, max_jerk: %s",
-                     Sim.now(), self, self.loc, self.pos, self.speed, target_speed, self.accel, max_accel, max_decel, max_jerk)
-
-        p_init, loc = self.path.get_x_loc_from_time(POS, Sim.now())
-        v_init, loc = self.path.get_x_loc_from_time(VEL, Sim.now())
-        a_init, loc = self.path.get_x_loc_from_time(ACCEL, Sim.now())
-        sp = SpeedProfiler(v_init=v_init, v_final=target_speed,
-                   max_accel=max_accel,
-                   max_decel=max_decel,
-                   max_jerk=max_jerk,
-                   a_init=a_init,
-                   p_init=p_init)
-
-        #  Notify controller that previous speed change was not completed.
-        # FIXME!!!
-#        if not (self.get_speed() == self.target_speed and self.get_accel() == 0):
-#            msg = api.SimAbortVehicleSpeed()
-#            msg.msgID = self.co_speed.msgID
-#            globals.Interface.send(api.SIM_ABORT_VEHICLE_SPEED, msg)
-#            self.cancel(self.co_speed)
-
-        # add trajectory to self.path
-        segs = []
-        t = Sim.now()
-        for eqn, dur in sp.get_profile():
-            assert dur > 0
-            segs.append( Segment(eqn, dur, t, self.total_mass) )
-            t += dur
-        self.path.change_trajectory(segs)
-
-        # Reconsider collisions
-        self.check_for_collisions()
-
-        # Notify vehicle behind me that I changed speeds.
-        follower = self.find_vehicle_behind()
-        if follower:
-            InterruptCollisionChk(self, follower)
-
-        # Interrupt this vehicle to allow it's current hold time to be changed.
-        InterruptSetSpeed(self)
+#    def set_speed(self, target_speed, max_accel=None, max_decel=None,
+#                  max_jerk=None, msgID=0):
+#        """Uses SpeedProfiler to generate a sequence of Segments.
+#
+#        If max_accel, max_decel, or max_jerk are ommitted, the norm values for
+#        this vehicle will be used.
+#
+#        msgID refers to the CtrlCmdVehicleSpeed message ID.
+#        """
+#        warnings.warn("deprecated", DeprecationWarning)
+#        self.target_speed = target_speed
+#        if max_accel is None:
+#            max_accel = self.accel_max_norm
+#        if max_decel is None:
+#            max_decel = self.accel_min_norm
+#        if max_jerk is None:
+#            max_jerk = self.jerk_max_norm
+#
+#        logging.info("T=%4.3f %s starting speed change. Loc: %s, pos: %s, vi: %s, vf: %s, ai: %s, max_accel: %s, max_decel: %s, max_jerk: %s",
+#                     Sim.now(), self, self.loc, self.pos, self.speed, target_speed, self.accel, max_accel, max_decel, max_jerk)
+#
+#        p_init, loc = self.path.get_x_loc_from_time(POS, Sim.now())
+#        v_init, loc = self.path.get_x_loc_from_time(VEL, Sim.now())
+#        a_init, loc = self.path.get_x_loc_from_time(ACCEL, Sim.now())
+#        sp = SpeedProfiler(v_init=v_init, v_final=target_speed,
+#                   max_accel=max_accel,
+#                   max_decel=max_decel,
+#                   max_jerk=max_jerk,
+#                   a_init=a_init,
+#                   p_init=p_init)
+#
+#        #  Notify controller that previous speed change was not completed.
+#        # FIXME!!!
+##        if not (self.get_speed() == self.target_speed and self.get_accel() == 0):
+##            msg = api.SimAbortVehicleSpeed()
+##            msg.msgID = self.co_speed.msgID
+##            globals.Interface.send(api.SIM_ABORT_VEHICLE_SPEED, msg)
+##            self.cancel(self.co_speed)
+#
+#        # add trajectory to self.path
+#        segs = []
+#        t = Sim.now()
+#        for eqn, dur in sp.get_profile():
+#            assert dur > 0
+#            segs.append( Segment(eqn, dur, t, self.total_mass) )
+#            t += dur
+#        self.path.change_trajectory(segs)
+#
+#        # Reconsider collisions
+#        self.check_for_collisions()
+#
+#        # Notify vehicle behind me that I changed speeds.
+#        follower = self.find_vehicle_behind()
+#        if follower:
+#            InterruptCollisionChk(self, follower)
+#
+#        # Interrupt this vehicle to allow it's current hold time to be changed.
+#        InterruptSetSpeed(self)
 
     speed = property(fget=get_speed)
 
@@ -698,68 +698,68 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             self.path.active_idx += 1
             self._handle_boundry = False
 
-        # Station is a bit special
-        elif isinstance(new_loc, station.Station):
-            yield Sim.request, self, new_loc.resource
-##            try:
-##                new_loc.accept(self)             # enter the station
-##            except globals.StationOvershootError:
-##                # TEMP kludge to keep things behaving rationally. Introduce a
-##                # discontinuity in the vehicle speed, instantly bringing it
-##                # down to the station's max_speed. Longer term soln?
-##                seg = Segment(poly1d([0,0,new_loc.max_speed,0]), inf, Sim.now(), self.total_mass)
-##                self.path.change_trajectory( [seg] )
-##            except globals.StationFullError:
-##                # FIXME: Undefined what happens to vehicle. Currently
-##                # 'overwrites' old vehicle in the station entry berth.
-##                pass
-            self.path.active_idx += 1
-
-
-            if __debug__ and self.accel != 0: # TEMP: assumption makes math easier
-                logging.debug("%s came into %s with speed %s and accel %s. For the moment, it needs to come in with 0 accel.", self, self.loc, self.speed, self.accel)
-                raise Exception("%s came into %s with speed %s and accel %s. For the moment, it needs to come in with 0 accel." % (self, self.loc, self.speed, self.accel))
-            # figure how long I should maintain speed before coming to a halt.
-            sp = SpeedProfiler(v_init=self.speed, v_final=0,
-                   max_accel=self.accel_max_norm,
-                   max_decel=self.accel_min_norm,
-                   max_jerk=self.jerk_max_norm,
-                   a_init=0,
-                   p_init=0)
-            slowdown_prof = sp.get_profile()
-            stop_pos = slowdown_prof[-1][0][POS]
-            #print "vID: %s, v_init: %s, a_init: %s, stop_pos: %s" % (self.ID, self.speed, self.accel, stop_pos)
-            if __debug__ and not (stop_pos > 0 and stop_pos <= new_loc.berth_length):
-                logging.debug("%s came into %s too fast and stopped beyond the end of the first berth: %s", self, self.loc, self.pos)
-                raise Exception("%s came into %s too fast and stopped beyond the end of the first berth: %s" % (self, self.loc, self.pos))
-            coasting_dur = (new_loc.berth_length - stop_pos - .01) / self.speed
-            assert coasting_dur >= 0
-            coasting_seg = Segment(poly1d([self.speed, 0]), coasting_dur, Sim.now(), self.total_mass)
-            all_segs = [coasting_seg]
-            for eqn, dur in slowdown_prof: # eqn, dur tuples
-                prevSeg = all_segs[-1]
-                eqn[POS] = prevSeg.pos_eqn(prevSeg.duration) # set pos to match prevSeg
-                seg = Segment(eqn, dur, prevSeg.end_time, self.total_mass)
-                all_segs.append(seg)
-            self.path.change_trajectory(all_segs)
-            self.check_for_collisions()
-
-            # Notify vehicle behind me that I changed speeds.
-            follower = self.find_vehicle_behind()
-            if follower:
-                InterruptCollisionChk(self, follower)
-
-            # Interrupt this vehicle to allow it's current hold time to be changed.
-            InterruptSetSpeed(self)
-
-            StationAccept(self, new_loc, all_segs[-1].start_time)
-            self._handle_boundry = False
-
-        elif isinstance(new_loc, Switch):
-            yield Sim.request, self, new_loc.resource
-            logging.info("T=%4.3f %s aquired %s", Sim.now(), self, new_loc)
-            self.path.active_idx += 1
-            self._handle_boundry = False
+#        # Station is a bit special
+#        elif isinstance(new_loc, station.Station):
+#            yield Sim.request, self, new_loc.resource
+###            try:
+###                new_loc.accept(self)             # enter the station
+###            except globals.StationOvershootError:
+###                # TEMP kludge to keep things behaving rationally. Introduce a
+###                # discontinuity in the vehicle speed, instantly bringing it
+###                # down to the station's max_speed. Longer term soln?
+###                seg = Segment(poly1d([0,0,new_loc.max_speed,0]), inf, Sim.now(), self.total_mass)
+###                self.path.change_trajectory( [seg] )
+###            except globals.StationFullError:
+###                # FIXME: Undefined what happens to vehicle. Currently
+###                # 'overwrites' old vehicle in the station entry berth.
+###                pass
+#            self.path.active_idx += 1
+#
+#
+#            if __debug__ and self.accel != 0: # TEMP: assumption makes math easier
+#                logging.debug("%s came into %s with speed %s and accel %s. For the moment, it needs to come in with 0 accel.", self, self.loc, self.speed, self.accel)
+#                raise Exception("%s came into %s with speed %s and accel %s. For the moment, it needs to come in with 0 accel." % (self, self.loc, self.speed, self.accel))
+#            # figure how long I should maintain speed before coming to a halt.
+#            sp = SpeedProfiler(v_init=self.speed, v_final=0,
+#                   max_accel=self.accel_max_norm,
+#                   max_decel=self.accel_min_norm,
+#                   max_jerk=self.jerk_max_norm,
+#                   a_init=0,
+#                   p_init=0)
+#            slowdown_prof = sp.get_profile()
+#            stop_pos = slowdown_prof[-1][0][POS]
+#            #print "vID: %s, v_init: %s, a_init: %s, stop_pos: %s" % (self.ID, self.speed, self.accel, stop_pos)
+#            if __debug__ and not (stop_pos > 0 and stop_pos <= new_loc.berth_length):
+#                logging.debug("%s came into %s too fast and stopped beyond the end of the first berth: %s", self, self.loc, self.pos)
+#                raise Exception("%s came into %s too fast and stopped beyond the end of the first berth: %s" % (self, self.loc, self.pos))
+#            coasting_dur = (new_loc.berth_length - stop_pos - .01) / self.speed
+#            assert coasting_dur >= 0
+#            coasting_seg = Segment(poly1d([self.speed, 0]), coasting_dur, Sim.now(), self.total_mass)
+#            all_segs = [coasting_seg]
+#            for eqn, dur in slowdown_prof: # eqn, dur tuples
+#                prevSeg = all_segs[-1]
+#                eqn[POS] = prevSeg.pos_eqn(prevSeg.duration) # set pos to match prevSeg
+#                seg = Segment(eqn, dur, prevSeg.end_time, self.total_mass)
+#                all_segs.append(seg)
+#            self.path.change_trajectory(all_segs)
+#            self.check_for_collisions()
+#
+#            # Notify vehicle behind me that I changed speeds.
+#            follower = self.find_vehicle_behind()
+#            if follower:
+#                InterruptCollisionChk(self, follower)
+#
+#            # Interrupt this vehicle to allow it's current hold time to be changed.
+#            InterruptSetSpeed(self)
+#
+#            StationAccept(self, new_loc, all_segs[-1].start_time)
+#            self._handle_boundry = False
+#
+#        elif isinstance(new_loc, Switch):
+#            yield Sim.request, self, new_loc.resource
+#            logging.info("T=%4.3f %s aquired %s", Sim.now(), self, new_loc)
+#            self.path.active_idx += 1
+#            self._handle_boundry = False
 
         else:
             raise TypeError, new_loc
