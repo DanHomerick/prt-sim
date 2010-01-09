@@ -302,11 +302,12 @@ message SimCompletePassengerLoadVehicle {
     required int32           sID = 4;
 }
 
+// Sent once the track-switch has completed it's throw,
+// and is once again ready for use.
 message SimCompleteSwitch {
     required int32           msgID = 1; // msgID of the CtrlCmdSwitch msg
-    required int32           swID = 2;
-    required int32           vID = 3;
-    required int32           tsID = 4;
+    required int32           tsID = 2;
+    required int32           nextID = 3;
 }
 
 message SimResponseVehicleStatus {
@@ -620,4 +621,5 @@ message TrackSegmentStatus {
     required int32         max_speed = 3;
     required int32         length = 4;
     repeated int32         vID = 5  [packed=true]; // vehicle IDs of all vehicles on TrackSegment
+    required int32         next = 6;
 }

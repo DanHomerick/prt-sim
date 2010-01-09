@@ -68,11 +68,18 @@ class DebugController(base_controller.BaseController):
         traj_cmd.vID = msg.v_status.vID
         self.fill_spline_msg(spline, traj_cmd.spline)
         self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, self.sim_time, traj_cmd)
-        
-        itin_cmd = api.CtrlCmdVehicleItinerary()
-        itin_cmd.vID = msg.v_status.vID
-        itin_cmd.tsIDs.extend([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1])
-        self.send(api.CTRL_CMD_VEHICLE_ITINERARY, self.sim_time, itin_cmd)
+
+        # Control the vehicle's path using a vehicle-based switching model
+#        itin_cmd = api.CtrlCmdVehicleItinerary()
+#        itin_cmd.vID = msg.v_status.vID
+#        itin_cmd.tsIDs.extend([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1])
+#        self.send(api.CTRL_CMD_VEHICLE_ITINERARY, self.sim_time, itin_cmd)
+
+        # Control the vehicle's path using a track-based switching model
+        sw_cmd = api.CtrlCmdSwitch()
+        sw_cmd.tsID = msg.v_status.nose_locID # current ts
+        sw_cmd.nextID = 9 # station entrance
+        self.send(api.CTRL_CMD_SWITCH, self.sim_time, sw_cmd)
 
         self.send_resume()
 

@@ -273,7 +273,7 @@ class ControlInterface(Sim.Process):
                     if next not in globals.DiGraph.neighbors(ts) or ts.next is None:
                         raise globals.InvalidTrackSegID, msg.nextID
 
-                    ts.switch(next)
+                    ts.switch(next, msgID)
 
 #                elif msg_type == api.CTRL_CMD_STATION_LAUNCH:
 #                    msg = api.CtrlCmdStationLaunch()

@@ -654,11 +654,10 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimCompletePassengerLoadVehicle));
   SimCompleteSwitch_descriptor_ = file->message_type(25);
-  static const int SimCompleteSwitch_offsets_[4] = {
+  static const int SimCompleteSwitch_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteSwitch, msgid_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteSwitch, swid_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteSwitch, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteSwitch, tsid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteSwitch, nextid_),
   };
   SimCompleteSwitch_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -1482,12 +1481,13 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SwitchStatus));
   TrackSegmentStatus_descriptor_ = file->message_type(74);
-  static const int TrackSegmentStatus_offsets_[5] = {
+  static const int TrackSegmentStatus_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackSegmentStatus, tsid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackSegmentStatus, label_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackSegmentStatus, max_speed_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackSegmentStatus, length_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackSegmentStatus, vid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackSegmentStatus, next_),
   };
   TrackSegmentStatus_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -1866,169 +1866,169 @@ void protobuf_AddDesc_api_2eproto() {
     "\030SimCompleteStationLaunch\022\r\n\005msgID\030\001 \002(\005"
     "\022\013\n\003sID\030\002 \002(\005\022\013\n\003vID\030\003 \002(\005\"W\n\037SimComplet"
     "ePassengerLoadVehicle\022\r\n\005msgID\030\001 \002(\005\022\013\n\003"
-    "pID\030\002 \002(\005\022\013\n\003vID\030\003 \002(\005\022\013\n\003sID\030\004 \002(\005\"K\n\021S"
-    "imCompleteSwitch\022\r\n\005msgID\030\001 \002(\005\022\014\n\004swID\030"
-    "\002 \002(\005\022\013\n\003vID\030\003 \002(\005\022\014\n\004tsID\030\004 \002(\005\"O\n\030SimR"
-    "esponseVehicleStatus\022\r\n\005msgID\030\001 \001(\005\022$\n\010v"
-    "_status\030\002 \002(\0132\022.prt.VehicleStatus\"O\n\030Sim"
-    "ResponseStationStatus\022\r\n\005msgID\030\001 \001(\005\022$\n\010"
-    "s_status\030\002 \002(\0132\022.prt.StationStatus\"R\n\031Si"
-    "mResponseStationSummary\022\r\n\005msgID\030\001 \001(\005\022&"
-    "\n\ts_summary\030\002 \002(\0132\023.prt.StationSummary\"S"
-    "\n\032SimResponsePassengerStatus\022\r\n\005msgID\030\001 "
-    "\001(\005\022&\n\010p_status\030\002 \002(\0132\024.prt.PassengerSta"
-    "tus\"N\n\027SimResponseSwitchStatus\022\r\n\005msgID\030"
-    "\001 \001(\005\022$\n\tsw_status\030\002 \002(\0132\021.prt.SwitchSta"
-    "tus\"Z\n\035SimResponseTrackSegmentStatus\022\r\n\005"
-    "msgID\030\001 \001(\005\022*\n\tts_status\030\002 \002(\0132\027.prt.Tra"
-    "ckSegmentStatus\"\367\001\n\026SimResponseTotalStat"
-    "us\022\r\n\005msgID\030\001 \001(\005\022&\n\nv_statuses\030\002 \003(\0132\022."
-    "prt.VehicleStatus\022&\n\ns_statuses\030\003 \003(\0132\022."
-    "prt.StationStatus\022(\n\np_statuses\030\004 \003(\0132\024."
-    "prt.PassengerStatus\022&\n\013sw_statuses\030\005 \003(\013"
-    "2\021.prt.SwitchStatus\022,\n\013ts_statuses\030\006 \003(\013"
-    "2\027.prt.TrackSegmentStatus\"N\n\023SimRequestS"
-    "witchCmd\022\014\n\004swID\030\001 \002(\005\022\013\n\003vID\030\002 \002(\005\022\r\n\005t"
-    "s1ID\030\003 \002(\005\022\r\n\005ts2ID\030\004 \002(\005\"Q\n\030SimNotifyVe"
-    "hiclePosition\022\r\n\005msgID\030\001 \001(\005\022\013\n\003vID\030\002 \002("
-    "\005\022\014\n\004tsID\030\003 \002(\005\022\013\n\003pos\030\004 \002(\005\",\n\rSimNotif"
-    "yTime\022\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030\002 \002(\005\">\n\026Si"
-    "mNotifyVehicleArrive\022$\n\010v_status\030\001 \002(\0132\022"
-    ".prt.VehicleStatus\"<\n\024SimNotifyVehicleEx"
-    "it\022$\n\010v_status\030\001 \002(\0132\022.prt.VehicleStatus"
-    "\"5\n\031SimNotifyVehicleReadyLoad\022\013\n\003vID\030\001 \002"
-    "(\005\022\013\n\003sID\030\002 \002(\005\"\255\001\n\031SimNotifyVehicleColl"
-    "ision\022\014\n\004v1ID\030\001 \002(\005\022\014\n\004v2ID\030\002 \002(\005\022#\n\010loc"
-    "_type\030\003 \002(\0162\021.prt.LocationType\022\r\n\005locID\030"
-    "\004 \002(\005\022\013\n\003pos\030\005 \002(\005\022\017\n\007delta_v\030\006 \002(\005\022\017\n\007r"
-    "earend\030\007 \001(\010\022\021\n\tsideswipe\030\010 \001(\010\"D\n\033SimNo"
-    "tifyPassengerLoadStart\022\013\n\003vID\030\001 \002(\005\022\013\n\003s"
-    "ID\030\002 \002(\005\022\013\n\003pID\030\003 \002(\005\"B\n\031SimNotifyPassen"
-    "gerLoadEnd\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n\003"
-    "pID\030\003 \002(\005\"F\n\035SimNotifyPassengerUnloadSta"
-    "rt\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n\003pID\030\003 \002("
-    "\005\"D\n\033SimNotifyPassengerUnloadEnd\022\013\n\003vID\030"
-    "\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n\003pID\030\003 \002(\005\"D\n\033SimNo"
-    "tifyPassengerDelivered\022\013\n\003vID\030\001 \002(\005\022\013\n\003s"
-    "ID\030\002 \002(\005\022\013\n\003pID\030\003 \002(\005\"G\n\036SimNotifyPassen"
-    "gerMisdelivered\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002("
-    "\005\022\013\n\003pID\030\003 \002(\005\"H\n\033SimNotifyStationReadyL"
-    "aunch\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\017\n\003pID\030\003"
-    " \003(\005B\002\020\001\"9\n\035SimNotifyStationUnreadyLaunc"
-    "h\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\",\n\034SimEventT"
-    "rackSegmentDisabled\022\014\n\004tsID\030\002 \002(\005\"-\n\035Sim"
-    "EventTrackSegmentReenabled\022\014\n\004tsID\030\002 \002(\005"
-    "\"&\n\026SimEventSwitchDisabled\022\014\n\004swID\030\002 \002(\005"
-    "\"\'\n\027SimEventSwitchReenabled\022\014\n\004swID\030\002 \002("
-    "\005\"&\n\027SimEventStationDisabled\022\013\n\003sID\030\002 \002("
-    "\005\"\'\n\030SimEventStationReenabled\022\013\n\003sID\030\002 \002"
-    "(\005\"&\n\027SimEventVehicleDisabled\022\013\n\003vID\030\002 \002"
-    "(\005\"\'\n\030SimEventVehicleReenabled\022\013\n\003vID\030\002 "
-    "\002(\005\"B\n\030SimEventPassengerCreated\022&\n\010p_sta"
-    "tus\030\001 \002(\0132\024.prt.PassengerStatus\"*\n\033SimEv"
-    "entPassengerChangedest\022\013\n\003pID\030\001 \002(\005\";\n\031S"
-    "imMsgHdrInvalidSeparator\022\r\n\005msgID\030\001 \002(\005\022"
-    "\017\n\007msg_sep\030\002 \002(\005\"7\n\024SimMsgHdrInvalidType"
-    "\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_type\030\002 \002(\005\"#\n\022Sim"
-    "MsgHdrInvalidID\022\r\n\005msgID\030\001 \002(\005\"7\n\024SimMsg"
-    "HdrInvalidTime\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_tim"
-    "e\030\002 \002(\005\"7\n\024SimMsgHdrInvalidSize\022\r\n\005msgID"
-    "\030\001 \002(\005\022\020\n\010msg_size\030\002 \002(\005\"X\n\023SimMsgBodyIn"
-    "validId\022\r\n\005msgID\030\001 \002(\005\022#\n\010loc_type\030\002 \002(\016"
-    "2\021.prt.LocationType\022\r\n\005locID\030\003 \002(\005\"6\n\026Si"
-    "mMsgBodyInvalidAccel\022\r\n\005msgID\030\001 \002(\005\022\r\n\005a"
-    "ccel\030\002 \002(\005\"4\n\025SimMsgBodyInvalidJerk\022\r\n\005m"
-    "sgID\030\001 \002(\005\022\014\n\004jerk\030\002 \002(\005\"\202\002\n\rVehicleStat"
-    "us\022\013\n\003vID\030\001 \002(\005\022(\n\rnose_loc_type\030\002 \002(\0162\021"
-    ".prt.LocationType\022\022\n\nnose_locID\030\003 \002(\005\022\020\n"
-    "\010nose_pos\030\004 \002(\002\022(\n\rtail_loc_type\030\005 \002(\0162\021"
-    ".prt.LocationType\022\022\n\ntail_locID\030\006 \002(\005\022\020\n"
-    "\010tail_pos\030\007 \002(\002\022\013\n\003vel\030\010 \002(\002\022\r\n\005accel\030\t "
-    "\002(\002\022\027\n\013passengerID\030\n \003(\005B\002\020\001\022\017\n\007headway\030"
-    "\014 \001(\005\"\264\001\n\016StationSummary\022\013\n\003sID\030\001 \002(\005\022\r\n"
-    "\005label\030\002 \001(\t\022\037\n\023loaded_ready_launch\030\003 \003("
-    "\005B\002\020\001\022!\n\025unloaded_ready_launch\030\004 \003(\005B\002\020\001"
-    "\022\017\n\003pID\030\005 \003(\005B\002\020\001\022\030\n\020next_accept_time\030\006 "
-    "\002(\005\022\027\n\017vehicles_needed\030\007 \002(\005\"\242\001\n\rStation"
-    "Status\022\013\n\003sID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022,\n\017pl"
-    "atform_status\030\003 \003(\0132\023.prt.PlatformStatus"
-    "\022\017\n\003pID\030\004 \003(\005B\002\020\001\022\022\n\nv_adv_time\030\005 \002(\005\022\"\n"
-    "\006policy\030\006 \002(\0162\022.prt.StationPolicy\"t\n\016Pla"
-    "tformStatus\022\016\n\006platID\030\001 \002(\005\022\014\n\004tsID\030\002 \002("
-    "\005\022\021\n\tunloading\030\003 \002(\010\022\017\n\007loading\030\004 \002(\010\022 \n"
-    "\006berths\030\005 \003(\0132\020.prt.BerthStatus\"5\n\013Berth"
-    "Status\022\013\n\003bID\030\001 \002(\005\022\013\n\003vID\030\002 \002(\005\022\014\n\004busy"
-    "\030\003 \002(\010\"\365\001\n\017PassengerStatus\022\013\n\003pID\030\001 \002(\005\022"
-    "\r\n\005label\030\002 \001(\t\022#\n\010loc_type\030\003 \002(\0162\021.prt.L"
-    "ocationType\022\r\n\005locID\030\004 \002(\005\022\025\n\rsrc_statio"
-    "nID\030\005 \002(\005\022\026\n\016dest_stationID\030\006 \002(\005\022\016\n\006wei"
-    "ght\030\007 \001(\005\022\021\n\twait_time\030\010 \001(\005\022\023\n\013travel_t"
-    "ime\030\t \001(\005\022\025\n\rtrip_complete\030\n \001(\010\022\024\n\014trip"
-    "_success\030\013 \001(\010\"8\n\014RoutingEntry\022\013\n\003vID\030\001 "
-    "\002(\005\022\014\n\004tsID\030\002 \002(\005\022\r\n\005msgID\030\003 \001(\005\"M\n\014Swit"
-    "chStatus\022\014\n\004swID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022 \n"
-    "\005entry\030\003 \003(\0132\021.prt.RoutingEntry\"e\n\022Track"
-    "SegmentStatus\022\014\n\004tsID\030\001 \002(\005\022\r\n\005label\030\002 \001"
-    "(\t\022\021\n\tmax_speed\030\003 \002(\005\022\016\n\006length\030\004 \002(\005\022\017\n"
-    "\003vID\030\005 \003(\005B\002\020\001*G\n\004Misc\022\024\n\007MSG_SEP\020\205\205\376\377\377\377"
-    "\377\377\377\001\022\023\n\017MSG_HEADER_SIZE\020\016\022\024\n\007NONE_ID\020\377\377\377"
-    "\377\377\377\377\377\377\001*\341\003\n\013CtrlMsgType\022\037\n\033CTRL_CMD_VEHI"
-    "CLE_TRAJECTORY\020\001\022\036\n\032CTRL_CMD_VEHICLE_ITI"
-    "NERARY\020\002\022\023\n\017CTRL_CMD_SWITCH\020\003\022\036\n\032CTRL_CM"
-    "D_PASSENGERS_EMBARK\020\004\022!\n\035CTRL_CMD_PASSEN"
-    "GERS_DISEMBARK\020\005\022\037\n\033CTRL_REQUEST_VEHICLE"
-    "_STATUS\020\n\022\037\n\033CTRL_REQUEST_STATION_STATUS"
-    "\020\013\022 \n\034CTRL_REQUEST_STATION_SUMMARY\020\014\022!\n\035"
-    "CTRL_REQUEST_PASSENGER_STATUS\020\r\022\036\n\032CTRL_"
-    "REQUEST_SWITCH_STATUS\020\016\022$\n CTRL_REQUEST_"
-    "TRACKSEGMENT_STATUS\020\017\022\035\n\031CTRL_REQUEST_TO"
-    "TAL_STATUS\020\020\022#\n\037CTRL_SETNOTIFY_VEHICLE_P"
-    "OSITION\020\024\022\027\n\023CTRL_SETNOTIFY_TIME\0202\022\017\n\013CT"
-    "RL_RESUME\020[*`\n\014LocationType\022\021\n\rTRACK_SEG"
-    "MENT\020\000\022\n\n\006SWITCH\020\n\022\013\n\007STATION\020\024\022\013\n\007VEHIC"
-    "LE\020\036\022\r\n\tPASSENGER\020(\022\010\n\004NONE\0202*%\n\rStation"
-    "Policy\022\t\n\005LOBBY\020\001\022\t\n\005QUEUE\020\002*\337\014\n\nSimMsgT"
-    "ype\022\037\n\032SIM_COMPLETE_VEHICLE_SPEED\020\351\007\022 \n\033"
-    "SIM_COMPLETE_STATION_LAUNCH\020\352\007\022(\n#SIM_CO"
-    "MPLETE_PASSENGER_LOAD_VEHICLE\020\353\007\022\030\n\023SIM_"
-    "COMPLETE_SWITCH\020\354\007\022 \n\033SIM_RESPONSE_VEHIC"
-    "LE_STATUS\020\362\007\022 \n\033SIM_RESPONSE_STATION_STA"
-    "TUS\020\363\007\022!\n\034SIM_RESPONSE_STATION_SUMMARY\020\364"
-    "\007\022\"\n\035SIM_RESPONSE_PASSENGER_STATUS\020\365\007\022\037\n"
-    "\032SIM_RESPONSE_SWITCH_STATUS\020\366\007\022%\n SIM_RE"
-    "SPONSE_TRACKSEGMENT_STATUS\020\367\007\022\036\n\031SIM_RES"
-    "PONSE_TOTAL_STATUS\020\370\007\022 \n\033SIM_NOTIFY_VEHI"
-    "CLE_POSITION\020\374\007\022\036\n\031SIM_NOTIFY_VEHICLE_AR"
-    "RIVE\020\375\007\022\034\n\027SIM_NOTIFY_VEHICLE_EXIT\020\376\007\022\"\n"
-    "\035SIM_NOTIFY_VEHICLE_READY_LOAD\020\377\007\022!\n\034SIM"
-    "_NOTIFY_VEHICLE_COLLISION\020\200\010\022$\n\037SIM_NOTI"
-    "FY_PASSENGER_LOAD_START\020\207\010\022\"\n\035SIM_NOTIFY"
-    "_PASSENGER_LOAD_END\020\210\010\022&\n!SIM_NOTIFY_PAS"
-    "SENGER_UNLOAD_START\020\211\010\022$\n\037SIM_NOTIFY_PAS"
-    "SENGER_UNLOAD_END\020\212\010\022#\n\036SIM_NOTIFY_PASSE"
-    "NGER_DELIVERED\020\213\010\022&\n!SIM_NOTIFY_PASSENGE"
-    "R_MISDELIVERED\020\214\010\022$\n\037SIM_NOTIFY_STATION_"
-    "READY_LAUNCH\020\220\010\022&\n!SIM_NOTIFY_STATION_UN"
-    "READY_LAUNCH\020\221\010\022\024\n\017SIM_NOTIFY_TIME\020\232\010\022\033\n"
-    "\026SIM_REQUEST_SWITCH_CMD\020\244\010\022$\n\037SIM_EVENT_"
-    "TRACKSEGMENT_DISABLED\020\314\010\022%\n SIM_EVENT_TR"
-    "ACKSEGMENT_REENABLED\020\315\010\022\036\n\031SIM_EVENT_SWI"
-    "TCH_DISABLED\020\316\010\022\037\n\032SIM_EVENT_SWITCH_REEN"
-    "ABLED\020\317\010\022\037\n\032SIM_EVENT_STATION_DISABLED\020\320"
-    "\010\022 \n\033SIM_EVENT_STATION_REENABLED\020\321\010\022\037\n\032S"
-    "IM_EVENT_VEHICLE_DISABLED\020\322\010\022 \n\033SIM_EVEN"
-    "T_VEHICLE_REENABLED\020\323\010\022 \n\033SIM_EVENT_PASS"
-    "ENGER_CREATED\020\324\010\022#\n\036SIM_EVENT_PASSENGER_"
-    "CHANGEDEST\020\325\010\022\016\n\tSIM_START\020\260\t\022\014\n\007SIM_END"
-    "\020\261\t\022\026\n\021SIM_UNIMPLEMENTED\020\262\t\022\"\n\035SIM_MSG_H"
-    "DR_INVALID_SEPARATOR\020\224\n\022\035\n\030SIM_MSG_HDR_I"
-    "NVALID_TYPE\020\225\n\022\033\n\026SIM_MSG_HDR_INVALID_ID"
-    "\020\226\n\022\035\n\030SIM_MSG_HDR_INVALID_TIME\020\227\n\022\035\n\030SI"
-    "M_MSG_HDR_INVALID_SIZE\020\230\n\022\036\n\031SIM_MSG_HDR"
-    "_INVALID_PBSTR\020\231\n\022\034\n\027SIM_MSG_BODY_INVALI"
-    "D_ID\020\236\n\022\037\n\032SIM_MSG_BODY_INVALID_ACCEL\020\237\n"
-    "\022\036\n\031SIM_MSG_BODY_INVALID_JERK\020\240\n\022\034\n\027SIM_"
-    "ABORT_VEHICLE_SPEED\020\371\n", 7902);
+    "pID\030\002 \002(\005\022\013\n\003vID\030\003 \002(\005\022\013\n\003sID\030\004 \002(\005\"@\n\021S"
+    "imCompleteSwitch\022\r\n\005msgID\030\001 \002(\005\022\014\n\004tsID\030"
+    "\002 \002(\005\022\016\n\006nextID\030\003 \002(\005\"O\n\030SimResponseVehi"
+    "cleStatus\022\r\n\005msgID\030\001 \001(\005\022$\n\010v_status\030\002 \002"
+    "(\0132\022.prt.VehicleStatus\"O\n\030SimResponseSta"
+    "tionStatus\022\r\n\005msgID\030\001 \001(\005\022$\n\010s_status\030\002 "
+    "\002(\0132\022.prt.StationStatus\"R\n\031SimResponseSt"
+    "ationSummary\022\r\n\005msgID\030\001 \001(\005\022&\n\ts_summary"
+    "\030\002 \002(\0132\023.prt.StationSummary\"S\n\032SimRespon"
+    "sePassengerStatus\022\r\n\005msgID\030\001 \001(\005\022&\n\010p_st"
+    "atus\030\002 \002(\0132\024.prt.PassengerStatus\"N\n\027SimR"
+    "esponseSwitchStatus\022\r\n\005msgID\030\001 \001(\005\022$\n\tsw"
+    "_status\030\002 \002(\0132\021.prt.SwitchStatus\"Z\n\035SimR"
+    "esponseTrackSegmentStatus\022\r\n\005msgID\030\001 \001(\005"
+    "\022*\n\tts_status\030\002 \002(\0132\027.prt.TrackSegmentSt"
+    "atus\"\367\001\n\026SimResponseTotalStatus\022\r\n\005msgID"
+    "\030\001 \001(\005\022&\n\nv_statuses\030\002 \003(\0132\022.prt.Vehicle"
+    "Status\022&\n\ns_statuses\030\003 \003(\0132\022.prt.Station"
+    "Status\022(\n\np_statuses\030\004 \003(\0132\024.prt.Passeng"
+    "erStatus\022&\n\013sw_statuses\030\005 \003(\0132\021.prt.Swit"
+    "chStatus\022,\n\013ts_statuses\030\006 \003(\0132\027.prt.Trac"
+    "kSegmentStatus\"N\n\023SimRequestSwitchCmd\022\014\n"
+    "\004swID\030\001 \002(\005\022\013\n\003vID\030\002 \002(\005\022\r\n\005ts1ID\030\003 \002(\005\022"
+    "\r\n\005ts2ID\030\004 \002(\005\"Q\n\030SimNotifyVehiclePositi"
+    "on\022\r\n\005msgID\030\001 \001(\005\022\013\n\003vID\030\002 \002(\005\022\014\n\004tsID\030\003"
+    " \002(\005\022\013\n\003pos\030\004 \002(\005\",\n\rSimNotifyTime\022\r\n\005ms"
+    "gID\030\001 \001(\005\022\014\n\004time\030\002 \002(\005\">\n\026SimNotifyVehi"
+    "cleArrive\022$\n\010v_status\030\001 \002(\0132\022.prt.Vehicl"
+    "eStatus\"<\n\024SimNotifyVehicleExit\022$\n\010v_sta"
+    "tus\030\001 \002(\0132\022.prt.VehicleStatus\"5\n\031SimNoti"
+    "fyVehicleReadyLoad\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002"
+    " \002(\005\"\255\001\n\031SimNotifyVehicleCollision\022\014\n\004v1"
+    "ID\030\001 \002(\005\022\014\n\004v2ID\030\002 \002(\005\022#\n\010loc_type\030\003 \002(\016"
+    "2\021.prt.LocationType\022\r\n\005locID\030\004 \002(\005\022\013\n\003po"
+    "s\030\005 \002(\005\022\017\n\007delta_v\030\006 \002(\005\022\017\n\007rearend\030\007 \001("
+    "\010\022\021\n\tsideswipe\030\010 \001(\010\"D\n\033SimNotifyPasseng"
+    "erLoadStart\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n"
+    "\003pID\030\003 \002(\005\"B\n\031SimNotifyPassengerLoadEnd\022"
+    "\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n\003pID\030\003 \002(\005\"F"
+    "\n\035SimNotifyPassengerUnloadStart\022\013\n\003vID\030\001"
+    " \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n\003pID\030\003 \002(\005\"D\n\033SimNot"
+    "ifyPassengerUnloadEnd\022\013\n\003vID\030\001 \002(\005\022\013\n\003sI"
+    "D\030\002 \002(\005\022\013\n\003pID\030\003 \002(\005\"D\n\033SimNotifyPasseng"
+    "erDelivered\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n"
+    "\003pID\030\003 \002(\005\"G\n\036SimNotifyPassengerMisdeliv"
+    "ered\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\013\n\003pID\030\003 "
+    "\002(\005\"H\n\033SimNotifyStationReadyLaunch\022\013\n\003vI"
+    "D\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\017\n\003pID\030\003 \003(\005B\002\020\001\"9\n"
+    "\035SimNotifyStationUnreadyLaunch\022\013\n\003vID\030\001 "
+    "\002(\005\022\013\n\003sID\030\002 \002(\005\",\n\034SimEventTrackSegment"
+    "Disabled\022\014\n\004tsID\030\002 \002(\005\"-\n\035SimEventTrackS"
+    "egmentReenabled\022\014\n\004tsID\030\002 \002(\005\"&\n\026SimEven"
+    "tSwitchDisabled\022\014\n\004swID\030\002 \002(\005\"\'\n\027SimEven"
+    "tSwitchReenabled\022\014\n\004swID\030\002 \002(\005\"&\n\027SimEve"
+    "ntStationDisabled\022\013\n\003sID\030\002 \002(\005\"\'\n\030SimEve"
+    "ntStationReenabled\022\013\n\003sID\030\002 \002(\005\"&\n\027SimEv"
+    "entVehicleDisabled\022\013\n\003vID\030\002 \002(\005\"\'\n\030SimEv"
+    "entVehicleReenabled\022\013\n\003vID\030\002 \002(\005\"B\n\030SimE"
+    "ventPassengerCreated\022&\n\010p_status\030\001 \002(\0132\024"
+    ".prt.PassengerStatus\"*\n\033SimEventPassenge"
+    "rChangedest\022\013\n\003pID\030\001 \002(\005\";\n\031SimMsgHdrInv"
+    "alidSeparator\022\r\n\005msgID\030\001 \002(\005\022\017\n\007msg_sep\030"
+    "\002 \002(\005\"7\n\024SimMsgHdrInvalidType\022\r\n\005msgID\030\001"
+    " \002(\005\022\020\n\010msg_type\030\002 \002(\005\"#\n\022SimMsgHdrInval"
+    "idID\022\r\n\005msgID\030\001 \002(\005\"7\n\024SimMsgHdrInvalidT"
+    "ime\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_time\030\002 \002(\005\"7\n\024"
+    "SimMsgHdrInvalidSize\022\r\n\005msgID\030\001 \002(\005\022\020\n\010m"
+    "sg_size\030\002 \002(\005\"X\n\023SimMsgBodyInvalidId\022\r\n\005"
+    "msgID\030\001 \002(\005\022#\n\010loc_type\030\002 \002(\0162\021.prt.Loca"
+    "tionType\022\r\n\005locID\030\003 \002(\005\"6\n\026SimMsgBodyInv"
+    "alidAccel\022\r\n\005msgID\030\001 \002(\005\022\r\n\005accel\030\002 \002(\005\""
+    "4\n\025SimMsgBodyInvalidJerk\022\r\n\005msgID\030\001 \002(\005\022"
+    "\014\n\004jerk\030\002 \002(\005\"\202\002\n\rVehicleStatus\022\013\n\003vID\030\001"
+    " \002(\005\022(\n\rnose_loc_type\030\002 \002(\0162\021.prt.Locati"
+    "onType\022\022\n\nnose_locID\030\003 \002(\005\022\020\n\010nose_pos\030\004"
+    " \002(\002\022(\n\rtail_loc_type\030\005 \002(\0162\021.prt.Locati"
+    "onType\022\022\n\ntail_locID\030\006 \002(\005\022\020\n\010tail_pos\030\007"
+    " \002(\002\022\013\n\003vel\030\010 \002(\002\022\r\n\005accel\030\t \002(\002\022\027\n\013pass"
+    "engerID\030\n \003(\005B\002\020\001\022\017\n\007headway\030\014 \001(\005\"\264\001\n\016S"
+    "tationSummary\022\013\n\003sID\030\001 \002(\005\022\r\n\005label\030\002 \001("
+    "\t\022\037\n\023loaded_ready_launch\030\003 \003(\005B\002\020\001\022!\n\025un"
+    "loaded_ready_launch\030\004 \003(\005B\002\020\001\022\017\n\003pID\030\005 \003"
+    "(\005B\002\020\001\022\030\n\020next_accept_time\030\006 \002(\005\022\027\n\017vehi"
+    "cles_needed\030\007 \002(\005\"\242\001\n\rStationStatus\022\013\n\003s"
+    "ID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022,\n\017platform_stat"
+    "us\030\003 \003(\0132\023.prt.PlatformStatus\022\017\n\003pID\030\004 \003"
+    "(\005B\002\020\001\022\022\n\nv_adv_time\030\005 \002(\005\022\"\n\006policy\030\006 \002"
+    "(\0162\022.prt.StationPolicy\"t\n\016PlatformStatus"
+    "\022\016\n\006platID\030\001 \002(\005\022\014\n\004tsID\030\002 \002(\005\022\021\n\tunload"
+    "ing\030\003 \002(\010\022\017\n\007loading\030\004 \002(\010\022 \n\006berths\030\005 \003"
+    "(\0132\020.prt.BerthStatus\"5\n\013BerthStatus\022\013\n\003b"
+    "ID\030\001 \002(\005\022\013\n\003vID\030\002 \002(\005\022\014\n\004busy\030\003 \002(\010\"\365\001\n\017"
+    "PassengerStatus\022\013\n\003pID\030\001 \002(\005\022\r\n\005label\030\002 "
+    "\001(\t\022#\n\010loc_type\030\003 \002(\0162\021.prt.LocationType"
+    "\022\r\n\005locID\030\004 \002(\005\022\025\n\rsrc_stationID\030\005 \002(\005\022\026"
+    "\n\016dest_stationID\030\006 \002(\005\022\016\n\006weight\030\007 \001(\005\022\021"
+    "\n\twait_time\030\010 \001(\005\022\023\n\013travel_time\030\t \001(\005\022\025"
+    "\n\rtrip_complete\030\n \001(\010\022\024\n\014trip_success\030\013 "
+    "\001(\010\"8\n\014RoutingEntry\022\013\n\003vID\030\001 \002(\005\022\014\n\004tsID"
+    "\030\002 \002(\005\022\r\n\005msgID\030\003 \001(\005\"M\n\014SwitchStatus\022\014\n"
+    "\004swID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022 \n\005entry\030\003 \003("
+    "\0132\021.prt.RoutingEntry\"s\n\022TrackSegmentStat"
+    "us\022\014\n\004tsID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022\021\n\tmax_s"
+    "peed\030\003 \002(\005\022\016\n\006length\030\004 \002(\005\022\017\n\003vID\030\005 \003(\005B"
+    "\002\020\001\022\014\n\004next\030\006 \002(\005*G\n\004Misc\022\024\n\007MSG_SEP\020\205\205\376"
+    "\377\377\377\377\377\377\001\022\023\n\017MSG_HEADER_SIZE\020\016\022\024\n\007NONE_ID\020"
+    "\377\377\377\377\377\377\377\377\377\001*\341\003\n\013CtrlMsgType\022\037\n\033CTRL_CMD_V"
+    "EHICLE_TRAJECTORY\020\001\022\036\n\032CTRL_CMD_VEHICLE_"
+    "ITINERARY\020\002\022\023\n\017CTRL_CMD_SWITCH\020\003\022\036\n\032CTRL"
+    "_CMD_PASSENGERS_EMBARK\020\004\022!\n\035CTRL_CMD_PAS"
+    "SENGERS_DISEMBARK\020\005\022\037\n\033CTRL_REQUEST_VEHI"
+    "CLE_STATUS\020\n\022\037\n\033CTRL_REQUEST_STATION_STA"
+    "TUS\020\013\022 \n\034CTRL_REQUEST_STATION_SUMMARY\020\014\022"
+    "!\n\035CTRL_REQUEST_PASSENGER_STATUS\020\r\022\036\n\032CT"
+    "RL_REQUEST_SWITCH_STATUS\020\016\022$\n CTRL_REQUE"
+    "ST_TRACKSEGMENT_STATUS\020\017\022\035\n\031CTRL_REQUEST"
+    "_TOTAL_STATUS\020\020\022#\n\037CTRL_SETNOTIFY_VEHICL"
+    "E_POSITION\020\024\022\027\n\023CTRL_SETNOTIFY_TIME\0202\022\017\n"
+    "\013CTRL_RESUME\020[*`\n\014LocationType\022\021\n\rTRACK_"
+    "SEGMENT\020\000\022\n\n\006SWITCH\020\n\022\013\n\007STATION\020\024\022\013\n\007VE"
+    "HICLE\020\036\022\r\n\tPASSENGER\020(\022\010\n\004NONE\0202*%\n\rStat"
+    "ionPolicy\022\t\n\005LOBBY\020\001\022\t\n\005QUEUE\020\002*\337\014\n\nSimM"
+    "sgType\022\037\n\032SIM_COMPLETE_VEHICLE_SPEED\020\351\007\022"
+    " \n\033SIM_COMPLETE_STATION_LAUNCH\020\352\007\022(\n#SIM"
+    "_COMPLETE_PASSENGER_LOAD_VEHICLE\020\353\007\022\030\n\023S"
+    "IM_COMPLETE_SWITCH\020\354\007\022 \n\033SIM_RESPONSE_VE"
+    "HICLE_STATUS\020\362\007\022 \n\033SIM_RESPONSE_STATION_"
+    "STATUS\020\363\007\022!\n\034SIM_RESPONSE_STATION_SUMMAR"
+    "Y\020\364\007\022\"\n\035SIM_RESPONSE_PASSENGER_STATUS\020\365\007"
+    "\022\037\n\032SIM_RESPONSE_SWITCH_STATUS\020\366\007\022%\n SIM"
+    "_RESPONSE_TRACKSEGMENT_STATUS\020\367\007\022\036\n\031SIM_"
+    "RESPONSE_TOTAL_STATUS\020\370\007\022 \n\033SIM_NOTIFY_V"
+    "EHICLE_POSITION\020\374\007\022\036\n\031SIM_NOTIFY_VEHICLE"
+    "_ARRIVE\020\375\007\022\034\n\027SIM_NOTIFY_VEHICLE_EXIT\020\376\007"
+    "\022\"\n\035SIM_NOTIFY_VEHICLE_READY_LOAD\020\377\007\022!\n\034"
+    "SIM_NOTIFY_VEHICLE_COLLISION\020\200\010\022$\n\037SIM_N"
+    "OTIFY_PASSENGER_LOAD_START\020\207\010\022\"\n\035SIM_NOT"
+    "IFY_PASSENGER_LOAD_END\020\210\010\022&\n!SIM_NOTIFY_"
+    "PASSENGER_UNLOAD_START\020\211\010\022$\n\037SIM_NOTIFY_"
+    "PASSENGER_UNLOAD_END\020\212\010\022#\n\036SIM_NOTIFY_PA"
+    "SSENGER_DELIVERED\020\213\010\022&\n!SIM_NOTIFY_PASSE"
+    "NGER_MISDELIVERED\020\214\010\022$\n\037SIM_NOTIFY_STATI"
+    "ON_READY_LAUNCH\020\220\010\022&\n!SIM_NOTIFY_STATION"
+    "_UNREADY_LAUNCH\020\221\010\022\024\n\017SIM_NOTIFY_TIME\020\232\010"
+    "\022\033\n\026SIM_REQUEST_SWITCH_CMD\020\244\010\022$\n\037SIM_EVE"
+    "NT_TRACKSEGMENT_DISABLED\020\314\010\022%\n SIM_EVENT"
+    "_TRACKSEGMENT_REENABLED\020\315\010\022\036\n\031SIM_EVENT_"
+    "SWITCH_DISABLED\020\316\010\022\037\n\032SIM_EVENT_SWITCH_R"
+    "EENABLED\020\317\010\022\037\n\032SIM_EVENT_STATION_DISABLE"
+    "D\020\320\010\022 \n\033SIM_EVENT_STATION_REENABLED\020\321\010\022\037"
+    "\n\032SIM_EVENT_VEHICLE_DISABLED\020\322\010\022 \n\033SIM_E"
+    "VENT_VEHICLE_REENABLED\020\323\010\022 \n\033SIM_EVENT_P"
+    "ASSENGER_CREATED\020\324\010\022#\n\036SIM_EVENT_PASSENG"
+    "ER_CHANGEDEST\020\325\010\022\016\n\tSIM_START\020\260\t\022\014\n\007SIM_"
+    "END\020\261\t\022\026\n\021SIM_UNIMPLEMENTED\020\262\t\022\"\n\035SIM_MS"
+    "G_HDR_INVALID_SEPARATOR\020\224\n\022\035\n\030SIM_MSG_HD"
+    "R_INVALID_TYPE\020\225\n\022\033\n\026SIM_MSG_HDR_INVALID"
+    "_ID\020\226\n\022\035\n\030SIM_MSG_HDR_INVALID_TIME\020\227\n\022\035\n"
+    "\030SIM_MSG_HDR_INVALID_SIZE\020\230\n\022\036\n\031SIM_MSG_"
+    "HDR_INVALID_PBSTR\020\231\n\022\034\n\027SIM_MSG_BODY_INV"
+    "ALID_ID\020\236\n\022\037\n\032SIM_MSG_BODY_INVALID_ACCEL"
+    "\020\237\n\022\036\n\031SIM_MSG_BODY_INVALID_JERK\020\240\n\022\034\n\027S"
+    "IM_ABORT_VEHICLE_SPEED\020\371\n", 7905);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "api.proto", &protobuf_RegisterTypes);
   PolyCoeffs::default_instance_ = new PolyCoeffs();
@@ -8446,9 +8446,8 @@ void SimCompletePassengerLoadVehicle::Swap(SimCompletePassengerLoadVehicle* othe
 
 #ifndef _MSC_VER
 const int SimCompleteSwitch::kMsgIDFieldNumber;
-const int SimCompleteSwitch::kSwIDFieldNumber;
-const int SimCompleteSwitch::kVIDFieldNumber;
 const int SimCompleteSwitch::kTsIDFieldNumber;
+const int SimCompleteSwitch::kNextIDFieldNumber;
 #endif  // !_MSC_VER
 
 SimCompleteSwitch::SimCompleteSwitch() {
@@ -8466,9 +8465,8 @@ SimCompleteSwitch::SimCompleteSwitch(const SimCompleteSwitch& from) {
 void SimCompleteSwitch::SharedCtor() {
   _cached_size_ = 0;
   msgid_ = 0;
-  swid_ = 0;
-  vid_ = 0;
   tsid_ = 0;
+  nextid_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -8499,9 +8497,8 @@ SimCompleteSwitch* SimCompleteSwitch::New() const {
 void SimCompleteSwitch::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     msgid_ = 0;
-    swid_ = 0;
-    vid_ = 0;
     tsid_ = 0;
+    nextid_ = 0;
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -8522,40 +8519,12 @@ bool SimCompleteSwitch::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormatLite::ReadInt32(
               input, &msgid_));
         _set_bit(0);
-        if (input->ExpectTag(16)) goto parse_swID;
+        if (input->ExpectTag(16)) goto parse_tsID;
         break;
       }
       
-      // required int32 swID = 2;
+      // required int32 tsID = 2;
       case 2: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-          goto handle_uninterpreted;
-        }
-       parse_swID:
-        DO_(::google::protobuf::internal::WireFormatLite::ReadInt32(
-              input, &swid_));
-        _set_bit(1);
-        if (input->ExpectTag(24)) goto parse_vID;
-        break;
-      }
-      
-      // required int32 vID = 3;
-      case 3: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-          goto handle_uninterpreted;
-        }
-       parse_vID:
-        DO_(::google::protobuf::internal::WireFormatLite::ReadInt32(
-              input, &vid_));
-        _set_bit(2);
-        if (input->ExpectTag(32)) goto parse_tsID;
-        break;
-      }
-      
-      // required int32 tsID = 4;
-      case 4: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
@@ -8563,7 +8532,21 @@ bool SimCompleteSwitch::MergePartialFromCodedStream(
        parse_tsID:
         DO_(::google::protobuf::internal::WireFormatLite::ReadInt32(
               input, &tsid_));
-        _set_bit(3);
+        _set_bit(1);
+        if (input->ExpectTag(24)) goto parse_nextID;
+        break;
+      }
+      
+      // required int32 nextID = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_nextID:
+        DO_(::google::protobuf::internal::WireFormatLite::ReadInt32(
+              input, &nextid_));
+        _set_bit(2);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -8597,19 +8580,14 @@ void SimCompleteSwitch::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->msgid(), output);
   }
   
-  // required int32 swID = 2;
+  // required int32 tsID = 2;
   if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->swid(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->tsid(), output);
   }
   
-  // required int32 vID = 3;
+  // required int32 nextID = 3;
   if (_has_bit(2)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->vid(), output);
-  }
-  
-  // required int32 tsID = 4;
-  if (_has_bit(3)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->tsid(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->nextid(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -8625,19 +8603,14 @@ void SimCompleteSwitch::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->msgid(), target);
   }
   
-  // required int32 swID = 2;
+  // required int32 tsID = 2;
   if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->swid(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->tsid(), target);
   }
   
-  // required int32 vID = 3;
+  // required int32 nextID = 3;
   if (_has_bit(2)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->vid(), target);
-  }
-  
-  // required int32 tsID = 4;
-  if (_has_bit(3)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->tsid(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->nextid(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -8658,25 +8631,18 @@ int SimCompleteSwitch::ByteSize() const {
           this->msgid());
     }
     
-    // required int32 swID = 2;
-    if (has_swid()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->swid());
-    }
-    
-    // required int32 vID = 3;
-    if (has_vid()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->vid());
-    }
-    
-    // required int32 tsID = 4;
+    // required int32 tsID = 2;
     if (has_tsid()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(
           this->tsid());
+    }
+    
+    // required int32 nextID = 3;
+    if (has_nextid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->nextid());
     }
     
   }
@@ -8708,13 +8674,10 @@ void SimCompleteSwitch::MergeFrom(const SimCompleteSwitch& from) {
       set_msgid(from.msgid());
     }
     if (from._has_bit(1)) {
-      set_swid(from.swid());
+      set_tsid(from.tsid());
     }
     if (from._has_bit(2)) {
-      set_vid(from.vid());
-    }
-    if (from._has_bit(3)) {
-      set_tsid(from.tsid());
+      set_nextid(from.nextid());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -8733,7 +8696,7 @@ void SimCompleteSwitch::CopyFrom(const SimCompleteSwitch& from) {
 }
 
 bool SimCompleteSwitch::IsInitialized() const {
-  if ((_has_bits_[0] & 0x0000000f) != 0x0000000f) return false;
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
   
   return true;
 }
@@ -8741,9 +8704,8 @@ bool SimCompleteSwitch::IsInitialized() const {
 void SimCompleteSwitch::Swap(SimCompleteSwitch* other) {
   if (other != this) {
     std::swap(msgid_, other->msgid_);
-    std::swap(swid_, other->swid_);
-    std::swap(vid_, other->vid_);
     std::swap(tsid_, other->tsid_);
+    std::swap(nextid_, other->nextid_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -22314,6 +22276,7 @@ const int TrackSegmentStatus::kLabelFieldNumber;
 const int TrackSegmentStatus::kMaxSpeedFieldNumber;
 const int TrackSegmentStatus::kLengthFieldNumber;
 const int TrackSegmentStatus::kVIDFieldNumber;
+const int TrackSegmentStatus::kNextFieldNumber;
 #endif  // !_MSC_VER
 
 TrackSegmentStatus::TrackSegmentStatus() {
@@ -22334,6 +22297,7 @@ void TrackSegmentStatus::SharedCtor() {
   label_ = const_cast< ::std::string*>(&_default_label_);
   max_speed_ = 0;
   length_ = 0;
+  next_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -22374,6 +22338,7 @@ void TrackSegmentStatus::Clear() {
     }
     max_speed_ = 0;
     length_ = 0;
+    next_ = 0;
   }
   vid_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -22463,6 +22428,20 @@ bool TrackSegmentStatus::MergePartialFromCodedStream(
           }
           input->PopLimit(limit);
         }
+        if (input->ExpectTag(48)) goto parse_next;
+        break;
+      }
+      
+      // required int32 next = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_next:
+        DO_(::google::protobuf::internal::WireFormatLite::ReadInt32(
+              input, &next_));
+        _set_bit(5);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -22525,6 +22504,11 @@ void TrackSegmentStatus::SerializeWithCachedSizes(
       this->vid(i), output);
   }
   
+  // required int32 next = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(6, this->next(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -22572,6 +22556,11 @@ void TrackSegmentStatus::SerializeWithCachedSizes(
       WriteInt32NoTagToArray(this->vid(i), target);
   }
   
+  // required int32 next = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(6, this->next(), target);
+  }
+  
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -22609,6 +22598,13 @@ int TrackSegmentStatus::ByteSize() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(
           this->length());
+    }
+    
+    // required int32 next = 6;
+    if (has_next()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->next());
     }
     
   }
@@ -22664,6 +22660,9 @@ void TrackSegmentStatus::MergeFrom(const TrackSegmentStatus& from) {
     if (from._has_bit(3)) {
       set_length(from.length());
     }
+    if (from._has_bit(5)) {
+      set_next(from.next());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -22681,7 +22680,7 @@ void TrackSegmentStatus::CopyFrom(const TrackSegmentStatus& from) {
 }
 
 bool TrackSegmentStatus::IsInitialized() const {
-  if ((_has_bits_[0] & 0x0000000d) != 0x0000000d) return false;
+  if ((_has_bits_[0] & 0x0000002d) != 0x0000002d) return false;
   
   return true;
 }
@@ -22693,6 +22692,7 @@ void TrackSegmentStatus::Swap(TrackSegmentStatus* other) {
     std::swap(max_speed_, other->max_speed_);
     std::swap(length_, other->length_);
     vid_.Swap(&other->vid_);
+    std::swap(next_, other->next_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

@@ -2726,40 +2726,32 @@ class SimCompleteSwitch : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 msgid() const;
   inline void set_msgid(::google::protobuf::int32 value);
   
-  // required int32 swID = 2;
-  inline bool has_swid() const;
-  inline void clear_swid();
-  static const int kSwIDFieldNumber = 2;
-  inline ::google::protobuf::int32 swid() const;
-  inline void set_swid(::google::protobuf::int32 value);
-  
-  // required int32 vID = 3;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 3;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 tsID = 4;
+  // required int32 tsID = 2;
   inline bool has_tsid() const;
   inline void clear_tsid();
-  static const int kTsIDFieldNumber = 4;
+  static const int kTsIDFieldNumber = 2;
   inline ::google::protobuf::int32 tsid() const;
   inline void set_tsid(::google::protobuf::int32 value);
+  
+  // required int32 nextID = 3;
+  inline bool has_nextid() const;
+  inline void clear_nextid();
+  static const int kNextIDFieldNumber = 3;
+  inline ::google::protobuf::int32 nextid() const;
+  inline void set_nextid(::google::protobuf::int32 value);
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 msgid_;
-  ::google::protobuf::int32 swid_;
-  ::google::protobuf::int32 vid_;
   ::google::protobuf::int32 tsid_;
+  ::google::protobuf::int32 nextid_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -7838,6 +7830,13 @@ class TrackSegmentStatus : public ::google::protobuf::Message {
   inline void set_vid(int index, ::google::protobuf::int32 value);
   inline void add_vid(::google::protobuf::int32 value);
   
+  // required int32 next = 6;
+  inline bool has_next() const;
+  inline void clear_next();
+  static const int kNextFieldNumber = 6;
+  inline ::google::protobuf::int32 next() const;
+  inline void set_next(::google::protobuf::int32 value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -7849,11 +7848,12 @@ class TrackSegmentStatus : public ::google::protobuf::Message {
   ::google::protobuf::int32 length_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > vid_;
   mutable int _vid_cached_byte_size_;
+  ::google::protobuf::int32 next_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -8850,52 +8850,36 @@ inline void SimCompleteSwitch::set_msgid(::google::protobuf::int32 value) {
   msgid_ = value;
 }
 
-// required int32 swID = 2;
-inline bool SimCompleteSwitch::has_swid() const {
-  return _has_bit(1);
-}
-inline void SimCompleteSwitch::clear_swid() {
-  swid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 SimCompleteSwitch::swid() const {
-  return swid_;
-}
-inline void SimCompleteSwitch::set_swid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  swid_ = value;
-}
-
-// required int32 vID = 3;
-inline bool SimCompleteSwitch::has_vid() const {
-  return _has_bit(2);
-}
-inline void SimCompleteSwitch::clear_vid() {
-  vid_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 SimCompleteSwitch::vid() const {
-  return vid_;
-}
-inline void SimCompleteSwitch::set_vid(::google::protobuf::int32 value) {
-  _set_bit(2);
-  vid_ = value;
-}
-
-// required int32 tsID = 4;
+// required int32 tsID = 2;
 inline bool SimCompleteSwitch::has_tsid() const {
-  return _has_bit(3);
+  return _has_bit(1);
 }
 inline void SimCompleteSwitch::clear_tsid() {
   tsid_ = 0;
-  _clear_bit(3);
+  _clear_bit(1);
 }
 inline ::google::protobuf::int32 SimCompleteSwitch::tsid() const {
   return tsid_;
 }
 inline void SimCompleteSwitch::set_tsid(::google::protobuf::int32 value) {
-  _set_bit(3);
+  _set_bit(1);
   tsid_ = value;
+}
+
+// required int32 nextID = 3;
+inline bool SimCompleteSwitch::has_nextid() const {
+  return _has_bit(2);
+}
+inline void SimCompleteSwitch::clear_nextid() {
+  nextid_ = 0;
+  _clear_bit(2);
+}
+inline ::google::protobuf::int32 SimCompleteSwitch::nextid() const {
+  return nextid_;
+}
+inline void SimCompleteSwitch::set_nextid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  nextid_ = value;
 }
 
 // -------------------------------------------------------------------
@@ -11660,6 +11644,22 @@ inline void TrackSegmentStatus::set_vid(int index, ::google::protobuf::int32 val
 }
 inline void TrackSegmentStatus::add_vid(::google::protobuf::int32 value) {
   vid_.Add(value);
+}
+
+// required int32 next = 6;
+inline bool TrackSegmentStatus::has_next() const {
+  return _has_bit(5);
+}
+inline void TrackSegmentStatus::clear_next() {
+  next_ = 0;
+  _clear_bit(5);
+}
+inline ::google::protobuf::int32 TrackSegmentStatus::next() const {
+  return next_;
+}
+inline void TrackSegmentStatus::set_next(::google::protobuf::int32 value) {
+  _set_bit(5);
+  next_ = value;
 }
 
 

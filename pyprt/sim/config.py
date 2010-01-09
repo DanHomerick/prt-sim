@@ -72,8 +72,6 @@ class ConfigManager(object):
                   help="Default passenger behavior. 'yes' means the passenger will share a vehicle, when given the opportunity. Choices are: yes, y, no, n")
         group.add_option("--track_switch_time", type="float", dest="track_switch_time",
                   help="Time for track-based switching to switch between lines.")
-        group.add_option("--vehicle_switch_time", type="float", dest="vehicle_switch_time",
-                  help="Time for vehicle-based switching to switch between lines.")
         optpar.add_option_group(group)
 
         return optpar.parse_args()

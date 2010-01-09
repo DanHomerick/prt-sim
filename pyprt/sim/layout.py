@@ -41,7 +41,7 @@ class Node(traits.HasTraits):
     y_start   = traits.CFloat
     x_end     = traits.CFloat
     y_end     = traits.CFloat
-    next      = traits.This # The default next location. May be a Node, or a subclass of Node.
+    next      = traits.Either(traits.This, None)  # The default next location. May be a Node, or a subclass of Node.
 
     # A default view
     traits_view =  ui.View(ui.Item(name='ID'),
@@ -1977,7 +1977,7 @@ class TrackSegment(Node):
     def __init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, label='', **tr):
         Node.__init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, TRACK_CAPACITY, label)
 
-    def switch(self, new_next):
+    def switch(self, new_next, msg_id):
         """Applicable for TrackSegments which have two or more downstream neighbors.
         Switches the default 'next' Tracksegment to new_next after a delay
         specifed in the sim configuration. If a vehicle is on
@@ -1985,8 +1985,8 @@ class TrackSegment(Node):
         to use it during the transition delay, a crash will result."""
         if self.next is not new_next: # if not already set to this track
             # Check if a vehicle is currently straddling the switch point
-            if len(self.activeQ) != 0:
-                lv = self.activeQ[0]
+            if len(self.resource.activeQ) != 0:
+                lv = self.resource.activeQ[0]
                 tail_pos, tail_loc = lv.tail
                 if tail_loc is self:
                     if tail_pos > self.length - lv.length:
@@ -1994,12 +1994,19 @@ class TrackSegment(Node):
                         # !!!!!!!!!
                         raise Exception("Crash. Threw a track switch while a vehicle was on top of it.")
 
-            # transitioning
-            self.next = None
-            AlarmClock(self._delayed_switch, new_next)
+            self.next = None # transitioning - switch is unusable
+            switch_delay = globals.config_manager.get_track_switch_time()
+            AlarmClock(Sim.now()+switch_delay, self._delayed_switch, new_next, msg_id)
 
-    def _delayed_switch(self, new_next):
+    def _delayed_switch(self, new_next, msg_id):
+        """Changes self.next to point to the new TrackSegment. Sends a
+        SimCompleteSwitch message to the controller."""
         self.next = new_next
+        complete_msg = api.SimCompleteSwitch()
+        complete_msg.msgID = msg_id
+        complete_msg.tsID = self.ID
+        complete_msg.nextID = self.next.ID
+        globals.Interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
 
     def fill_TrackSegmentStatus(self, ts):
         """Fills an api.TrackSegmentStatus instance with current information."""
@@ -2010,6 +2017,10 @@ class TrackSegment(Node):
         ts.length = int(self.length*100) # m -> cm
         for v in self.resource.activeQ:
             ts.vID.append(v.ID)
+        if ts.next != None:
+            ts.next = self.next.id
+        else:
+            ts.next = api.NONE_ID
 
 class Switch(Node):
     """A track Switch. Length should be considered the amount of

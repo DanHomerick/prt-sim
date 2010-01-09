@@ -1173,22 +1173,15 @@ _SIMCOMPLETESWITCH = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='swID', full_name='prt.SimCompleteSwitch.swID', index=1,
+      name='tsID', full_name='prt.SimCompleteSwitch.tsID', index=1,
       number=2, type=5, cpp_type=1, label=2,
       default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='vID', full_name='prt.SimCompleteSwitch.vID', index=2,
+      name='nextID', full_name='prt.SimCompleteSwitch.nextID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='tsID', full_name='prt.SimCompleteSwitch.tsID', index=3,
-      number=4, type=5, cpp_type=1, label=2,
       default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -2929,6 +2922,13 @@ _TRACKSEGMENTSTATUS = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
+    descriptor.FieldDescriptor(
+      name='next', full_name='prt.TrackSegmentStatus.next', index=5,
+      number=6, type=5, cpp_type=1, label=2,
+      default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],

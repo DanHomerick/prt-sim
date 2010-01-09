@@ -29,7 +29,7 @@ class ScenarioManager(object):
 
         # Fill in the next fields for the TrackSegments. Arbitrarily choosen
         # when there is more then one neighbor.
-        graph = globals.DiGraph()
+        graph = globals.DiGraph
         for n in graph.nodes_iter():
             neighbors = graph.neighbors(n)
             if neighbors:
