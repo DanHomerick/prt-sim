@@ -160,7 +160,7 @@ package edu.ucsc.track_builder
 		public static function parseDataXML(data:String):void
 		{
 			var xml:XML = new XML(data); 
-			Globals.tracks.fromDataXML(xml.Tracks.TrackSegment);
+			Globals.tracks.fromDataXML(xml.TrackSegments.TrackSegment);
 			Globals.stations.fromDataXML(xml.Stations.Station);
 			Globals.vehicles.fromDataXML(xml.Vehicles.Vehicle);
 			if (xml.GoogleTransitFeed.length > 0) {

@@ -726,7 +726,7 @@ package edu.ucsc.track_builder
 		
 		
 		public function toDataXML():XML {
-			var xml:XML = <Tracks></Tracks>
+			var xml:XML = <TrackSegments></TrackSegments>
 			var sortedSegs:Vector.<TrackSegment> = getSortedTrackSegments();
 			for each (var ts:TrackSegment in sortedSegs) {				
 				xml.appendChild(ts.toXML());

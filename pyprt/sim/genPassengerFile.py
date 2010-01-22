@@ -89,7 +89,14 @@ G = NX.DiGraph()
 total_traffic = 0
 target_traffic = {} # target amount of per link traffic
 for line in inputfile:
-    n1, n2, traffic = line.strip().split(',')
+    n1, n2, traffic = [entry.strip() for entry in line.split(',')]
+    
+    # If node labels are integers, convert them so that sorting will be correct.
+    try: n1 = int(n1)
+    except ValueError: pass
+    try: n2 = int(n2)
+    except ValueError: pass
+    
     traffic = int(traffic)
     key = (n1,n2)
     G.add_edge(n1, n2)
@@ -220,7 +227,7 @@ for row_idx, n in zip(xrange(len(nodes)), nodes):
 print >> outfile, "\n# pID\tsStat\tdStat\tsTime\tload\tunload"
 for idx, p_t in enumerate(zip(results, start_times)):
     path, time = p_t
-    print >> outfile, ("%s\t"*3 + "%6.3f") \
+    print >> outfile, ("%s\t"*3 + "%.3f") \
           % (idx+1, path[0], path[-1], time)
 
 

@@ -106,6 +106,7 @@ package edu.ucsc.track_builder
 			                            false
 			                          );
 			new VehicleOverlay(vehicle, Globals.tracks.getTrackOverlay(vehicleSeg.id)); // Placed in the global store by side effect.
+			berths[berthIndex] = vehicle.id
 			return vehicle;
 		}
 		

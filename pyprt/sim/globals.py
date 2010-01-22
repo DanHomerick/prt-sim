@@ -2,21 +2,19 @@ import threading
 
 scenario_manager = None
 
-DiGraph = None
-Interface = None
-Switches = dict()
-Stations = dict()
-TrackSegments = dict()
-VehicleModels = dict()
-Vehicles = dict()
-Passengers = dict()
-Delivered_Pax = set()
+digraph = None
+interface = None
+stations = dict()
+track_segments = dict()
+vehicle_models = dict()
+vehicles = dict()
+passengers = dict()
+delivered_pax = set()
 wxApp = None
-EventM = None # Event Manager
-SimEnded = False
-Viz_VehicleDataCollector = None
-Viz_StationDataCollector = None
-ManualCtrl = False # No external controller. Only used by gui_visual
+event_manager = None # Event Manager
+sim_ended = False
+vehicle_viz_data_collector = None
+station_viz_data_collector = None
 
 vehicle_data_queue = None
 station_data_queue = None
@@ -39,19 +37,19 @@ trace = False
 real_time = False  # A flag indicating that we're using the RT version of SimPy
 errors = 0
 
-def reset():
-    print "Clearing previous configuration" # temp debug
-    globals.DiGraph = None
-    globals.Interface = None
-    globals.Viz_VehicleDataCollector = None
-    globals.Viz_StationDataCollector = None
-    globals.TrackSegments = dict()
-    globals.Vehicles = dict()
-    globals.Passengers = dict()
-    globals.Delivered_Pax = set()
-    globals.wxApp = None
-    globals.EventM = None
-    globals.SimEnded = False
+#def reset():
+#    print "Clearing previous configuration" # temp debug
+#    globals.digraph = None
+#    globals.interface = None
+#    globals.vehicle_viz_data_collector = None
+#    globals.station_viz_data_collector = None
+#    globals.track_segments = dict()
+#    globals.vehicles = dict()
+#    globals.passengers = dict()
+#    globals.delivered_pax = set()
+#    globals.wxApp = None
+#    globals.event_manager = None
+#    globals.sim_ended = False
 
 class MsgIdWidget(object):
     """A thread-safe msgID counter. Increments counter whenever next_id is called."""
@@ -120,13 +118,7 @@ class InvalidMsgType(MsgError):
 class InvalidTrackSegID(MsgError):
     pass
 
-class InvalidWaypointID(MsgError):
-    pass
-
 class InvalidSwitchID(MsgError):
-    pass
-
-class InvalidMergeID(MsgError):
     pass
 
 class InvalidStationID(MsgError):

@@ -402,11 +402,7 @@ package edu.ucsc.track_builder
 		/** Represent the TrackData object in XML. */
 		public function toXML():XML {			
 			var xml:XML = <TrackSegment id={id}
-			                            length={length}
-			                            label={label}
-			                            max_speed={maxSpeed}
-			                            radius={radius}
-			                            arc_angle={arcAngle*180/Math.PI}>
+			                            length={length}>
 			                <Start lat={_start.lat()}
 			                       lng={_start.lng()}
 			                       ground_level={startGround.toFixed(1)}
@@ -421,7 +417,12 @@ package edu.ucsc.track_builder
 							<ConnectsTo/>
 							<ParallelTo/>               
 						  </TrackSegment>;
-			
+
+            if (label != "")      xml.@label=label
+            if (!isNaN(maxSpeed)) xml.@max_speed=maxSpeed
+            if (!isNaN(radius) && radius)   xml.@radius=radius
+            if (arcAngle != 0)    xml.@arc_angle = arcAngle*180/Math.PI
+ 
 			// Insert the center point if it's a curved segment			
 			if (_center) {
 				xml.insertChildBefore(xml.End[0], <Center lat={_center.lat()}
@@ -459,16 +460,16 @@ package edu.ucsc.track_builder
 			                            xml.Start.@ground_level)
 			ElevationService.addToCache(new LatLng(xml.End.@lat, xml.End.@lng),
 			                            xml.End.@ground_level)			                            
-						
+			
 			var ts:TrackSegment = new TrackSegment(xml.@id,
-												   xml.@label,
+												   "@label" in xml ? xml.@label : "",
 												   new LatLng(xml.Start.@lat, xml.Start.@lng),
 												   new LatLng(xml.End.@lat, xml.End.@lng),
-												   xml.@max_speed,
+												   "@max_speed" in xml ? xml.@max_speed : NaN,
 												   xml.Start.@offset,
 												   xml.End.@offset,
-												   xml.@radius ? xml.@radius : 0,
-												   xml.@arc_angle ? xml.@arc_angle*Math.PI/180 : 0, // degrees to radians
+												   "@radius" in xml ? xml.@radius : NaN,
+												   "@arc_angle" in xml ? xml.@arc_angle*Math.PI/180 : 0, // degrees to radians
 												   xml.hasOwnProperty("Center") ? new LatLng(xml.Center.@lat, xml.Center.@lng) : null,
 												   false);
 			// ConnectsFrom

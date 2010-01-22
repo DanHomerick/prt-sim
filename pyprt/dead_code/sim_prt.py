@@ -31,7 +31,7 @@ def start_sim(options=None):
     # Creating a vehicle that is already on a track segment (TrackSegment) is a bit odd,
     # and is only done during startup. I reorder the vehicles so that the queue
     # will have proper FIFO ordering on the TrackSegment.
-    vehicle_list = globals.Vehicles.values()  # the Vehicle instances
+    vehicle_list = globals.vehicles.values()  # the Vehicle instances
     vehicle_list.sort(cmp=sort_by_vehicle_pos)
     
     # activate the vehicles
@@ -43,14 +43,14 @@ def start_sim(options=None):
         Sim.activate(s, s.ctrl_loop())
 
     # activate the event manager
-    Sim.activate(globals.EventM, globals.EventM.spawn_events())
+    Sim.activate(globals.event_manager, globals.event_manager.spawn_events())
     
     # activate the visualization controller's data collection
     if options and options.render:
         Sim.activate(globals.Viz, globals.Viz.collect_data())
 
     # Establish communication with control module and activate the interface.
-    Sim.activate(globals.Interface, globals.Interface.talk())
+    Sim.activate(globals.interface, globals.interface.talk())
 
     # start the sim
     end_time = config.conf.getfloat('Simulation', 'sim_end_time')
@@ -62,7 +62,7 @@ def start_sim(options=None):
 def print_postsim_status():
     end_time = config.conf.getfloat('Simulation', 'sim_end_time')
     print "\nPost Sim Vehicle Status"
-    vehicle_list = globals.Vehicles.values()
+    vehicle_list = globals.vehicles.values()
     print "%4s%15s%15s%15s%15s" \
         % ('vID', 'vPos', 'vSpeed', 'location', 'distTrav')
     for v in vehicle_list:
@@ -83,7 +83,7 @@ def print_postsim_status():
     print "\nPost Sim Passenger Report"
     print ("%4s" + "%15s"*6) \
             % ('pID','srcStat','destStat','curLoc','waitT','TravelT','Success')
-    for p in globals.Passengers.itervalues():
+    for p in globals.passengers.itervalues():
         if p.trip_end:
             travel = p.trip_end - p.trip_boarded
             wait = p.trip_boarded - p.trip_start
@@ -122,31 +122,31 @@ def main():
     else:
         TCP_port = config.conf.getint('Simulation', 'TCP_port')        
 
-    globals.Interface.connect(TCP_port)
+    globals.interface.connect(TCP_port)
 
     if options.profile:
         import profile
         print "Profiling ..."
         profile.run('start_sim', options.profile)
         end = api.SimEnd()
-        globals.Interface.quick_send(api.SIM_END, end)
+        globals.interface.quick_send(api.SIM_END, end)
         print "Disconnecting"
-        globals.Interface.disconnect()       
+        globals.interface.disconnect()       
         
     else:
         try:    
             start_sim(options)
             end = api.SimEnd()
-            globals.Interface.quick_send(api.SIM_END, end)
+            globals.interface.quick_send(api.SIM_END, end)
         finally:
             print "Disconnecting"
-            globals.Interface.disconnect()
+            globals.interface.disconnect()
 
 
 #    P.savefig('track.png', format='PNG')
     print_postsim_status()
     if options.plot:
-        veh = globals.Vehicles.values()
+        veh = globals.vehicles.values()
         if len(veh) == 1:
             veh[0].path.plot(str(veh[0]), show=True, new_fig=False)
         else:

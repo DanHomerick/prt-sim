@@ -12,13 +12,21 @@ class ConfigManager(object):
 
     def __init__(self):
         # Command line options
-        self.options, positional_args = self.read_args()
+        self.options, positional_args = self.read_args()        
 
-        if len(positional_args) > 0:
+        if len(positional_args) > 1 or (len(positional_args) == 1 and self.options.config_path != None):
             raise Exception("Unrecognized command line arguments: %s" % positional_args)
 
         # Config file
-        self.config_path = self.options.config_path
+        self.config_path = None
+        if len(positional_args) == 1:
+            self.config_path = positional_args[0]
+        elif self.options.config_path != None:
+           self.config_path = self.options.config_path
+        else: # Fallback to a default.
+            from pyprt.sim import __path__ as sim_path
+            self.config_path = sim_path[0] + '/default.cfg'
+
         self.config_parser = ConfigParser.SafeConfigParser()
         self.config_dir = os.path.abspath(os.path.dirname(self.config_path)) + os.path.sep
         # Parse the config file
@@ -29,14 +37,10 @@ class ConfigManager(object):
 
     def read_args(self):
         """Parse the command line arguments. Returns the 2-tuple (options, args) from optparse.OptionParser"""        
-        from pyprt.sim import __path__ as sim_path
-        default_config_path = sim_path[0] + '/default.cfg'
-
-        optpar = optparse.OptionParser(usage="usage: %prog [options]")
+        optpar = optparse.OptionParser(usage="usage: %prog [options] [CONFIG]")
         optpar.add_option("--disable_gui", action="store_true", dest="disable_gui",
                   help="Console only. Do not launch a GUI.")
-        optpar.add_option("--config", dest="config_path",
-                  default=default_config_path, metavar="FILE",
+        optpar.add_option("--config", dest="config_path", metavar="FILE",
                   help="Specify a configuration FILE.")
         optpar.add_option("--start_controllers", action="store_true", dest="start_controllers",
                   help="Start external controller specified in config file after startup.")
@@ -70,6 +74,8 @@ class ConfigManager(object):
         group.add_option("--pax_will_share", dest="pax_will_share",
                   choices=['yes', 'y', 'no', 'n'],
                   help="Default passenger behavior. 'yes' means the passenger will share a vehicle, when given the opportunity. Choices are: yes, y, no, n")
+        group.add_option("--pax_weight", dest="pax_weight", type="int",
+                  help="Default passenger weight, including all luggage.")
         group.add_option("--track_switch_time", type="float", dest="track_switch_time",
                   help="Time for track-based switching to switch between lines.")
         optpar.add_option_group(group)
@@ -87,7 +93,7 @@ class ConfigManager(object):
                 return False
 
     def get_config_path(self):
-        return self.options.config_path
+        return self.config_path
 
     def get_scenario_path(self):
         if self.options.scenario_path != None:
@@ -151,6 +157,12 @@ class ConfigManager(object):
                 return False
         else:
             return self.config_parser.getboolean('Passenger', 'will_share')
+
+    def get_pax_weight(self):
+        if self.options.pax_weight != None:
+            return self.options.pax_weight
+        else:
+            return self.config_parser.getint('Passenger', 'weight')
 
     def get_TCP_port(self):
         if self.options.TCP_port != None:

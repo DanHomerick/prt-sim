@@ -16,7 +16,7 @@ class Berth(Sim.Process, traits.HasTraits):
     label = traits.Str
     platform_index = traits.Int
     station_id = traits.Int
-    vehicle = traits.Instance('Vehicle', None)
+    vehicle = traits.Instance('layout.BaseVehicle', None)
 
     _busy = traits.Bool
     _unload = traits.Bool
@@ -80,26 +80,26 @@ class Berth(Sim.Process, traits.HasTraits):
                     pax.trip_end = Sim.now()
                     if self.station_id == pax.dest_station.ID:
                         pax.trip_success = True
-                        globals.Delivered_Pax.add(pax)
+                        globals.delivered_pax.add(pax)
                         logging.info("T=%4.3f %s delivered to %s by %s. Unloaded in berth %s",
                                       Sim.now(), pax, self.station_id, self.vehicle, self.label)
                         d_msg = api.SimNotifyPassengerDelivered()
                         d_msg.vID = self.vehicle.ID
                         d_msg.sID = self.station_id
                         d_msg.pID = pax.ID
-                        globals.Interface.send(api.SIM_NOTIFY_PASSENGER_DELIVERED,
+                        globals.interface.send(api.SIM_NOTIFY_PASSENGER_DELIVERED,
                                               d_msg)
                     else:
                         pax.trip_success = False
                         logging.error("T=%4.3f %s misdelivered to %s by %s. Actual Dest: %s. Unloaded in berth %s",
                                       Sim.now(), pax, self.station_id, self.vehicle,
-                                      globals.Stations[pax.dest_station.ID], self.label)
+                                      globals.stations[pax.dest_station.ID], self.label)
 
                         md_msg = api.SimNotifyPassengerMisdelivered()
                         md_msg.vID = self.vehicle.ID
                         md_msg.sID = self.station_id
                         md_msg.pID = pax.ID
-                        globals.Interface.send(api.SIM_NOTIFY_PASSENGER_MISDELIVERED,
+                        globals.interface.send(api.SIM_NOTIFY_PASSENGER_MISDELIVERED,
                                               md_msg)
                 self._busy = False
 
@@ -115,7 +115,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     s_notify.vID = self.vehicle.ID
                     s_notify.sID = self.station_id
                     s_notify.pID = pax.ID
-                    globals.Interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_START,
+                    globals.interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_START,
                                           s_notify)
                     yield Sim.hold, self, pax.load_delay
                     self.vehicle.passengers.append(pax)
@@ -127,7 +127,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     e_notify.vID = self.vehicle.ID
                     e_notify.sID = self.station_id
                     e_notify.pID = pax.ID
-                    globals.Interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_END,
+                    globals.interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_END,
                                           e_notify)
                     # If using the LOBBY policy, notify that passenger load command
                     # has completed.
@@ -137,7 +137,7 @@ class Berth(Sim.Process, traits.HasTraits):
                         cmd_notify.vID = self.vehicle.ID
                         cmd_notify.sID = self.station_id
                         cmd_notify.pID = pax.ID
-                        globals.Interface.send(api.SIM_COMPLETE_PASSENGER_LOAD_VEHICLE,
+                        globals.interface.send(api.SIM_COMPLETE_PASSENGER_LOAD_VEHICLE,
                                           cmd_notify)
                         self._load_msgID = None
 
@@ -416,7 +416,7 @@ class Station(traits.HasTraits):
 #                    rl_msg = api.SimNotifyVehicleReadyLoad()
 #                    rl_msg.vID = v.ID
 #                    rl_msg.sID = self.ID
-#                    globals.Interface.send(api.SIM_NOTIFY_VEHICLE_READY_LOAD,
+#                    globals.interface.send(api.SIM_NOTIFY_VEHICLE_READY_LOAD,
 #                                          rl_msg)
 
 #    def load_passengers(self, platform):
@@ -516,7 +516,7 @@ class Station(traits.HasTraits):
 #        l_msg.msgID = msgID
 #        l_msg.vID = vehicle.ID
 #        l_msg.sID = self.ID
-#        globals.Interface.send(api.SIM_COMPLETE_STATION_LAUNCH, l_msg)
+#        globals.interface.send(api.SIM_COMPLETE_STATION_LAUNCH, l_msg)
 #        logging.info("T=%4.3f %s launched from berth %s of %s with pax %s",
 #                     Sim.now(), vehicle, front_berth.ID, self,
 #                     [pax.ID for pax in vehicle.passengers if pax])
@@ -536,7 +536,7 @@ class Station(traits.HasTraits):
 #            rdy_launch_msg.sID = self.ID
 #            for pax in flb.vehicle.passengers:
 #                rdy_launch_msg.pID.append(pax.ID)
-#            globals.Interface.send(api.SIM_NOTIFY_STATION_READY_LAUNCH,
+#            globals.interface.send(api.SIM_NOTIFY_STATION_READY_LAUNCH,
 #                                  rdy_launch_msg)
 #        elif flb.vehicle and flb.is_busy() and self.rdy_launch_sent \
 #                 and not self.unrdy_launch_sent:
@@ -545,7 +545,7 @@ class Station(traits.HasTraits):
 #            urdy_launch_msg = api.SimNotifyStationUnreadyLaunch()
 #            urdy_launch_msg.vID = flb.vehicle.ID
 #            urdy_launch_msg.sID = self.ID
-#            globals.Interface.send(api.SIM_NOTIFY_STATION_UNREADY_LAUNCH,
+#            globals.interface.send(api.SIM_NOTIFY_STATION_UNREADY_LAUNCH,
 #                                  urdy_launch_msg)
 
 #    def fill_StationStatus(self, s_status):

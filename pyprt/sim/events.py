@@ -4,6 +4,7 @@ import heapq
 
 import globals
 import layout
+import station
 import pyprt.shared.api_pb2 as api
 import SimPy.SimulationRT as Sim
 
@@ -43,14 +44,14 @@ class EventManager(Sim.Process):
 
             evt = heapq.heappop(self.list)
             if isinstance(evt, Passenger):
-                assert not globals.Passengers.get(evt.ID)
-                globals.Passengers[evt.ID] = evt # add to global dict
+                assert not globals.passengers.get(evt.ID)
+                globals.passengers[evt.ID] = evt # add to global dict
 
                 evt.loc = evt.src_station # set pax loc
                 evt.loc.add_passenger(evt)
                 msg = api.SimEventPassengerCreated()
                 evt.fill_PassengerStatus(msg.p_status)
-                globals.Interface.send(api.SIM_EVENT_PASSENGER_CREATED, msg)
+                globals.interface.send(api.SIM_EVENT_PASSENGER_CREATED, msg)
 
     def clear_events(self):
         self.list = list()
@@ -149,25 +150,20 @@ class Passenger(PrtEvent):
 
     def fill_PassengerStatus(self, ps):
         ps.pID = self.ID
-        if isinstance(self.loc, layout.Edge):
-            lt = api.EDGE
-        elif isinstance(self.loc, layout.Switch):
-            lt = api.SWITCH
-        elif isinstance(self.loc, layout.Station):
+        if isinstance(self.loc, station.Station):
             lt = api.STATION
-        elif isinstance(self.loc, layout.Vehicle):
+        elif isinstance(self.loc, layout.BaseVehicle):
             lt = api.VEHICLE
-        elif self.loc is None:
-            lt = api.NONE
         else:
             raise Exception, "Unknown passenger location type: %s" % self.loc
         ps.loc_type = lt
         ps.locID = self.loc.ID
         ps.src_stationID = self.src_station.ID
         ps.dest_stationID = self.dest_station.ID
-
-        ps.wait_time = to_millisec(self.wait_time)
-        ps.travel_time = to_millisec(self.travel_time)
+        ps.creation_time = self.trip_start
+        ps.wait_time = self.wait_time
+        ps.travel_time = self.travel_time
+        ps.weight = self.weight
 
         # In python, a bool is a tri-state (True, False, None)
         # In protobuf, need two bools.

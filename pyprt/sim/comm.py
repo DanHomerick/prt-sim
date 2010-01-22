@@ -22,7 +22,7 @@ def receive(sock, queue, comm_idx):
     socket: An already established TCP connection. May be the same socket that
         is also controlled by the transmit function.
     queue: a Queue.Queue, used to communicate the recieved messages to the
-        globals.Interface.
+        globals.interface.
     comm_idx: An index used to identify the comm in cases where the source of
         the message is important.
 
@@ -32,7 +32,7 @@ def receive(sock, queue, comm_idx):
 
     Raises an exception if msg_sep or msg_size is invalid.
     """
-    while not globals.SimEnded:
+    while not globals.sim_ended:
         # Get msg_sep and msg_size
         hdr = []
         hdr_size = api.MSG_HEADER_SIZE
@@ -42,7 +42,7 @@ def receive(sock, queue, comm_idx):
                 hdr_size -= len(frag)
                 hdr.append(frag)
             except socket.error:
-                if globals.SimEnded:
+                if globals.sim_ended:
                     return # let the thread die
                 else:
                     raise
@@ -72,7 +72,7 @@ def receive(sock, queue, comm_idx):
                 msg_size -= len(frag)
                 body.append(frag)
             except socket.error: # socket has been shutdown
-                if globals.SimEnded:
+                if globals.sim_ended:
                     return # let the thread die
                 else:
                     raise
@@ -92,7 +92,7 @@ def transmit(sock, queue):
 
     The ControlInterface is responsible for closing down the socket.
     """
-    while not globals.SimEnded:
+    while not globals.sim_ended:
         message = queue.get(block=True)
         sock.sendall(message)
         #queue.task_done()
@@ -183,6 +183,10 @@ class ControlInterface(Sim.Process):
         self.TCP_server_socket.close()
         self.TCP_server_socket = None
 
+        greeting = api.SimGreeting()
+        greeting.sim_end_time = globals.config_manager.get_sim_end_time()
+        self.send(api.SIM_GREETING, greeting)
+
     def disconnect(self):
         if self.TCP_server_socket:
             self.TCP_server_socket.close()
@@ -270,7 +274,7 @@ class ControlInterface(Sim.Process):
 
                     # If not a valid track segment to switch to or it's already
                     # switching, then complain.
-                    if next not in globals.DiGraph.neighbors(ts) or ts.next is None:
+                    if next not in globals.digraph.neighbors(ts) or ts.next is None:
                         raise globals.InvalidTrackSegID, msg.nextID
 
                     ts.switch(next, msgID)
@@ -358,46 +362,47 @@ class ControlInterface(Sim.Process):
 
 
                 # NOTIFICATIONS
-
-                # processing is delayed until correct time reached
                 elif msg_type == api.CTRL_SETNOTIFY_TIME:
                     msg = api.CtrlSetnotifyTime()
                     msg.ParseFromString(msg_str)
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+
+                    if msg.time < Sim.now():
+                        raise globals.InvalidTimeStamp
                     resp = api.SimNotifyTime()
                     resp.msgID = msgID
-                    resp.time = ms_now() # converted from seconds to milliseconds
-                    self.send(api.SIM_NOTIFY_TIME, resp)
+                    resp.time = msg.time
+                    alarm = AlarmClock(msg.time, self.send, api.SIM_NOTIFY_TIME, resp)                    
 
-                # Works, but spams the log with erroneous RCVD messages
-                # TODO: Move to a vehicle co-routine, which waits on
-                # end_segment and end_duration signals.
-                elif msg_type == api.CTRL_SETNOTIFY_VEHICLE_POSITION:
-                    msg = api.CtrlSetnotifyVehiclePosition()
-                    msg.ParseFromString(msg_str)
-                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-                    v = self.get_vehicle(msg.vID)
-                    loc = self.get_trackSeg(msg.eID)
-                    if v.loc is loc and globals.dist_eql(v.pos, msg.pos/100): # convert from cm to meters
-                        resp = api.SimNotifyVehiclePosition()
-                        resp.msgID = msgID
-                        resp.vID = self.ID
-                        resp.eID = self.loc.ID
-                        resp.pos = int(self.pos*100) # meters to cm
-                        self.send(api.SIM_NOTIFY_VEHICLE_POSITION, resp)
-
-                    # Target position ahead of vehicle on current edge
-                    if v.loc is loc and msg.pos/100 > v.pos:
-                        time = v.calc_time_to_pos(msg.pos/100)
-                    # Target position on another edge, or behind current pos
-                    else:
-                        time = v.calc_time_to_pos(v.loc.length)
-                    print "Time to notification pos, or end of seg:", time
-                    if not time: # pos eqn expires first
-                        time = v.pos_eqn_duration
-                    AlarmClock(time, AlarmClock.delayed_msg, None)
-                    time_ms = int(round(time,3)*1000) # ??? Remove?
-                    self.waitQ.append( (msg_type, msgID, msg_time, msg_str) )
+#                # Works, but spams the log with erroneous RCVD messages
+#                # TODO: Move to a vehicle co-routine, which waits on
+#                # end_segment and end_duration signals.
+#                elif msg_type == api.CTRL_SETNOTIFY_VEHICLE_POSITION:
+#                    msg = api.CtrlSetnotifyVehiclePosition()
+#                    msg.ParseFromString(msg_str)
+#                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+#                    v = self.get_vehicle(msg.vID)
+#                    loc = self.get_trackSeg(msg.eID)
+#                    if v.loc is loc and globals.dist_eql(v.pos, msg.pos/100): # convert from cm to meters
+#                        resp = api.SimNotifyVehiclePosition()
+#                        resp.msgID = msgID
+#                        resp.vID = self.ID
+#                        resp.eID = self.loc.ID
+#                        resp.pos = int(self.pos*100) # meters to cm
+#                        self.send(api.SIM_NOTIFY_VEHICLE_POSITION, resp)
+#
+#                    # Target position ahead of vehicle on current edge
+#                    if v.loc is loc and msg.pos/100 > v.pos:
+#                        time = v.calc_time_to_pos(msg.pos/100)
+#                    # Target position on another edge, or behind current pos
+#                    else:
+#                        time = v.calc_time_to_pos(v.loc.length)
+#                    print "Time to notification pos, or end of seg:", time
+#                    if not time: # pos eqn expires first
+#                        time = v.pos_eqn_duration
+#                    AlarmClock(time, AlarmClock.delayed_msg, None)
+#                    time_ms = int(round(time,3)*1000) # ??? Remove?
+#                    self.waitQ.append( (msg_type, msgID, msg_time, msg_str) )
 
                 else:
                     resp = api.SimUnimplemented()
@@ -416,44 +421,31 @@ class ControlInterface(Sim.Process):
             except globals.InvalidTrackSegID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
-                err_msg.loc_type = api.TRACK_SEGMENT
-                err_msg.locID = e.args[0]
-                self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidWaypointID, e:
-                err_msg = api.SimMsgBodyInvalidId()
-                err_msg.msgID = msgID
-                err_msg.loc_type = api.WAYPOINT
-                err_msg.locID = e.args[0]
+                err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
             except globals.InvalidSwitchID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
-                err_msg.loc_type = api.SWITCH
-                err_msg.locID = e.args[0]
-                self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidMergeID, e:
-                err_msg = api.SimMsgBodyInvalidId()
-                err_msg.msgID = msgID
-                err_msg.loc_type = api.MERGE
-                err_msg.locID = e.args[0]
+                err_msg.id_type = api.SWITCH
+                err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
             except globals.InvalidStationID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
-                err_msg.loc_type = api.STATION
-                err_msg.locID = e.args[0]
+                err_msg.id_type = api.STATION
+                err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
             except globals.InvalidVehicleID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
-                err_msg.loc_type = api.VEHICLE
-                err_msg.locID = e.args[0]
+                err_msg.id_type = api.VEHICLE
+                err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
             except globals.InvalidPassengerID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
-                err_msg.loc_type = api.PASSENGER
-                err_msg.locID = e.args[0]
+                err_msg.id_type = api.PASSENGER
+                err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
 
         # if packet time is in future, set an alarm to wake up interface
@@ -501,7 +493,7 @@ class ControlInterface(Sim.Process):
         for q in self.sendQs:
             q.put(message)
 
-        if self.passive() and not globals.SimEnded:
+        if self.passive() and not globals.sim_ended:
             # Reset the resume_list to all False
             self.resume_list[:] = [False] * len(self.resume_list)
             # Reactivate the ControlInterface, placing it at the end of the
@@ -519,31 +511,20 @@ class ControlInterface(Sim.Process):
                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
         text_format.PrintMessage(msg, out=self.log)
         print >> self.log, "--"
-        if __debug__:
-            self.log.flush()
-
 
     def get_trackSeg(self, ID):
-        """"Return the TrackSegment object specified by the ID."""
+        """"Return the TrackSegment object specified by the ID.
+        Raise InvalidTrackSegID if not found."""
         try:
-            return globals.TrackSegments[ID]
+            return globals.track_segments[ID]
         except KeyError:
             raise globals.InvalidTrackSegID, ID
 
-    def get_switch(self, ID):
-        """"Return the switch object specified by the ID."""
-        try:
-            sw = globals.Switches[ID]
-        except KeyError:
-            raise globals.InvalidSwitchID, ID
-        if not isinstance(sw, layout.Switch):
-            raise globals.InvalidSwitchID, ID
-        return sw
-
     def get_station(self, ID):
-        """"Return the station object specified by the ID."""
+        """"Return the station object specified by the ID.
+        Raise InvalidStationID if not found."""
         try:
-            s = globals.Stations[ID]
+            s = globals.stations[ID]
         except KeyError:
             raise globals.InvalidStationID, ID
         if not isinstance(s, layout.Station):
@@ -551,82 +532,84 @@ class ControlInterface(Sim.Process):
         return s
 
     def get_vehicle(self, ID):
-        """Return the vehicle object specified by the ID."""
+        """Return the vehicle object specified by the ID.
+        Raise InvalidVehicleID if not found."""
         try:
-            v = globals.Vehicles[ID]
+            v = globals.vehicles[ID]
         except KeyError:
             raise globals.InvalidVehicleID, ID
         return v
 
     def get_passenger(self, ID):
-        """"Return the passenger object specified by the ID."""
+        """"Return the passenger object specified by the ID.
+        Raise InvalidPassengerID if not found."""
         try:
-            pax = globals.Passengers[ID]
+            pax = globals.passengers[ID]
         except KeyError:
             raise globals.InvalidPassengerID, ID
         return pax
 
-    # DEPRECATED
-    def validate_speed_params(self, v, msg):
-        """ Validate/set max_accel, max_jerk on a per vehicle
-         basis to accomodate variety of vehicle capabilities
-         or passenger limitations.
-
-         Assumed that the controller may not have a Floating Point Unit, so
-         all communications are use centimeters rather than meters as the base
-         unit of length. This function converts back to meters in addition
-         to validating."""
-        import warnings
-        warnings.warn('deprecated function')
-        # regular case
-        if not msg.emergency:
-            # if max_accel specified by controller, validate it
-            if msg.max_accel:
-                max_accel = msg.max_accel/100 # cm/s^2 -> m/s^2
-                if max_accel > v.accel_max_norm or max_accel < 0:
-                    raise globals.InvalidAccel, max_accel
-                ma = max_accel
-            # otherwise set it
-            else: ma = v.accel_max_norm
-
-            if msg.max_decel:
-                max_decel = msg.max_decel/100  # cm/s^2 -> m/s^2
-                if max_decel < v.accel_min_norm or max_decel > 0:
-                    raise globals.InvalidDecel, max_decel
-                md = max_decel
-            else: md = v.accel_min_norm
-
-            if msg.max_jerk:
-                max_jerk = msg.max_jerk/100 # cm/s^2 -> m/s^2
-                mj = abs(max_jerk)
-                if mj > v.jerk_max_norm:
-                    raise globals.InvalidJerk, max_jerk
-            else: mj = abs(v.jerk_max_norm)
-        # emergency case
-        else:
-            # if max_accel specified by controller, validate it
-            if msg.max_accel:
-                max_accel = msg.max_accel/100 # cm/s^2 -> m/s^2
-                if max_accel > v.accel_max_emerg or max_accel < 0:
-                    raise globals.InvalidAccel, max_accel
-                ma = max_accel
-            # otherwise set it
-            else: ma = v.accel_max_emerg
-
-            if msg.max_decel:
-                max_decel = msg.max_decel / 100 # cm/s^2 -> m/s^2
-                if max_decel < v.accel_min_emerg or max_decel > 0:
-                    raise globals.InvalidDecel, max_decel
-                md = max_decel
-            else: md = v.accel_min_emerg
-
-            if msg.max_jerk:
-                max_jerk = msg.max_jerk / 100 # cm/s^3 -> m/s^3
-                mj = abs(max_jerk)
-                if mj > v.jerk_max_emerg:
-                    raise globals.InvalidJerk, max_jerk
-            else: mj = v.jerk_max_emerg
-        return (ma, md, mj)
+#    # DEPRECATED
+#    def validate_speed_params(self, v, msg):
+#        """ Validate/set max_accel, max_jerk on a per vehicle
+#         basis to accomodate variety of vehicle capabilities
+#         or passenger limitations.
+#
+#         Assumed that the controller may not have a Floating Point Unit, so
+#         all communications are use centimeters rather than meters as the base
+#         unit of length. This function converts back to meters in addition
+#         to validating."""
+#        import warnings
+#        warnings.warn('deprecated function')
+#        # regular case
+#        if not msg.emergency:
+#            # if max_accel specified by controller, validate it
+#            if msg.max_accel:
+#                max_accel = msg.max_accel/100 # cm/s^2 -> m/s^2
+#                if max_accel > v.accel_max_norm or max_accel < 0:
+#                    raise globals.InvalidAccel, max_accel
+#                ma = max_accel
+#            # otherwise set it
+#            else: ma = v.accel_max_norm
+#
+#            if msg.max_decel:
+#                max_decel = msg.max_decel/100  # cm/s^2 -> m/s^2
+#                if max_decel < v.accel_min_norm or max_decel > 0:
+#                    raise globals.InvalidDecel, max_decel
+#                md = max_decel
+#            else: md = v.accel_min_norm
+#
+#            if msg.max_jerk:
+#                max_jerk = msg.max_jerk/100 # cm/s^2 -> m/s^2
+#                mj = abs(max_jerk)
+#                if mj > v.jerk_max_norm:
+#                    raise globals.InvalidJerk, max_jerk
+#            else: mj = abs(v.jerk_max_norm)
+#        # emergency case
+#        else:
+#            # if max_accel specified by controller, validate it
+#            if msg.max_accel:
+#                max_accel = msg.max_accel/100 # cm/s^2 -> m/s^2
+#                if max_accel > v.accel_max_emerg or max_accel < 0:
+#                    raise globals.InvalidAccel, max_accel
+#                ma = max_accel
+#            # otherwise set it
+#            else: ma = v.accel_max_emerg
+#
+#            if msg.max_decel:
+#                max_decel = msg.max_decel / 100 # cm/s^2 -> m/s^2
+#                if max_decel < v.accel_min_emerg or max_decel > 0:
+#                    raise globals.InvalidDecel, max_decel
+#                md = max_decel
+#            else: md = v.accel_min_emerg
+#
+#            if msg.max_jerk:
+#                max_jerk = msg.max_jerk / 100 # cm/s^3 -> m/s^3
+#                mj = abs(max_jerk)
+#                if mj > v.jerk_max_emerg:
+#                    raise globals.InvalidJerk, max_jerk
+#            else: mj = v.jerk_max_emerg
+#        return (ma, md, mj)
 
     def validate_itinerary(self, vehicle, ids):
         if len(ids) == 0:
@@ -634,7 +617,7 @@ class ControlInterface(Sim.Process):
         latest_loc = vehicle.path.traversals[-1].loc
         for id in ids:
             loc = self.get_trackSeg(id)
-            neighbors = globals.DiGraph.neighbors(latest_loc)
+            neighbors = globals.digraph.neighbors(latest_loc)
             if loc not in neighbors:
                 raise globals.InvalidTrackSegID, ids[0]
             latest_loc = loc
@@ -651,7 +634,7 @@ class ControlInterface(Sim.Process):
             v.fill_VehicleStatus(v_status)
             ts.v_statuses.append(v_status)
         # send track segment status for all track segments
-        for ts in globals.TrackSegments.itervalues():
+        for ts in globals.track_segments.itervalues():
             ts_status = api.TrackSegmentStatus()
             ts.fill_TrackSegmentStatus(ts_status)
             ts.ts_statuses.append(ts_status)
@@ -689,9 +672,9 @@ class AlarmClock(Sim.Process):
     @staticmethod
     def delayed_msg(msg):
         if msg:
-            globals.Interface.receiveQ.put(msg)
-        if globals.Interface.passive():
-            Sim.reactivate(globals.Interface, prior=False)
+            globals.interface.receiveQ.put(msg)
+        if globals.interface.passive():
+            Sim.reactivate(globals.interface, prior=False)
 
 def ms_now():
     """Return Sim.now() in integer form, rounded to milliseconds. This is the

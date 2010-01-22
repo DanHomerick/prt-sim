@@ -23,42 +23,25 @@ class ScenarioManager(object):
 #        sink_nodes = dict()
 
         # Track Segments
-        tracks_xml = doc.getElementsByTagName('Tracks')[0]
-        globals.TrackSegments = self.load_track_segments(tracks_xml)
-        globals.DiGraph = self.build_graph(tracks_xml, globals.TrackSegments)
+        tracks_xml = doc.getElementsByTagName('TrackSegments')[0]
+        globals.track_segments = self.load_track_segments(tracks_xml)
+        globals.digraph = self.build_graph(tracks_xml, globals.track_segments)
 
         # Fill in the next fields for the TrackSegments. Arbitrarily choosen
         # when there is more then one neighbor.
-        graph = globals.DiGraph
+        graph = globals.digraph
         for n in graph.nodes_iter():
             neighbors = graph.neighbors(n)
             if neighbors:
                 n.next = neighbors[0]
             # else n.next is left as None
 
-        # Stations
-        globals.Stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
-
         # Vehicles
         globals.vehicle_models = self.make_vehicle_classes(doc.getElementsByTagName('VehicleModels')[0])
-        globals.Vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], globals.vehicle_models)
+        globals.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], globals.vehicle_models)
 
-#        # Switches
-#        for switch_xml in doc.getElementsByTagName('Switch'):
-#            intId = int(switch_xml.getAttribute('id').split("_")[0])
-#            lat = switch_xml.getElementsByTagName('LatLng')[0].getAttribute('lat')
-#            lng = switch_xml.getElementsByTagName('LatLng')[0].getAttribute('lng')
-#            switch = layout.Switch(ID=intId,
-#                                 length=0,
-#                                 max_speed=float(switch_xml.getAttribute('max_speed')),
-#                                 x_start=float(lng), y_start=float(lat), x_end=float(lng), y_end=float(lat))
-#            globals.Switches[switch.ID] = switch
-#            globals.switch_list.append(switch)
-
-#            for incoming in switch_xml.getElementsByTagName('Incoming'):
-#                sink_nodes[incoming.firstChild.data] = switch
-#            for outgoing in switch_xml.getElementsByTagName('Outgoing'):
-#                src_nodes[outgoing.firstChild.data] = switch
+        # Stations
+        globals.stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
 
         # Passengers        
         passengers_path = globals.config_manager.get_passengers_path()
@@ -68,9 +51,10 @@ class ScenarioManager(object):
             default_load_time = globals.config_manager.get_pax_load_time()
             default_unload_time = globals.config_manager.get_pax_unload_time()
             default_will_share = globals.config_manager.get_pax_will_share()
-            pax_list = self.load_passengers(passengers_path, default_load_time, default_unload_time, default_will_share)
-            globals.EventM.clear_events()
-            globals.EventM.add_events(pax_list)
+            default_weight = globals.config_manager.get_pax_weight()
+            pax_list = self.load_passengers(passengers_path, default_load_time, default_unload_time, default_will_share, default_weight)
+            globals.event_manager.clear_events()
+            globals.event_manager.add_events(pax_list)
 
         # Background Image
         self.load_image_meta(doc.getElementsByTagName('Image')[0], xml_path) # only one element
@@ -78,7 +62,7 @@ class ScenarioManager(object):
         # TODO: Necessary?
         globals.station_list.sort() # by ID
         globals.switch_list.sort()
-        globals.vehicle_list = sorted(v for v in globals.Vehicles.itervalues())
+        globals.vehicle_list = sorted(v for v in globals.vehicles.itervalues())
 
         self.scenario_loaded = True
 
@@ -99,14 +83,16 @@ class ScenarioManager(object):
 
             label = track_segment_xml.getAttribute('label')
             label = label if label != 'null' else ''
-
+        
+            max_speed_str = track_segment_xml.getAttribute('max_speed')
+            max_speed = float(max_speed_str) if max_speed_str else 1E1000 # inf if not specified
             ts = layout.TrackSegment(ID=intId,
                                x_start=start_lng,
                                y_start=start_lat,
                                x_end=end_lng,
                                y_end=end_lat,
                                length=float(track_segment_xml.getAttribute('length')),
-                               max_speed=float(track_segment_xml.getAttribute('max_speed')),
+                               max_speed=max_speed,
                                label=label)
             all_tracks[ts.ID] = ts
         return all_tracks
@@ -116,7 +102,7 @@ class ScenarioManager(object):
         Each TrackSegment is represented as a node. Each edge has a weight equal to
         the length of the TrackSegment at the edge's tail (origin).
 
-        track_segments_xml: The 'Tracks' element of the XML save file.
+        track_segments_xml: The 'TrackSegments' element of the XML save file.
         track_segs: a Dictionary with integer ID's as keys, and TrackSegment instances
             as values.
         """
@@ -188,7 +174,7 @@ class ScenarioManager(object):
             v_model = vehicle_xml.getAttribute('model')
             eId = vehicle_xml.getAttribute('location')
             e_intId = int(eId.split("_")[0])
-            loc = globals.TrackSegments[e_intId] # look up edge by id
+            loc = globals.track_segments[e_intId] # look up edge by id
             position = float(vehicle_xml.getAttribute('position'))
 
             if position > loc.length:
@@ -214,22 +200,22 @@ class ScenarioManager(object):
     def load_stations(self, stations_xml):
         all_stations = dict()
         for station_xml in stations_xml.getElementsByTagName('Station'):
-            station_label = station_xml.getAttribute('id')
-            station_id = int(station_label.split('_')[0])
+            station_label = station_xml.getAttribute('label')
+            station_id = int(station_xml.getAttribute('id').split('_')[0])
 
             # Get the TrackSegments
             track_segments = []
             for track_xml in station_xml.getElementsByTagName('TrackSegments'):
                 for track_id_xml in track_xml.getElementsByTagName('ID'):
                     track_id = self._to_numeric_id(track_id_xml)
-                    track_segments.append(globals.TrackSegments[track_id])
+                    track_segments.append(globals.track_segments[track_id])
 
 
             # Make the Platforms
             platforms = []
             for platform_xml in station_xml.getElementsByTagName('Platform'):
                 platform_trackseg_id = self._to_numeric_id(platform_xml.getElementsByTagName('TrackSegment')[0])
-                platform_trackseg = globals.TrackSegments[platform_trackseg_id]
+                platform_trackseg = globals.track_segments[platform_trackseg_id]
                 berth_length = float(platform_xml.getAttribute('berth_length'))
                 unloading = True if platform_xml.getAttribute('unloading') == 'true' else False
                 loading = True if platform_xml.getAttribute('loading') == 'true' else False
@@ -237,12 +223,13 @@ class ScenarioManager(object):
                 # Make the Berths
                 berths = []
                 for idx, berth_xml in enumerate(platform_xml.getElementsByTagName('Berth')):
-                    v_id = berth_xml.childNodes[0].data
+                    v_id_str = berth_xml.childNodes[0].data                    
                     label = 'berth'+str(idx)
-                    if v_id == 'empty':
+                    if v_id_str == 'empty':
                         berths.append(Berth(label, station_id, None))
                     else:
-                        vehicle = globals.Vehicles[v_id]
+                        v_id = int(v_id_str.split('_')[0])
+                        vehicle = globals.vehicles[v_id]
                         berths.append(Berth(label, station_id, vehicle))
 
                 platforms.append(station.Platform(berths, platform_trackseg, berth_length, unloading, loading))
@@ -250,7 +237,7 @@ class ScenarioManager(object):
             all_stations[station_.ID] = station_
         return all_stations
 
-    def load_passengers(self, filename, default_load_time, default_unload_time, default_will_share):
+    def load_passengers(self, filename, default_load_time, default_unload_time, default_will_share, default_weight):
         """Load the list of passenger creation events. See /doc/samplePassenger.tsv
         for format. Station labels may be used in place of station IDs."""
         f = open(filename, 'rU')
@@ -259,8 +246,8 @@ class ScenarioManager(object):
 
         # generate dict mapping both ids and labels to stations
         aliases = {}
-        for station in globals.station_list:
-            aliases[str(station)] = station # the label
+        for station in globals.stations.values():
+            aliases[station.label] = station # the label
             aliases[str(station.ID)] = station # the integer id, in string form
 
         for line_num, line in enumerate(lines):
@@ -272,8 +259,8 @@ class ScenarioManager(object):
                 data = line.split('\t')
                 try:
                     pID = int(data[0])
-                    sStatID = data[1] # left in string form
-                    dStatID = data[2] # left in string form
+                    sStatID = data[1].strip() # left in string form
+                    dStatID = data[2].strip() # left in string form
                     sTime = float(data[3])
                 except IndexError:
                     raise globals.ConfigError, "Line %s of passengerfile %s has too few fields." %\
@@ -306,7 +293,7 @@ class ScenarioManager(object):
                 try:
                     weight = int(data[7])
                 except (IndexError, ValueError):
-                    weight = self.parser.getint('Passenger', 'weight')
+                    weight = default_weight
                 try:
                     sStat = aliases[sStatID]
                     dStat = aliases[dStatID]
@@ -408,7 +395,7 @@ if __name__ == '__main__':
         print [stat.ID for stat in globals.station_list]
         print "------"
         print "TrackSegments:"
-        print globals.TrackSegments.values()
+        print globals.track_segments.values()
         print "------"
         print "Vehicles:"
-        print [v.ID for v in globals.Vehicles.itervalues()];
+        print [v.ID for v in globals.vehicles.itervalues()];

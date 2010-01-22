@@ -39,7 +39,7 @@ package edu.ucsc.track_builder.gtf_import
 		 * simple way of merging nodes that are in close proximity to each other. */ 
 		public var PRECISION:uint = 5;
 		public var STATION_BERTH_LENGTH:Number = 15; // meters
-		public var STATION_BERTH_COUNT:uint = 2;
+		public var STATION_BERTH_COUNT:uint = 3;
 		public var STATION_COVERAGE_RADIUS:Number = 150; // meters
 		public var VEHICLE_SPEED:Number = 15; // 15 meters/sec == 34 miles/hour
 		
@@ -228,8 +228,7 @@ package edu.ucsc.track_builder.gtf_import
 					                                   "",
 					                                   edge.tail.latlng.clone(),
 					                                   edge.head.latlng.clone(),
-					                                   Number.POSITIVE_INFINITY,
-					                                   0, 0, NaN, 0, null, false);
+					                                   NaN, 0, 0, NaN, 0, null, false);
 				tsVec[1] = tsVec[0].clone(true);
 				var trackOverlay:TrackOverlay = new TrackOverlay(tsVec);
 				// store both edge directions to make lookup easier and faster
@@ -495,8 +494,8 @@ package edu.ucsc.track_builder.gtf_import
 			return vehicles;
 		}
 	
-		public function makeGtfXml(vehicles:Object, stations:Object, rBundles:Vector.<RouteBundle>):XML {
-			var xml:XML = <GoogleTransitFeed/>;
+		public function makeGtfXml(vehicles:Object, stations:Object, rBundles:Vector.<RouteBundle>, time:Time):XML {
+			var xml:XML = <GoogleTransitFeed start_time={time.toString()}/>;
 			for each (var rBundle:RouteBundle in rBundles) {
 				var routeXml:XML = <Route route_id={rBundle.route.id} service_id={rBundle.service.id} />;				
 				for each (var tBundle:TripBundle in rBundle.tripBundles) {
@@ -519,8 +518,10 @@ package edu.ucsc.track_builder.gtf_import
 		}
 	
 		/** Parses the txt files residing in feedDirectory and creates TrackSegments and TrackOverlays accordingly.
-		 * @param routeIds Routes to import.
-		 * @param dateTime Date/Time used to determine vehicle starting positions.
+		 * @param routes Routes to import.
+		 * @param services Services to import
+		 * @param date The date being simulated.
+		 * @param time The simulation start time.
 		 * 		  Throws an GtfImportError if it encounters a problem.
 		 */  
 		public function doImport(routes:Array, services:Array, date:Date, time:Time):void {	
@@ -619,7 +620,7 @@ package edu.ucsc.track_builder.gtf_import
 			graph = null; // allow the graph to be garbage collected
 
 			/* Make and store the GTF save data */
-			gtfXml = makeGtfXml(vehicles, stations, rBundles);
+			gtfXml = makeGtfXml(vehicles, stations, rBundles, time);
 
 			// Change the location and zoom to show the entire track.
 			var bounds:LatLngBounds = Globals.tracks.getLatLngBounds();

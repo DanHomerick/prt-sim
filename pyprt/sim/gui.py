@@ -88,7 +88,7 @@ class MainWindow(wx.Frame):
             manager.load_scenario(filename)
 
             # Create the Visualizer
-            self.visualizer = Visualizer(globals.DiGraph, globals.max_vehicle_pax_capacity)
+            self.visualizer = Visualizer(globals.digraph, globals.max_vehicle_pax_capacity)
             self.chaco_window.component = self.visualizer.plot
 
             # adjust the window size to match the image.
@@ -171,7 +171,7 @@ class MainWindow(wx.Frame):
         self.menubar_manager.sim_started()
 
     def simmenu_connectcontroller_handler(self, event): # wxGlade: MainWindow.<event_handler>
-        if globals.Interface:
+        if globals.interface:
             TCP_port = globals.config_manager.get_TCP_port()
 ##            # NumberEntryDialog has a bug that caps the default to a max of 100, always.
 ##            dialog = wx.NumberEntryDialog(self,
@@ -188,8 +188,8 @@ class MainWindow(wx.Frame):
 ###                                    message='Waiting for controller to connect on port: %s' % TCP_port,
 ###                                    style=wx.CANCEL)
 ###                waiting_dialog.ShowModal()
-##                globals.Interface.connect(TCP_port)
-            globals.Interface.setup_server_sockets(TCP_port=TCP_port)
+##                globals.interface.connect(TCP_port)
+            globals.interface.setup_server_sockets(TCP_port=TCP_port)
             controllers = globals.config_manager.get_controllers()
             for cmd in controllers:
                 cmd = cmd.split()
@@ -203,7 +203,7 @@ class MainWindow(wx.Frame):
                     dialog.ShowModal()
                     return
 
-            globals.Interface.accept_connections( len(controllers) )
+            globals.interface.accept_connections( len(controllers) )
 
             # update what menu options are enabled
             self.menubar_manager.controllers_connected()
@@ -281,7 +281,7 @@ class MainWindow(wx.Frame):
         event.Skip()
 
     def viewmenu_passenger_handler(self, event):
-        pax_list = sorted(globals.Passengers.itervalues())
+        pax_list = sorted(globals.passengers.itervalues())
         labels = [str(p) for p in pax_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Passengers', labels)
         dialog.ShowModal()
@@ -339,7 +339,7 @@ class MainWindow(wx.Frame):
         self.menubar_manager.record_stopped()
 
     def record_handler(self, event):
-        if not globals.SimEnded:
+        if not globals.sim_ended:
             try:
                 filename = self._record_filename_base + '_%05d' % self._record_count + '.' + self._record_filename_ext
                 self.visualizer.save_plot(filename)
@@ -358,10 +358,10 @@ class MainWindow(wx.Frame):
 
     def close_handler(self, event):
         # TODO: Check if user wants to save config
-        globals.SimEnded = True
+        globals.sim_ended = True
 
-        if globals.Interface:
-            globals.Interface.disconnect()
+        if globals.interface:
+            globals.interface.disconnect()
 
         for t in threading.enumerate():
             print t.getName()
@@ -369,7 +369,7 @@ class MainWindow(wx.Frame):
         self.Destroy()
 
     def update_statusbar(self, evt):
-        if not globals.SimEnded:
+        if not globals.sim_ended:
             # calc some passenger stats
             pax_waiting = 0
             total_wait = 0
@@ -888,27 +888,24 @@ class PointDraggingTool(tools.DragTool):
         return None
 
 
-def run_sim(end_time, callback):
+def run_sim(end_time, callback, *args):
     """Activate the SimPy Processes and run the simulation.
 
     end_time (float) : how many seconds to simulate
-    callback (function) : undecided on how many arguments to use. For now, none.\
+    callback (function) : A function called after completion of the simulation
+    *args: Arguments for callback.
     """
     # initialize SimPy
     SimPy.initialize()
 
-    # Creating a vehicle that is already on a track segment (TrackSegment) is a bit odd,
-    # and is only done during startup. I reorder the vehicles so that the queue
-    # will have proper FIFO ordering on the TrackSegment.
-    vehicle_list = globals.Vehicles.values()  # the Vehicle instances
-    def sort_by_vehicle_pos(x, y):
-        # if x and y are both Track pieces (i.e. have a position) and are the same
-        # location
-        if isinstance(x.loc, layout.Track) and isinstance(y.loc, layout.Track) \
-           and x.loc is y.loc:
-            return cmp(y.pos, x.pos) # sort by position, descending order
+    # Reorder the vehicles so that the queue will have proper FIFO ordering
+    # on the TrackSegment.
+    vehicle_list = globals.vehicles.values()  # the Vehicle instances
+    def sort_by_vehicle_pos(a, b):
+        if a.loc is b.loc: # if a and b are both at the same location
+            return cmp(b.pos, a.pos) # sort by position, descending order
         else:
-            return cmp(x.loc, y.loc) # else sort by place
+            return cmp(a.loc, b.loc) # else sort by place
     vehicle_list.sort(cmp=sort_by_vehicle_pos)
 
     # activate the vehicles
@@ -920,7 +917,7 @@ def run_sim(end_time, callback):
         SimPy.activate(s, s.ctrl_loop())
 
     # activate the event manager
-    SimPy.activate(globals.EventM, globals.EventM.spawn_events())
+    SimPy.activate(globals.event_manager, globals.event_manager.spawn_events())
 
     # create queues for communication between the plot and the sim
     globals.vehicle_data_queue = Queue.Queue()
@@ -935,40 +932,40 @@ def run_sim(end_time, callback):
         else:
             # Create and activate the SimPy Processes which collect data and
             # push it to the visualization module via queues.
-            globals.Viz_VehicleDataCollector = VisDataCollector(data_interval=chaco_frame_interval,
+            globals.vehicle_viz_data_collector = VisDataCollector(data_interval=chaco_frame_interval,
                                                      queue=globals.vehicle_data_queue,
                                                      chaco_interval=chaco_frame_interval)
-            SimPy.activate(globals.Viz_VehicleDataCollector,
-                         globals.Viz_VehicleDataCollector.collect_vehicle_data())
+            SimPy.activate(globals.vehicle_viz_data_collector,
+                         globals.vehicle_viz_data_collector.collect_vehicle_data())
 
-            globals.Viz_StationDataCollector = VisDataCollector(data_interval=1.0, # don't need station updates < 1 sec
+            globals.station_viz_data_collector = VisDataCollector(data_interval=1.0, # don't need station updates < 1 sec
                                                      queue=globals.station_data_queue,
                                                      chaco_interval=chaco_frame_interval)
-            SimPy.activate(globals.Viz_StationDataCollector,
-                         globals.Viz_StationDataCollector.collect_station_data())
+            SimPy.activate(globals.station_viz_data_collector,
+                         globals.station_viz_data_collector.collect_station_data())
 
     # start the communication control
-    SimPy.activate(globals.Interface, globals.Interface.talk())
+    SimPy.activate(globals.interface, globals.interface.talk())
 
     # Tell the controller that the sim is starting.
     start_msg = api.SimStart()
-    globals.Interface.send(api.SIM_START, start_msg)
+    globals.interface.send(api.SIM_START, start_msg)
 
     # start the sim
     print end_time
     SimPy.simulate(until=end_time, real_time=True, rel_speed=1)
     print 'ended sim'
-    globals.SimEnded = True
+    globals.sim_ended = True
 
     # notify the controller(s) that the simulation is finished
     end_msg = api.SimEnd()
-    globals.Interface.send(api.SIM_END, end_msg)
+    globals.interface.send(api.SIM_END, end_msg)
 
     # Disconnect from the controller(s)
     print "Disconnecting"
-    globals.Interface.disconnect()
+    globals.interface.disconnect()
 
-    callback()
+    callback(*args)
 
 class VisDataCollector(SimPy.Process):
     """Draws the track layout and animates the vehicles on it. Since it is
@@ -998,27 +995,13 @@ class VisDataCollector(SimPy.Process):
         # Holds arrays for translating from vehicle pos to plot coordinates.
         pos2img = {}
         # precalculate coordinate transform matrixes
-        for track_seg in globals.TrackSegments.itervalues():
+        for track_seg in globals.track_segments.itervalues():
             dx = track_seg.x_end - track_seg.x_start
             dy = track_seg.y_end - track_seg.y_start
             angle = math.atan2(dy, dx)
             scale = math.sqrt(dx**2 + dy**2) / track_seg.length # scaling factor
             pos2img[track_seg] = array([[scale*math.cos(angle), track_seg.x_start],
                                    [scale*math.sin(angle), track_seg.y_start]])
-
-### TODO: Remenent from when Switches and Stations were treated as nodes. Delete once sim is working again.
-#        for dic in (globals.Switches, globals.Stations):
-#            for node in dic.itervalues():
-#                dx = node.x_end - node.x_start
-#                dy = node.y_end - node.y_start
-#                angle = math.atan2(dy, dx)
-#                try:
-#                    scale = math.sqrt(dx**2 + dy**2) / node.length # scaling factor
-#                except ZeroDivisionError:
-#                    scale = 1
-#                pos2img[node] = array([[scale*math.cos(angle), node.x_start],
-#                                       [scale*math.sin(angle), node.y_start]])
-
 
         chaco_interval = self.chaco_interval
         data_interval = self.data_interval
@@ -1148,7 +1131,7 @@ def postsim_summary():
     summary.append("\nPost Sim Passenger Report")
     summary.append(("%4s" + "%15s"*6) \
             % ('pID','srcStat','destStat','curLoc','waitT','TravelT','Success'))
-    for p in globals.Passengers.itervalues():
+    for p in globals.passengers.itervalues():
         if p.trip_end:
             travel = p.trip_end - p.trip_boarded
             wait = p.trip_boarded - p.trip_start

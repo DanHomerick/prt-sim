@@ -502,7 +502,8 @@ class TrajectorySolver(object):
 
         return error
 
-    def nonnegative_roots(self, A, B, C):
+    @staticmethod
+    def nonnegative_roots(A, B, C):
         """Finds the nonnegative roots of a 2nd degree polynomial, using quadratic formula.
         Raises a TrajectoryError if answer would be imaginary."""
         try:
@@ -515,7 +516,8 @@ class TrajectorySolver(object):
             return x >= 0
         return filter(is_positive, roots)
 
-    def nonpositive_roots(self, A, B, C):
+    @staticmethod
+    def nonpositive_roots(A, B, C):
         """Finds the nonpositive roots of a 2nd degree polynomial, using quadratic formula.
         Raises a TrajectoryError if answer would be imaginary."""
         try:

@@ -3,7 +3,7 @@ from __future__ import division
 
 import logging
 import warnings
-from itertools import ifilter
+import itertools
 
 from scipy import poly1d
 from numpy import arange, inf
@@ -106,7 +106,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     score.
     """
     # The CType indicates that the Type can be coerced from a string.
-    ID              = traits.CInt     # Unique numeric ID.    
+    ID              = traits.CInt     # Unique numeric ID.
     v_mass          = traits.CInt   # mass of vehicle, in kg
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg
@@ -116,7 +116,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     # A default view for vehicles.
     traits_view =  ui.View('ID', 'length',
                         ui.Item(name='pos', label='Position'),
-                        ui.Item(name='loc'),
                         ui.Item(name='speed'),
                         ui.Item(name='v_mass'),
                         ui.Item(name='passenger_mass'),
@@ -202,6 +201,9 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """Returns the Traversal that the tail is currently on.
         Will return the first Traversal on the Path if vehicle has not
         travelled at least one vehicle length since the start of the simulation.
+
+        Note that if a vehicle is longer than a TrackSegment, the tail traversal
+        is not necessarily the traversal just prior to the nose's.
         """
         pos = self.pos
         remainder = self.length # vehicle length
@@ -254,11 +256,25 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         t_start = spline_msg.times[0]
         assert t_start >= Sim.now()
         for poly_coeffs_msg, t_final in zip(spline_msg.polys, spline_msg.times[1:]):
-            poly = poly1d(poly_coeffs_msg.coeffs) # both have highest order coeff first
+            poly = poly1d(poly_coeffs_msg.coeffs[:]) # both have highest order coeff first.
             dur = t_final - t_start
             assert dur >= 0
             segs.append( Segment(poly, dur, t_start, self.total_mass) )
             t_start += dur
+
+#        # From the sim's perspective, the vehicle needs a trajectory out to
+#        # infinity (or the end of the simulation), though we're not imposing
+#        # that requirement on the controller's splines. Instead, we're just
+#        # appending a dummy segment that extends the last poly out. Note that the
+#        # last Segment's poly is a reference to the previous poly!
+#        # TODO: Is this really what I want to do, or do I need a sentinal marker
+#        #       of some sort?
+#        if segs[-1].end_time < inf:
+#            last_seg = segs[-1]
+#            inf_poly = shift_poly(last_seg.pos_eqn, last_seg.duration, last_seg.get_end_pos())
+#            segs.append( Segment(inf_poly, inf, last_seg.end_time, self.total_mass) )
+#            print "LAYOUT TRAJ:", '\n'.join([str(seg) for seg in segs])
+
         self.path.change_trajectory(segs)
 
         # Reconsider collisions
@@ -310,7 +326,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 ##        if not (self.get_speed() == self.target_speed and self.get_accel() == 0):
 ##            msg = api.SimAbortVehicleSpeed()
 ##            msg.msgID = self.co_speed.msgID
-##            globals.Interface.send(api.SIM_ABORT_VEHICLE_SPEED, msg)
+##            globals.interface.send(api.SIM_ABORT_VEHICLE_SPEED, msg)
 ##            self.cancel(self.co_speed)
 #
 #        # add trajectory to self.path
@@ -342,41 +358,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     accel = property(fget=get_accel)
 
     def ctrl_loop(self):
-        # start-up code
-        if isinstance(self.loc, station.Station):
-            stat = self.loc
-            pos = None
-            # check for open spot in the load_platform
-            for idx, berth in enumerate(stat.load_platform):
-                if berth.vehicle is None:
-                    berth.vehicle = self
-                    pos = stat.length - idx * stat.berth_length - .01
-                    break
-            # check for open spot in the empty queue
-            if pos is None:
-                for idx, queue in enumerate(stat.load_platform):
-                    if queue is None:
-                        queue = self
-                        pos = (stat.length -
-                               stat.berth_length * stat.num_load_berths -
-                               idx * stat.slot_length -.01)
-                        break
-            # check for open spot in the unload_platform
-            if pos is None:
-                for idx, berth in enumerate(stat.unload_platform):
-                    if berth.vehicle is None:
-                        berth.vehicle = self
-                        pos = (stat.length -
-                               stat.berth_length * stat.num_load_berths -
-                               stat.slot_length * stat.num_queue_slots -
-                               idx * stat.berth_length - .01)
-                        break
-            if pos is None:
-                raise Exception, "More vehicles assigned to start in %s than there is room for." % self.loc
-
-            seg = Segment(poly1d([0,0,0,pos]), inf, Sim.now(), self.total_mass)
-            self.path.change_trajectory( [seg] )
-
         # place self in queue for starting location
         yield Sim.request, self, self.loc.resource
         self.check_for_collisions()
@@ -450,7 +431,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                             assert globals.dist_eql(self.pos, next_c.lv.get_tail()[0])
                 if next_c.sideswipe:
                     msg.sideswipe = True
-                globals.Interface.send(api.SIM_NOTIFY_VEHICLE_COLLISION, msg)
+                globals.interface.send(api.SIM_NOTIFY_VEHICLE_COLLISION, msg)
                 assert next_c.lv is self.find_vehicle_ahead()
                 next_c.occurred = True
                 my_nose_pos, my_nose_loc = self.nose
@@ -477,7 +458,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 loc = self.tail_releases[0].trav.loc
                 msg = api.SimNotifyVehicleExit()
                 self.fill_VehicleStatus(msg.v_status)
-                globals.Interface.send(api.SIM_NOTIFY_VEHICLE_EXIT, msg)
+                globals.interface.send(api.SIM_NOTIFY_VEHICLE_EXIT, msg)
                 del self.tail_releases[0]
                 if isinstance(loc, station.Station):
                     self.interrupt(loc) # notify station that I'm clear
@@ -517,11 +498,15 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     def check_for_collisions(self, lv=None):
         """Generates a list of times when collisions will occur and stores it
-        as `self.collsion_times`. Determines the lead vehicle if not provided.
-        Only checks for collisions on the self's active Traversal, but checks
-        against as many of lv's Traversals as is required.
+        as `self.collsion_times`. Determines the lead vehicle (lv) if not provided.
+        Only checks for collisions on self's active Traversal, but checks
+        against lv's active Traversal and part of lv's next Traversal to ensure
+        that lv's tail clears self's location without a collision occuring.
 
-        Discards any pending collisions that have not yet occurred.
+        Discards any pending collisions that have not yet occurred on the
+        principle that no other vehicle can possibly insert itself between
+        self and lv while they are in the midst of traversing a location,
+        therefore (re)checking against just lv is sufficient.
         """
         # discard future collisions
         self.collisions = self.collisions[:self.collision_idx]
@@ -532,6 +517,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         if lv is None:
             lv = self.find_vehicle_ahead()
         if lv:
+            # self is stopped. No possibility with lv unless lv is
+            # travelling in reverse, which is handled at a higher level.
+            if s_trav.get_end_time() == inf:
+                return
+
             # checks s_trav against lv_trav. Need to check s_trav for it's
             # entire valid time, even though lv may traverse several segments
             # during that time.
@@ -541,30 +531,59 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
             if lv_tail_trav.loc is not s_trav.loc \
                     and globals.time_eql(Sim.now(), s_trav.start_time):
-                # lv is ahead of me, but it's tail isn't on the same loc as me.
-                # I must have sideswipped him.
+                # I just started traversing this TrackSegment, but the tail of
+                # lv isn't ahead of me--it's on another TrackSegment entirely.
+                # The only explaination for this is that I am merging, and am
+                # sideswiping lv.
+                assert len(globals.digraph.predecessors(s_trav.loc)) >= 2
                 self.collisions.append(Collision(s_trav.start_time, lv,
                                                  s_trav, sideswipe=True))
+                return
+
+            # Figure out which lv traversals we want to check s_trav against.
+            lv_travs = [lv_trav]
+            offset = lv.length
+            for trav in lv.path[lv_trav.idx+1:]:
+                lv_travs.append(trav)
+                offset -= trav.length
+                if offset <= 0:
+                    break
 
             lv_tail_idx = lv_tail_trav.idx
             t = Sim.now()
 
-            while True:
-                # sum of loc lengths from self to lv. Excludes lv loc.
-                # See Traversal.collision_check
-                trav_offset = sum(trav.length for trav in lv.path.traversals[lv_tail_idx:lv_idx])
-                self.collisions.extend(Collision(c_t, lv, s_trav, rearend=True)
-                                       for c_t in
-                                       s_trav.collision_check(lv_trav, lv.length, trav_offset, t))
-                if globals.time_le(s_trav.end_time, lv_trav.end_time):
-                    break
-                else:
-                    t = lv_trav.end_time
-                    lv_idx += 1
-                    try:
-                        lv_trav = lv.path.traversals[lv_idx]
-                    except IndexError:
-                        lv_trav = lv.path.future
+            # Check s_trav vs. each of lv's relevant traversals
+            trav_offset = 0
+            for trav in lv_travs:
+                self.collisions.extend(Collision(collision_time, lv, s_trav, rearend=True)
+                                       for collision_time in
+                                       s_trav.collision_check(trav, lv.length, trav_offset, t))
+                trav_offset += trav.length
+
+
+#            while True:
+#                # sum of loc lengths from self to lv. Excludes lv loc.
+#                # See Traversal.collision_check
+#                trav_offset = sum(trav.length for trav in lv.path.traversals[lv_tail_idx:lv_idx])
+#                print "LAYOUT CHECK:", lv, self
+#                self.collisions.extend(Collision(collision_time, lv, s_trav, rearend=True)
+#                                       for collision_time in
+#                                       s_trav.collision_check(lv_trav, lv.length, trav_offset, t))
+#
+#                # Stop looking at additional traversals if self has hit the end
+#                # of it's traversal, or if self is stopped.
+#                # TODO: Change this so that we stop checking for collisions
+#                # once lv's tail leaves self's current location.
+#                if globals.time_le(s_trav.end_time, lv_trav.end_time) or s_trav.end_time == inf:
+#                    break
+#
+#                else:
+#                    t = lv_trav.end_time
+#                    lv_idx += 1
+#                    try:
+#                        lv_trav = lv.path.traversals[lv_idx]
+#                    except IndexError:
+#                        lv_trav = lv.path.future
 
             for c in self.collisions[self.collision_idx:]:
                 logging.info("T=%4.3f %s Upcoming collision detected: %s", Sim.now(), self, c)
@@ -580,24 +599,25 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         # --- Decide what location will be next ---
         try:    # Next location has already been decided (vehicle switching)
             new_loc = self.path.traversals[self.path.active_idx+1].loc
+            assert new_loc in globals.digraph.neighbors(old_loc)
         except IndexError:            
             new_loc = old_loc.next
             if new_loc is None: # can be caused by a dead-end track or a track switch in mid-throw
                 # TODO: Consistant collision handling through a single function!!!!
                 raise Exception("Vehicle hit a dead end, or a track switch in mid-throw!")
+            else:
+                self.path.append_loc(new_loc)
 
         # --- Handle that new location ---
-        self.path.append_loc(new_loc)
-
         # Set up helper event to release the tail.
         tr = TailRelease(self, self.path.get_active_traversal())
         self.tail_releases.append(tr)
 
-        if isinstance(new_loc, TrackSegment):
-            yield Sim.request, self, new_loc.resource
-            logging.info("T=%4.3f %s aquired %s", Sim.now(), self, new_loc)
-            self.path.active_idx += 1
-            self._handle_boundry = False
+        assert isinstance(new_loc, TrackSegment)
+        yield Sim.request, self, new_loc.resource
+        logging.info("T=%4.3f %s aquired %s", Sim.now(), self, new_loc)
+        self.path.active_idx += 1
+        self._handle_boundry = False
 
 #        # Station is a bit special
 #        elif isinstance(new_loc, station.Station):
@@ -661,20 +681,20 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 #            logging.info("T=%4.3f %s aquired %s", Sim.now(), self, new_loc)
 #            self.path.active_idx += 1
 #            self._handle_boundry = False
+#
+#        else:
+#            raise TypeError, new_loc
 
-        else:
-            raise TypeError, new_loc
-
-        if __debug__:
-            trav = self.path.get_active_traversal()
-            # if not trav.start_time <= Sim.now() <= trav.end_time:
-            if not (globals.time_le(trav.start_time, Sim.now()) and globals.time_le(Sim.now(), trav.end_time)):
-                raise Exception, (trav.start_time, Sim.now(), trav.end_time)
+#        if __debug__:
+#            trav = self.path.get_active_traversal()
+#            # if not trav.start_time <= Sim.now() <= trav.end_time:
+#            if not (globals.time_le(trav.start_time, Sim.now()) and globals.time_le(Sim.now(), trav.end_time)):
+#                raise Exception, (trav.start_time, Sim.now(), trav.end_time)
 
         # Send Arrival Msg
         notify_msg = api.SimNotifyVehicleArrive()
         self.fill_VehicleStatus(notify_msg.v_status)
-        globals.Interface.send(api.SIM_NOTIFY_VEHICLE_ARRIVE, notify_msg)
+        globals.interface.send(api.SIM_NOTIFY_VEHICLE_ARRIVE, notify_msg)
 
         # Now that we're effectively on the new_loc, do some collision checking.
         self.check_for_collisions()
@@ -682,7 +702,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
 
     def handle_interrupt(self):
-
         logging.debug("T=%4.3f %s interrupted by %s",
                       Sim.now(), self, self.interruptCause)
 
@@ -817,26 +836,26 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 #
 #        return v
 
-    def bump_forward(self, dist):
-        """A temp hack. Instantly bump the vehicle position forward by dist.
-        Does no collision checking, and introduces discontinuities in the Path.
-        Assumes that the vehicle is stopped.
-        """
-        assert self.speed == 0
-        seg = Segment(poly1d([self.pos + dist]), inf, Sim.now(), self.total_mass)
-        self.path.append_segment(seg)
-
-        # Notify vehicle behind me that I moved
-        follower = self.find_vehicle_behind()
-        if follower:
-            InterruptCollisionChk(self, follower)
+#    def bump_forward(self, dist):
+#        """A temp hack. Instantly bump the vehicle position forward by dist.
+#        Does no collision checking, and introduces discontinuities in the Path.
+#        Assumes that the vehicle is stopped.
+#        """
+#        assert self.speed == 0
+#        seg = Segment(poly1d([self.pos + dist]), inf, Sim.now(), self.total_mass)
+#        self.path.append_segment(seg)
+#
+#        # Notify vehicle behind me that I moved
+#        follower = self.find_vehicle_behind()
+#        if follower:
+#            InterruptCollisionChk(self, follower)
 
     def get_next_loc(self, old_loc):
         """Returns the location following old_loc. If old_loc is a switch,
         will look in the switch's routing table -- will raise a ValueError
         if this vehicle doesn't have an entry.
         """
-        neighbors = globals.DiGraph.neighbors(old_loc)
+        neighbors = globals.digraph.neighbors(old_loc)
         if len(neighbors) == 1:
             return neighbors[0]
         else:
@@ -909,7 +928,7 @@ class TailRelease(object):
 class Collision(object):
     """A struct-like class, holding information about an upcoming collision.
     Sorts by time. `occurred` is a flag indicating that the collision has
-    occurred."""
+    already occurred, rather than just being a predicted collision."""
     def __init__(self, time, lv, trav, rearend=False, sideswipe=False, occurred=False):
         self.time = time
         self.lv = lv      # leading vehicle
@@ -920,11 +939,8 @@ class Collision(object):
     def __str__(self):
         return "time: %f, lv: %s, rearend: %s, sideswipe: %s, occurred: %s speed: %4.3f \n %s"\
             % (self.time, self.lv, self.rearend, self.sideswipe, self.occurred, self.lv.get_speed(), self.trav)
-    def __cmp__(self, o):
-        if self.time < o: return -1
-        elif self.time > o: return 1
-        else: return 0
-
+    def __cmp__(self, other):
+        return cmp(self.time, other.time)
 
 class InterruptCollisionChk(Sim.Process):
     """Notify a vehicle that it needs to update it's estimate of upcoming
@@ -949,6 +965,9 @@ class InterruptCollisionChk(Sim.Process):
         self.time = time
         self.relative = relative
         Sim.activate(self, self.run(), prior=True)
+    def __str__(self):
+        return self.name
+    
     def run(self):
         if self.time:
             if self.relative:
@@ -1071,18 +1090,20 @@ class Times(object):
 
 def print_activeQs():
     """For debug puposes. Prints out all vehicles that are holding each edge and node."""
-    print "ActiveQ printout - Edges"
-    for e in globals.TrackSegments.values():
+    print "ActiveQ printout - TrackSegments"
+    for e in globals.track_segments.values():
         print "  " + str(e), [str(v) for v in e.resource.activeQ]
-    print "ActiveQ printout cont - Nodes"
-    for n in [node for dic in (globals.Switches) for node in dic.values()]:
-        print "  " + str(n), [str(v) for v in n.resource.activeQ]
 
 
-class FutureLoc(object):
-    """A mock location indicating a location that has not been reached."""
+class FutureLoc(Node):
+    """A mock location indicating a location that has not yet been reached, and
+    where the location is not yet decided upon."""
+
     length = inf
     label = 'FutureLoc'
+
+    def __init__(self):
+        pass
 
 class Segment(traits.HasTraits):
     """A `Segment` consists of a polynomial, the start time at which
@@ -1120,7 +1141,8 @@ class Segment(traits.HasTraits):
 
     def get_start_pos(self):
         """Returns the position at self.start_time."""
-        return self.get_pos_from_time(self.start_time)
+        return self.pos_eqn(0)
+#        return self.get_pos_from_time(self.start_time)
 
     def get_end_pos(self):
         """Returns the position at self.end_time."""
@@ -1353,11 +1375,11 @@ class Segment(traits.HasTraits):
 
 class Traversal(traits.HasTraits):
     """A `Traversal` is a sequence of segments that describes the vehicle's
-    trajectory as it traverses a location.
+    trajectory as it traverses a location (that is, a TrackSegment).
 
     Fundamental 'length' of a Traversal is the location's length."""
-    loc = traits.Either((traits.Instance(Node),
-                         traits.Instance(FutureLoc)))
+    loc = traits.Instance(Node)
+          
     idx = traits.Either((traits.Int(), None))
     segments = traits.List(traits.Instance(Segment))
 
@@ -1376,6 +1398,9 @@ class Traversal(traits.HasTraits):
                     (self.loc.label, self.length, self.idx)]
         tmp_list.extend( ["  %s\n" % seg for seg in self.segments] )
         return ''.join(tmp_list)
+
+    def __iter__(self):
+        return iter(self.segments)
 
     def get_start_time(self):
         if self.segments:
@@ -1567,7 +1592,7 @@ class Traversal(traits.HasTraits):
 
         `lv_trav` is a Traversal instance from the lead vehicle. The traversal
             should be the one occupied by the lead vehicle's nose. If the
-            location of the lv nose is different than the tai, supply a
+            location of the lv nose is different than the tail, supply a
             trav_offset which is the sum of the lengths for all locations from
             the tail loc to the nose loc.
 
@@ -1577,7 +1602,7 @@ class Traversal(traits.HasTraits):
                                                  lv_length: 50
                                                  lv_nose_pos: 35
                             lv                   trav_offset: A + B = 25
-                       ************              lv_tail_pos: 35-50+25 = 10
+                       ***************           lv_tail_pos: 35-50+25 = 10
 
                 |___A____|__B__|____C_____|      traversals: A - 15
                 0       15     10        100                 B - 10
@@ -1594,7 +1619,6 @@ class Traversal(traits.HasTraits):
         returns an empty list.
         """
         times = []
-
         lv_iter = iter(lv_trav.segments)
         self_iter = iter(self.segments)
         try:
@@ -1605,8 +1629,6 @@ class Traversal(traits.HasTraits):
 
         # if time supplied, don't bother comparing segments that end before time
         if time is not None:
-            assert lv_trav.start_time <= time <= lv_trav.end_time
-            assert self.start_time <= time <= self.end_time
             try:
                 while lv_seg.end_time < time:
                     lv_seg = lv_iter.next()
@@ -1673,6 +1695,16 @@ class Path(traits.HasTraits):
         tmp_list.append( ' %s' % self.future )
         return ''.join(tmp_list)
 
+    def __iter__(self):
+        return itertools.chain(self.traversals, (self.future,))        
+
+    def __len__(self):
+        return len(self.traversals) + 1
+
+    def __getitem__(self, key):
+        tmp = self.traversals + [self.future]
+        return tmp[key]
+
     def get_active_traversal(self):
         """Returns the traversal marked as active. `Active` means
         that the sim 'thinks' it's on this traversal. In contrast, `current`
@@ -1684,21 +1716,40 @@ class Path(traits.HasTraits):
         """Returns the location of the active traversal."""
         return self.traversals[self.active_idx].loc
 
-    def append_segment(self, seg):
-        """Append one trajectory segment to the latest traversal."""
-        trav = self.traversals[-1]
-        try:
-            trav.append_segment(seg)
-        # Only part of the segment fits
-        except TraversalFullError:
-            s1, s2 = seg.split_at_pos(trav.length)
-            trav.append_segment(s1)
-            self.future.append_segment(s2)
-        # The seg is entirely in the future
-        except InvalidPosError:
-            new_seg_eqn = shift_poly(seg.pos_eqn, 0, -trav.length)
-            new_seg = Segment(new_seg_eqn, seg.duration, seg.start_time, self.vehicle.total_mass)
-            self.future.append_segment(new_seg)
+    def append_segments(self, segs, trav):
+        """Appends one or more Segments to the path. Assumed that the Segments
+        are contiguous, and that the Traversals are empty.
+        
+        segs: A list containing Segment instances.
+        trav: The Traversal instance which corresponds to the first Segment.
+        """
+        if not segs:
+            return
+
+        i = 0
+        dist_offset = 0
+        seg = segs[0]
+        while True:
+            # Offset the position to correct for each traversal starting with pos=0
+            if seg.get_start_pos() >= dist_offset:
+                seg.pos_eqn[0] -= dist_offset
+            try:
+                trav.append_segment(seg)
+                i += 1
+                try:
+                    seg = segs[i]
+                except IndexError:
+                    break
+            # Only part of the segment fits
+            except TraversalFullError:                
+                s1, s2 = seg.split_at_pos(trav.length)
+                trav.append_segment(s1)
+                seg = s2
+                dist_offset += trav.length
+                try:                    
+                    trav = self.traversals[trav.idx+1]                    
+                except IndexError:
+                    trav = self.future
 
     def append_loc(self, loc):
         """Appends a new location to the path. Applies any planned segments to
@@ -1767,7 +1818,7 @@ class Path(traits.HasTraits):
             times = self.future.get_times_from_pos(pos, relative)
         elif loc:
             times = Times()
-            for trav in ifilter(lambda x: x.loc is loc, self.traversals):
+            for trav in itertoolts.ifilter(lambda x: x.loc is loc, self.traversals):
                 times.extend(trav.get_times_from_pos(pos, relative))
         else:
             times = self.traversals[-1].get_times_from_pos(pos)
@@ -1834,68 +1885,71 @@ class Path(traits.HasTraits):
         t = segments[0].start_time
         assert t >= Sim.now() # don't change the past
         current_trav = self.get_traversal_from_time(t)
-        current_trav.clear(t) # clear everything past time t
+
+        # clear planned trajectory past time t
+        for trav in self.traversals[current_trav.idx:]:
+            trav.clear(t)
+
         self.future = Traversal(loc=FutureLoc(), idx=None) # clear out future
-        for s in segments:
-            self.append_segment(s)
+        self.append_segments(segments, current_trav)
 
-    def collision_check(self, lv_path, lv_length, time=None, relative=False):
-        """UNUSED and not debugged!! Path level collision checking seems
-        to be unnecessary. Remove the 'raise NotImplementedError' to reactivate.
-
-        Checks a traversal for collisions with a leading vehicle.
-
-        `lv_path` is the Path instance from the lead vehicle.
-        `lv_length' is the length of the lead vehicle
-        `time` (optional) is the earliest time that will be checked.
-
-        Returns a list containing times of collisions. If no collisions found,
-        returns an empty list.
-
-        Checks starting at time, continues until it reaches a merge, switch, or
-        station, then stops. It checks the merge or switch, but does not check
-        the station.
-        Merges introduce the possibility of the lead vehicle changing. Switches
-        introduce the possibility of the locations diverging. Stations are waaay
-        special.
-        """
-        raise NotImplementedError
-        # figure out what Traversals to start from
-        if time:
-            s_idx = self.get_traversal_from_time(time).idx
-            lv_idx = lv_path.get_traversal_from_time(time).idx
-        else:
-            s_idx = 0
-            lv_idx = 0
-
-        # setup lists of Traversals to compare
-        if s_idx is None: # idx of None indicates FutureLoc
-            s_travs = []
-        else:
-            s_travs = self.traversals[s_idx:]
-        if lv_idx is None:
-            lv_travs = []
-        else:
-            lv_travs = lv_path.traversals[lv_idx:]
-
-        # find collision times
-        times = []
-        for s_tr, lv_tr in map(None, s_travs, lv_travs):
-##            if isinstance(s_tr, Station) or isinstance(lv_tr, Station):
+#    def collision_check(self, lv_path, lv_length, time=None, relative=False):
+#        """UNUSED and not debugged!! Path level collision checking seems
+#        to be unnecessary. Remove the 'raise NotImplementedError' to reactivate.
+#
+#        Checks a traversal for collisions with a leading vehicle.
+#
+#        `lv_path` is the Path instance from the lead vehicle.
+#        `lv_length' is the length of the lead vehicle
+#        `time` (optional) is the earliest time that will be checked.
+#
+#        Returns a list containing times of collisions. If no collisions found,
+#        returns an empty list.
+#
+#        Checks starting at time, continues until it reaches a merge, switch, or
+#        station, then stops. It checks the merge or switch, but does not check
+#        the station.
+#        Merges introduce the possibility of the lead vehicle changing. Switches
+#        introduce the possibility of the locations diverging. Stations are waaay
+#        special.
+#        """
+#        raise NotImplementedError
+#        # figure out what Traversals to start from
+#        if time:
+#            s_idx = self.get_traversal_from_time(time).idx
+#            lv_idx = lv_path.get_traversal_from_time(time).idx
+#        else:
+#            s_idx = 0
+#            lv_idx = 0
+#
+#        # setup lists of Traversals to compare
+#        if s_idx is None: # idx of None indicates FutureLoc
+#            s_travs = []
+#        else:
+#            s_travs = self.traversals[s_idx:]
+#        if lv_idx is None:
+#            lv_travs = []
+#        else:
+#            lv_travs = lv_path.traversals[lv_idx:]
+#
+#        # find collision times
+#        times = []
+#        for s_tr, lv_tr in map(None, s_travs, lv_travs):
+###            if isinstance(s_tr, Station) or isinstance(lv_tr, Station):
+###                break
+#
+#            if s_tr and lv_tr:
+#                times.extend(s_tr.collision_check(lv_tr, lv_length, time, relative))
+#            elif s_tr: # just s_tr, no lv_tr
+#                times.extend(s_tr.collision_check(lv_path.future, lv_length, time, relative))
+#            else:     # just lv_t, no s_t
+#                times.extend(self.future.collision_check(lv_tr, lv_length, time, relative))
+#
+##            if isinstance(s_tr, Switch) or (lv_tr, Switch):
 ##                break
-
-            if s_tr and lv_tr:
-                times.extend(s_tr.collision_check(lv_tr, lv_length, time, relative))
-            elif s_tr: # just s_tr, no lv_tr
-                times.extend(s_tr.collision_check(lv_path.future, lv_length, time, relative))
-            else:     # just lv_t, no s_t
-                times.extend(self.future.collision_check(lv_tr, lv_length, time, relative))
-
-            if isinstance(s_tr, Switch) or (lv_tr, Switch):
-                break
-        times.extend(self.future.collision_check(lv_path.future, lv_length, time, relative))
-
-        return times
+#        times.extend(self.future.collision_check(lv_path.future, lv_length, time, relative))
+#
+#        return times
 
 ##    def plot(self, title='path.plot()', show=True, new_fig=True):
 ##        """Plots the whole path using matplotlib. The x-axis is time, the
@@ -2006,7 +2060,7 @@ class TrackSegment(Node):
         complete_msg.msgID = msg_id
         complete_msg.tsID = self.ID
         complete_msg.nextID = self.next.ID
-        globals.Interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
+        globals.interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
 
     def fill_TrackSegmentStatus(self, ts):
         """Fills an api.TrackSegmentStatus instance with current information."""
@@ -2022,67 +2076,67 @@ class TrackSegment(Node):
         else:
             ts.next = api.NONE_ID
 
-class Switch(Node):
-    """A track Switch. Length should be considered the amount of
-    downstream track in which two pods cannot be 'shoulder-to-shoulder' due to
-    their width (plus safety margins).
-    """
-
-    routing_table = traits.Dict
-
-    traits_view =  ui.View(ui.Item(name='ID'),
-                    ui.Item(name='label'),
-                    ui.Item(name='length'),
-                    ui.Item(name='max_speed'),
-                    ui.Item(name='enabled'),
-                    ui.Item(name='routing_table')
-                   )
-
-    def __init__(self, ID, length, max_speed, x_start=0, y_start=0,
-                 x_end=0, y_end=0, label='',
-                 src_edge=None, sink_edge1=None, sink_edge2=None,
-                 default=None, **tr):
-        Node.__init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, SWITCH_CAPACITY, label, **tr)
-#        self.src_edge = src_edge
-#        self.sink_edge1 = sink_edge1
-#        self.sink_edge2 = sink_edge2
-#        self.default = default
-        # Routing table consists of vehicle:(edge, msgID) pairs,
-        # where msgID is the CtrlCmdSwitch message.
-        self.errors=0
-
-    def __str__(self):
-        return self.label
-
-    def get_outbound_edges(self):
-        """Returns the outbound edge instances.
-        TEMP: Using graph lookup each time."""
-        return [data for src, sink, data in globals.DiGraph.edges(self, data=True)]
-
-    def add_rt_entry(self, veh, edge, msgID):
-        """Adds a vehicle: (edge, msgID) entry to the routing table. If an
-        entry for the vehicle is already present, it is overwritten. Does no
-        validation.
-        """
-        self.routing_table[veh] = (edge, msgID)
-    def del_rt_entry(self, veh):
-        """Deletes a routing table entry for vehicle."""
-        del self.routing_table[veh]
-    def get_rt_entry(self, veh):
-        """Returns an (edge, msgID) tuple for the vehicle, or """
-        return self.routing_table.get(veh)
-
-    def fill_SwitchStatus(self, sws):
-        """Fills an api.SwitchStatus instance with current information."""
-        sws.swID = self.ID
-        if self.label:
-            sws.label = self.label
-        for key, value in self.routing_table.iteritems():
-            # routing entries
-            re = sws.entry.add()
-            re.vID = key
-            re.eID = value[0].ID
-            re.msgID = value[1]
+#class Switch(Node):
+#    """A track Switch. Length should be considered the amount of
+#    downstream track in which two pods cannot be 'shoulder-to-shoulder' due to
+#    their width (plus safety margins).
+#    """
+#
+#    routing_table = traits.Dict
+#
+#    traits_view =  ui.View(ui.Item(name='ID'),
+#                    ui.Item(name='label'),
+#                    ui.Item(name='length'),
+#                    ui.Item(name='max_speed'),
+#                    ui.Item(name='enabled'),
+#                    ui.Item(name='routing_table')
+#                   )
+#
+#    def __init__(self, ID, length, max_speed, x_start=0, y_start=0,
+#                 x_end=0, y_end=0, label='',
+#                 src_edge=None, sink_edge1=None, sink_edge2=None,
+#                 default=None, **tr):
+#        Node.__init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, SWITCH_CAPACITY, label, **tr)
+##        self.src_edge = src_edge
+##        self.sink_edge1 = sink_edge1
+##        self.sink_edge2 = sink_edge2
+##        self.default = default
+#        # Routing table consists of vehicle:(edge, msgID) pairs,
+#        # where msgID is the CtrlCmdSwitch message.
+#        self.errors=0
+#
+#    def __str__(self):
+#        return self.label
+#
+#    def get_outbound_edges(self):
+#        """Returns the outbound edge instances.
+#        TEMP: Using graph lookup each time."""
+#        return [data for src, sink, data in globals.digraph.edges(self, data=True)]
+#
+#    def add_rt_entry(self, veh, edge, msgID):
+#        """Adds a vehicle: (edge, msgID) entry to the routing table. If an
+#        entry for the vehicle is already present, it is overwritten. Does no
+#        validation.
+#        """
+#        self.routing_table[veh] = (edge, msgID)
+#    def del_rt_entry(self, veh):
+#        """Deletes a routing table entry for vehicle."""
+#        del self.routing_table[veh]
+#    def get_rt_entry(self, veh):
+#        """Returns an (edge, msgID) tuple for the vehicle, or """
+#        return self.routing_table.get(veh)
+#
+#    def fill_SwitchStatus(self, sws):
+#        """Fills an api.SwitchStatus instance with current information."""
+#        sws.swID = self.ID
+#        if self.label:
+#            sws.label = self.label
+#        for key, value in self.routing_table.iteritems():
+#            # routing entries
+#            re = sws.entry.add()
+#            re.vID = key
+#            re.eID = value[0].ID
+#            re.msgID = value[1]
 
 
 def loc2loctype(loc):
@@ -2090,8 +2144,6 @@ def loc2loctype(loc):
     ret = None
     if isinstance(loc, TrackSegment):
         ret = api.TRACK_SEGMENT
-    elif isinstance(loc, Switch):
-        ret = api.SWITCH
     elif isinstance(loc, station.Station):
         ret = api.STATION
     elif isinstance(loc, BaseVehicle):

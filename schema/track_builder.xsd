@@ -6,7 +6,7 @@
       <xs:sequence>
         <xs:element name="Metadata" type="MetadataType" />
         <xs:element name="MapImage" type="ImageType" />
-        <xs:element name="Tracks">
+        <xs:element name="TracksSegments">
           <xs:complexType>
             <xs:sequence>
               <xs:element minOccurs="1" maxOccurs="unbounded" name="TrackSegment" type="SegmentType" />
@@ -20,10 +20,10 @@
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-		<xs:element name="VehicleModels">
-		  <xs:complexType>
-		    <xs:sequence>
-			  <xs:element minOccurs="1" maxOccurs="unbounded" name="VehicleModel" type="VehicleModelType" />
+        <xs:element name="VehicleModels">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="VehicleModel" type="VehicleModelType" />
             </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -126,7 +126,7 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
-    <xs:attribute name="max_speed" type="nonNegativeDecimal" use="required" />
+    <xs:attribute name="max_speed" type="nonNegativeDecimal" use="optional" />
     <xs:attribute name="radius" type="nonNegativeDecimal" use="optional" />
     <xs:attribute name="arc_angle" type="nonNegativeDecimal" use="optional" />
   </xs:complexType>

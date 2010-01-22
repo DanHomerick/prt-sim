@@ -201,5 +201,37 @@ def prob3():
     pprint(collect(powsimp(apart(ans, at), deep=True), at))
     print collect(powsimp(apart(ans, at), deep=True), at)
 
+
+def prob4():
+    """In the Google Transit Feed controller, we need to find what velocity the
+    vehicles should travel at in order to arrive at their next stop on time, or
+    a litte early. Accuracy is not of great concern in this case, so the
+    problem is simplified by assuming infinite jerk. Thus the acceleration
+    profile looks like:
+        ______
+       |      |_____
+                    |______|
+
+      t0     t1    t2      t3
+
+    """
+    q0, q3, t0, t3, vx, ax = symbols(['q0', 'q3', 't0', 't3', 'vx', 'ax'], real=True, nonnegative=True)
+    an = symbols(['an'], real=True, nonpositive=True)
+    h0 = vx/ax
+    v01 = ax*h0
+    q01 = ax*h0**2/2  # assume v0 = 0
+
+    h2 = -vx/an
+    v23 = an*h2
+    q23 = an*h2**2/2 + vx*h2
+
+    q12 = q3 - q0 - q01 - q23
+    h1 = t3 - t0 - h0 - h2
+
+    ans = q12/h1
+    pprint(ans)
+    # From here, use the fact that ans is vx and the quadratic equation to solve for vx:
+    # 0 = vx**2*(1/(2*an) - 1/(2*ax)) + vx*(t3-t0) - (q3-q0)
+
 if __name__ == '__main__':
-    prob3()
+    prob4()

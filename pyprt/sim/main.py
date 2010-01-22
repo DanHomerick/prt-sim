@@ -11,10 +11,10 @@ def main():
     initialize_logging(globals.config_manager)
 
     import events
-    globals.EventM = events.EventManager()
+    globals.event_manager = events.EventManager()
 
     import comm
-    globals.Interface = comm.ControlInterface(log=globals.config_manager.get_comm_logfile())
+    globals.interface = comm.ControlInterface(log=globals.config_manager.get_comm_logfile())
 
     import scenario
     globals.scenario_manager = scenario.ScenarioManager()

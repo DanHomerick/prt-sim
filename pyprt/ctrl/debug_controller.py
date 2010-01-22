@@ -62,7 +62,7 @@ class DebugController(base_controller.BaseController):
         spline = self.traj_solver.target_position(initial_knot, final_knot)
 
         inf = 1E10000
-        spline.append(cubic_spline.Knot(msg.v_status.nose_pos + 250, 0, 0, inf)) # stay stopped here
+        spline.append(cubic_spline.Knot(msg.v_status.nose_pos + 200, 0, 0, inf)) # stay stopped here
 
         traj_cmd = api.CtrlCmdVehicleTrajectory()
         traj_cmd.vID = msg.v_status.vID
@@ -82,14 +82,6 @@ class DebugController(base_controller.BaseController):
         self.send(api.CTRL_CMD_SWITCH, self.sim_time, sw_cmd)
 
         self.send_resume()
-
-    def fill_spline_msg(self, spline, spline_msg):
-        coeffs_list = spline.get_coeffs()
-        for coeffs in coeffs_list:
-            poly_msg = spline_msg.polys.add()
-            poly_msg.coeffs.extend(coeffs)
-        spline_msg.times.extend(spline.t)
-
 
 if __name__ == '__main__':
     main()

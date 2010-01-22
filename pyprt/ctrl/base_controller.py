@@ -35,6 +35,7 @@ class BaseController(object):
         self.sendQ = list()  #  list contains (msg_type,  msg_time, body) tuples
         self.sim_time = 0
         self.sim_complete = False
+        self.sim_end_time = None
 
         self.log = logging.getLogger('log')
         self.comm_log = logging.getLogger('comm_log')
@@ -43,6 +44,7 @@ class BaseController(object):
         # The following dictionary was generated using make_msg_handling_stubs.py
         # Maps message types to message handling functions.
         self.msg_handlers = {
+            api.SIM_GREETING : self.on_SIM_GREETING,
             api.SIM_COMPLETE_VEHICLE_SPEED : self.on_SIM_COMPLETE_VEHICLE_SPEED,
             api.SIM_COMPLETE_STATION_LAUNCH : self.on_SIM_COMPLETE_STATION_LAUNCH,
             api.SIM_COMPLETE_PASSENGER_LOAD_VEHICLE : self.on_SIM_COMPLETE_PASSENGER_LOAD_VEHICLE,
@@ -88,9 +90,8 @@ class BaseController(object):
             api.SIM_MSG_HDR_INVALID_TIME : self.on_SIM_MSG_HDR_INVALID_TIME,
             api.SIM_MSG_HDR_INVALID_SIZE : self.on_SIM_MSG_HDR_INVALID_SIZE,
             api.SIM_MSG_HDR_INVALID_PBSTR : self.on_SIM_MSG_HDR_INVALID_PBSTR,
+            api.SIM_MSG_BODY_INVALID : self.on_SIM_MSG_BODY_INVALID,
             api.SIM_MSG_BODY_INVALID_ID : self.on_SIM_MSG_BODY_INVALID_ID,
-            api.SIM_MSG_BODY_INVALID_ACCEL : self.on_SIM_MSG_BODY_INVALID_ACCEL,
-            api.SIM_MSG_BODY_INVALID_JERK : self.on_SIM_MSG_BODY_INVALID_JERK,
             api.SIM_ABORT_VEHICLE_SPEED : self.on_SIM_ABORT_VEHICLE_SPEED,
     }
 
@@ -229,6 +230,25 @@ class BaseController(object):
         resume = api.CtrlResume()
         resume.last_sim_msgID = self.last_sim_msgID
         self.send(api.CTRL_RESUME, self.sim_time, resume)
+
+    def fill_spline_msg(self, spline, spline_msg):
+        """Fills a api.Spline msg with data from a cubic spline.
+        spline: A cubic_spline.CubicSpline instance. Typically created by a
+            trajectory_solver.TrajectorySolver.
+        spline_msg: An api.Spline message instance.
+        """
+        coeffs_list = spline.get_coeffs()
+        for coeffs in coeffs_list:
+            poly_msg = spline_msg.polys.add()
+            poly_msg.coeffs.extend(coeffs)
+        spline_msg.times.extend(spline.t)
+
+    def on_SIM_GREETING(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimGreeting()
+        msg.MergeFromString(msg_str)
+        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+        self.log.info("Sim Greeting message received.")
+        self.sim_end_time = msg.sim_end_time
 
     def on_SIM_START(self, msg_type, msgID, msg_time, msg_str):
         msg = api.SimStart()
@@ -515,15 +535,8 @@ class BaseController(object):
         self.send_resume()
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_BODY_INVALID_ACCEL(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgBodyInvalidAccel()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-        raise Exception("Message rejected by Sim")
-
-    def on_SIM_MSG_BODY_INVALID_JERK(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgBodyInvalidJerk()
+    def on_SIM_MSG_BODY_INVALID(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimMsgBodyInvalid()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.send_resume()

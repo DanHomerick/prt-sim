@@ -123,7 +123,7 @@ message CtrlCmdPassengersEmbark {
     required int32          sID = 2; // stationID
     required int32          platformID = 3;
     required int32          berthID = 4;
-    repeated int32          passengerIDs = 5 [packed=true]; // passengerID
+    repeated int32          passengerIDs = 5 [packed=true];
 }
 
 message CtrlCmdPassengersDisembark {
@@ -131,7 +131,7 @@ message CtrlCmdPassengersDisembark {
     required int32          sID = 2; // stationID
     required int32          platformID = 3;
     required int32          berthID = 4;
-    repeated int32          passengerIDs = 5 [packed=true]; // passengerID
+    repeated int32          passengerIDs = 5 [packed=true];
 }
 
 // For simulating a network where the switching
@@ -187,7 +187,7 @@ message CtrlSetnotifyVehiclePosition {
 }
 
 message CtrlSetnotifyTime {
-    required int32         time = 1; // in milliseconds
+    required float         time = 1; // in seconds
 }
 
 // Resume is a very non-realistic command with no possibility of 'changing
@@ -206,6 +206,8 @@ message CtrlResume {
 
 // --------------- Simulator Messages ----------------
 enum SimMsgType {
+    SIM_GREETING = 1000;
+
     SIM_COMPLETE_VEHICLE_SPEED = 1001;
     SIM_COMPLETE_STATION_LAUNCH = 1002;
     SIM_COMPLETE_PASSENGER_LOAD_VEHICLE = 1003;
@@ -260,11 +262,14 @@ enum SimMsgType {
     SIM_MSG_HDR_INVALID_TIME = 1303;
     SIM_MSG_HDR_INVALID_SIZE = 1304;
     SIM_MSG_HDR_INVALID_PBSTR = 1305;
-    SIM_MSG_BODY_INVALID_ID = 1310;
-    SIM_MSG_BODY_INVALID_ACCEL = 1311;
-    SIM_MSG_BODY_INVALID_JERK = 1312;
-
+    SIM_MSG_BODY_INVALID = 1310;
+    SIM_MSG_BODY_INVALID_ID = 1311;
+    
     SIM_ABORT_VEHICLE_SPEED = 1401;
+}
+
+message SimGreeting {
+    required float          sim_end_time = 1;
 }
 
 message SimStart {
@@ -364,8 +369,8 @@ message SimNotifyVehiclePosition {
 }
 
 message SimNotifyTime {
-    optional int32	msgID = 1; // Ctrl msg that requested notify
-    required int32              time = 2; // in milliseconds
+    optional int32	        msgID = 1; // Ctrl msg that requested notify
+    required float              time = 2; // in seconds
 }
 
 message SimNotifyVehicleArrive {
@@ -508,21 +513,20 @@ message SimMsgHdrInvalidSize {
     required int32	msg_size = 2;
 }
 
+// Catch-all for when something is wrong with the data
+// found in the msg body.
+message SimMsgBodyInvalid {
+    required int32      msgID = 1;
+}
+
+// Slightly more specific message for invalid IDs.
 message SimMsgBodyInvalidId {
-    required int32              msgID = 1;
-    required LocationType	loc_type = 2;
-    required int32	locID = 3;
+    required int32         msgID = 1;
+    required LocationType  id_type = 2;
+    required int32	   ID = 3;
 }
 
-message SimMsgBodyInvalidAccel {
-    required int32              msgID = 1;
-    required int32              accel = 2;
-}
 
-message SimMsgBodyInvalidJerk {
-    required int32              msgID = 1;
-    required int32              jerk = 2;
-}
 
 // ------------- Status Types ----------------
 message VehicleStatus {
@@ -596,11 +600,12 @@ message PassengerStatus {
     required int32         locID = 4;
     required int32         src_stationID = 5;
     required int32         dest_stationID = 6;
-    optional int32         weight = 7; // in kg
-    optional int32         wait_time = 8;
-    optional int32         travel_time = 9;
-    optional bool          trip_complete = 10; // a destination reached
-    optional bool          trip_success = 11;  // the correct destinaton reached
+    required float         creation_time = 7;    
+    optional float         wait_time = 8;
+    optional float         travel_time = 9;
+    optional int32         weight = 10; // in kg
+    optional bool          trip_complete = 11; // a destination reached
+    optional bool          trip_success = 12;  // the correct destinaton reached
 }
 
 message RoutingEntry {

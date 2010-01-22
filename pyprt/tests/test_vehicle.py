@@ -624,24 +624,24 @@ class MiscTest(unittest.TestCase):
 class VehicleTestOneLoc(unittest.TestCase):
     def setUp(self):
         # Create a track consisting of a single long length location.
-        globals.TrackSegments[0] = layout.Edge(0, sys.maxint, sys.maxint, None, None)
-        globals.Interface = MockInterface()
+        globals.track_segments[0] = layout.Edge(0, sys.maxint, sys.maxint, None, None)
+        globals.interface = MockInterface()
         Sim.initialize()
 
     
     def add_vehicle(self, loc, pos, speed):
         """Create a default vehicle with starting position and speed."""
-        id = len(globals.Vehicles) # 0 based
+        id = len(globals.vehicles) # 0 based
         v = Vehicle(ID=id, loc=loc, length=100,
                             accel_max_norm=5.0, accel_min_norm=-5.0, jerk_max_norm=2.5,
                             accel_max_emerg=5.0, accel_min_emerg=-5.0, jerk_max_emerg=2.5,
                             v_mass=0, position=pos, speed=speed, payload=0)
-        globals.Vehicles[id] = v
+        globals.vehicles[id] = v
         Sim.activate(v, v.ctrl_loop())
         return v
 
     def test_simple_traversal(self):
-        v = self.add_vehicle(globals.TrackSegments[0], 0, 100)
+        v = self.add_vehicle(globals.track_segments[0], 0, 100)
         Sim.simulate(until=100)
         self.assertEqual(Sim.now(), 100)
         self.assertEqual(v.pos, 10000)

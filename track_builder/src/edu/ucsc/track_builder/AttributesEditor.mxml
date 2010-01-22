@@ -10,11 +10,22 @@
 	<mx:TabNavigator id="tn" color="0x323232" width="100%" height="100%">
 		<mx:VBox label="Track">
             <mx:Form id="trackForm" >
-                <mx:FormItem label="Max Speed:" toolTip="Track speed limit">
-                    <mx:NumericStepper id="trackMaxSpeed" minimum="0" maximum="150" stepSize="2.5"
-                    	change="Globals.tracks.maxSpeed = trackMaxSpeed.value;"
-                    	initialize="trackMaxSpeed.value = Globals.tracks.maxSpeed;"/>
-                </mx:FormItem>                
+            	<mx:HBox>
+	                <mx:FormItem id="trackMaxSpeedForm" label="Max Speed:" toolTip="Track speed limit" enabled="true">
+	                    <mx:NumericStepper id="trackMaxSpeed" minimum="0" maximum="150" stepSize="2.5"
+	                    	change="Globals.tracks.maxSpeed = trackMaxSpeed.value;"
+	                    	initialize="trackMaxSpeed.value = Globals.tracks.maxSpeed;"/>
+	                </mx:FormItem>
+	                <mx:FormItem label="None:" toolTip="No location specific vehicle speed limits">
+	                	<mx:CheckBox id="trackSpeedDisabler" change="trackMaxSpeedForm.enabled = !trackSpeedDisabler.selected;
+	                	                                        if (trackSpeedDisabler.selected) {
+	                	                                            Globals.tracks.maxSpeed = NaN;
+	                	                                        } else {
+	                	                                        	Globals.tracks.maxSpeed = trackMaxSpeed.value;
+	                	                                        }" />
+	                </mx:FormItem>
+            	</mx:HBox>
+                
                 <mx:FormItem label="Label (optional):" toolTip="For documentation purposes only. Need not be unique.">
                     <mx:TextInput id="trackLabel" text=""
                     	change="Globals.tracks.label = trackLabel.text;"
@@ -77,11 +88,22 @@
 		
 		<mx:VBox label="Stations">
             <mx:Form id="stationForm" >
-                <mx:FormItem label="Max Speed:" toolTip="Station speed limit">
-                	<mx:NumericStepper id="stationMaxSpeed" minimum="0" maximum="150" stepSize="0.5"
-                    	change="Globals.stations.maxSpeed = stationMaxSpeed.value;"
-                    	initialize="stationMaxSpeed.value = Globals.stations.maxSpeed;"/>
-                </mx:FormItem>
+            	<mx:HBox>
+	                <mx:FormItem id="stationMaxSpeedForm" label="Max Speed:" toolTip="Station speed limit">
+	                	<mx:NumericStepper id="stationMaxSpeed" minimum="0" maximum="150" stepSize="0.5"
+	                    	change="Globals.stations.maxSpeed = stationMaxSpeed.value;"
+	                    	initialize="stationMaxSpeed.value = Globals.stations.maxSpeed;"/>
+	                </mx:FormItem>
+	                <mx:FormItem label="None:" toolTip="No station speed limits">
+	                	<mx:CheckBox id="stationSpeedDisabler" change="stationMaxSpeedForm.enabled = !stationSpeedDisabler.selected;
+	                	                                        if (stationSpeedDisabler.selected) {
+	                	                                            Globals.stations.maxSpeed = NaN;
+	                	                                        } else {
+	                	                                        	Globals.stations.maxSpeed = stationMaxSpeed.value;
+	                	                                        }" />
+					</mx:FormItem>
+				</mx:HBox>	                	                                        
+	                	                                        
                 <mx:FormItem label="Label (optional):" toolTip="For documentation purposes only. Need not be unique.">
                     <mx:TextInput id="stationLabel" text=""
                     	change="Globals.stations.label = stationLabel.text;"

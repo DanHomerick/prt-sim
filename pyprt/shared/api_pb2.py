@@ -3,13 +3,20 @@
 from google.protobuf import descriptor
 from google.protobuf import message
 from google.protobuf import reflection
-from google.protobuf import service
-from google.protobuf import service_reflection
 from google.protobuf import descriptor_pb2
+# @@protoc_insertion_point(imports)
+
+
+DESCRIPTOR = descriptor.FileDescriptor(
+  name='api.proto',
+  package='prt',
+  serialized_pb='\n\tapi.proto\x12\x03prt\" \n\nPolyCoeffs\x12\x12\n\x06\x63oeffs\x18\x01 \x03(\x02\x42\x02\x10\x01\";\n\x06Spline\x12\x1e\n\x05polys\x18\x01 \x03(\x0b\x32\x0f.prt.PolyCoeffs\x12\x11\n\x05times\x18\x02 \x03(\x02\x42\x02\x10\x01\"D\n\x18\x43trlCmdVehicleTrajectory\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x1b\n\x06spline\x18\x02 \x02(\x0b\x32\x0b.prt.Spline\"H\n\x17\x43trlCmdVehicleItinerary\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x11\n\x05tsIDs\x18\x02 \x03(\x05\x42\x02\x10\x01\x12\r\n\x05\x63lear\x18\x03 \x01(\x08\"\x91\x01\n\x14\x43trlCmdStationLaunch\x12\x0b\n\x03sID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x14\n\x0ctarget_speed\x18\x03 \x02(\x05\x12\x11\n\tmax_accel\x18\x04 \x01(\x05\x12\x11\n\tmax_decel\x18\x05 \x01(\x05\x12\x10\n\x08max_jerk\x18\x06 \x01(\x05\x12\x11\n\temergency\x18\x07 \x01(\x08\"r\n\x17\x43trlCmdPassengersEmbark\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x04 \x02(\x05\x12\x18\n\x0cpassengerIDs\x18\x05 \x03(\x05\x42\x02\x10\x01\"u\n\x1a\x43trlCmdPassengersDisembark\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x04 \x02(\x05\x12\x18\n\x0cpassengerIDs\x18\x05 \x03(\x05\x42\x02\x10\x01\"-\n\rCtrlCmdSwitch\x12\x0c\n\x04tsID\x18\x01 \x02(\x05\x12\x0e\n\x06nextID\x18\x02 \x02(\x05\"\'\n\x18\x43trlRequestVehicleStatus\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"\'\n\x18\x43trlRequestStationStatus\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"(\n\x19\x43trlRequestStationSummary\x12\x0b\n\x03sID\x18\x02 \x02(\x05\")\n\x1a\x43trlRequestPassengerStatus\x12\x0b\n\x03pID\x18\x02 \x02(\x05\"\'\n\x17\x43trlRequestSwitchStatus\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"-\n\x1d\x43trlRequestTrackSegmentStatus\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"\x18\n\x16\x43trlRequestTotalStatus\"F\n\x1c\x43trlSetnotifyVehiclePosition\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04tsID\x18\x03 \x02(\x05\x12\x0b\n\x03pos\x18\x04 \x02(\x05\"!\n\x11\x43trlSetnotifyTime\x12\x0c\n\x04time\x18\x01 \x02(\x02\"$\n\nCtrlResume\x12\x16\n\x0elast_sim_msgID\x18\x01 \x02(\x05\"#\n\x0bSimGreeting\x12\x14\n\x0csim_end_time\x18\x01 \x02(\x02\"\n\n\x08SimStart\"\x08\n\x06SimEnd\"!\n\x10SimUnimplemented\x12\r\n\x05msgID\x18\x01 \x02(\x05\"%\n\x14SimAbortVehicleSpeed\x12\r\n\x05msgID\x18\x01 \x02(\x05\"D\n\x17SimCompleteVehicleSpeed\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\r\n\x05speed\x18\x03 \x02(\x05\"C\n\x18SimCompleteStationLaunch\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0b\n\x03vID\x18\x03 \x02(\x05\"W\n\x1fSimCompletePassengerLoadVehicle\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0b\n\x03pID\x18\x02 \x02(\x05\x12\x0b\n\x03vID\x18\x03 \x02(\x05\x12\x0b\n\x03sID\x18\x04 \x02(\x05\"@\n\x11SimCompleteSwitch\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\x0e\n\x06nextID\x18\x03 \x02(\x05\"O\n\x18SimResponseVehicleStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\x08v_status\x18\x02 \x02(\x0b\x32\x12.prt.VehicleStatus\"O\n\x18SimResponseStationStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\x08s_status\x18\x02 \x02(\x0b\x32\x12.prt.StationStatus\"R\n\x19SimResponseStationSummary\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\ts_summary\x18\x02 \x02(\x0b\x32\x13.prt.StationSummary\"S\n\x1aSimResponsePassengerStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\x08p_status\x18\x02 \x02(\x0b\x32\x14.prt.PassengerStatus\"N\n\x17SimResponseSwitchStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\tsw_status\x18\x02 \x02(\x0b\x32\x11.prt.SwitchStatus\"Z\n\x1dSimResponseTrackSegmentStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12*\n\tts_status\x18\x02 \x02(\x0b\x32\x17.prt.TrackSegmentStatus\"\xf7\x01\n\x16SimResponseTotalStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\nv_statuses\x18\x02 \x03(\x0b\x32\x12.prt.VehicleStatus\x12&\n\ns_statuses\x18\x03 \x03(\x0b\x32\x12.prt.StationStatus\x12(\n\np_statuses\x18\x04 \x03(\x0b\x32\x14.prt.PassengerStatus\x12&\n\x0bsw_statuses\x18\x05 \x03(\x0b\x32\x11.prt.SwitchStatus\x12,\n\x0bts_statuses\x18\x06 \x03(\x0b\x32\x17.prt.TrackSegmentStatus\"N\n\x13SimRequestSwitchCmd\x12\x0c\n\x04swID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\r\n\x05ts1ID\x18\x03 \x02(\x05\x12\r\n\x05ts2ID\x18\x04 \x02(\x05\"Q\n\x18SimNotifyVehiclePosition\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04tsID\x18\x03 \x02(\x05\x12\x0b\n\x03pos\x18\x04 \x02(\x05\",\n\rSimNotifyTime\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12\x0c\n\x04time\x18\x02 \x02(\x02\">\n\x16SimNotifyVehicleArrive\x12$\n\x08v_status\x18\x01 \x02(\x0b\x32\x12.prt.VehicleStatus\"<\n\x14SimNotifyVehicleExit\x12$\n\x08v_status\x18\x01 \x02(\x0b\x32\x12.prt.VehicleStatus\"5\n\x19SimNotifyVehicleReadyLoad\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"\xad\x01\n\x19SimNotifyVehicleCollision\x12\x0c\n\x04v1ID\x18\x01 \x02(\x05\x12\x0c\n\x04v2ID\x18\x02 \x02(\x05\x12#\n\x08loc_type\x18\x03 \x02(\x0e\x32\x11.prt.LocationType\x12\r\n\x05locID\x18\x04 \x02(\x05\x12\x0b\n\x03pos\x18\x05 \x02(\x05\x12\x0f\n\x07\x64\x65lta_v\x18\x06 \x02(\x05\x12\x0f\n\x07rearend\x18\x07 \x01(\x08\x12\x11\n\tsideswipe\x18\x08 \x01(\x08\"D\n\x1bSimNotifyPassengerLoadStart\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0b\n\x03pID\x18\x03 \x02(\x05\"B\n\x19SimNotifyPassengerLoadEnd\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0b\n\x03pID\x18\x03 \x02(\x05\"F\n\x1dSimNotifyPassengerUnloadStart\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0b\n\x03pID\x18\x03 \x02(\x05\"D\n\x1bSimNotifyPassengerUnloadEnd\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0b\n\x03pID\x18\x03 \x02(\x05\"D\n\x1bSimNotifyPassengerDelivered\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0b\n\x03pID\x18\x03 \x02(\x05\"G\n\x1eSimNotifyPassengerMisdelivered\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0b\n\x03pID\x18\x03 \x02(\x05\"H\n\x1bSimNotifyStationReadyLaunch\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x0f\n\x03pID\x18\x03 \x03(\x05\x42\x02\x10\x01\"9\n\x1dSimNotifyStationUnreadyLaunch\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\",\n\x1cSimEventTrackSegmentDisabled\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"-\n\x1dSimEventTrackSegmentReenabled\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"&\n\x16SimEventSwitchDisabled\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"\'\n\x17SimEventSwitchReenabled\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"&\n\x17SimEventStationDisabled\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"\'\n\x18SimEventStationReenabled\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"&\n\x17SimEventVehicleDisabled\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"\'\n\x18SimEventVehicleReenabled\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"B\n\x18SimEventPassengerCreated\x12&\n\x08p_status\x18\x01 \x02(\x0b\x32\x14.prt.PassengerStatus\"*\n\x1bSimEventPassengerChangedest\x12\x0b\n\x03pID\x18\x01 \x02(\x05\";\n\x19SimMsgHdrInvalidSeparator\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0f\n\x07msg_sep\x18\x02 \x02(\x05\"7\n\x14SimMsgHdrInvalidType\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_type\x18\x02 \x02(\x05\"#\n\x12SimMsgHdrInvalidID\x12\r\n\x05msgID\x18\x01 \x02(\x05\"7\n\x14SimMsgHdrInvalidTime\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_time\x18\x02 \x02(\x05\"7\n\x14SimMsgHdrInvalidSize\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_size\x18\x02 \x02(\x05\"\"\n\x11SimMsgBodyInvalid\x12\r\n\x05msgID\x18\x01 \x02(\x05\"T\n\x13SimMsgBodyInvalidId\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\"\n\x07id_type\x18\x02 \x02(\x0e\x32\x11.prt.LocationType\x12\n\n\x02ID\x18\x03 \x02(\x05\"\x82\x02\n\rVehicleStatus\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12(\n\rnose_loc_type\x18\x02 \x02(\x0e\x32\x11.prt.LocationType\x12\x12\n\nnose_locID\x18\x03 \x02(\x05\x12\x10\n\x08nose_pos\x18\x04 \x02(\x02\x12(\n\rtail_loc_type\x18\x05 \x02(\x0e\x32\x11.prt.LocationType\x12\x12\n\ntail_locID\x18\x06 \x02(\x05\x12\x10\n\x08tail_pos\x18\x07 \x02(\x02\x12\x0b\n\x03vel\x18\x08 \x02(\x02\x12\r\n\x05\x61\x63\x63\x65l\x18\t \x02(\x02\x12\x17\n\x0bpassengerID\x18\n \x03(\x05\x42\x02\x10\x01\x12\x0f\n\x07headway\x18\x0c \x01(\x05\"\xb4\x01\n\x0eStationSummary\x12\x0b\n\x03sID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12\x1f\n\x13loaded_ready_launch\x18\x03 \x03(\x05\x42\x02\x10\x01\x12!\n\x15unloaded_ready_launch\x18\x04 \x03(\x05\x42\x02\x10\x01\x12\x0f\n\x03pID\x18\x05 \x03(\x05\x42\x02\x10\x01\x12\x18\n\x10next_accept_time\x18\x06 \x02(\x05\x12\x17\n\x0fvehicles_needed\x18\x07 \x02(\x05\"\xa2\x01\n\rStationStatus\x12\x0b\n\x03sID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12,\n\x0fplatform_status\x18\x03 \x03(\x0b\x32\x13.prt.PlatformStatus\x12\x0f\n\x03pID\x18\x04 \x03(\x05\x42\x02\x10\x01\x12\x12\n\nv_adv_time\x18\x05 \x02(\x05\x12\"\n\x06policy\x18\x06 \x02(\x0e\x32\x12.prt.StationPolicy\"t\n\x0ePlatformStatus\x12\x0e\n\x06platID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\x11\n\tunloading\x18\x03 \x02(\x08\x12\x0f\n\x07loading\x18\x04 \x02(\x08\x12 \n\x06\x62\x65rths\x18\x05 \x03(\x0b\x32\x10.prt.BerthStatus\"5\n\x0b\x42\x65rthStatus\x12\x0b\n\x03\x62ID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04\x62usy\x18\x03 \x02(\x08\"\x8c\x02\n\x0fPassengerStatus\x12\x0b\n\x03pID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12#\n\x08loc_type\x18\x03 \x02(\x0e\x32\x11.prt.LocationType\x12\r\n\x05locID\x18\x04 \x02(\x05\x12\x15\n\rsrc_stationID\x18\x05 \x02(\x05\x12\x16\n\x0e\x64\x65st_stationID\x18\x06 \x02(\x05\x12\x15\n\rcreation_time\x18\x07 \x02(\x02\x12\x11\n\twait_time\x18\x08 \x01(\x02\x12\x13\n\x0btravel_time\x18\t \x01(\x02\x12\x0e\n\x06weight\x18\n \x01(\x05\x12\x15\n\rtrip_complete\x18\x0b \x01(\x08\x12\x14\n\x0ctrip_success\x18\x0c \x01(\x08\"8\n\x0cRoutingEntry\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\r\n\x05msgID\x18\x03 \x01(\x05\"M\n\x0cSwitchStatus\x12\x0c\n\x04swID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12 \n\x05\x65ntry\x18\x03 \x03(\x0b\x32\x11.prt.RoutingEntry\"s\n\x12TrackSegmentStatus\x12\x0c\n\x04tsID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12\x11\n\tmax_speed\x18\x03 \x02(\x05\x12\x0e\n\x06length\x18\x04 \x02(\x05\x12\x0f\n\x03vID\x18\x05 \x03(\x05\x42\x02\x10\x01\x12\x0c\n\x04next\x18\x06 \x02(\x05*G\n\x04Misc\x12\x14\n\x07MSG_SEP\x10\x85\x85\xfe\xff\xff\xff\xff\xff\xff\x01\x12\x13\n\x0fMSG_HEADER_SIZE\x10\x0e\x12\x14\n\x07NONE_ID\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01*\xe1\x03\n\x0b\x43trlMsgType\x12\x1f\n\x1b\x43TRL_CMD_VEHICLE_TRAJECTORY\x10\x01\x12\x1e\n\x1a\x43TRL_CMD_VEHICLE_ITINERARY\x10\x02\x12\x13\n\x0f\x43TRL_CMD_SWITCH\x10\x03\x12\x1e\n\x1a\x43TRL_CMD_PASSENGERS_EMBARK\x10\x04\x12!\n\x1d\x43TRL_CMD_PASSENGERS_DISEMBARK\x10\x05\x12\x1f\n\x1b\x43TRL_REQUEST_VEHICLE_STATUS\x10\n\x12\x1f\n\x1b\x43TRL_REQUEST_STATION_STATUS\x10\x0b\x12 \n\x1c\x43TRL_REQUEST_STATION_SUMMARY\x10\x0c\x12!\n\x1d\x43TRL_REQUEST_PASSENGER_STATUS\x10\r\x12\x1e\n\x1a\x43TRL_REQUEST_SWITCH_STATUS\x10\x0e\x12$\n CTRL_REQUEST_TRACKSEGMENT_STATUS\x10\x0f\x12\x1d\n\x19\x43TRL_REQUEST_TOTAL_STATUS\x10\x10\x12#\n\x1f\x43TRL_SETNOTIFY_VEHICLE_POSITION\x10\x14\x12\x17\n\x13\x43TRL_SETNOTIFY_TIME\x10\x32\x12\x0f\n\x0b\x43TRL_RESUME\x10[*`\n\x0cLocationType\x12\x11\n\rTRACK_SEGMENT\x10\x00\x12\n\n\x06SWITCH\x10\n\x12\x0b\n\x07STATION\x10\x14\x12\x0b\n\x07VEHICLE\x10\x1e\x12\r\n\tPASSENGER\x10(\x12\x08\n\x04NONE\x10\x32*%\n\rStationPolicy\x12\t\n\x05LOBBY\x10\x01\x12\t\n\x05QUEUE\x10\x02*\xcc\x0c\n\nSimMsgType\x12\x11\n\x0cSIM_GREETING\x10\xe8\x07\x12\x1f\n\x1aSIM_COMPLETE_VEHICLE_SPEED\x10\xe9\x07\x12 \n\x1bSIM_COMPLETE_STATION_LAUNCH\x10\xea\x07\x12(\n#SIM_COMPLETE_PASSENGER_LOAD_VEHICLE\x10\xeb\x07\x12\x18\n\x13SIM_COMPLETE_SWITCH\x10\xec\x07\x12 \n\x1bSIM_RESPONSE_VEHICLE_STATUS\x10\xf2\x07\x12 \n\x1bSIM_RESPONSE_STATION_STATUS\x10\xf3\x07\x12!\n\x1cSIM_RESPONSE_STATION_SUMMARY\x10\xf4\x07\x12\"\n\x1dSIM_RESPONSE_PASSENGER_STATUS\x10\xf5\x07\x12\x1f\n\x1aSIM_RESPONSE_SWITCH_STATUS\x10\xf6\x07\x12%\n SIM_RESPONSE_TRACKSEGMENT_STATUS\x10\xf7\x07\x12\x1e\n\x19SIM_RESPONSE_TOTAL_STATUS\x10\xf8\x07\x12 \n\x1bSIM_NOTIFY_VEHICLE_POSITION\x10\xfc\x07\x12\x1e\n\x19SIM_NOTIFY_VEHICLE_ARRIVE\x10\xfd\x07\x12\x1c\n\x17SIM_NOTIFY_VEHICLE_EXIT\x10\xfe\x07\x12\"\n\x1dSIM_NOTIFY_VEHICLE_READY_LOAD\x10\xff\x07\x12!\n\x1cSIM_NOTIFY_VEHICLE_COLLISION\x10\x80\x08\x12$\n\x1fSIM_NOTIFY_PASSENGER_LOAD_START\x10\x87\x08\x12\"\n\x1dSIM_NOTIFY_PASSENGER_LOAD_END\x10\x88\x08\x12&\n!SIM_NOTIFY_PASSENGER_UNLOAD_START\x10\x89\x08\x12$\n\x1fSIM_NOTIFY_PASSENGER_UNLOAD_END\x10\x8a\x08\x12#\n\x1eSIM_NOTIFY_PASSENGER_DELIVERED\x10\x8b\x08\x12&\n!SIM_NOTIFY_PASSENGER_MISDELIVERED\x10\x8c\x08\x12$\n\x1fSIM_NOTIFY_STATION_READY_LAUNCH\x10\x90\x08\x12&\n!SIM_NOTIFY_STATION_UNREADY_LAUNCH\x10\x91\x08\x12\x14\n\x0fSIM_NOTIFY_TIME\x10\x9a\x08\x12\x1b\n\x16SIM_REQUEST_SWITCH_CMD\x10\xa4\x08\x12$\n\x1fSIM_EVENT_TRACKSEGMENT_DISABLED\x10\xcc\x08\x12%\n SIM_EVENT_TRACKSEGMENT_REENABLED\x10\xcd\x08\x12\x1e\n\x19SIM_EVENT_SWITCH_DISABLED\x10\xce\x08\x12\x1f\n\x1aSIM_EVENT_SWITCH_REENABLED\x10\xcf\x08\x12\x1f\n\x1aSIM_EVENT_STATION_DISABLED\x10\xd0\x08\x12 \n\x1bSIM_EVENT_STATION_REENABLED\x10\xd1\x08\x12\x1f\n\x1aSIM_EVENT_VEHICLE_DISABLED\x10\xd2\x08\x12 \n\x1bSIM_EVENT_VEHICLE_REENABLED\x10\xd3\x08\x12 \n\x1bSIM_EVENT_PASSENGER_CREATED\x10\xd4\x08\x12#\n\x1eSIM_EVENT_PASSENGER_CHANGEDEST\x10\xd5\x08\x12\x0e\n\tSIM_START\x10\xb0\t\x12\x0c\n\x07SIM_END\x10\xb1\t\x12\x16\n\x11SIM_UNIMPLEMENTED\x10\xb2\t\x12\"\n\x1dSIM_MSG_HDR_INVALID_SEPARATOR\x10\x94\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_TYPE\x10\x95\n\x12\x1b\n\x16SIM_MSG_HDR_INVALID_ID\x10\x96\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_TIME\x10\x97\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_SIZE\x10\x98\n\x12\x1e\n\x19SIM_MSG_HDR_INVALID_PBSTR\x10\x99\n\x12\x19\n\x14SIM_MSG_BODY_INVALID\x10\x9e\n\x12\x1c\n\x17SIM_MSG_BODY_INVALID_ID\x10\x9f\n\x12\x1c\n\x17SIM_ABORT_VEHICLE_SPEED\x10\xf9\n')
+
 _MISC = descriptor.EnumDescriptor(
   name='Misc',
   full_name='prt.Misc',
-  filename='Misc',
+  filename=None,
+  file=DESCRIPTOR,
   values=[
     descriptor.EnumValueDescriptor(
       name='MSG_SEP', index=0, number=-32123,
@@ -24,14 +31,18 @@ _MISC = descriptor.EnumDescriptor(
       options=None,
       type=None),
   ],
+  containing_type=None,
   options=None,
+  serialized_start=5561,
+  serialized_end=5632,
 )
 
 
 _CTRLMSGTYPE = descriptor.EnumDescriptor(
   name='CtrlMsgType',
   full_name='prt.CtrlMsgType',
-  filename='CtrlMsgType',
+  filename=None,
+  file=DESCRIPTOR,
   values=[
     descriptor.EnumValueDescriptor(
       name='CTRL_CMD_VEHICLE_TRAJECTORY', index=0, number=1,
@@ -94,14 +105,18 @@ _CTRLMSGTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
   ],
+  containing_type=None,
   options=None,
+  serialized_start=5635,
+  serialized_end=6116,
 )
 
 
 _LOCATIONTYPE = descriptor.EnumDescriptor(
   name='LocationType',
   full_name='prt.LocationType',
-  filename='LocationType',
+  filename=None,
+  file=DESCRIPTOR,
   values=[
     descriptor.EnumValueDescriptor(
       name='TRACK_SEGMENT', index=0, number=0,
@@ -128,14 +143,18 @@ _LOCATIONTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
   ],
+  containing_type=None,
   options=None,
+  serialized_start=6118,
+  serialized_end=6214,
 )
 
 
 _STATIONPOLICY = descriptor.EnumDescriptor(
   name='StationPolicy',
   full_name='prt.StationPolicy',
-  filename='StationPolicy',
+  filename=None,
+  file=DESCRIPTOR,
   values=[
     descriptor.EnumValueDescriptor(
       name='LOBBY', index=0, number=1,
@@ -146,205 +165,209 @@ _STATIONPOLICY = descriptor.EnumDescriptor(
       options=None,
       type=None),
   ],
+  containing_type=None,
   options=None,
+  serialized_start=6216,
+  serialized_end=6253,
 )
 
 
 _SIMMSGTYPE = descriptor.EnumDescriptor(
   name='SimMsgType',
   full_name='prt.SimMsgType',
-  filename='SimMsgType',
+  filename=None,
+  file=DESCRIPTOR,
   values=[
     descriptor.EnumValueDescriptor(
-      name='SIM_COMPLETE_VEHICLE_SPEED', index=0, number=1001,
+      name='SIM_GREETING', index=0, number=1000,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_COMPLETE_STATION_LAUNCH', index=1, number=1002,
+      name='SIM_COMPLETE_VEHICLE_SPEED', index=1, number=1001,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_COMPLETE_PASSENGER_LOAD_VEHICLE', index=2, number=1003,
+      name='SIM_COMPLETE_STATION_LAUNCH', index=2, number=1002,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_COMPLETE_SWITCH', index=3, number=1004,
+      name='SIM_COMPLETE_PASSENGER_LOAD_VEHICLE', index=3, number=1003,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_VEHICLE_STATUS', index=4, number=1010,
+      name='SIM_COMPLETE_SWITCH', index=4, number=1004,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_STATION_STATUS', index=5, number=1011,
+      name='SIM_RESPONSE_VEHICLE_STATUS', index=5, number=1010,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_STATION_SUMMARY', index=6, number=1012,
+      name='SIM_RESPONSE_STATION_STATUS', index=6, number=1011,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_PASSENGER_STATUS', index=7, number=1013,
+      name='SIM_RESPONSE_STATION_SUMMARY', index=7, number=1012,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_SWITCH_STATUS', index=8, number=1014,
+      name='SIM_RESPONSE_PASSENGER_STATUS', index=8, number=1013,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_TRACKSEGMENT_STATUS', index=9, number=1015,
+      name='SIM_RESPONSE_SWITCH_STATUS', index=9, number=1014,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_TOTAL_STATUS', index=10, number=1016,
+      name='SIM_RESPONSE_TRACKSEGMENT_STATUS', index=10, number=1015,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_POSITION', index=11, number=1020,
+      name='SIM_RESPONSE_TOTAL_STATUS', index=11, number=1016,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_ARRIVE', index=12, number=1021,
+      name='SIM_NOTIFY_VEHICLE_POSITION', index=12, number=1020,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_EXIT', index=13, number=1022,
+      name='SIM_NOTIFY_VEHICLE_ARRIVE', index=13, number=1021,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_READY_LOAD', index=14, number=1023,
+      name='SIM_NOTIFY_VEHICLE_EXIT', index=14, number=1022,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_COLLISION', index=15, number=1024,
+      name='SIM_NOTIFY_VEHICLE_READY_LOAD', index=15, number=1023,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_LOAD_START', index=16, number=1031,
+      name='SIM_NOTIFY_VEHICLE_COLLISION', index=16, number=1024,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_LOAD_END', index=17, number=1032,
+      name='SIM_NOTIFY_PASSENGER_LOAD_START', index=17, number=1031,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_UNLOAD_START', index=18, number=1033,
+      name='SIM_NOTIFY_PASSENGER_LOAD_END', index=18, number=1032,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_UNLOAD_END', index=19, number=1034,
+      name='SIM_NOTIFY_PASSENGER_UNLOAD_START', index=19, number=1033,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_DELIVERED', index=20, number=1035,
+      name='SIM_NOTIFY_PASSENGER_UNLOAD_END', index=20, number=1034,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_MISDELIVERED', index=21, number=1036,
+      name='SIM_NOTIFY_PASSENGER_DELIVERED', index=21, number=1035,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_STATION_READY_LAUNCH', index=22, number=1040,
+      name='SIM_NOTIFY_PASSENGER_MISDELIVERED', index=22, number=1036,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_STATION_UNREADY_LAUNCH', index=23, number=1041,
+      name='SIM_NOTIFY_STATION_READY_LAUNCH', index=23, number=1040,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_TIME', index=24, number=1050,
+      name='SIM_NOTIFY_STATION_UNREADY_LAUNCH', index=24, number=1041,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_REQUEST_SWITCH_CMD', index=25, number=1060,
+      name='SIM_NOTIFY_TIME', index=25, number=1050,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_TRACKSEGMENT_DISABLED', index=26, number=1100,
+      name='SIM_REQUEST_SWITCH_CMD', index=26, number=1060,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_TRACKSEGMENT_REENABLED', index=27, number=1101,
+      name='SIM_EVENT_TRACKSEGMENT_DISABLED', index=27, number=1100,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_SWITCH_DISABLED', index=28, number=1102,
+      name='SIM_EVENT_TRACKSEGMENT_REENABLED', index=28, number=1101,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_SWITCH_REENABLED', index=29, number=1103,
+      name='SIM_EVENT_SWITCH_DISABLED', index=29, number=1102,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_STATION_DISABLED', index=30, number=1104,
+      name='SIM_EVENT_SWITCH_REENABLED', index=30, number=1103,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_STATION_REENABLED', index=31, number=1105,
+      name='SIM_EVENT_STATION_DISABLED', index=31, number=1104,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_VEHICLE_DISABLED', index=32, number=1106,
+      name='SIM_EVENT_STATION_REENABLED', index=32, number=1105,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_VEHICLE_REENABLED', index=33, number=1107,
+      name='SIM_EVENT_VEHICLE_DISABLED', index=33, number=1106,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_PASSENGER_CREATED', index=34, number=1108,
+      name='SIM_EVENT_VEHICLE_REENABLED', index=34, number=1107,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_PASSENGER_CHANGEDEST', index=35, number=1109,
+      name='SIM_EVENT_PASSENGER_CREATED', index=35, number=1108,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_START', index=36, number=1200,
+      name='SIM_EVENT_PASSENGER_CHANGEDEST', index=36, number=1109,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_END', index=37, number=1201,
+      name='SIM_START', index=37, number=1200,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_UNIMPLEMENTED', index=38, number=1202,
+      name='SIM_END', index=38, number=1201,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_SEPARATOR', index=39, number=1300,
+      name='SIM_UNIMPLEMENTED', index=39, number=1202,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_TYPE', index=40, number=1301,
+      name='SIM_MSG_HDR_INVALID_SEPARATOR', index=40, number=1300,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_ID', index=41, number=1302,
+      name='SIM_MSG_HDR_INVALID_TYPE', index=41, number=1301,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_TIME', index=42, number=1303,
+      name='SIM_MSG_HDR_INVALID_ID', index=42, number=1302,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_SIZE', index=43, number=1304,
+      name='SIM_MSG_HDR_INVALID_TIME', index=43, number=1303,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_PBSTR', index=44, number=1305,
+      name='SIM_MSG_HDR_INVALID_SIZE', index=44, number=1304,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_BODY_INVALID_ID', index=45, number=1310,
+      name='SIM_MSG_HDR_INVALID_PBSTR', index=45, number=1305,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_BODY_INVALID_ACCEL', index=46, number=1311,
+      name='SIM_MSG_BODY_INVALID', index=46, number=1310,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_BODY_INVALID_JERK', index=47, number=1312,
+      name='SIM_MSG_BODY_INVALID_ID', index=47, number=1311,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
@@ -352,7 +375,10 @@ _SIMMSGTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
   ],
+  containing_type=None,
   options=None,
+  serialized_start=6256,
+  serialized_end=7868,
 )
 
 
@@ -382,6 +408,7 @@ PASSENGER = 40
 NONE = 50
 LOBBY = 1
 QUEUE = 2
+SIM_GREETING = 1000
 SIM_COMPLETE_VEHICLE_SPEED = 1001
 SIM_COMPLETE_STATION_LAUNCH = 1002
 SIM_COMPLETE_PASSENGER_LOAD_VEHICLE = 1003
@@ -427,9 +454,8 @@ SIM_MSG_HDR_INVALID_ID = 1302
 SIM_MSG_HDR_INVALID_TIME = 1303
 SIM_MSG_HDR_INVALID_SIZE = 1304
 SIM_MSG_HDR_INVALID_PBSTR = 1305
-SIM_MSG_BODY_INVALID_ID = 1310
-SIM_MSG_BODY_INVALID_ACCEL = 1311
-SIM_MSG_BODY_INVALID_JERK = 1312
+SIM_MSG_BODY_INVALID = 1310
+SIM_MSG_BODY_INVALID_ID = 1311
 SIM_ABORT_VEHICLE_SPEED = 1401
 
 
@@ -437,2505 +463,2948 @@ SIM_ABORT_VEHICLE_SPEED = 1401
 _POLYCOEFFS = descriptor.Descriptor(
   name='PolyCoeffs',
   full_name='prt.PolyCoeffs',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='coeffs', full_name='prt.PolyCoeffs.coeffs', index=0,
       number=1, type=2, cpp_type=6, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=18,
+  serialized_end=50,
+)
 
 
 _SPLINE = descriptor.Descriptor(
   name='Spline',
   full_name='prt.Spline',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='polys', full_name='prt.Spline.polys', index=0,
       number=1, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='times', full_name='prt.Spline.times', index=1,
       number=2, type=2, cpp_type=6, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=52,
+  serialized_end=111,
+)
 
 
 _CTRLCMDVEHICLETRAJECTORY = descriptor.Descriptor(
   name='CtrlCmdVehicleTrajectory',
   full_name='prt.CtrlCmdVehicleTrajectory',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.CtrlCmdVehicleTrajectory.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='spline', full_name='prt.CtrlCmdVehicleTrajectory.spline', index=1,
       number=2, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=113,
+  serialized_end=181,
+)
 
 
 _CTRLCMDVEHICLEITINERARY = descriptor.Descriptor(
   name='CtrlCmdVehicleItinerary',
   full_name='prt.CtrlCmdVehicleItinerary',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.CtrlCmdVehicleItinerary.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tsIDs', full_name='prt.CtrlCmdVehicleItinerary.tsIDs', index=1,
       number=2, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
     descriptor.FieldDescriptor(
       name='clear', full_name='prt.CtrlCmdVehicleItinerary.clear', index=2,
       number=3, type=8, cpp_type=7, label=1,
-      default_value=False,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=183,
+  serialized_end=255,
+)
 
 
 _CTRLCMDSTATIONLAUNCH = descriptor.Descriptor(
   name='CtrlCmdStationLaunch',
   full_name='prt.CtrlCmdStationLaunch',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.CtrlCmdStationLaunch.sID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.CtrlCmdStationLaunch.vID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='target_speed', full_name='prt.CtrlCmdStationLaunch.target_speed', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='max_accel', full_name='prt.CtrlCmdStationLaunch.max_accel', index=3,
       number=4, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='max_decel', full_name='prt.CtrlCmdStationLaunch.max_decel', index=4,
       number=5, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='max_jerk', full_name='prt.CtrlCmdStationLaunch.max_jerk', index=5,
       number=6, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='emergency', full_name='prt.CtrlCmdStationLaunch.emergency', index=6,
       number=7, type=8, cpp_type=7, label=1,
-      default_value=False,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=258,
+  serialized_end=403,
+)
 
 
 _CTRLCMDPASSENGERSEMBARK = descriptor.Descriptor(
   name='CtrlCmdPassengersEmbark',
   full_name='prt.CtrlCmdPassengersEmbark',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.CtrlCmdPassengersEmbark.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.CtrlCmdPassengersEmbark.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='platformID', full_name='prt.CtrlCmdPassengersEmbark.platformID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='berthID', full_name='prt.CtrlCmdPassengersEmbark.berthID', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='passengerIDs', full_name='prt.CtrlCmdPassengersEmbark.passengerIDs', index=4,
       number=5, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=405,
+  serialized_end=519,
+)
 
 
 _CTRLCMDPASSENGERSDISEMBARK = descriptor.Descriptor(
   name='CtrlCmdPassengersDisembark',
   full_name='prt.CtrlCmdPassengersDisembark',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.CtrlCmdPassengersDisembark.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.CtrlCmdPassengersDisembark.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='platformID', full_name='prt.CtrlCmdPassengersDisembark.platformID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='berthID', full_name='prt.CtrlCmdPassengersDisembark.berthID', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='passengerIDs', full_name='prt.CtrlCmdPassengersDisembark.passengerIDs', index=4,
       number=5, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=521,
+  serialized_end=638,
+)
 
 
 _CTRLCMDSWITCH = descriptor.Descriptor(
   name='CtrlCmdSwitch',
   full_name='prt.CtrlCmdSwitch',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.CtrlCmdSwitch.tsID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='nextID', full_name='prt.CtrlCmdSwitch.nextID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=640,
+  serialized_end=685,
+)
 
 
 _CTRLREQUESTVEHICLESTATUS = descriptor.Descriptor(
   name='CtrlRequestVehicleStatus',
   full_name='prt.CtrlRequestVehicleStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.CtrlRequestVehicleStatus.vID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=687,
+  serialized_end=726,
+)
 
 
 _CTRLREQUESTSTATIONSTATUS = descriptor.Descriptor(
   name='CtrlRequestStationStatus',
   full_name='prt.CtrlRequestStationStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.CtrlRequestStationStatus.sID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=728,
+  serialized_end=767,
+)
 
 
 _CTRLREQUESTSTATIONSUMMARY = descriptor.Descriptor(
   name='CtrlRequestStationSummary',
   full_name='prt.CtrlRequestStationSummary',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.CtrlRequestStationSummary.sID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=769,
+  serialized_end=809,
+)
 
 
 _CTRLREQUESTPASSENGERSTATUS = descriptor.Descriptor(
   name='CtrlRequestPassengerStatus',
   full_name='prt.CtrlRequestPassengerStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.CtrlRequestPassengerStatus.pID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=811,
+  serialized_end=852,
+)
 
 
 _CTRLREQUESTSWITCHSTATUS = descriptor.Descriptor(
   name='CtrlRequestSwitchStatus',
   full_name='prt.CtrlRequestSwitchStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='swID', full_name='prt.CtrlRequestSwitchStatus.swID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=854,
+  serialized_end=893,
+)
 
 
 _CTRLREQUESTTRACKSEGMENTSTATUS = descriptor.Descriptor(
   name='CtrlRequestTrackSegmentStatus',
   full_name='prt.CtrlRequestTrackSegmentStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.CtrlRequestTrackSegmentStatus.tsID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=895,
+  serialized_end=940,
+)
 
 
 _CTRLREQUESTTOTALSTATUS = descriptor.Descriptor(
   name='CtrlRequestTotalStatus',
   full_name='prt.CtrlRequestTotalStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=942,
+  serialized_end=966,
+)
 
 
 _CTRLSETNOTIFYVEHICLEPOSITION = descriptor.Descriptor(
   name='CtrlSetnotifyVehiclePosition',
   full_name='prt.CtrlSetnotifyVehiclePosition',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.CtrlSetnotifyVehiclePosition.vID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.CtrlSetnotifyVehiclePosition.tsID', index=1,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pos', full_name='prt.CtrlSetnotifyVehiclePosition.pos', index=2,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=968,
+  serialized_end=1038,
+)
 
 
 _CTRLSETNOTIFYTIME = descriptor.Descriptor(
   name='CtrlSetnotifyTime',
   full_name='prt.CtrlSetnotifyTime',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='time', full_name='prt.CtrlSetnotifyTime.time', index=0,
-      number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      number=1, type=2, cpp_type=6, label=2,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1040,
+  serialized_end=1073,
+)
 
 
 _CTRLRESUME = descriptor.Descriptor(
   name='CtrlResume',
   full_name='prt.CtrlResume',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='last_sim_msgID', full_name='prt.CtrlResume.last_sim_msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1075,
+  serialized_end=1111,
+)
+
+
+_SIMGREETING = descriptor.Descriptor(
+  name='SimGreeting',
+  full_name='prt.SimGreeting',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='sim_end_time', full_name='prt.SimGreeting.sim_end_time', index=0,
+      number=1, type=2, cpp_type=6, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1113,
+  serialized_end=1148,
+)
 
 
 _SIMSTART = descriptor.Descriptor(
   name='SimStart',
   full_name='prt.SimStart',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1150,
+  serialized_end=1160,
+)
 
 
 _SIMEND = descriptor.Descriptor(
   name='SimEnd',
   full_name='prt.SimEnd',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1162,
+  serialized_end=1170,
+)
 
 
 _SIMUNIMPLEMENTED = descriptor.Descriptor(
   name='SimUnimplemented',
   full_name='prt.SimUnimplemented',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimUnimplemented.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1172,
+  serialized_end=1205,
+)
 
 
 _SIMABORTVEHICLESPEED = descriptor.Descriptor(
   name='SimAbortVehicleSpeed',
   full_name='prt.SimAbortVehicleSpeed',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimAbortVehicleSpeed.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1207,
+  serialized_end=1244,
+)
 
 
 _SIMCOMPLETEVEHICLESPEED = descriptor.Descriptor(
   name='SimCompleteVehicleSpeed',
   full_name='prt.SimCompleteVehicleSpeed',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimCompleteVehicleSpeed.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimCompleteVehicleSpeed.vID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='speed', full_name='prt.SimCompleteVehicleSpeed.speed', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1246,
+  serialized_end=1314,
+)
 
 
 _SIMCOMPLETESTATIONLAUNCH = descriptor.Descriptor(
   name='SimCompleteStationLaunch',
   full_name='prt.SimCompleteStationLaunch',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimCompleteStationLaunch.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimCompleteStationLaunch.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimCompleteStationLaunch.vID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1316,
+  serialized_end=1383,
+)
 
 
 _SIMCOMPLETEPASSENGERLOADVEHICLE = descriptor.Descriptor(
   name='SimCompletePassengerLoadVehicle',
   full_name='prt.SimCompletePassengerLoadVehicle',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimCompletePassengerLoadVehicle.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimCompletePassengerLoadVehicle.pID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimCompletePassengerLoadVehicle.vID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimCompletePassengerLoadVehicle.sID', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1385,
+  serialized_end=1472,
+)
 
 
 _SIMCOMPLETESWITCH = descriptor.Descriptor(
   name='SimCompleteSwitch',
   full_name='prt.SimCompleteSwitch',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimCompleteSwitch.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.SimCompleteSwitch.tsID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='nextID', full_name='prt.SimCompleteSwitch.nextID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1474,
+  serialized_end=1538,
+)
 
 
 _SIMRESPONSEVEHICLESTATUS = descriptor.Descriptor(
   name='SimResponseVehicleStatus',
   full_name='prt.SimResponseVehicleStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimResponseVehicleStatus.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='v_status', full_name='prt.SimResponseVehicleStatus.v_status', index=1,
       number=2, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1540,
+  serialized_end=1619,
+)
 
 
 _SIMRESPONSESTATIONSTATUS = descriptor.Descriptor(
   name='SimResponseStationStatus',
   full_name='prt.SimResponseStationStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimResponseStationStatus.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='s_status', full_name='prt.SimResponseStationStatus.s_status', index=1,
       number=2, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1621,
+  serialized_end=1700,
+)
 
 
 _SIMRESPONSESTATIONSUMMARY = descriptor.Descriptor(
   name='SimResponseStationSummary',
   full_name='prt.SimResponseStationSummary',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimResponseStationSummary.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='s_summary', full_name='prt.SimResponseStationSummary.s_summary', index=1,
       number=2, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1702,
+  serialized_end=1784,
+)
 
 
 _SIMRESPONSEPASSENGERSTATUS = descriptor.Descriptor(
   name='SimResponsePassengerStatus',
   full_name='prt.SimResponsePassengerStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimResponsePassengerStatus.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='p_status', full_name='prt.SimResponsePassengerStatus.p_status', index=1,
       number=2, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1786,
+  serialized_end=1869,
+)
 
 
 _SIMRESPONSESWITCHSTATUS = descriptor.Descriptor(
   name='SimResponseSwitchStatus',
   full_name='prt.SimResponseSwitchStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimResponseSwitchStatus.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sw_status', full_name='prt.SimResponseSwitchStatus.sw_status', index=1,
       number=2, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1871,
+  serialized_end=1949,
+)
 
 
 _SIMRESPONSETRACKSEGMENTSTATUS = descriptor.Descriptor(
   name='SimResponseTrackSegmentStatus',
   full_name='prt.SimResponseTrackSegmentStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimResponseTrackSegmentStatus.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='ts_status', full_name='prt.SimResponseTrackSegmentStatus.ts_status', index=1,
       number=2, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1951,
+  serialized_end=2041,
+)
 
 
 _SIMRESPONSETOTALSTATUS = descriptor.Descriptor(
   name='SimResponseTotalStatus',
   full_name='prt.SimResponseTotalStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimResponseTotalStatus.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='v_statuses', full_name='prt.SimResponseTotalStatus.v_statuses', index=1,
       number=2, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='s_statuses', full_name='prt.SimResponseTotalStatus.s_statuses', index=2,
       number=3, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='p_statuses', full_name='prt.SimResponseTotalStatus.p_statuses', index=3,
       number=4, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sw_statuses', full_name='prt.SimResponseTotalStatus.sw_statuses', index=4,
       number=5, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='ts_statuses', full_name='prt.SimResponseTotalStatus.ts_statuses', index=5,
       number=6, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2044,
+  serialized_end=2291,
+)
 
 
 _SIMREQUESTSWITCHCMD = descriptor.Descriptor(
   name='SimRequestSwitchCmd',
   full_name='prt.SimRequestSwitchCmd',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='swID', full_name='prt.SimRequestSwitchCmd.swID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimRequestSwitchCmd.vID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='ts1ID', full_name='prt.SimRequestSwitchCmd.ts1ID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='ts2ID', full_name='prt.SimRequestSwitchCmd.ts2ID', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2293,
+  serialized_end=2371,
+)
 
 
 _SIMNOTIFYVEHICLEPOSITION = descriptor.Descriptor(
   name='SimNotifyVehiclePosition',
   full_name='prt.SimNotifyVehiclePosition',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimNotifyVehiclePosition.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyVehiclePosition.vID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.SimNotifyVehiclePosition.tsID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pos', full_name='prt.SimNotifyVehiclePosition.pos', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2373,
+  serialized_end=2454,
+)
 
 
 _SIMNOTIFYTIME = descriptor.Descriptor(
   name='SimNotifyTime',
   full_name='prt.SimNotifyTime',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimNotifyTime.msgID', index=0,
       number=1, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='time', full_name='prt.SimNotifyTime.time', index=1,
-      number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      number=2, type=2, cpp_type=6, label=2,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2456,
+  serialized_end=2500,
+)
 
 
 _SIMNOTIFYVEHICLEARRIVE = descriptor.Descriptor(
   name='SimNotifyVehicleArrive',
   full_name='prt.SimNotifyVehicleArrive',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='v_status', full_name='prt.SimNotifyVehicleArrive.v_status', index=0,
       number=1, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2502,
+  serialized_end=2564,
+)
 
 
 _SIMNOTIFYVEHICLEEXIT = descriptor.Descriptor(
   name='SimNotifyVehicleExit',
   full_name='prt.SimNotifyVehicleExit',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='v_status', full_name='prt.SimNotifyVehicleExit.v_status', index=0,
       number=1, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2566,
+  serialized_end=2626,
+)
 
 
 _SIMNOTIFYVEHICLEREADYLOAD = descriptor.Descriptor(
   name='SimNotifyVehicleReadyLoad',
   full_name='prt.SimNotifyVehicleReadyLoad',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyVehicleReadyLoad.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyVehicleReadyLoad.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2628,
+  serialized_end=2681,
+)
 
 
 _SIMNOTIFYVEHICLECOLLISION = descriptor.Descriptor(
   name='SimNotifyVehicleCollision',
   full_name='prt.SimNotifyVehicleCollision',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='v1ID', full_name='prt.SimNotifyVehicleCollision.v1ID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='v2ID', full_name='prt.SimNotifyVehicleCollision.v2ID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='loc_type', full_name='prt.SimNotifyVehicleCollision.loc_type', index=2,
       number=3, type=14, cpp_type=8, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='locID', full_name='prt.SimNotifyVehicleCollision.locID', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pos', full_name='prt.SimNotifyVehicleCollision.pos', index=4,
       number=5, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='delta_v', full_name='prt.SimNotifyVehicleCollision.delta_v', index=5,
       number=6, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='rearend', full_name='prt.SimNotifyVehicleCollision.rearend', index=6,
       number=7, type=8, cpp_type=7, label=1,
-      default_value=False,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sideswipe', full_name='prt.SimNotifyVehicleCollision.sideswipe', index=7,
       number=8, type=8, cpp_type=7, label=1,
-      default_value=False,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2684,
+  serialized_end=2857,
+)
 
 
 _SIMNOTIFYPASSENGERLOADSTART = descriptor.Descriptor(
   name='SimNotifyPassengerLoadStart',
   full_name='prt.SimNotifyPassengerLoadStart',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyPassengerLoadStart.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyPassengerLoadStart.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimNotifyPassengerLoadStart.pID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2859,
+  serialized_end=2927,
+)
 
 
 _SIMNOTIFYPASSENGERLOADEND = descriptor.Descriptor(
   name='SimNotifyPassengerLoadEnd',
   full_name='prt.SimNotifyPassengerLoadEnd',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyPassengerLoadEnd.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyPassengerLoadEnd.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimNotifyPassengerLoadEnd.pID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2929,
+  serialized_end=2995,
+)
 
 
 _SIMNOTIFYPASSENGERUNLOADSTART = descriptor.Descriptor(
   name='SimNotifyPassengerUnloadStart',
   full_name='prt.SimNotifyPassengerUnloadStart',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyPassengerUnloadStart.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyPassengerUnloadStart.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimNotifyPassengerUnloadStart.pID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=2997,
+  serialized_end=3067,
+)
 
 
 _SIMNOTIFYPASSENGERUNLOADEND = descriptor.Descriptor(
   name='SimNotifyPassengerUnloadEnd',
   full_name='prt.SimNotifyPassengerUnloadEnd',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyPassengerUnloadEnd.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyPassengerUnloadEnd.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimNotifyPassengerUnloadEnd.pID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3069,
+  serialized_end=3137,
+)
 
 
 _SIMNOTIFYPASSENGERDELIVERED = descriptor.Descriptor(
   name='SimNotifyPassengerDelivered',
   full_name='prt.SimNotifyPassengerDelivered',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyPassengerDelivered.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyPassengerDelivered.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimNotifyPassengerDelivered.pID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3139,
+  serialized_end=3207,
+)
 
 
 _SIMNOTIFYPASSENGERMISDELIVERED = descriptor.Descriptor(
   name='SimNotifyPassengerMisdelivered',
   full_name='prt.SimNotifyPassengerMisdelivered',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyPassengerMisdelivered.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyPassengerMisdelivered.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimNotifyPassengerMisdelivered.pID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3209,
+  serialized_end=3280,
+)
 
 
 _SIMNOTIFYSTATIONREADYLAUNCH = descriptor.Descriptor(
   name='SimNotifyStationReadyLaunch',
   full_name='prt.SimNotifyStationReadyLaunch',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyStationReadyLaunch.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyStationReadyLaunch.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimNotifyStationReadyLaunch.pID', index=2,
       number=3, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3282,
+  serialized_end=3354,
+)
 
 
 _SIMNOTIFYSTATIONUNREADYLAUNCH = descriptor.Descriptor(
   name='SimNotifyStationUnreadyLaunch',
   full_name='prt.SimNotifyStationUnreadyLaunch',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimNotifyStationUnreadyLaunch.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimNotifyStationUnreadyLaunch.sID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3356,
+  serialized_end=3413,
+)
 
 
 _SIMEVENTTRACKSEGMENTDISABLED = descriptor.Descriptor(
   name='SimEventTrackSegmentDisabled',
   full_name='prt.SimEventTrackSegmentDisabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.SimEventTrackSegmentDisabled.tsID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3415,
+  serialized_end=3459,
+)
 
 
 _SIMEVENTTRACKSEGMENTREENABLED = descriptor.Descriptor(
   name='SimEventTrackSegmentReenabled',
   full_name='prt.SimEventTrackSegmentReenabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.SimEventTrackSegmentReenabled.tsID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3461,
+  serialized_end=3506,
+)
 
 
 _SIMEVENTSWITCHDISABLED = descriptor.Descriptor(
   name='SimEventSwitchDisabled',
   full_name='prt.SimEventSwitchDisabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='swID', full_name='prt.SimEventSwitchDisabled.swID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3508,
+  serialized_end=3546,
+)
 
 
 _SIMEVENTSWITCHREENABLED = descriptor.Descriptor(
   name='SimEventSwitchReenabled',
   full_name='prt.SimEventSwitchReenabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='swID', full_name='prt.SimEventSwitchReenabled.swID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3548,
+  serialized_end=3587,
+)
 
 
 _SIMEVENTSTATIONDISABLED = descriptor.Descriptor(
   name='SimEventStationDisabled',
   full_name='prt.SimEventStationDisabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimEventStationDisabled.sID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3589,
+  serialized_end=3627,
+)
 
 
 _SIMEVENTSTATIONREENABLED = descriptor.Descriptor(
   name='SimEventStationReenabled',
   full_name='prt.SimEventStationReenabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.SimEventStationReenabled.sID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3629,
+  serialized_end=3668,
+)
 
 
 _SIMEVENTVEHICLEDISABLED = descriptor.Descriptor(
   name='SimEventVehicleDisabled',
   full_name='prt.SimEventVehicleDisabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimEventVehicleDisabled.vID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3670,
+  serialized_end=3708,
+)
 
 
 _SIMEVENTVEHICLEREENABLED = descriptor.Descriptor(
   name='SimEventVehicleReenabled',
   full_name='prt.SimEventVehicleReenabled',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.SimEventVehicleReenabled.vID', index=0,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3710,
+  serialized_end=3749,
+)
 
 
 _SIMEVENTPASSENGERCREATED = descriptor.Descriptor(
   name='SimEventPassengerCreated',
   full_name='prt.SimEventPassengerCreated',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='p_status', full_name='prt.SimEventPassengerCreated.p_status', index=0,
       number=1, type=11, cpp_type=10, label=2,
-      default_value=None,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3751,
+  serialized_end=3817,
+)
 
 
 _SIMEVENTPASSENGERCHANGEDEST = descriptor.Descriptor(
   name='SimEventPassengerChangedest',
   full_name='prt.SimEventPassengerChangedest',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.SimEventPassengerChangedest.pID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3819,
+  serialized_end=3861,
+)
 
 
 _SIMMSGHDRINVALIDSEPARATOR = descriptor.Descriptor(
   name='SimMsgHdrInvalidSeparator',
   full_name='prt.SimMsgHdrInvalidSeparator',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimMsgHdrInvalidSeparator.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='msg_sep', full_name='prt.SimMsgHdrInvalidSeparator.msg_sep', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3863,
+  serialized_end=3922,
+)
 
 
 _SIMMSGHDRINVALIDTYPE = descriptor.Descriptor(
   name='SimMsgHdrInvalidType',
   full_name='prt.SimMsgHdrInvalidType',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimMsgHdrInvalidType.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='msg_type', full_name='prt.SimMsgHdrInvalidType.msg_type', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3924,
+  serialized_end=3979,
+)
 
 
 _SIMMSGHDRINVALIDID = descriptor.Descriptor(
   name='SimMsgHdrInvalidID',
   full_name='prt.SimMsgHdrInvalidID',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimMsgHdrInvalidID.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=3981,
+  serialized_end=4016,
+)
 
 
 _SIMMSGHDRINVALIDTIME = descriptor.Descriptor(
   name='SimMsgHdrInvalidTime',
   full_name='prt.SimMsgHdrInvalidTime',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimMsgHdrInvalidTime.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='msg_time', full_name='prt.SimMsgHdrInvalidTime.msg_time', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4018,
+  serialized_end=4073,
+)
 
 
 _SIMMSGHDRINVALIDSIZE = descriptor.Descriptor(
   name='SimMsgHdrInvalidSize',
   full_name='prt.SimMsgHdrInvalidSize',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimMsgHdrInvalidSize.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='msg_size', full_name='prt.SimMsgHdrInvalidSize.msg_size', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4075,
+  serialized_end=4130,
+)
+
+
+_SIMMSGBODYINVALID = descriptor.Descriptor(
+  name='SimMsgBodyInvalid',
+  full_name='prt.SimMsgBodyInvalid',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='msgID', full_name='prt.SimMsgBodyInvalid.msgID', index=0,
+      number=1, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4132,
+  serialized_end=4166,
+)
 
 
 _SIMMSGBODYINVALIDID = descriptor.Descriptor(
   name='SimMsgBodyInvalidId',
   full_name='prt.SimMsgBodyInvalidId',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.SimMsgBodyInvalidId.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='loc_type', full_name='prt.SimMsgBodyInvalidId.loc_type', index=1,
+      name='id_type', full_name='prt.SimMsgBodyInvalidId.id_type', index=1,
       number=2, type=14, cpp_type=8, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='locID', full_name='prt.SimMsgBodyInvalidId.locID', index=2,
+      name='ID', full_name='prt.SimMsgBodyInvalidId.ID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
-
-
-_SIMMSGBODYINVALIDACCEL = descriptor.Descriptor(
-  name='SimMsgBodyInvalidAccel',
-  full_name='prt.SimMsgBodyInvalidAccel',
-  filename='api.proto',
-  containing_type=None,
-  fields=[
-    descriptor.FieldDescriptor(
-      name='msgID', full_name='prt.SimMsgBodyInvalidAccel.msgID', index=0,
-      number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='accel', full_name='prt.SimMsgBodyInvalidAccel.accel', index=1,
-      number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],  # TODO(robinson): Implement.
-  enum_types=[
-  ],
-  options=None)
-
-
-_SIMMSGBODYINVALIDJERK = descriptor.Descriptor(
-  name='SimMsgBodyInvalidJerk',
-  full_name='prt.SimMsgBodyInvalidJerk',
-  filename='api.proto',
-  containing_type=None,
-  fields=[
-    descriptor.FieldDescriptor(
-      name='msgID', full_name='prt.SimMsgBodyInvalidJerk.msgID', index=0,
-      number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='jerk', full_name='prt.SimMsgBodyInvalidJerk.jerk', index=1,
-      number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],  # TODO(robinson): Implement.
-  enum_types=[
-  ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4168,
+  serialized_end=4252,
+)
 
 
 _VEHICLESTATUS = descriptor.Descriptor(
   name='VehicleStatus',
   full_name='prt.VehicleStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.VehicleStatus.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='nose_loc_type', full_name='prt.VehicleStatus.nose_loc_type', index=1,
       number=2, type=14, cpp_type=8, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='nose_locID', full_name='prt.VehicleStatus.nose_locID', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='nose_pos', full_name='prt.VehicleStatus.nose_pos', index=3,
       number=4, type=2, cpp_type=6, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tail_loc_type', full_name='prt.VehicleStatus.tail_loc_type', index=4,
       number=5, type=14, cpp_type=8, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tail_locID', full_name='prt.VehicleStatus.tail_locID', index=5,
       number=6, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tail_pos', full_name='prt.VehicleStatus.tail_pos', index=6,
       number=7, type=2, cpp_type=6, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vel', full_name='prt.VehicleStatus.vel', index=7,
       number=8, type=2, cpp_type=6, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='accel', full_name='prt.VehicleStatus.accel', index=8,
       number=9, type=2, cpp_type=6, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='passengerID', full_name='prt.VehicleStatus.passengerID', index=9,
       number=10, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
     descriptor.FieldDescriptor(
       name='headway', full_name='prt.VehicleStatus.headway', index=10,
       number=12, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4255,
+  serialized_end=4513,
+)
 
 
 _STATIONSUMMARY = descriptor.Descriptor(
   name='StationSummary',
   full_name='prt.StationSummary',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.StationSummary.sID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='label', full_name='prt.StationSummary.label', index=1,
       number=2, type=9, cpp_type=9, label=1,
-      default_value=unicode("", "utf-8"),
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='loaded_ready_launch', full_name='prt.StationSummary.loaded_ready_launch', index=2,
       number=3, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
     descriptor.FieldDescriptor(
       name='unloaded_ready_launch', full_name='prt.StationSummary.unloaded_ready_launch', index=3,
       number=4, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.StationSummary.pID', index=4,
       number=5, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
     descriptor.FieldDescriptor(
       name='next_accept_time', full_name='prt.StationSummary.next_accept_time', index=5,
       number=6, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vehicles_needed', full_name='prt.StationSummary.vehicles_needed', index=6,
       number=7, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4516,
+  serialized_end=4696,
+)
 
 
 _STATIONSTATUS = descriptor.Descriptor(
   name='StationStatus',
   full_name='prt.StationStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='sID', full_name='prt.StationStatus.sID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='label', full_name='prt.StationStatus.label', index=1,
       number=2, type=9, cpp_type=9, label=1,
-      default_value=unicode("", "utf-8"),
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='platform_status', full_name='prt.StationStatus.platform_status', index=2,
       number=3, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.StationStatus.pID', index=3,
       number=4, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
     descriptor.FieldDescriptor(
       name='v_adv_time', full_name='prt.StationStatus.v_adv_time', index=4,
       number=5, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='policy', full_name='prt.StationStatus.policy', index=5,
       number=6, type=14, cpp_type=8, label=2,
-      default_value=1,
+      has_default_value=False, default_value=1,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4699,
+  serialized_end=4861,
+)
 
 
 _PLATFORMSTATUS = descriptor.Descriptor(
   name='PlatformStatus',
   full_name='prt.PlatformStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='platID', full_name='prt.PlatformStatus.platID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.PlatformStatus.tsID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='unloading', full_name='prt.PlatformStatus.unloading', index=2,
       number=3, type=8, cpp_type=7, label=2,
-      default_value=False,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='loading', full_name='prt.PlatformStatus.loading', index=3,
       number=4, type=8, cpp_type=7, label=2,
-      default_value=False,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='berths', full_name='prt.PlatformStatus.berths', index=4,
       number=5, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4863,
+  serialized_end=4979,
+)
 
 
 _BERTHSTATUS = descriptor.Descriptor(
   name='BerthStatus',
   full_name='prt.BerthStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='bID', full_name='prt.BerthStatus.bID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.BerthStatus.vID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='busy', full_name='prt.BerthStatus.busy', index=2,
       number=3, type=8, cpp_type=7, label=2,
-      default_value=False,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=4981,
+  serialized_end=5034,
+)
 
 
 _PASSENGERSTATUS = descriptor.Descriptor(
   name='PassengerStatus',
   full_name='prt.PassengerStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='pID', full_name='prt.PassengerStatus.pID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='label', full_name='prt.PassengerStatus.label', index=1,
       number=2, type=9, cpp_type=9, label=1,
-      default_value=unicode("", "utf-8"),
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='loc_type', full_name='prt.PassengerStatus.loc_type', index=2,
       number=3, type=14, cpp_type=8, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='locID', full_name='prt.PassengerStatus.locID', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='src_stationID', full_name='prt.PassengerStatus.src_stationID', index=4,
       number=5, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='dest_stationID', full_name='prt.PassengerStatus.dest_stationID', index=5,
       number=6, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='weight', full_name='prt.PassengerStatus.weight', index=6,
-      number=7, type=5, cpp_type=1, label=1,
-      default_value=0,
+      name='creation_time', full_name='prt.PassengerStatus.creation_time', index=6,
+      number=7, type=2, cpp_type=6, label=2,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='wait_time', full_name='prt.PassengerStatus.wait_time', index=7,
-      number=8, type=5, cpp_type=1, label=1,
-      default_value=0,
+      number=8, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='travel_time', full_name='prt.PassengerStatus.travel_time', index=8,
-      number=9, type=5, cpp_type=1, label=1,
-      default_value=0,
+      number=9, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='trip_complete', full_name='prt.PassengerStatus.trip_complete', index=9,
-      number=10, type=8, cpp_type=7, label=1,
-      default_value=False,
+      name='weight', full_name='prt.PassengerStatus.weight', index=9,
+      number=10, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='trip_success', full_name='prt.PassengerStatus.trip_success', index=10,
+      name='trip_complete', full_name='prt.PassengerStatus.trip_complete', index=10,
       number=11, type=8, cpp_type=7, label=1,
-      default_value=False,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='trip_success', full_name='prt.PassengerStatus.trip_success', index=11,
+      number=12, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=5037,
+  serialized_end=5305,
+)
 
 
 _ROUTINGENTRY = descriptor.Descriptor(
   name='RoutingEntry',
   full_name='prt.RoutingEntry',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.RoutingEntry.vID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.RoutingEntry.tsID', index=1,
       number=2, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='msgID', full_name='prt.RoutingEntry.msgID', index=2,
       number=3, type=5, cpp_type=1, label=1,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=5307,
+  serialized_end=5363,
+)
 
 
 _SWITCHSTATUS = descriptor.Descriptor(
   name='SwitchStatus',
   full_name='prt.SwitchStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='swID', full_name='prt.SwitchStatus.swID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='label', full_name='prt.SwitchStatus.label', index=1,
       number=2, type=9, cpp_type=9, label=1,
-      default_value=unicode("", "utf-8"),
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='entry', full_name='prt.SwitchStatus.entry', index=2,
       number=3, type=11, cpp_type=10, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=5365,
+  serialized_end=5442,
+)
 
 
 _TRACKSEGMENTSTATUS = descriptor.Descriptor(
   name='TrackSegmentStatus',
   full_name='prt.TrackSegmentStatus',
-  filename='api.proto',
+  filename=None,
+  file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
       name='tsID', full_name='prt.TrackSegmentStatus.tsID', index=0,
       number=1, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='label', full_name='prt.TrackSegmentStatus.label', index=1,
       number=2, type=9, cpp_type=9, label=1,
-      default_value=unicode("", "utf-8"),
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='max_speed', full_name='prt.TrackSegmentStatus.max_speed', index=2,
       number=3, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='length', full_name='prt.TrackSegmentStatus.length', index=3,
       number=4, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
       name='vID', full_name='prt.TrackSegmentStatus.vID', index=4,
       number=5, type=5, cpp_type=1, label=3,
-      default_value=[],
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')),
     descriptor.FieldDescriptor(
       name='next', full_name='prt.TrackSegmentStatus.next', index=5,
       number=6, type=5, cpp_type=1, label=2,
-      default_value=0,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[],  # TODO(robinson): Implement.
+  nested_types=[],
   enum_types=[
   ],
-  options=None)
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=5444,
+  serialized_end=5559,
+)
 
 
 _SPLINE.fields_by_name['polys'].message_type = _POLYCOEFFS
@@ -2955,7 +3424,7 @@ _SIMNOTIFYVEHICLEARRIVE.fields_by_name['v_status'].message_type = _VEHICLESTATUS
 _SIMNOTIFYVEHICLEEXIT.fields_by_name['v_status'].message_type = _VEHICLESTATUS
 _SIMNOTIFYVEHICLECOLLISION.fields_by_name['loc_type'].enum_type = _LOCATIONTYPE
 _SIMEVENTPASSENGERCREATED.fields_by_name['p_status'].message_type = _PASSENGERSTATUS
-_SIMMSGBODYINVALIDID.fields_by_name['loc_type'].enum_type = _LOCATIONTYPE
+_SIMMSGBODYINVALIDID.fields_by_name['id_type'].enum_type = _LOCATIONTYPE
 _VEHICLESTATUS.fields_by_name['nose_loc_type'].enum_type = _LOCATIONTYPE
 _VEHICLESTATUS.fields_by_name['tail_loc_type'].enum_type = _LOCATIONTYPE
 _STATIONSTATUS.fields_by_name['platform_status'].message_type = _PLATFORMSTATUS
@@ -2967,300 +3436,451 @@ _SWITCHSTATUS.fields_by_name['entry'].message_type = _ROUTINGENTRY
 class PolyCoeffs(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _POLYCOEFFS
+  
+  # @@protoc_insertion_point(class_scope:prt.PolyCoeffs)
 
 class Spline(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SPLINE
+  
+  # @@protoc_insertion_point(class_scope:prt.Spline)
 
 class CtrlCmdVehicleTrajectory(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDVEHICLETRAJECTORY
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlCmdVehicleTrajectory)
 
 class CtrlCmdVehicleItinerary(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDVEHICLEITINERARY
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlCmdVehicleItinerary)
 
 class CtrlCmdStationLaunch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDSTATIONLAUNCH
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlCmdStationLaunch)
 
 class CtrlCmdPassengersEmbark(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDPASSENGERSEMBARK
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlCmdPassengersEmbark)
 
 class CtrlCmdPassengersDisembark(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDPASSENGERSDISEMBARK
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlCmdPassengersDisembark)
 
 class CtrlCmdSwitch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLCMDSWITCH
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlCmdSwitch)
 
 class CtrlRequestVehicleStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLREQUESTVEHICLESTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlRequestVehicleStatus)
 
 class CtrlRequestStationStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLREQUESTSTATIONSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlRequestStationStatus)
 
 class CtrlRequestStationSummary(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLREQUESTSTATIONSUMMARY
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlRequestStationSummary)
 
 class CtrlRequestPassengerStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLREQUESTPASSENGERSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlRequestPassengerStatus)
 
 class CtrlRequestSwitchStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLREQUESTSWITCHSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlRequestSwitchStatus)
 
 class CtrlRequestTrackSegmentStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLREQUESTTRACKSEGMENTSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlRequestTrackSegmentStatus)
 
 class CtrlRequestTotalStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLREQUESTTOTALSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlRequestTotalStatus)
 
 class CtrlSetnotifyVehiclePosition(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLSETNOTIFYVEHICLEPOSITION
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlSetnotifyVehiclePosition)
 
 class CtrlSetnotifyTime(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLSETNOTIFYTIME
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlSetnotifyTime)
 
 class CtrlResume(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CTRLRESUME
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlResume)
+
+class SimGreeting(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _SIMGREETING
+  
+  # @@protoc_insertion_point(class_scope:prt.SimGreeting)
 
 class SimStart(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMSTART
+  
+  # @@protoc_insertion_point(class_scope:prt.SimStart)
 
 class SimEnd(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEND
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEnd)
 
 class SimUnimplemented(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMUNIMPLEMENTED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimUnimplemented)
 
 class SimAbortVehicleSpeed(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMABORTVEHICLESPEED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimAbortVehicleSpeed)
 
 class SimCompleteVehicleSpeed(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMCOMPLETEVEHICLESPEED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimCompleteVehicleSpeed)
 
 class SimCompleteStationLaunch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMCOMPLETESTATIONLAUNCH
+  
+  # @@protoc_insertion_point(class_scope:prt.SimCompleteStationLaunch)
 
 class SimCompletePassengerLoadVehicle(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMCOMPLETEPASSENGERLOADVEHICLE
+  
+  # @@protoc_insertion_point(class_scope:prt.SimCompletePassengerLoadVehicle)
 
 class SimCompleteSwitch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMCOMPLETESWITCH
+  
+  # @@protoc_insertion_point(class_scope:prt.SimCompleteSwitch)
 
 class SimResponseVehicleStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMRESPONSEVEHICLESTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.SimResponseVehicleStatus)
 
 class SimResponseStationStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMRESPONSESTATIONSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.SimResponseStationStatus)
 
 class SimResponseStationSummary(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMRESPONSESTATIONSUMMARY
+  
+  # @@protoc_insertion_point(class_scope:prt.SimResponseStationSummary)
 
 class SimResponsePassengerStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMRESPONSEPASSENGERSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.SimResponsePassengerStatus)
 
 class SimResponseSwitchStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMRESPONSESWITCHSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.SimResponseSwitchStatus)
 
 class SimResponseTrackSegmentStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMRESPONSETRACKSEGMENTSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.SimResponseTrackSegmentStatus)
 
 class SimResponseTotalStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMRESPONSETOTALSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.SimResponseTotalStatus)
 
 class SimRequestSwitchCmd(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMREQUESTSWITCHCMD
+  
+  # @@protoc_insertion_point(class_scope:prt.SimRequestSwitchCmd)
 
 class SimNotifyVehiclePosition(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYVEHICLEPOSITION
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyVehiclePosition)
 
 class SimNotifyTime(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYTIME
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyTime)
 
 class SimNotifyVehicleArrive(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYVEHICLEARRIVE
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyVehicleArrive)
 
 class SimNotifyVehicleExit(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYVEHICLEEXIT
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyVehicleExit)
 
 class SimNotifyVehicleReadyLoad(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYVEHICLEREADYLOAD
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyVehicleReadyLoad)
 
 class SimNotifyVehicleCollision(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYVEHICLECOLLISION
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyVehicleCollision)
 
 class SimNotifyPassengerLoadStart(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYPASSENGERLOADSTART
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerLoadStart)
 
 class SimNotifyPassengerLoadEnd(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYPASSENGERLOADEND
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerLoadEnd)
 
 class SimNotifyPassengerUnloadStart(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYPASSENGERUNLOADSTART
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerUnloadStart)
 
 class SimNotifyPassengerUnloadEnd(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYPASSENGERUNLOADEND
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerUnloadEnd)
 
 class SimNotifyPassengerDelivered(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYPASSENGERDELIVERED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerDelivered)
 
 class SimNotifyPassengerMisdelivered(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYPASSENGERMISDELIVERED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerMisdelivered)
 
 class SimNotifyStationReadyLaunch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYSTATIONREADYLAUNCH
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyStationReadyLaunch)
 
 class SimNotifyStationUnreadyLaunch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMNOTIFYSTATIONUNREADYLAUNCH
+  
+  # @@protoc_insertion_point(class_scope:prt.SimNotifyStationUnreadyLaunch)
 
 class SimEventTrackSegmentDisabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTTRACKSEGMENTDISABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventTrackSegmentDisabled)
 
 class SimEventTrackSegmentReenabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTTRACKSEGMENTREENABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventTrackSegmentReenabled)
 
 class SimEventSwitchDisabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTSWITCHDISABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventSwitchDisabled)
 
 class SimEventSwitchReenabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTSWITCHREENABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventSwitchReenabled)
 
 class SimEventStationDisabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTSTATIONDISABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventStationDisabled)
 
 class SimEventStationReenabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTSTATIONREENABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventStationReenabled)
 
 class SimEventVehicleDisabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTVEHICLEDISABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventVehicleDisabled)
 
 class SimEventVehicleReenabled(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTVEHICLEREENABLED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventVehicleReenabled)
 
 class SimEventPassengerCreated(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTPASSENGERCREATED
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventPassengerCreated)
 
 class SimEventPassengerChangedest(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMEVENTPASSENGERCHANGEDEST
+  
+  # @@protoc_insertion_point(class_scope:prt.SimEventPassengerChangedest)
 
 class SimMsgHdrInvalidSeparator(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGHDRINVALIDSEPARATOR
+  
+  # @@protoc_insertion_point(class_scope:prt.SimMsgHdrInvalidSeparator)
 
 class SimMsgHdrInvalidType(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGHDRINVALIDTYPE
+  
+  # @@protoc_insertion_point(class_scope:prt.SimMsgHdrInvalidType)
 
 class SimMsgHdrInvalidID(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGHDRINVALIDID
+  
+  # @@protoc_insertion_point(class_scope:prt.SimMsgHdrInvalidID)
 
 class SimMsgHdrInvalidTime(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGHDRINVALIDTIME
+  
+  # @@protoc_insertion_point(class_scope:prt.SimMsgHdrInvalidTime)
 
 class SimMsgHdrInvalidSize(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGHDRINVALIDSIZE
+  
+  # @@protoc_insertion_point(class_scope:prt.SimMsgHdrInvalidSize)
+
+class SimMsgBodyInvalid(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _SIMMSGBODYINVALID
+  
+  # @@protoc_insertion_point(class_scope:prt.SimMsgBodyInvalid)
 
 class SimMsgBodyInvalidId(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SIMMSGBODYINVALIDID
-
-class SimMsgBodyInvalidAccel(message.Message):
-  __metaclass__ = reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _SIMMSGBODYINVALIDACCEL
-
-class SimMsgBodyInvalidJerk(message.Message):
-  __metaclass__ = reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _SIMMSGBODYINVALIDJERK
+  
+  # @@protoc_insertion_point(class_scope:prt.SimMsgBodyInvalidId)
 
 class VehicleStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _VEHICLESTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.VehicleStatus)
 
 class StationSummary(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _STATIONSUMMARY
+  
+  # @@protoc_insertion_point(class_scope:prt.StationSummary)
 
 class StationStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _STATIONSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.StationStatus)
 
 class PlatformStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _PLATFORMSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.PlatformStatus)
 
 class BerthStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _BERTHSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.BerthStatus)
 
 class PassengerStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _PASSENGERSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.PassengerStatus)
 
 class RoutingEntry(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _ROUTINGENTRY
+  
+  # @@protoc_insertion_point(class_scope:prt.RoutingEntry)
 
 class SwitchStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _SWITCHSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.SwitchStatus)
 
 class TrackSegmentStatus(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _TRACKSEGMENTSTATUS
+  
+  # @@protoc_insertion_point(class_scope:prt.TrackSegmentStatus)
 
+# @@protoc_insertion_point(module_scope)
