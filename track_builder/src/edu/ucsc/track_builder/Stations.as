@@ -126,7 +126,7 @@ package edu.ucsc.track_builder
 			// make a TrackSegment for each Platform, then make the Platform
 			var platforms:Vector.<Platform> = new Vector.<Platform>();
 			var slots:Vector.<Number> = Vector.<Number>([unloadSlots, queueSlots, loadSlots]);
-			for (var i:int=0; i < slots.length; ++i) {
+			for (var i:uint=0; i < slots.length; ++i) {
 				stationDir.scaleBy(slotLength*slots[i] / stationDir.length); // rescale to slotLength*slots
 				var platformSegStart:LatLng = segs[segs.length-1].getEnd();
 				var platformSegEnd:LatLng = Utility.calcLatLngFromVector(platformSegStart, stationDir);			
@@ -142,6 +142,7 @@ package edu.ucsc.track_builder
 				                           null,
 				                           preview)); // creates the station main line
 				platforms.push(new Platform(segs[segs.length-1].id,
+											i,
 				                            slots[i],
 				                            slotLength,
 				                            i == 0 ? true : false,  // unloading

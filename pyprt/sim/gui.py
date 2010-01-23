@@ -66,7 +66,7 @@ class MainWindow(wx.Frame):
         scenario_path = globals.config_manager.get_scenario_path()
         if scenario_path != None:
             self.load_scenario(scenario_path)
-        
+
         if globals.config_manager.get_start_controllers() == True:
             self.simmenu_connectcontroller_handler(None)
 
@@ -214,6 +214,20 @@ class MainWindow(wx.Frame):
                       style=wx.OK)
             dialog.ShowModal()
 
+    def open_port_handler(self, event):
+        dialog = wx.NumberEntryDialog(self,
+                          message="Debugging Tool.\nOpens the specified TCP port.\nThe sim will block until a controller\nconnects at the specified port.\n\nChoose connection port (TCP)",
+                          prompt='Port:',
+                          caption='Connect External Controller...',
+                          value=globals.config_manager.get_TCP_port(),
+                          min=2,
+                          max=65535)
+        if dialog.ShowModal() == wx.ID_OK:
+            port_num = dialog.GetValue()
+            globals.interface.setup_server_sockets(TCP_port=port_num)
+            globals.interface.accept_connections( 1 )
+            # Sim blocks, then resumes once connection is made.
+            self.menubar_manager.controllers_connected()
 
     def simmenu_stopsim_handler(self, event):
         print "Event handler `simmenu_stopsim_handler' not implemented"
@@ -1129,9 +1143,10 @@ def postsim_summary():
                    crash.lv.ID, crash.rearend, crash.sideswipe, crash.occurred))
 
     summary.append("\nPost Sim Passenger Report")
+    pax_display_limit = 30 # Limit the report to include a manageble number of records
     summary.append(("%4s" + "%15s"*6) \
             % ('pID','srcStat','destStat','curLoc','waitT','TravelT','Success'))
-    for p in globals.passengers.itervalues():
+    for p in globals.passengers.values()[:pax_display_limit]:
         if p.trip_end:
             travel = p.trip_end - p.trip_boarded
             wait = p.trip_boarded - p.trip_start
@@ -1144,6 +1159,8 @@ def postsim_summary():
         summary.append(("%4d" + "%15s"*3 + "%15.3f"*2 + "%15s") \
                 % (p.ID, p.src_station, p.dest_station,
                    p.loc, wait, travel, p.trip_success))
+    if len(globals.passengers) > pax_display_limit:
+        summary.append('An additional %d passenger records not shown...' % (len(globals.passengers) - pax_display_limit,) )
 
     summary.append("\nPost Sim Switch Report")
     summary.append("%4s%15s%10s" % ('ID', 'Name', 'Errors'))

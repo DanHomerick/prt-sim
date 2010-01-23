@@ -155,11 +155,15 @@
   <xs:complexType name="PlatformType">
     <xs:sequence>
       <xs:element name="TrackSegment" type="IDType" />
-      <xs:element minOccurs="1" maxOccurs="unbounded" name="Bay" type="IDType" />
+      <xs:element minOccurs="1" maxOccurs="unbounded" name="Berth" type="BerthType" />
     </xs:sequence>
+    <xs:attribute name="index" type="xs:nonNegativeInteger" />
     <xs:attribute name="loading" type="xs:boolean" />
     <xs:attribute name="unloading" type="xs:boolean" />
-    <xs:attribute name="bay_length" type="xs:decimal" />
+    <xs:attribute name="berth_length" type="xs:decimal" />
+  </xs:complexType>
+  <xs:complexType name="BerthType">
+    <xs:attribute name="index" type="xs:nonNegativeInteger" />
   </xs:complexType>
   <xs:complexType name="CoverageType">
     <xs:attribute name="radius" type="xs:nonNegativeInteger" />

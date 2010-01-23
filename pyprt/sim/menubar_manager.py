@@ -82,9 +82,12 @@ class MenuBarManager(object):
         self.menubar.Append(self.record, "&Record")
 
         ### Debug Menu ###
-        #self.debugmenu = wx.Menu()
+        self.debugmenu = wx.Menu()
         #self.debugmenu.AppendCheckItem(wx.NewId(), "Show &Tracks")
-        #self.menubar.Append(self.debugmenu, "&Debug")
+        self.open_port = wx.MenuItem(self.debugmenu, wx.NewId(), "&Open Port...", "", wx.ITEM_NORMAL)
+
+        self.debugmenu.AppendItem(self.open_port)
+        self.menubar.Append(self.debugmenu, "&Debug")
 
         ### Binding Handlers ###
         pw = self.parent_window
@@ -111,6 +114,7 @@ class MenuBarManager(object):
         pw.Bind(wx.EVT_MENU, pw.record_start_handler, self.record_start)
         #pw.Bind(wx.EVT_MENU, pw.record_pause_handler, self.record_pause)
         pw.Bind(wx.EVT_MENU, pw.record_stop_handler, self.record_stop)
+        pw.Bind(wx.EVT_MENU, pw.open_port_handler, self.open_port)
         pw.Bind(wx.EVT_CLOSE, pw.close_handler)
 
     def new(self):

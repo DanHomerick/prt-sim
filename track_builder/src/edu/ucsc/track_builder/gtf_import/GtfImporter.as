@@ -309,7 +309,7 @@ package edu.ucsc.track_builder.gtf_import
 				segs.push(Globals.tracks.getTrackSegment(boardingSeg.next_ids[0]));
 				
 				var platforms:Vector.<Platform> = new Vector.<Platform>();
-				platforms.push(new Platform(boardingSeg.id, STATION_BERTH_COUNT, STATION_BERTH_LENGTH, true, true));
+				platforms.push(new Platform(boardingSeg.id, 0, STATION_BERTH_COUNT, STATION_BERTH_LENGTH, true, true));
 				var id:String = IdGenerator.getStationId();
 				var station:Station = new Station(id, stop.name, segs, platforms, STATION_COVERAGE_RADIUS, 0, 0);			
 				new StationOverlay(station); // placed in the global store by side effect
