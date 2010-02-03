@@ -1,6 +1,7 @@
 import threading
 
 scenario_manager = None
+config_manager = None
 
 digraph = None
 interface = None
@@ -31,7 +32,7 @@ img_xbounds = None
 img_ybounds = None
 
 # set by scenario.make_vehicle_classes, used by gui.MainWindow.load_scenario
-max_vehicle_pax_capacity = None 
+max_vehicle_pax_capacity = None
 
 trace = False
 real_time = False  # A flag indicating that we're using the RT version of SimPy
@@ -69,13 +70,11 @@ class MsgIdWidget(object):
 
 msg_id_widget = MsgIdWidget()
 
-# If assumed max possible speed is 100 m/s (~ 225 mph), then to have
-# positional resolution of 1 cm indicates a temporal resolution of 1 / 10000
 # Divide resolution by two for rounding.
-DIST_RES = 0.005
-DIST_RND = 3
-TIME_RES = 0.00005
-TIME_RND = 6
+DIST_RES = 0.01
+DIST_RND = 2
+TIME_RES = 0.001
+TIME_RND = 3
 
 def dist_eql(a, b):
     """Include == test to capture float('inf') == float('inf')"""
@@ -122,6 +121,12 @@ class InvalidSwitchID(MsgError):
     pass
 
 class InvalidStationID(MsgError):
+    pass
+
+class InvalidPlatformID(MsgError):
+    pass
+
+class InvalidBerthID(MsgError):
     pass
 
 class InvalidVehicleID(MsgError):

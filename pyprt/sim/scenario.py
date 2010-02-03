@@ -9,7 +9,7 @@ import station
 import events
 
 class ScenarioManager(object):
-    def __init__(self):        
+    def __init__(self):
         self.scenario_loaded = False
 
     def load_scenario(self, xml_path):
@@ -43,7 +43,7 @@ class ScenarioManager(object):
         # Stations
         globals.stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
 
-        # Passengers        
+        # Passengers
         passengers_path = globals.config_manager.get_passengers_path()
         if passengers_path == None:
             logging.warning("No passenger file found. Running simulation with no passengers.")
@@ -60,7 +60,7 @@ class ScenarioManager(object):
         self.load_image_meta(doc.getElementsByTagName('Image')[0], xml_path) # only one element
 
         # TODO: Necessary?
-        globals.station_list.sort() # by ID
+        globals.station_list = sorted(s for s in globals.stations.itervalues()) # by ID
         globals.switch_list.sort()
         globals.vehicle_list = sorted(v for v in globals.vehicles.itervalues())
 
@@ -83,7 +83,7 @@ class ScenarioManager(object):
 
             label = track_segment_xml.getAttribute('label')
             label = label if label != 'null' else ''
-        
+
             max_speed_str = track_segment_xml.getAttribute('max_speed')
             max_speed = float(max_speed_str) if max_speed_str else 1E1000 # inf if not specified
             ts = layout.TrackSegment(ID=intId,
@@ -204,36 +204,38 @@ class ScenarioManager(object):
             station_id = int(station_xml.getAttribute('id').split('_')[0])
 
             # Get the TrackSegments
-            track_segments = []
-            for track_xml in station_xml.getElementsByTagName('TrackSegments'):
-                for track_id_xml in track_xml.getElementsByTagName('ID'):
+            track_segments = set() # using a set because 'TrackSegmentID' includes the duplicate ts from Platform
+            for track_id_xml in station_xml.getElementsByTagName('TrackSegmentID'):
                     track_id = self._to_numeric_id(track_id_xml)
-                    track_segments.append(globals.track_segments[track_id])
+                    track_segments.add(globals.track_segments[track_id])
 
+            station_ = station.Station(station_id, station_label, track_segments)
 
             # Make the Platforms
-            platforms = []
-            for platform_xml in station_xml.getElementsByTagName('Platform'):
-                platform_trackseg_id = self._to_numeric_id(platform_xml.getElementsByTagName('TrackSegment')[0])
+            platforms_xml = station_xml.getElementsByTagName('Platform')
+            platforms = [None]*len(platforms_xml)
+            for platform_xml in platforms_xml:
+                platform_trackseg_id = self._to_numeric_id(platform_xml.getElementsByTagName('TrackSegmentID')[0])
                 platform_trackseg = globals.track_segments[platform_trackseg_id]
-                berth_length = float(platform_xml.getAttribute('berth_length'))
-                unloading = True if platform_xml.getAttribute('unloading') == 'true' else False
-                loading = True if platform_xml.getAttribute('loading') == 'true' else False
+                platform_index = int(platform_xml.getAttribute('index'))
+                platform = station.Platform(platform_index, platform_trackseg)
 
                 # Make the Berths
-                berths = []
-                for idx, berth_xml in enumerate(platform_xml.getElementsByTagName('Berth')):
-                    v_id_str = berth_xml.childNodes[0].data                    
-                    label = 'berth'+str(idx)
-                    if v_id_str == 'empty':
-                        berths.append(Berth(label, station_id, None))
-                    else:
-                        v_id = int(v_id_str.split('_')[0])
-                        vehicle = globals.vehicles[v_id]
-                        berths.append(Berth(label, station_id, vehicle))
+                berths_xml = platform_xml.getElementsByTagName('Berth')
+                berths = [None]*len(berths_xml)
+                for berth_xml in berths_xml:
+                    berth_index = int(berth_xml.getAttribute('index'))
+                    start_pos = float(berth_xml.getElementsByTagName('StartPosition')[0].firstChild.data)
+                    end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
+                    unloading = True if berth_xml.getAttribute('unloading') == 'true' else False
+                    loading = True if berth_xml.getAttribute('loading') == 'true' else False
+                    berths[berth_index] = Berth(berth_index, station_,
+                                                platform, start_pos, end_pos,
+                                                unloading, loading)
 
-                platforms.append(station.Platform(berths, platform_trackseg, berth_length, unloading, loading))
-            station_ = station.Station(station_id, station_label, platforms, track_segments)
+                platform.berths = berths
+                platforms[platform_index] = platform
+            station_.platforms = platforms
             all_stations[station_.ID] = station_
         return all_stations
 
@@ -376,7 +378,7 @@ if __name__ == '__main__':
         print "Usage: %s FILENAME" % sys.argv[0]
         sys.exit(-1)
     else:
-        
+
         import ConfigParser
         import os
 

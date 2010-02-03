@@ -76,7 +76,7 @@ class CubicSpline(object):
                     if self.t[i] < t < self.t[i+1]:
                         extreama.append(self.evaluate(t).vel)
         extreama.append(self.v[-1])
-        return extreama        
+        return extreama
 
     def get_max_velocity(self):
         """Returns the value of the maximum velocity over the whole spline.
@@ -102,10 +102,10 @@ class CubicSpline(object):
         t = self.t
         if time < t[0] or time > t[-1]:
             return None
-        
+
         q = self.q
         v = self.v
-        a = self.a        
+        a = self.a
 
         for i in range(len(t)-1):
             # find the right interval.
@@ -141,3 +141,16 @@ class CubicSpline(object):
                     self.q[i])) # pos
         return coeffs
 
+    def fill_spline_msg(self, spline_msg):
+        """Fills a api.Spline msg with data from a cubic spline.
+        spline_msg: An api.Spline message instance.
+        """
+        for i in range(len(self.h)):
+            if self.h[i] != 0:
+                poly_msg = spline_msg.polys.add()
+                poly_msg.coeffs.append((self.a[i+1]-self.a[i])/(self.h[i]*6)) # jerk
+                poly_msg.coeffs.append(self.a[i]/2) # accel
+                poly_msg.coeffs.append(self.v[i]) # vel
+                poly_msg.coeffs.append(self.q[i]) # pos
+                spline_msg.times.append(self.t[i]) # time
+        spline_msg.times.append(self.t[-1])

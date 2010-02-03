@@ -1,15 +1,16 @@
 """Comm that uses a TCP socket.
+TODO: Rename pyprt.ctrl.base_controller to pyprt.shared.comm and inherit from that.
 """
 from __future__ import division # always use floating point division
 
 import sys, socket, logging, heapq, struct, threading, time, Queue
 
+from pyprt.shared.utility import pairwise
 import pyprt.shared.api_pb2 as api
 import google.protobuf.text_format as text_format
 import SimPy.SimulationRT as Sim
 
 import globals
-import layout
 
 #import pdb  # python debugger
 
@@ -143,10 +144,10 @@ class ControlInterface(Sim.Process):
             # Possible optimization: Have a 'Local machine only' flag in configuration,
             # and use 'localhost' instead of socket.gethostname(). The use of
             # the socket will bypass several network layers in that case (?)
-            self.TCP_server_socket.bind( ('', TCP_port) ) # bind all available interfaces?
+            self.TCP_server_socket.bind( ('localhost', TCP_port) ) # bind all available interfaces?
         if UDP_port:
             self.UDP_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.UDP_server_socket.bind( ('', UDP_port) )
+            self.UDP_server_socket.bind( ('localhost', UDP_port) )
         self.TCP_server_socket.listen( min(128, socket.SOMAXCONN) ) # listen backlog
 
     def accept_connections(self, num_TCP_clients):
@@ -251,6 +252,7 @@ class ControlInterface(Sim.Process):
                     msg.ParseFromString(msg_str)
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
                     v = self.get_vehicle(msg.vID)
+                    self.validate_spline(msg.spline)
                     v.process_spline(msg.spline )
                     # TODO: Check that the spline is valid! Continuous, at least!
 
@@ -279,25 +281,23 @@ class ControlInterface(Sim.Process):
 
                     ts.switch(next, msgID)
 
-#                elif msg_type == api.CTRL_CMD_STATION_LAUNCH:
-#                    msg = api.CtrlCmdStationLaunch()
-#                    msg.ParseFromString(msg_str)
-#                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-#                    s = self.get_station(msg.sID)
-#                    v = self.get_vehicle(msg.vID)
-#                    if v.loc is not s:
-#                        raise globals.InvalidStationID, msg.sID
-#                    ma, md, mj = self.validate_speed_params(v, msg)
-#                    s.launch(v, msg.target_speed/100, ma, md, mj, msgID) # cm/s -> m/s
+                elif msg_type == api.CTRL_CMD_PASSENGERS_EMBARK:
+                    msg = api.CtrlCmdPassengersEmbark()
+                    msg.MergeFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    v = self.get_vehicle(msg.vID)
+                    b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
+                    passengers = map(self.get_passenger, msg.passengerIDs)
+                    b.embark(v, passengers, msg, msgID)
 
-#                elif msg_type == api.CTRL_CMD_PASSENGER_LOAD_VEHICLE:
-#                    msg = api.CtrlCmdPassengerLoadVehicle()
-#                    msg.ParseFromString(msg_str)
-#                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-#                    stat = self.get_station(msg.sID)
-#                    v = self.get_vehicle(msg.vID)
-#                    pax = self.get_passenger(msg.pID)
-#                    stat.board_passenger(v, pax, msgID)
+                elif msg_type == api.CTRL_CMD_PASSENGERS_DISEMBARK:
+                    msg = api.CtrlCmdPassengersDisembark()
+                    msg.MergeFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    v = self.get_vehicle(msg.vID)
+                    b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
+                    passengers = map(self.get_passenger, msg.passengerIDs)
+                    b.disembark(v, passengers, msg, msgID)
 
                 # REQUESTS
                 elif msg_type == api.CTRL_REQUEST_VEHICLE_STATUS:
@@ -372,7 +372,7 @@ class ControlInterface(Sim.Process):
                     resp = api.SimNotifyTime()
                     resp.msgID = msgID
                     resp.time = msg.time
-                    alarm = AlarmClock(msg.time, self.send, api.SIM_NOTIFY_TIME, resp)                    
+                    alarm = AlarmClock(msg.time, self.send, api.SIM_NOTIFY_TIME, resp)
 
 #                # Works, but spams the log with erroneous RCVD messages
 #                # TODO: Move to a vehicle co-routine, which waits on
@@ -421,6 +421,7 @@ class ControlInterface(Sim.Process):
             except globals.InvalidTrackSegID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
+                err_msg.id_type = api.TRACK_SEGMENT
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
             except globals.InvalidSwitchID, e:
@@ -435,6 +436,18 @@ class ControlInterface(Sim.Process):
                 err_msg.id_type = api.STATION
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
+            except globals.InvalidPlatformID, e:
+                err_msg = api.SimMsgBodyInvalidId()
+                err_msg.msgID = msgID
+                err_msg.id_type = api.PLATFORM
+                err_msg.ID = e.args[0]
+                self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
+            except globals.InvalidBerthID, e:
+                err_msg = api.SimMsgBodyInvalidId()
+                err_msg.msgID = msgID
+                err_msg.id_type = api.BERTH
+                err_msg.ID = e.args[0]
+                self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
             except globals.InvalidVehicleID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
@@ -447,6 +460,10 @@ class ControlInterface(Sim.Process):
                 err_msg.id_type = api.PASSENGER
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
+            except globals.MsgError:
+                err_msg = api.SimMsgBodyInvalid()
+                err_msg.msgID = msgID
+                self.send(api.SIM_MSG_BODY_INVALID, err_msg)
 
         # if packet time is in future, set an alarm to wake up interface
         # at the time, and revive the message then.
@@ -527,8 +544,6 @@ class ControlInterface(Sim.Process):
             s = globals.stations[ID]
         except KeyError:
             raise globals.InvalidStationID, ID
-        if not isinstance(s, layout.Station):
-            raise globals.InvalidStationID, ID
         return s
 
     def get_vehicle(self, ID):
@@ -549,67 +564,34 @@ class ControlInterface(Sim.Process):
             raise globals.InvalidPassengerID, ID
         return pax
 
-#    # DEPRECATED
-#    def validate_speed_params(self, v, msg):
-#        """ Validate/set max_accel, max_jerk on a per vehicle
-#         basis to accomodate variety of vehicle capabilities
-#         or passenger limitations.
-#
-#         Assumed that the controller may not have a Floating Point Unit, so
-#         all communications are use centimeters rather than meters as the base
-#         unit of length. This function converts back to meters in addition
-#         to validating."""
-#        import warnings
-#        warnings.warn('deprecated function')
-#        # regular case
-#        if not msg.emergency:
-#            # if max_accel specified by controller, validate it
-#            if msg.max_accel:
-#                max_accel = msg.max_accel/100 # cm/s^2 -> m/s^2
-#                if max_accel > v.accel_max_norm or max_accel < 0:
-#                    raise globals.InvalidAccel, max_accel
-#                ma = max_accel
-#            # otherwise set it
-#            else: ma = v.accel_max_norm
-#
-#            if msg.max_decel:
-#                max_decel = msg.max_decel/100  # cm/s^2 -> m/s^2
-#                if max_decel < v.accel_min_norm or max_decel > 0:
-#                    raise globals.InvalidDecel, max_decel
-#                md = max_decel
-#            else: md = v.accel_min_norm
-#
-#            if msg.max_jerk:
-#                max_jerk = msg.max_jerk/100 # cm/s^2 -> m/s^2
-#                mj = abs(max_jerk)
-#                if mj > v.jerk_max_norm:
-#                    raise globals.InvalidJerk, max_jerk
-#            else: mj = abs(v.jerk_max_norm)
-#        # emergency case
-#        else:
-#            # if max_accel specified by controller, validate it
-#            if msg.max_accel:
-#                max_accel = msg.max_accel/100 # cm/s^2 -> m/s^2
-#                if max_accel > v.accel_max_emerg or max_accel < 0:
-#                    raise globals.InvalidAccel, max_accel
-#                ma = max_accel
-#            # otherwise set it
-#            else: ma = v.accel_max_emerg
-#
-#            if msg.max_decel:
-#                max_decel = msg.max_decel / 100 # cm/s^2 -> m/s^2
-#                if max_decel < v.accel_min_emerg or max_decel > 0:
-#                    raise globals.InvalidDecel, max_decel
-#                md = max_decel
-#            else: md = v.accel_min_emerg
-#
-#            if msg.max_jerk:
-#                max_jerk = msg.max_jerk / 100 # cm/s^3 -> m/s^3
-#                mj = abs(max_jerk)
-#                if mj > v.jerk_max_emerg:
-#                    raise globals.InvalidJerk, max_jerk
-#            else: mj = v.jerk_max_emerg
-#        return (ma, md, mj)
+    def get_berth(self, station_id, platform_id, berth_id):
+        station = self.get_station(station_id)
+        try:
+            platform = station.platforms[platform_id]
+        except KeyError:
+            raise globals.InvalidPlatformID, platform_id
+        try:
+            berth = platform.berths[berth_id]
+        except KeyError:
+            raise globals.InvalidBerthID, berth_id
+        return berth
+
+    def validate_spline(self, spline):
+        assert isinstance(spline, api.Spline)
+        # Check that the times for the spline are valid, meaning that the first
+        # time is not in the past, and that they are in non-decreasing order
+        if len(spline.times) == 0:
+            raise globals.MsgError
+
+        if globals.time_lt(spline.times[0], Sim.now()):
+            logging.info("T=%4.3f First spline time %s is in the past.",
+                         Sim.now(), spline.times[0])
+            raise globals.MsgError
+        for t1, t2 in pairwise(spline.times):
+            if t2 < t1:
+                logging.info("T=%4.3f Spline times are not in non-decreasing order: %s",
+                             Sim.now(), spline.times)
+                raise globals.MsgError
 
     def validate_itinerary(self, vehicle, ids):
         if len(ids) == 0:
@@ -629,7 +611,7 @@ class ControlInterface(Sim.Process):
         msgID: The msgID that this is a response to, if any."""
         if msgID:
             ts.msgID = msgID
-        for v in globals.vehicle_list:
+        for v in globals.vehicles.itervalues():
             v_status = api.VehicleStatus()
             v.fill_VehicleStatus(v_status)
             ts.v_statuses.append(v_status)
@@ -644,7 +626,7 @@ class ControlInterface(Sim.Process):
             switch.fill_SwitchStatus(sw_status)
             ts.sw_statuses.append(sw_status)
         # send Station status msgs and summary msgs
-        for station in globals.station_list:
+        for station in globals.stations.itervalues():
             s_status = api.StationStatus()
             station.fill_StationStatus(s_status)
             ts.s_statuses.append(s_status)

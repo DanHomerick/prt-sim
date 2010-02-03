@@ -35,6 +35,7 @@ import pyprt
 import pyprt.shared.api_pb2 as api
 import layout
 import segment_plot
+import station
 
 class GUI_App(wx.App):
     def OnInit(self):
@@ -87,16 +88,16 @@ class MainWindow(wx.Frame):
             manager = globals.scenario_manager
             manager.load_scenario(filename)
 
-            # Create the Visualizer
-            self.visualizer = Visualizer(globals.digraph, globals.max_vehicle_pax_capacity)
-            self.chaco_window.component = self.visualizer.plot
-
             # adjust the window size to match the image.
             self.SetSize(wx.Size(globals.img_width, globals.img_height)) # width, height
             my_size = self.GetSize()
             display_size = wx.GetDisplaySize()
-            if (my_size[0] > display_size[0] or my_size[1] > display_size[1]): # if too big
-                self.SetSize(wx.Size(globals.img_width/2, globals.img_height/2)) # use half-resolution
+##            if (my_size[0] > display_size[0] or my_size[1] > display_size[1]): # if too big
+##                self.SetSize(wx.Size(globals.img_width/2, globals.img_height/2)) # use half-resolution
+
+            # Create the Visualizer
+            self.visualizer = Visualizer(globals.digraph, globals.max_vehicle_pax_capacity)
+            self.chaco_window.component = self.visualizer.plot
 
             # update what options are enabled in the menu
             self.menubar_manager.config_loaded()
@@ -388,7 +389,7 @@ class MainWindow(wx.Frame):
             pax_waiting = 0
             total_wait = 0
             max_wait = 0
-            for stat in globals.station_list: # collected in 'seconds'
+            for stat in globals.stations.itervalues(): # collected in 'seconds'
                 for pax in stat.passengers:
                     pax_waiting += 1
                     pax_wait = pax.wait_time # don't force it to calc the wait time twice
@@ -402,9 +403,10 @@ class MainWindow(wx.Frame):
             # calc some vehicle stats
             seats_occupied = 0
             vehicles_occupied = 0
-            total_vehicles = len(globals.vehicle_list)
-            total_seats = sum(v.max_pax_capacity for v in globals.vehicle_list)
-            for vehicle in globals.vehicle_list:
+            total_vehicles = len(globals.vehicles)
+            total_seats = 0
+            for vehicle in globals.vehicles.itervalues():
+                total_seats += vehicle.max_pax_capacity
                 if vehicle.passengers:
                     vehicles_occupied += 1
                 seats_occupied += len(vehicle.passengers)
@@ -477,13 +479,15 @@ class Visualizer(object):
         # Determine placement of the Node markers
         # Note that it's important that they are loaded by the list ordering.
         # When mousing over, their ordering is used to recover the true object.
-        for node in globals.station_list:
-            stat_x.append( (node.x_start + node.x_end)/2.0 )
-            stat_y.append( (node.y_start + node.y_end)/2.0 )
-            stat_track_x.append( node.x_start )
-            stat_track_x.append( node.x_end   )
-            stat_track_y.append( node.y_start )
-            stat_track_y.append( node.y_end   )
+        for s in globals.station_list:
+            assert isinstance(s, station.Station)
+            stat_x.append( (s.platforms[0].track_segment.x_start + s.platforms[0].track_segment.x_end)/2.0 )
+            stat_y.append( (s.platforms[0].track_segment.y_start + s.platforms[0].track_segment.y_end)/2.0 )
+            for plat in s.platforms:
+                stat_track_x.append( plat.track_segment.x_start )
+                stat_track_x.append( plat.track_segment.x_end   )
+                stat_track_y.append( plat.track_segment.y_start )
+                stat_track_y.append( plat.track_segment.y_end   )
 
         for node in globals.switch_list:
             switch_x.append( (node.x_start + node.x_end)/2.0 )
@@ -708,11 +712,11 @@ class Visualizer(object):
             point = (self.plot_data.get_data('stat_x')[select],
                      self.plot_data.get_data('stat_y')[select])
 #            print "Point:", point
-            station = globals.station_list[select]
-            stat_name = station.label
-            num_pax = len(station.passengers)
+            stat = globals.station_list[select]
+            stat_name = stat.label
+            num_pax = len(stat.passengers)
             now = SimPy.now()
-            wait_times = [(now - pax.trip_start) for pax in station.passengers]
+            wait_times = [(now - pax.trip_start) for pax in stat.passengers]
             if wait_times:
                 max_wait = max(wait_times)
                 avg_wait = sum(wait_times) / len(wait_times)
@@ -724,6 +728,7 @@ class Visualizer(object):
                               component=self.plot,
                               data_point = point,
                               lines = ['%s' % stat_name,
+                                       'ID: %d' % stat.ID,
                                        'PAX Waiting: %i' % num_pax,
                                        'max wait: %.1f' % max_wait,
                                        'avg wait: %.1f' % avg_wait]
@@ -750,7 +755,7 @@ class Visualizer(object):
             try:
                 for select in metadata["selections"]:
                     stat = globals.station_list[select]
-                    stat.configure_traits(view=stat.view)
+                    stat.configure_traits() # old params: view=stat.view
                 del metadata["selections"] # clear the selection list
             except IndexError:
                 pass
@@ -927,8 +932,8 @@ def run_sim(end_time, callback, *args):
         SimPy.activate(v, v.ctrl_loop())
 
     # activate the stations
-    for s in globals.station_list:
-        SimPy.activate(s, s.ctrl_loop())
+    for s in globals.stations.itervalues():
+        s.startup()
 
     # activate the event manager
     SimPy.activate(globals.event_manager, globals.event_manager.spawn_events())
@@ -1162,18 +1167,18 @@ def postsim_summary():
     if len(globals.passengers) > pax_display_limit:
         summary.append('An additional %d passenger records not shown...' % (len(globals.passengers) - pax_display_limit,) )
 
-    summary.append("\nPost Sim Switch Report")
-    summary.append("%4s%15s%10s" % ('ID', 'Name', 'Errors'))
-    for sw in globals.switch_list:
-        summary.append("%4d%15s%10d" % (sw.ID, sw, sw.errors))
+##    summary.append("\nPost Sim Switch Report")
+##    summary.append("%4s%15s%10s" % ('ID', 'Name', 'Errors'))
+##    for sw in globals.switch_list:
+##        summary.append("%4d%15s%10d" % (sw.ID, sw, sw.errors))
 
-    summary.append("\nPost Sim Station Report")
-    summary.append(("%4s%17s" + "%10s"*7) % ('ID', 'Name', 'Departs', 'Arrives', 'Crashes', 'Unload', 'Queue', 'Load', 'Storage'))
-    for s in globals.station_list:
-        summary.append(("%4d%17s" + "%10d"*7) % \
-                (s.ID, s.label, s.totalArrivals, s.totalDepartures, s.totalCrashes,
-                 s.num_load_berths, s.num_queue_slots, s.num_load_berths,
-                 s.num_storage_slots))
+##    summary.append("\nPost Sim Station Report")
+##    summary.append(("%4s%17s" + "%10s"*7) % ('ID', 'Name', 'Departs', 'Arrives', 'Crashes', 'Unload', 'Queue', 'Load', 'Storage'))
+##    for s in globals.station_list:
+##        summary.append(("%4d%17s" + "%10d"*7) % \
+##                (s.ID, s.label, s.totalArrivals, s.totalDepartures, s.totalCrashes,
+##                 s.num_load_berths, s.num_queue_slots, s.num_load_berths,
+##                 s.num_storage_slots))
 
     return '\n'.join(summary)
 

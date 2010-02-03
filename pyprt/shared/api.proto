@@ -24,8 +24,6 @@ enum Misc {
 enum CtrlMsgType {
     CTRL_CMD_VEHICLE_TRAJECTORY = 1;
     CTRL_CMD_VEHICLE_ITINERARY = 2;
-//    CTRL_CMD_STATION_LAUNCH = 2;
-//    CTRL_CMD_PASSENGER_LOAD_VEHICLE = 3;
     CTRL_CMD_SWITCH = 3;
     CTRL_CMD_PASSENGERS_EMBARK = 4;
     CTRL_CMD_PASSENGERS_DISEMBARK = 5;
@@ -49,9 +47,11 @@ enum LocationType {
     TRACK_SEGMENT = 0;
     SWITCH = 10;
     STATION = 20;
-    VEHICLE = 30;
-    PASSENGER = 40;
-    NONE = 50;
+    PLATFORM = 30;
+    BERTH = 40;
+    VEHICLE = 50;
+    PASSENGER = 60;
+    NONE = 70;
 }
 
 // What passenger loading policy the Station is using.
@@ -60,7 +60,9 @@ enum StationPolicy {
     QUEUE = 2;
 }
 
-// Polynomial coefficients. The highest degree coefficent is first.
+// Polynomial coefficients. The highest degree coefficent is first. If fewer
+// than 4 coefficients are supplied, the ommitted high order coefficients are
+// assumed to be 0. See comment on CtrlCmdVehicleTrajectory.
 message PolyCoeffs {
     repeated float            coeffs = 1 [packed=true];
 }
@@ -68,9 +70,30 @@ message PolyCoeffs {
 // A C2 cubic spline (or lower order).
 message Spline {
     repeated PolyCoeffs       polys = 1;
-    repeated float            times = 2 [packed=true]; // the spline knot times. Length of 'times' must be one greater than the length of 'polys'.
+
+    // Spline knot times in seconds (where the sim start time is 0).
+    // Length of 'times' must be one greater than the length of 'polys'.
+    // The times must be in non-decreasing order.
+    repeated double           times = 2 [packed=true];
 }
 
+// Instruct a vehicle to use the specified spline as its planned trajectory.
+// The spline is spliced together with the preexisting trajectory as follows:
+//   1. The preexisting trajectory is truncated at spline.times[0]
+//   2. The jerk values in spline.polys.coeffs are used to extend the vehicle's
+//      trajectory.
+//
+// Note that the lower order coefficients rely upon the controller having
+// accurate knowledge of the vehicle's state, and thus are not used by the
+// simulator. Although the controller may pass ONLY the jerk coefficients,
+// It is recommended that the controller pass the full coefficients
+// so that the simulator may log any discrepencies. If the controller
+// wishes to ommit lower order coefficients, send NaN in their place.
+//
+// Note also the that spline does not need to take into account the fact that
+// each TrackSegment has its own coordinate frame for position. That is, the
+// spline should be continuous in position, rather than having discontinuities
+// caused by the change in coordinate frames at TrackSegment boundaries.
 message CtrlCmdVehicleTrajectory {
     required int32          vID = 1;
     required Spline         spline = 2;
@@ -90,33 +113,6 @@ message CtrlCmdVehicleItinerary {
     repeated int32          tsIDs = 2 [packed=true];
     optional bool           clear = 3;
 }
-
-//message CtrlCmdVehicleSpeed {
-//    required int32          vID = 2;
-//    required int32          target_speed = 3;
-//    optional int32          max_accel = 4; // vehicle max_accel used if ommitted. Sign is positive.
-//    optional int32          max_decel = 5; // vehicle max_decel used if ommitted. Sign is negative.
-//    optional int32          max_jerk = 6; // vehicle max_jerk used if ommitted. Sign is ignored.
-//    optional bool           emergency = 7; // false by default
-//}
-
-message CtrlCmdStationLaunch {
-    required int32          sID = 1;
-    required int32          vID = 2;
-    required int32          target_speed = 3;
-    optional int32          max_accel = 4; // vehicle max_accel used if ommitted. Sign is positive.
-    optional int32          max_decel = 5; // vehicle max_decel used if ommitted. Sign is negative.
-    optional int32          max_jerk = 6; // vehicle max_jerk used if ommitted. Sign is ignored.
-    optional bool           emergency = 7; // false by default
-}
-
-// Only used under the 'LOBBY' station policy.
-// Passengers load automatically under the 'QUEUE' policy.
-//message CtrlCmdPassengerLoadVehicle {
-//   required int32          pID = 2;
-//    required int32          vID = 3;
-//    required int32          sID = 4;
-//}
 
 message CtrlCmdPassengersEmbark {
     required int32          vID = 1; // vehicleID
@@ -187,7 +183,7 @@ message CtrlSetnotifyVehiclePosition {
 }
 
 message CtrlSetnotifyTime {
-    required float         time = 1; // in seconds
+    required double        time = 1; // in seconds
 }
 
 // Resume is a very non-realistic command with no possibility of 'changing
@@ -208,9 +204,8 @@ message CtrlResume {
 enum SimMsgType {
     SIM_GREETING = 1000;
 
-    SIM_COMPLETE_VEHICLE_SPEED = 1001;
-    SIM_COMPLETE_STATION_LAUNCH = 1002;
-    SIM_COMPLETE_PASSENGER_LOAD_VEHICLE = 1003;
+    SIM_COMPLETE_PASSENGER_EMBARK = 1002;
+    SIM_COMPLETE_PASSENGER_DISEMBARK = 1003;
     SIM_COMPLETE_SWITCH = 1004;
 
     SIM_RESPONSE_VEHICLE_STATUS = 1010;
@@ -227,15 +222,10 @@ enum SimMsgType {
     SIM_NOTIFY_VEHICLE_READY_LOAD = 1023;
     SIM_NOTIFY_VEHICLE_COLLISION = 1024;
 
-    SIM_NOTIFY_PASSENGER_LOAD_START = 1031;
-    SIM_NOTIFY_PASSENGER_LOAD_END = 1032;
-    SIM_NOTIFY_PASSENGER_UNLOAD_START = 1033;
-    SIM_NOTIFY_PASSENGER_UNLOAD_END = 1034;
-    SIM_NOTIFY_PASSENGER_DELIVERED = 1035;
-    SIM_NOTIFY_PASSENGER_MISDELIVERED = 1036;
-
-    SIM_NOTIFY_STATION_READY_LAUNCH = 1040;
-    SIM_NOTIFY_STATION_UNREADY_LAUNCH = 1041;
+    SIM_NOTIFY_PASSENGER_EMBARK_START = 1031;
+    SIM_NOTIFY_PASSENGER_EMBARK_END = 1032;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1033;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1034;
 
     SIM_NOTIFY_TIME = 1050;
 
@@ -264,12 +254,12 @@ enum SimMsgType {
     SIM_MSG_HDR_INVALID_PBSTR = 1305;
     SIM_MSG_BODY_INVALID = 1310;
     SIM_MSG_BODY_INVALID_ID = 1311;
-    
+
     SIM_ABORT_VEHICLE_SPEED = 1401;
 }
 
 message SimGreeting {
-    required float          sim_end_time = 1;
+    required double         sim_end_time = 1;
 }
 
 message SimStart {
@@ -288,23 +278,14 @@ message SimAbortVehicleSpeed {
     required int32          msgID = 1; // msgID of the CtrlCmdVehicleSpeed msg
 }
 
-message SimCompleteVehicleSpeed {
-    required int32          msgID = 1; // msgID of the CtrlCmdVehicleSpeed msg
-    required int32          vID = 2;
-    required int32          speed = 3;
+message SimCompletePassengerEmbark {
+    required int32          msgID = 1; // msgID of the CtrlCmdPassengersEmbark msg
+    optional CtrlCmdPassengersEmbark  cmd = 2; // the original message
 }
 
-message SimCompleteStationLaunch {
-    required int32          msgID = 1; // msgID of the CtrlCmdStationLaunch msg
-    required int32          sID = 2;
-    required int32          vID = 3;
-}
-
-message SimCompletePassengerLoadVehicle {
-    required int32           msgID = 1; // msgID of the CtrlCmdPassengerBoardVehicle msg
-    required int32           pID = 2;
-    required int32           vID = 3;
-    required int32           sID = 4;
+message SimCompletePassengerDisembark {
+    required int32          msgID = 1; // msgID of the CtrlCmdPassengersDisembark msg
+    optional CtrlCmdPassengersDisembark  cmd = 2; // the original message
 }
 
 // Sent once the track-switch has completed it's throw,
@@ -370,7 +351,7 @@ message SimNotifyVehiclePosition {
 
 message SimNotifyTime {
     optional int32	        msgID = 1; // Ctrl msg that requested notify
-    required float              time = 2; // in seconds
+    required double             time = 2; // in seconds
 }
 
 message SimNotifyVehicleArrive {
@@ -399,54 +380,36 @@ message SimNotifyVehicleCollision {
     optional bool               sideswipe = 8;
 }
 
-message SimNotifyPassengerLoadStart {
-    required int32	vID = 1;
-    required int32	sID = 2;
-    required int32	pID = 3;
+message SimNotifyPassengerEmbarkStart {
+    required int32	vID = 1;         // vehicle id
+    required int32	sID = 2;         // station id
+    required int32      platformID = 3;  // platform index
+    required int32	pID = 4;         // passenger id
+    required int32      berthID = 5;     // berth index
 }
 
-message SimNotifyPassengerLoadEnd {
-    required int32	vID = 1;
-    required int32	sID = 2;
-    required int32	pID = 3;
+message SimNotifyPassengerEmbarkEnd {
+    required int32	vID = 1;         // vehicle id
+    required int32	sID = 2;         // station id
+    required int32      platformID = 3;  // platform index
+    required int32	pID = 4;         // passenger id
+    required int32      berthID = 5;     // berth index
 }
 
-message SimNotifyPassengerUnloadStart {
-    required int32	vID = 1;
-    required int32	sID = 2;
-    required int32	pID = 3;
+message SimNotifyPassengerDisembarkStart {
+    required int32	vID = 1;         // vehicle id
+    required int32	sID = 2;         // station id
+    required int32      platformID = 3;  // platform index
+    required int32	pID = 4;         // passenger id
+    required int32      berthID = 5;     // berth id
 }
 
-message SimNotifyPassengerUnloadEnd {
-    required int32	vID = 1;
-    required int32	sID = 2;
-    required int32	pID = 3;
-}
-
-message SimNotifyPassengerDelivered {
-    required int32	vID = 1;
-    required int32	sID = 2;
-    required int32	pID = 3;
-}
-
-message SimNotifyPassengerMisdelivered {
-    required int32	vID = 1;
-    required int32	sID = 2;
-    required int32	pID = 3;
-}
-
-// Passenger loaded and vehicle in position to launch
-message SimNotifyStationReadyLaunch {
-    required int32	vID = 1;
-    required int32	sID = 2;
-    repeated int32	pID = 3  [packed=true]; // PassengerIDs, if any.
-}
-
-// Vehicle is no longer ready to launch. Typical case is when a passenger
-// begins boarding an idle vehicle.
-message SimNotifyStationUnreadyLaunch {
-    required int32	vID = 1;
-    required int32	sID = 2;
+message SimNotifyPassengerDisembarkEnd {
+    required int32	vID = 1;         // vehicle id
+    required int32	sID = 2;         // station id
+    required int32      platformID = 3;  // platform index
+    required int32	pID = 4;         // passenger id
+    required int32      berthID = 5;     // berth index
 }
 
 message SimEventTrackSegmentDisabled {
@@ -531,15 +494,13 @@ message SimMsgBodyInvalidId {
 // ------------- Status Types ----------------
 message VehicleStatus {
     required int32         vID = 1;
-    required LocationType  nose_loc_type = 2;
     required int32         nose_locID = 3;
     required float         nose_pos = 4;
-    required LocationType  tail_loc_type = 5;
     required int32         tail_locID = 6;
     required float         tail_pos = 7;
     required float         vel = 8;
     required float         accel = 9;
-    repeated int32         passengerID = 10  [packed=true];
+    repeated int32         passengerIDs = 10  [packed=true];
 
     // milliseconds until nose reaches the current pos of the lead vehicle's
     // tail. Calc'd using instantaneous speed (disregarding accel).
@@ -588,7 +549,7 @@ message PlatformStatus {
 
 message BerthStatus {
     // berthIDs are in the range from 0 to n-1, where n is the number of berths in the current platform. They are not globally unique.
-    required int32         bID = 1; 
+    required int32         bID = 1;
     required int32         vID = 2; // vID of NONE_ID indicates no vehicle
     required bool          busy = 3;
 }
@@ -600,7 +561,7 @@ message PassengerStatus {
     required int32         locID = 4;
     required int32         src_stationID = 5;
     required int32         dest_stationID = 6;
-    required float         creation_time = 7;    
+    required double        creation_time = 7;
     optional float         wait_time = 8;
     optional float         travel_time = 9;
     optional int32         weight = 10; // in kg

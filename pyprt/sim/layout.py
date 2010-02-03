@@ -13,8 +13,8 @@ import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
 import globals
-import events
 import station
+from pyprt.shared.utility import pairwise
 from comm import AlarmClock
 
 # arbitrarily chosen
@@ -58,7 +58,7 @@ class Node(traits.HasTraits):
         self.label = (label if label else str(ID)+'_'+self.__class__.__name__)
         self.resource = Sim.Resource(name=self.label, capacity=capacity,
                                      monitored=True)
-        
+
         self.x_start = x_start
         self.y_start = y_start
         self.x_end   = x_end
@@ -111,7 +111,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg
     max_pax_capacity = traits.CInt
-    passengers       = traits.List(traits.Instance('events.Passenger'))
+    passengers       = traits.Set(traits.Instance('events.Passenger'))
 
     # A default view for vehicles.
     traits_view =  ui.View('ID', 'length',
@@ -250,30 +250,47 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     def process_spline(self, spline_msg):
         """Unpacks the contents of an api.Spline message,
-        and alters the vehicle's trajectory accordingly."""
-        # add trajectory to self.path
-        segs = []
-        t_start = spline_msg.times[0]
-        assert t_start >= Sim.now()
-        for poly_coeffs_msg, t_final in zip(spline_msg.polys, spline_msg.times[1:]):
-            poly = poly1d(poly_coeffs_msg.coeffs[:]) # both have highest order coeff first.
-            dur = t_final - t_start
-            assert dur >= 0
-            segs.append( Segment(poly, dur, t_start, self.total_mass) )
-            t_start += dur
+        and alters the vehicle's trajectory accordingly. Only uses the jerk
+        to alter the trajectory, since it's the only coefficient that
+        doesn't require knowledge of the vehicle's true state. The other
+        coefficients are checked against "reality" and the discrepencies are
+        logged for debugging purposes."""
+        t_initial = spline_msg.times[0]
+        current_trav = self.path.get_traversal_from_time(t_initial)
+        current_seg = current_trav.get_segment_from_time(t_initial)
+        current_poly = current_seg.pos_eqn
 
-#        # From the sim's perspective, the vehicle needs a trajectory out to
-#        # infinity (or the end of the simulation), though we're not imposing
-#        # that requirement on the controller's splines. Instead, we're just
-#        # appending a dummy segment that extends the last poly out. Note that the
-#        # last Segment's poly is a reference to the previous poly!
-#        # TODO: Is this really what I want to do, or do I need a sentinal marker
-#        #       of some sort?
-#        if segs[-1].end_time < inf:
-#            last_seg = segs[-1]
-#            inf_poly = shift_poly(last_seg.pos_eqn, last_seg.duration, last_seg.get_end_pos())
-#            segs.append( Segment(inf_poly, inf, last_seg.end_time, self.total_mass) )
-#            print "LAYOUT TRAJ:", '\n'.join([str(seg) for seg in segs])
+        segs = []
+        duration = t_initial - current_seg.start_time
+        for poly_msg, (t_initial, t_final) in zip(spline_msg.polys, pairwise(spline_msg.times)):
+            if len(poly_msg.coeffs) == 4:
+                jerk = poly_msg.coeffs[0]
+            else:
+                jerk = 0
+
+            coeffs = [jerk,
+                      current_poly.deriv(2)(duration)/2,
+                      current_poly.deriv(1)(duration),
+                      current_poly(duration)]
+
+            # It's one thing to not trust the controller to dictate the vehicle's
+            # state. But controlling the vehicle by jerk alone eventually results
+            # in rounding errors. Use points in the trajectory where the vehicle
+            # has clearly come to a complete stop to zero out any accumulated
+            # rounding errors in the velocity and acceleration.
+            if globals.dist_eql(coeffs[VEL], 0) and globals.dist_eql(coeffs[ACCEL], 0):
+                coeffs[VEL] = 0
+                coeffs[ACCEL] = 0
+
+            if __debug__:
+                errors = [received-true for (received, true) in zip(reversed(poly_msg.coeffs), reversed(coeffs))]
+                error_str = ", ".join(msg + str(error) for (msg, error) in zip(['Pos: ', 'Vel: ', 'Accel: '], errors))
+                logging.debug("Spline check::Times: %s to %s. Errors: %s",
+                              t_initial, t_final, error_str)
+
+            current_poly = poly1d(coeffs)
+            duration = t_final - t_initial
+            segs.append(Segment(current_poly, duration, t_initial, self.total_mass))
 
         self.path.change_trajectory(segs)
 
@@ -356,6 +373,22 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         return accel
 
     accel = property(fget=get_accel)
+
+    def is_parked_between(self, min_tail_pos, max_nose_pos, track_seg):
+        """"Check that the vehicle is stopped, and is located on track_seg with
+        the vehicle's nose somewhere before max_nose_pos and the tail somewhere
+        beyond min_tail_pos."""
+        n_pos, n_loc = self.nose
+        t_pos, t_loc = self.tail
+
+        if self.get_speed() != 0:
+            return False
+        elif n_loc is not t_loc is not track_seg:
+            return False
+        elif n_pos > max_nose_pos or t_pos < min_tail_pos:
+            return False
+        else:
+            return True
 
     def ctrl_loop(self):
         # place self in queue for starting location
@@ -600,7 +633,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         try:    # Next location has already been decided (vehicle switching)
             new_loc = self.path.traversals[self.path.active_idx+1].loc
             assert new_loc in globals.digraph.neighbors(old_loc)
-        except IndexError:            
+        except IndexError:
             new_loc = old_loc.next
             if new_loc is None: # can be caused by a dead-end track or a track switch in mid-throw
                 # TODO: Consistant collision handling through a single function!!!!
@@ -870,16 +903,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         nose = self.get_nose() # a 2-tuple
         vs.nose_pos = nose[0]
         vs.nose_locID = nose[1].ID
-        vs.nose_loc_type = loc2loctype(nose[1])
         tail = self.get_tail()
         vs.tail_pos = tail[0]
         vs.tail_locID = tail[1].ID
-        vs.tail_loc_type = loc2loctype(tail[1])
         vs.vel = self.speed
         vs.accel = self.accel
-#        vs.target_speed = int(self.target_speed*100) # meters/s -> cm/s
         for pax in self.passengers:
-            vs.passengerID.append(pax.ID)
+            vs.passengerIDs.append(pax.ID)
 
         lv, dist = self.find_lv_dist()
         if lv: # ommit if a lead vehicle wasn't found
@@ -967,7 +997,7 @@ class InterruptCollisionChk(Sim.Process):
         Sim.activate(self, self.run(), prior=True)
     def __str__(self):
         return self.name
-    
+
     def run(self):
         if self.time:
             if self.relative:
@@ -1207,11 +1237,10 @@ class Segment(traits.HasTraits):
         else:
             # Only real roots in the correct time range are valid
             roots = (self.pos_eqn - pos).r
-            pts = [round(t.real, globals.TIME_RND) for t in roots if
-                     globals.time_eql(t.imag, 0.0000) and
-                     (t.real > 0.0 or globals.time_eql(t.real, 0.0)) and
-                     (t.real < self.duration or
-                         globals.time_eql(t.real, self.duration))]
+            pts = [t.real for t in roots if
+                     globals.time_eql(t.imag, 0.0000) and \
+                     globals.time_ge(t.real, 0.0) and \
+                     globals.time_le(t.real, self.duration)]
             pts.sort()
 
             # Remove duplicates that arise from rounding errors
@@ -1379,7 +1408,7 @@ class Traversal(traits.HasTraits):
 
     Fundamental 'length' of a Traversal is the location's length."""
     loc = traits.Instance(Node)
-          
+
     idx = traits.Either((traits.Int(), None))
     segments = traits.List(traits.Instance(Segment))
 
@@ -1539,40 +1568,44 @@ class Traversal(traits.HasTraits):
         if globals.dist_gt(end_pos, self.length):
             raise TraversalFullError
 
-        try:
-            tail_seg = self.segments[-1]
-        except IndexError:
-            tail_seg = None
-        if tail_seg:
-            # If seg starts at same time as tail_seg starts, use change_trajectory instead
-            if globals.time_lt(seg.start_time, tail_seg.start_time):
-                raise InvalidTimeError, (seg.start_time, tail_seg.start_time)
-
-            # clip duration of the old tail_seg
-            tail_seg.duration = seg.start_time - tail_seg.start_time
+        if self.segments:
+            assert globals.dist_eql(self.segments[-1].get_end_pos(), seg.get_start_pos())
 
         self.segments.append(seg)
-
-        # clip the duration of the new tail_seg to proper distance
-        # The self.length == inf is a test to see if I'm `path.future`.
-        if not seg.is_stopped() and seg.duration == inf and \
-                    not self.length == inf:
-            end_times = seg.get_times_from_pos(self.length)
-            if end_times.points:
-                seg.duration = end_times.points[0] - seg.start_time
+##        try:
+##            tail_seg = self.segments[-1]
+##        except IndexError:
+##            tail_seg = None
+##        if tail_seg:
+##            # If seg starts at same time as tail_seg starts, use change_trajectory instead
+##            if globals.time_lt(seg.start_time, tail_seg.start_time):
+##                raise InvalidTimeError, (seg.start_time, tail_seg.start_time)
+##
+##            # clip duration of the old tail_seg
+##            tail_seg.duration = seg.start_time - tail_seg.start_time
+##
+##        self.segments.append(seg)
+##
+##        # clip the duration of the new tail_seg to proper distance
+##        # The self.length == inf is a test to see if I'm `path.future`.
+##        if not seg.is_stopped() and seg.duration == inf and \
+##                    not self.length == inf:
+##            end_times = seg.get_times_from_pos(self.length)
+##            if end_times.points:
+##                seg.duration = end_times.points[0] - seg.start_time
 
     def clear(self, time):
         """Clears the traversal from time onwards."""
-        assert time >= Sim.now() # don't change the past.
+        assert globals.time_ge(time, Sim.now()) # don't change the past.
         if not self.segments:
             return
 
-        if globals.time_eql(time, self.start_time):
+        if globals.time_le(time, self.start_time): # at start or before. Wipe everything.
             self.segments = []
             return
 
-        if globals.time_lt(time, self.start_time) or globals.time_ge(time, self.end_time):
-            raise InvalidTimeError, (time, self.start_time, self.end_time)
+        if globals.time_ge(time, self.end_time): # doesn't apply to me
+            return
 
         # Find the relevant segment
         for seg in self.segments:
@@ -1696,7 +1729,7 @@ class Path(traits.HasTraits):
         return ''.join(tmp_list)
 
     def __iter__(self):
-        return itertools.chain(self.traversals, (self.future,))        
+        return itertools.chain(self.traversals, (self.future,))
 
     def __len__(self):
         return len(self.traversals) + 1
@@ -1716,56 +1749,62 @@ class Path(traits.HasTraits):
         """Returns the location of the active traversal."""
         return self.traversals[self.active_idx].loc
 
+    def append_segment(self, seg, trav):
+        """Appends a single segment to the path. If the segment stradles a
+        traversal boundary, splits the segment and returns the unassigned part.
+        If the segment is beyond the traversal, returns the segment. Otherwise,
+        returns None."""
+        try:
+            trav.append_segment(seg)
+        except TraversalFullError: # Only part of the segment fits
+            s1, s2 = seg.split_at_pos(trav.length)
+            trav.append_segment(s1)
+            return s2
+        except InvalidPosError:
+            return seg
+
+
     def append_segments(self, segs, trav):
         """Appends one or more Segments to the path. Assumed that the Segments
         are contiguous, and that the Traversals are empty.
-        
+
         segs: A list containing Segment instances.
         trav: The Traversal instance which corresponds to the first Segment.
         """
         if not segs:
             return
 
-        i = 0
         dist_offset = 0
-        seg = segs[0]
-        while True:
+        for seg in segs:
             # Offset the position to correct for each traversal starting with pos=0
-            if seg.get_start_pos() >= dist_offset:
-                seg.pos_eqn[0] -= dist_offset
-            try:
-                trav.append_segment(seg)
-                i += 1
-                try:
-                    seg = segs[i]
-                except IndexError:
+            seg.pos_eqn[0] -= dist_offset
+
+            while True:
+                seg = self.append_segment(seg, trav)
+                if seg:
+                    dist_offset += trav.length
+                    try:
+                        trav = self.traversals[trav.idx+1]
+                    except IndexError:
+                        trav = self.future
+                else:
                     break
-            # Only part of the segment fits
-            except TraversalFullError:                
-                s1, s2 = seg.split_at_pos(trav.length)
-                trav.append_segment(s1)
-                seg = s2
-                dist_offset += trav.length
-                try:                    
-                    trav = self.traversals[trav.idx+1]                    
-                except IndexError:
-                    trav = self.future
 
     def append_loc(self, loc):
         """Appends a new location to the path. Applies any planned segments to
         it (up to its length).
         """
         idx = len(self.traversals)
-        self.traversals.append(Traversal(loc, idx))
+        trav = Traversal(loc, idx)
+        self.traversals.append(trav)
         future_segs = self.future.segments
 
         # reset self.future
         self.future = Traversal(loc=FutureLoc(), idx=None)
 
-        # using append_segment ensures that loc is not 'overfilled' with
+        # using append_segments ensures that loc is not 'overfilled' with
         # segments, and stores any excess segments in self.future again.
-        for seg in future_segs:
-            self.append_segment(seg)
+        self.append_segments(future_segs, trav)
 
     def get_pos_loc_from_time(self, time, rnd=True, relative=False):
         """A wrapper for get_x_loc_from_time"""
@@ -1818,7 +1857,7 @@ class Path(traits.HasTraits):
             times = self.future.get_times_from_pos(pos, relative)
         elif loc:
             times = Times()
-            for trav in itertoolts.ifilter(lambda x: x.loc is loc, self.traversals):
+            for trav in itertools.ifilter(lambda x: x.loc is loc, self.traversals):
                 times.extend(trav.get_times_from_pos(pos, relative))
         else:
             times = self.traversals[-1].get_times_from_pos(pos)
@@ -1883,7 +1922,7 @@ class Path(traits.HasTraits):
         Segements should be an iterable (e.g. tuple or list) containing
         Segment objects."""
         t = segments[0].start_time
-        assert t >= Sim.now() # don't change the past
+        assert globals.time_ge(t, Sim.now()) # don't change the past
         current_trav = self.get_traversal_from_time(t)
 
         # clear planned trajectory past time t

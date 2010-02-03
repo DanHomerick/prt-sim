@@ -2,14 +2,13 @@
 
 import heapq
 
-import globals
-import layout
-import station
-import pyprt.shared.api_pb2 as api
-import SimPy.SimulationRT as Sim
-
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
+import enthought.traits.ui.table_column as ui_tc
+
+import globals
+import pyprt.shared.api_pb2 as api
+import SimPy.SimulationRT as Sim
 
 class EventManager(Sim.Process):
     """Primarily envisioned to create passengers as time passes, based on an
@@ -37,7 +36,7 @@ class EventManager(Sim.Process):
 
     def spawn_events(self):
         while self.list:
-            assert self.list[0].time >= Sim.now()
+            assert globals.time_ge(self.list[0].time, Sim.now())
             if self.list[0].time > Sim.now():
                 yield Sim.hold, self, self.list[0].time - Sim.now()
                 continue
@@ -72,19 +71,21 @@ class PrtEvent(traits.HasTraits):
         self.ID = ID
         self.label = (label if label else self.__class__.__name__ + str(ID))
 
+    def __eq__(self, other):
+        if isinstance(other, PrtEvent):
+            return self.ID == other.ID
+        else:
+            return False
+
     def __cmp__(self, other):
         """Compare based on time (and ID for equality)"""
         if isinstance(other, PrtEvent):
-            if self.time < other.time: return -1
-            elif self.time == other.time and self.ID == other.ID: return 0
-            else: return 1
+            if self.ID == other.ID:
+                return 0
+            else:
+                return cmp(self.time, other.time)
         elif isinstance(other, basestring): # compared to a string
             return cmp(self.label, other)
-        else:  # by ID for all other types
-            return cmp(self.ID, other)
-
-
-
 
     def __str__(self):
         """Use custom label, or use class's name + ID.
@@ -92,10 +93,7 @@ class PrtEvent(traits.HasTraits):
         return self.label
 
     def __hash__(self):
-        return self.ID.__hash__()
-
-#    def __eq__(self, other):
-#        return self.ID.__eq__(other)
+        return hash(self.ID)
 
 class Passenger(PrtEvent):
     """A passenger."""
@@ -115,6 +113,24 @@ class Passenger(PrtEvent):
                           ui.Item(name='load_delay'),
                           ui.Item(name='unload_delay'),
                           )
+
+    # Subset of passenger data in table format.
+    pax_table_editor = ui.TableEditor(
+                    columns = [ui_tc.ObjectColumn(name='label', label='Name'),
+                               ui_tc.ObjectColumn(name='trip_start'),
+                               ui_tc.ObjectColumn(name='dest_station', label='Destination'),
+                               ui_tc.ObjectColumn(name='wait_time', label='Waiting (sec)', format="%.2f"),
+                               ui_tc.ObjectColumn(name='will_share', label='Will Share'),
+                               ui_tc.ObjectColumn(name='load_delay', label='Time to Board (sec)')],
+                               # more...
+                    deletable = False,
+##                    sort_model = True,
+                    auto_size = True,
+                    orientation = 'vertical',
+                    show_toolbar = True,
+                    reorderable = True, # Does this affect the actual boarding order (think no...)
+                    rows = 5,
+                    row_factory = traits.This)
 
     def __init__(self, time, ID, src_station, dest_station,
                  load_delay, unload_delay, will_share, weight):
@@ -150,12 +166,14 @@ class Passenger(PrtEvent):
 
     def fill_PassengerStatus(self, ps):
         ps.pID = self.ID
-        if isinstance(self.loc, station.Station):
-            lt = api.STATION
-        elif isinstance(self.loc, layout.BaseVehicle):
+        # I'd much rather use isinstance checks, but circular imports are killing me
+        if hasattr(self.loc, 'v_mass'):
             lt = api.VEHICLE
+        elif hasattr(self.loc, 'platforms'):
+            lt = api.STATION
         else:
             raise Exception, "Unknown passenger location type: %s" % self.loc
+
         ps.loc_type = lt
         ps.locID = self.loc.ID
         ps.src_stationID = self.src_station.ID

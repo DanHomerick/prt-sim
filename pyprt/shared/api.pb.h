@@ -36,7 +36,6 @@ class PolyCoeffs;
 class Spline;
 class CtrlCmdVehicleTrajectory;
 class CtrlCmdVehicleItinerary;
-class CtrlCmdStationLaunch;
 class CtrlCmdPassengersEmbark;
 class CtrlCmdPassengersDisembark;
 class CtrlCmdSwitch;
@@ -55,9 +54,8 @@ class SimStart;
 class SimEnd;
 class SimUnimplemented;
 class SimAbortVehicleSpeed;
-class SimCompleteVehicleSpeed;
-class SimCompleteStationLaunch;
-class SimCompletePassengerLoadVehicle;
+class SimCompletePassengerEmbark;
+class SimCompletePassengerDisembark;
 class SimCompleteSwitch;
 class SimResponseVehicleStatus;
 class SimResponseStationStatus;
@@ -73,14 +71,10 @@ class SimNotifyVehicleArrive;
 class SimNotifyVehicleExit;
 class SimNotifyVehicleReadyLoad;
 class SimNotifyVehicleCollision;
-class SimNotifyPassengerLoadStart;
-class SimNotifyPassengerLoadEnd;
-class SimNotifyPassengerUnloadStart;
-class SimNotifyPassengerUnloadEnd;
-class SimNotifyPassengerDelivered;
-class SimNotifyPassengerMisdelivered;
-class SimNotifyStationReadyLaunch;
-class SimNotifyStationUnreadyLaunch;
+class SimNotifyPassengerEmbarkStart;
+class SimNotifyPassengerEmbarkEnd;
+class SimNotifyPassengerDisembarkStart;
+class SimNotifyPassengerDisembarkEnd;
 class SimEventTrackSegmentDisabled;
 class SimEventTrackSegmentReenabled;
 class SimEventSwitchDisabled;
@@ -164,9 +158,11 @@ enum LocationType {
   TRACK_SEGMENT = 0,
   SWITCH = 10,
   STATION = 20,
-  VEHICLE = 30,
-  PASSENGER = 40,
-  NONE = 50
+  PLATFORM = 30,
+  BERTH = 40,
+  VEHICLE = 50,
+  PASSENGER = 60,
+  NONE = 70
 };
 bool LocationType_IsValid(int value);
 const LocationType LocationType_MIN = TRACK_SEGMENT;
@@ -204,9 +200,8 @@ inline bool StationPolicy_Parse(
 }
 enum SimMsgType {
   SIM_GREETING = 1000,
-  SIM_COMPLETE_VEHICLE_SPEED = 1001,
-  SIM_COMPLETE_STATION_LAUNCH = 1002,
-  SIM_COMPLETE_PASSENGER_LOAD_VEHICLE = 1003,
+  SIM_COMPLETE_PASSENGER_EMBARK = 1002,
+  SIM_COMPLETE_PASSENGER_DISEMBARK = 1003,
   SIM_COMPLETE_SWITCH = 1004,
   SIM_RESPONSE_VEHICLE_STATUS = 1010,
   SIM_RESPONSE_STATION_STATUS = 1011,
@@ -220,14 +215,10 @@ enum SimMsgType {
   SIM_NOTIFY_VEHICLE_EXIT = 1022,
   SIM_NOTIFY_VEHICLE_READY_LOAD = 1023,
   SIM_NOTIFY_VEHICLE_COLLISION = 1024,
-  SIM_NOTIFY_PASSENGER_LOAD_START = 1031,
-  SIM_NOTIFY_PASSENGER_LOAD_END = 1032,
-  SIM_NOTIFY_PASSENGER_UNLOAD_START = 1033,
-  SIM_NOTIFY_PASSENGER_UNLOAD_END = 1034,
-  SIM_NOTIFY_PASSENGER_DELIVERED = 1035,
-  SIM_NOTIFY_PASSENGER_MISDELIVERED = 1036,
-  SIM_NOTIFY_STATION_READY_LAUNCH = 1040,
-  SIM_NOTIFY_STATION_UNREADY_LAUNCH = 1041,
+  SIM_NOTIFY_PASSENGER_EMBARK_START = 1031,
+  SIM_NOTIFY_PASSENGER_EMBARK_END = 1032,
+  SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1033,
+  SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1034,
   SIM_NOTIFY_TIME = 1050,
   SIM_REQUEST_SWITCH_CMD = 1060,
   SIM_EVENT_TRACKSEGMENT_DISABLED = 1100,
@@ -431,16 +422,16 @@ class Spline : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::prt::PolyCoeffs >*
       mutable_polys();
   
-  // repeated float times = 2 [packed = true];
+  // repeated double times = 2 [packed = true];
   inline int times_size() const;
   inline void clear_times();
   static const int kTimesFieldNumber = 2;
-  inline float times(int index) const;
-  inline void set_times(int index, float value);
-  inline void add_times(float value);
-  inline const ::google::protobuf::RepeatedField< float >&
+  inline double times(int index) const;
+  inline void set_times(int index, double value);
+  inline void add_times(double value);
+  inline const ::google::protobuf::RepeatedField< double >&
       times() const;
-  inline ::google::protobuf::RepeatedField< float >*
+  inline ::google::protobuf::RepeatedField< double >*
       mutable_times();
   
   // @@protoc_insertion_point(class_scope:prt.Spline)
@@ -449,7 +440,7 @@ class Spline : public ::google::protobuf::Message {
   mutable int _cached_size_;
   
   ::google::protobuf::RepeatedPtrField< ::prt::PolyCoeffs > polys_;
-  ::google::protobuf::RepeatedField< float > times_;
+  ::google::protobuf::RepeatedField< double > times_;
   mutable int _times_cached_byte_size_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
@@ -678,143 +669,6 @@ class CtrlCmdVehicleItinerary : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static CtrlCmdVehicleItinerary* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class CtrlCmdStationLaunch : public ::google::protobuf::Message {
- public:
-  CtrlCmdStationLaunch();
-  virtual ~CtrlCmdStationLaunch();
-  
-  CtrlCmdStationLaunch(const CtrlCmdStationLaunch& from);
-  
-  inline CtrlCmdStationLaunch& operator=(const CtrlCmdStationLaunch& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const CtrlCmdStationLaunch& default_instance();
-  
-  void Swap(CtrlCmdStationLaunch* other);
-  
-  // implements Message ----------------------------------------------
-  
-  CtrlCmdStationLaunch* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const CtrlCmdStationLaunch& from);
-  void MergeFrom(const CtrlCmdStationLaunch& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const;
-  public:
-  
-  ::google::protobuf::Metadata GetMetadata() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required int32 sID = 1;
-  inline bool has_sid() const;
-  inline void clear_sid();
-  static const int kSIDFieldNumber = 1;
-  inline ::google::protobuf::int32 sid() const;
-  inline void set_sid(::google::protobuf::int32 value);
-  
-  // required int32 vID = 2;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 2;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 target_speed = 3;
-  inline bool has_target_speed() const;
-  inline void clear_target_speed();
-  static const int kTargetSpeedFieldNumber = 3;
-  inline ::google::protobuf::int32 target_speed() const;
-  inline void set_target_speed(::google::protobuf::int32 value);
-  
-  // optional int32 max_accel = 4;
-  inline bool has_max_accel() const;
-  inline void clear_max_accel();
-  static const int kMaxAccelFieldNumber = 4;
-  inline ::google::protobuf::int32 max_accel() const;
-  inline void set_max_accel(::google::protobuf::int32 value);
-  
-  // optional int32 max_decel = 5;
-  inline bool has_max_decel() const;
-  inline void clear_max_decel();
-  static const int kMaxDecelFieldNumber = 5;
-  inline ::google::protobuf::int32 max_decel() const;
-  inline void set_max_decel(::google::protobuf::int32 value);
-  
-  // optional int32 max_jerk = 6;
-  inline bool has_max_jerk() const;
-  inline void clear_max_jerk();
-  static const int kMaxJerkFieldNumber = 6;
-  inline ::google::protobuf::int32 max_jerk() const;
-  inline void set_max_jerk(::google::protobuf::int32 value);
-  
-  // optional bool emergency = 7;
-  inline bool has_emergency() const;
-  inline void clear_emergency();
-  static const int kEmergencyFieldNumber = 7;
-  inline bool emergency() const;
-  inline void set_emergency(bool value);
-  
-  // @@protoc_insertion_point(class_scope:prt.CtrlCmdStationLaunch)
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::google::protobuf::int32 sid_;
-  ::google::protobuf::int32 vid_;
-  ::google::protobuf::int32 target_speed_;
-  ::google::protobuf::int32 max_accel_;
-  ::google::protobuf::int32 max_decel_;
-  ::google::protobuf::int32 max_jerk_;
-  bool emergency_;
-  friend void  protobuf_AddDesc_api_2eproto();
-  friend void protobuf_AssignDesc_api_2eproto();
-  friend void protobuf_ShutdownFile_api_2eproto();
-  
-  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static CtrlCmdStationLaunch* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -1943,19 +1797,19 @@ class CtrlSetnotifyTime : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required float time = 1;
+  // required double time = 1;
   inline bool has_time() const;
   inline void clear_time();
   static const int kTimeFieldNumber = 1;
-  inline float time() const;
-  inline void set_time(float value);
+  inline double time() const;
+  inline void set_time(double value);
   
   // @@protoc_insertion_point(class_scope:prt.CtrlSetnotifyTime)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  float time_;
+  double time_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
@@ -2121,19 +1975,19 @@ class SimGreeting : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required float sim_end_time = 1;
+  // required double sim_end_time = 1;
   inline bool has_sim_end_time() const;
   inline void clear_sim_end_time();
   static const int kSimEndTimeFieldNumber = 1;
-  inline float sim_end_time() const;
-  inline void set_sim_end_time(float value);
+  inline double sim_end_time() const;
+  inline void set_sim_end_time(double value);
   
   // @@protoc_insertion_point(class_scope:prt.SimGreeting)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  float sim_end_time_;
+  double sim_end_time_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
@@ -2496,14 +2350,14 @@ class SimAbortVehicleSpeed : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
-class SimCompleteVehicleSpeed : public ::google::protobuf::Message {
+class SimCompletePassengerEmbark : public ::google::protobuf::Message {
  public:
-  SimCompleteVehicleSpeed();
-  virtual ~SimCompleteVehicleSpeed();
+  SimCompletePassengerEmbark();
+  virtual ~SimCompletePassengerEmbark();
   
-  SimCompleteVehicleSpeed(const SimCompleteVehicleSpeed& from);
+  SimCompletePassengerEmbark(const SimCompletePassengerEmbark& from);
   
-  inline SimCompleteVehicleSpeed& operator=(const SimCompleteVehicleSpeed& from) {
+  inline SimCompletePassengerEmbark& operator=(const SimCompletePassengerEmbark& from) {
     CopyFrom(from);
     return *this;
   }
@@ -2517,17 +2371,17 @@ class SimCompleteVehicleSpeed : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const SimCompleteVehicleSpeed& default_instance();
+  static const SimCompletePassengerEmbark& default_instance();
   
-  void Swap(SimCompleteVehicleSpeed* other);
+  void Swap(SimCompletePassengerEmbark* other);
   
   // implements Message ----------------------------------------------
   
-  SimCompleteVehicleSpeed* New() const;
+  SimCompletePassengerEmbark* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimCompleteVehicleSpeed& from);
-  void MergeFrom(const SimCompleteVehicleSpeed& from);
+  void CopyFrom(const SimCompletePassengerEmbark& from);
+  void MergeFrom(const SimCompletePassengerEmbark& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -2557,33 +2411,25 @@ class SimCompleteVehicleSpeed : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 msgid() const;
   inline void set_msgid(::google::protobuf::int32 value);
   
-  // required int32 vID = 2;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 2;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
+  // optional .prt.CtrlCmdPassengersEmbark cmd = 2;
+  inline bool has_cmd() const;
+  inline void clear_cmd();
+  static const int kCmdFieldNumber = 2;
+  inline const ::prt::CtrlCmdPassengersEmbark& cmd() const;
+  inline ::prt::CtrlCmdPassengersEmbark* mutable_cmd();
   
-  // required int32 speed = 3;
-  inline bool has_speed() const;
-  inline void clear_speed();
-  static const int kSpeedFieldNumber = 3;
-  inline ::google::protobuf::int32 speed() const;
-  inline void set_speed(::google::protobuf::int32 value);
-  
-  // @@protoc_insertion_point(class_scope:prt.SimCompleteVehicleSpeed)
+  // @@protoc_insertion_point(class_scope:prt.SimCompletePassengerEmbark)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 msgid_;
-  ::google::protobuf::int32 vid_;
-  ::google::protobuf::int32 speed_;
+  ::prt::CtrlCmdPassengersEmbark* cmd_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2597,18 +2443,18 @@ class SimCompleteVehicleSpeed : public ::google::protobuf::Message {
   }
   
   void InitAsDefaultInstance();
-  static SimCompleteVehicleSpeed* default_instance_;
+  static SimCompletePassengerEmbark* default_instance_;
 };
 // -------------------------------------------------------------------
 
-class SimCompleteStationLaunch : public ::google::protobuf::Message {
+class SimCompletePassengerDisembark : public ::google::protobuf::Message {
  public:
-  SimCompleteStationLaunch();
-  virtual ~SimCompleteStationLaunch();
+  SimCompletePassengerDisembark();
+  virtual ~SimCompletePassengerDisembark();
   
-  SimCompleteStationLaunch(const SimCompleteStationLaunch& from);
+  SimCompletePassengerDisembark(const SimCompletePassengerDisembark& from);
   
-  inline SimCompleteStationLaunch& operator=(const SimCompleteStationLaunch& from) {
+  inline SimCompletePassengerDisembark& operator=(const SimCompletePassengerDisembark& from) {
     CopyFrom(from);
     return *this;
   }
@@ -2622,17 +2468,17 @@ class SimCompleteStationLaunch : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const SimCompleteStationLaunch& default_instance();
+  static const SimCompletePassengerDisembark& default_instance();
   
-  void Swap(SimCompleteStationLaunch* other);
+  void Swap(SimCompletePassengerDisembark* other);
   
   // implements Message ----------------------------------------------
   
-  SimCompleteStationLaunch* New() const;
+  SimCompletePassengerDisembark* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimCompleteStationLaunch& from);
-  void MergeFrom(const SimCompleteStationLaunch& from);
+  void CopyFrom(const SimCompletePassengerDisembark& from);
+  void MergeFrom(const SimCompletePassengerDisembark& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -2662,33 +2508,25 @@ class SimCompleteStationLaunch : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 msgid() const;
   inline void set_msgid(::google::protobuf::int32 value);
   
-  // required int32 sID = 2;
-  inline bool has_sid() const;
-  inline void clear_sid();
-  static const int kSIDFieldNumber = 2;
-  inline ::google::protobuf::int32 sid() const;
-  inline void set_sid(::google::protobuf::int32 value);
+  // optional .prt.CtrlCmdPassengersDisembark cmd = 2;
+  inline bool has_cmd() const;
+  inline void clear_cmd();
+  static const int kCmdFieldNumber = 2;
+  inline const ::prt::CtrlCmdPassengersDisembark& cmd() const;
+  inline ::prt::CtrlCmdPassengersDisembark* mutable_cmd();
   
-  // required int32 vID = 3;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 3;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // @@protoc_insertion_point(class_scope:prt.SimCompleteStationLaunch)
+  // @@protoc_insertion_point(class_scope:prt.SimCompletePassengerDisembark)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 msgid_;
-  ::google::protobuf::int32 sid_;
-  ::google::protobuf::int32 vid_;
+  ::prt::CtrlCmdPassengersDisembark* cmd_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2702,120 +2540,7 @@ class SimCompleteStationLaunch : public ::google::protobuf::Message {
   }
   
   void InitAsDefaultInstance();
-  static SimCompleteStationLaunch* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class SimCompletePassengerLoadVehicle : public ::google::protobuf::Message {
- public:
-  SimCompletePassengerLoadVehicle();
-  virtual ~SimCompletePassengerLoadVehicle();
-  
-  SimCompletePassengerLoadVehicle(const SimCompletePassengerLoadVehicle& from);
-  
-  inline SimCompletePassengerLoadVehicle& operator=(const SimCompletePassengerLoadVehicle& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const SimCompletePassengerLoadVehicle& default_instance();
-  
-  void Swap(SimCompletePassengerLoadVehicle* other);
-  
-  // implements Message ----------------------------------------------
-  
-  SimCompletePassengerLoadVehicle* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimCompletePassengerLoadVehicle& from);
-  void MergeFrom(const SimCompletePassengerLoadVehicle& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const;
-  public:
-  
-  ::google::protobuf::Metadata GetMetadata() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required int32 msgID = 1;
-  inline bool has_msgid() const;
-  inline void clear_msgid();
-  static const int kMsgIDFieldNumber = 1;
-  inline ::google::protobuf::int32 msgid() const;
-  inline void set_msgid(::google::protobuf::int32 value);
-  
-  // required int32 pID = 2;
-  inline bool has_pid() const;
-  inline void clear_pid();
-  static const int kPIDFieldNumber = 2;
-  inline ::google::protobuf::int32 pid() const;
-  inline void set_pid(::google::protobuf::int32 value);
-  
-  // required int32 vID = 3;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 3;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 sID = 4;
-  inline bool has_sid() const;
-  inline void clear_sid();
-  static const int kSIDFieldNumber = 4;
-  inline ::google::protobuf::int32 sid() const;
-  inline void set_sid(::google::protobuf::int32 value);
-  
-  // @@protoc_insertion_point(class_scope:prt.SimCompletePassengerLoadVehicle)
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::google::protobuf::int32 msgid_;
-  ::google::protobuf::int32 pid_;
-  ::google::protobuf::int32 vid_;
-  ::google::protobuf::int32 sid_;
-  friend void  protobuf_AddDesc_api_2eproto();
-  friend void protobuf_AssignDesc_api_2eproto();
-  friend void protobuf_ShutdownFile_api_2eproto();
-  
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static SimCompletePassengerLoadVehicle* default_instance_;
+  static SimCompletePassengerDisembark* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -3947,12 +3672,12 @@ class SimNotifyTime : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 msgid() const;
   inline void set_msgid(::google::protobuf::int32 value);
   
-  // required float time = 2;
+  // required double time = 2;
   inline bool has_time() const;
   inline void clear_time();
   static const int kTimeFieldNumber = 2;
-  inline float time() const;
-  inline void set_time(float value);
+  inline double time() const;
+  inline void set_time(double value);
   
   // @@protoc_insertion_point(class_scope:prt.SimNotifyTime)
  private:
@@ -3960,7 +3685,7 @@ class SimNotifyTime : public ::google::protobuf::Message {
   mutable int _cached_size_;
   
   ::google::protobuf::int32 msgid_;
-  float time_;
+  double time_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
@@ -4403,14 +4128,14 @@ class SimNotifyVehicleCollision : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
-class SimNotifyPassengerLoadStart : public ::google::protobuf::Message {
+class SimNotifyPassengerEmbarkStart : public ::google::protobuf::Message {
  public:
-  SimNotifyPassengerLoadStart();
-  virtual ~SimNotifyPassengerLoadStart();
+  SimNotifyPassengerEmbarkStart();
+  virtual ~SimNotifyPassengerEmbarkStart();
   
-  SimNotifyPassengerLoadStart(const SimNotifyPassengerLoadStart& from);
+  SimNotifyPassengerEmbarkStart(const SimNotifyPassengerEmbarkStart& from);
   
-  inline SimNotifyPassengerLoadStart& operator=(const SimNotifyPassengerLoadStart& from) {
+  inline SimNotifyPassengerEmbarkStart& operator=(const SimNotifyPassengerEmbarkStart& from) {
     CopyFrom(from);
     return *this;
   }
@@ -4424,17 +4149,17 @@ class SimNotifyPassengerLoadStart : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyPassengerLoadStart& default_instance();
+  static const SimNotifyPassengerEmbarkStart& default_instance();
   
-  void Swap(SimNotifyPassengerLoadStart* other);
+  void Swap(SimNotifyPassengerEmbarkStart* other);
   
   // implements Message ----------------------------------------------
   
-  SimNotifyPassengerLoadStart* New() const;
+  SimNotifyPassengerEmbarkStart* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyPassengerLoadStart& from);
-  void MergeFrom(const SimNotifyPassengerLoadStart& from);
+  void CopyFrom(const SimNotifyPassengerEmbarkStart& from);
+  void MergeFrom(const SimNotifyPassengerEmbarkStart& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -4471,26 +4196,42 @@ class SimNotifyPassengerLoadStart : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 sid() const;
   inline void set_sid(::google::protobuf::int32 value);
   
-  // required int32 pID = 3;
+  // required int32 platformID = 3;
+  inline bool has_platformid() const;
+  inline void clear_platformid();
+  static const int kPlatformIDFieldNumber = 3;
+  inline ::google::protobuf::int32 platformid() const;
+  inline void set_platformid(::google::protobuf::int32 value);
+  
+  // required int32 pID = 4;
   inline bool has_pid() const;
   inline void clear_pid();
-  static const int kPIDFieldNumber = 3;
+  static const int kPIDFieldNumber = 4;
   inline ::google::protobuf::int32 pid() const;
   inline void set_pid(::google::protobuf::int32 value);
   
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerLoadStart)
+  // required int32 berthID = 5;
+  inline bool has_berthid() const;
+  inline void clear_berthid();
+  static const int kBerthIDFieldNumber = 5;
+  inline ::google::protobuf::int32 berthid() const;
+  inline void set_berthid(::google::protobuf::int32 value);
+  
+  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerEmbarkStart)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 vid_;
   ::google::protobuf::int32 sid_;
+  ::google::protobuf::int32 platformid_;
   ::google::protobuf::int32 pid_;
+  ::google::protobuf::int32 berthid_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -4504,18 +4245,18 @@ class SimNotifyPassengerLoadStart : public ::google::protobuf::Message {
   }
   
   void InitAsDefaultInstance();
-  static SimNotifyPassengerLoadStart* default_instance_;
+  static SimNotifyPassengerEmbarkStart* default_instance_;
 };
 // -------------------------------------------------------------------
 
-class SimNotifyPassengerLoadEnd : public ::google::protobuf::Message {
+class SimNotifyPassengerEmbarkEnd : public ::google::protobuf::Message {
  public:
-  SimNotifyPassengerLoadEnd();
-  virtual ~SimNotifyPassengerLoadEnd();
+  SimNotifyPassengerEmbarkEnd();
+  virtual ~SimNotifyPassengerEmbarkEnd();
   
-  SimNotifyPassengerLoadEnd(const SimNotifyPassengerLoadEnd& from);
+  SimNotifyPassengerEmbarkEnd(const SimNotifyPassengerEmbarkEnd& from);
   
-  inline SimNotifyPassengerLoadEnd& operator=(const SimNotifyPassengerLoadEnd& from) {
+  inline SimNotifyPassengerEmbarkEnd& operator=(const SimNotifyPassengerEmbarkEnd& from) {
     CopyFrom(from);
     return *this;
   }
@@ -4529,17 +4270,17 @@ class SimNotifyPassengerLoadEnd : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyPassengerLoadEnd& default_instance();
+  static const SimNotifyPassengerEmbarkEnd& default_instance();
   
-  void Swap(SimNotifyPassengerLoadEnd* other);
+  void Swap(SimNotifyPassengerEmbarkEnd* other);
   
   // implements Message ----------------------------------------------
   
-  SimNotifyPassengerLoadEnd* New() const;
+  SimNotifyPassengerEmbarkEnd* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyPassengerLoadEnd& from);
-  void MergeFrom(const SimNotifyPassengerLoadEnd& from);
+  void CopyFrom(const SimNotifyPassengerEmbarkEnd& from);
+  void MergeFrom(const SimNotifyPassengerEmbarkEnd& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -4576,26 +4317,42 @@ class SimNotifyPassengerLoadEnd : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 sid() const;
   inline void set_sid(::google::protobuf::int32 value);
   
-  // required int32 pID = 3;
+  // required int32 platformID = 3;
+  inline bool has_platformid() const;
+  inline void clear_platformid();
+  static const int kPlatformIDFieldNumber = 3;
+  inline ::google::protobuf::int32 platformid() const;
+  inline void set_platformid(::google::protobuf::int32 value);
+  
+  // required int32 pID = 4;
   inline bool has_pid() const;
   inline void clear_pid();
-  static const int kPIDFieldNumber = 3;
+  static const int kPIDFieldNumber = 4;
   inline ::google::protobuf::int32 pid() const;
   inline void set_pid(::google::protobuf::int32 value);
   
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerLoadEnd)
+  // required int32 berthID = 5;
+  inline bool has_berthid() const;
+  inline void clear_berthid();
+  static const int kBerthIDFieldNumber = 5;
+  inline ::google::protobuf::int32 berthid() const;
+  inline void set_berthid(::google::protobuf::int32 value);
+  
+  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerEmbarkEnd)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 vid_;
   ::google::protobuf::int32 sid_;
+  ::google::protobuf::int32 platformid_;
   ::google::protobuf::int32 pid_;
+  ::google::protobuf::int32 berthid_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -4609,18 +4366,18 @@ class SimNotifyPassengerLoadEnd : public ::google::protobuf::Message {
   }
   
   void InitAsDefaultInstance();
-  static SimNotifyPassengerLoadEnd* default_instance_;
+  static SimNotifyPassengerEmbarkEnd* default_instance_;
 };
 // -------------------------------------------------------------------
 
-class SimNotifyPassengerUnloadStart : public ::google::protobuf::Message {
+class SimNotifyPassengerDisembarkStart : public ::google::protobuf::Message {
  public:
-  SimNotifyPassengerUnloadStart();
-  virtual ~SimNotifyPassengerUnloadStart();
+  SimNotifyPassengerDisembarkStart();
+  virtual ~SimNotifyPassengerDisembarkStart();
   
-  SimNotifyPassengerUnloadStart(const SimNotifyPassengerUnloadStart& from);
+  SimNotifyPassengerDisembarkStart(const SimNotifyPassengerDisembarkStart& from);
   
-  inline SimNotifyPassengerUnloadStart& operator=(const SimNotifyPassengerUnloadStart& from) {
+  inline SimNotifyPassengerDisembarkStart& operator=(const SimNotifyPassengerDisembarkStart& from) {
     CopyFrom(from);
     return *this;
   }
@@ -4634,17 +4391,17 @@ class SimNotifyPassengerUnloadStart : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyPassengerUnloadStart& default_instance();
+  static const SimNotifyPassengerDisembarkStart& default_instance();
   
-  void Swap(SimNotifyPassengerUnloadStart* other);
+  void Swap(SimNotifyPassengerDisembarkStart* other);
   
   // implements Message ----------------------------------------------
   
-  SimNotifyPassengerUnloadStart* New() const;
+  SimNotifyPassengerDisembarkStart* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyPassengerUnloadStart& from);
-  void MergeFrom(const SimNotifyPassengerUnloadStart& from);
+  void CopyFrom(const SimNotifyPassengerDisembarkStart& from);
+  void MergeFrom(const SimNotifyPassengerDisembarkStart& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -4681,26 +4438,42 @@ class SimNotifyPassengerUnloadStart : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 sid() const;
   inline void set_sid(::google::protobuf::int32 value);
   
-  // required int32 pID = 3;
+  // required int32 platformID = 3;
+  inline bool has_platformid() const;
+  inline void clear_platformid();
+  static const int kPlatformIDFieldNumber = 3;
+  inline ::google::protobuf::int32 platformid() const;
+  inline void set_platformid(::google::protobuf::int32 value);
+  
+  // required int32 pID = 4;
   inline bool has_pid() const;
   inline void clear_pid();
-  static const int kPIDFieldNumber = 3;
+  static const int kPIDFieldNumber = 4;
   inline ::google::protobuf::int32 pid() const;
   inline void set_pid(::google::protobuf::int32 value);
   
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerUnloadStart)
+  // required int32 berthID = 5;
+  inline bool has_berthid() const;
+  inline void clear_berthid();
+  static const int kBerthIDFieldNumber = 5;
+  inline ::google::protobuf::int32 berthid() const;
+  inline void set_berthid(::google::protobuf::int32 value);
+  
+  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerDisembarkStart)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 vid_;
   ::google::protobuf::int32 sid_;
+  ::google::protobuf::int32 platformid_;
   ::google::protobuf::int32 pid_;
+  ::google::protobuf::int32 berthid_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -4714,18 +4487,18 @@ class SimNotifyPassengerUnloadStart : public ::google::protobuf::Message {
   }
   
   void InitAsDefaultInstance();
-  static SimNotifyPassengerUnloadStart* default_instance_;
+  static SimNotifyPassengerDisembarkStart* default_instance_;
 };
 // -------------------------------------------------------------------
 
-class SimNotifyPassengerUnloadEnd : public ::google::protobuf::Message {
+class SimNotifyPassengerDisembarkEnd : public ::google::protobuf::Message {
  public:
-  SimNotifyPassengerUnloadEnd();
-  virtual ~SimNotifyPassengerUnloadEnd();
+  SimNotifyPassengerDisembarkEnd();
+  virtual ~SimNotifyPassengerDisembarkEnd();
   
-  SimNotifyPassengerUnloadEnd(const SimNotifyPassengerUnloadEnd& from);
+  SimNotifyPassengerDisembarkEnd(const SimNotifyPassengerDisembarkEnd& from);
   
-  inline SimNotifyPassengerUnloadEnd& operator=(const SimNotifyPassengerUnloadEnd& from) {
+  inline SimNotifyPassengerDisembarkEnd& operator=(const SimNotifyPassengerDisembarkEnd& from) {
     CopyFrom(from);
     return *this;
   }
@@ -4739,17 +4512,17 @@ class SimNotifyPassengerUnloadEnd : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyPassengerUnloadEnd& default_instance();
+  static const SimNotifyPassengerDisembarkEnd& default_instance();
   
-  void Swap(SimNotifyPassengerUnloadEnd* other);
+  void Swap(SimNotifyPassengerDisembarkEnd* other);
   
   // implements Message ----------------------------------------------
   
-  SimNotifyPassengerUnloadEnd* New() const;
+  SimNotifyPassengerDisembarkEnd* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyPassengerUnloadEnd& from);
-  void MergeFrom(const SimNotifyPassengerUnloadEnd& from);
+  void CopyFrom(const SimNotifyPassengerDisembarkEnd& from);
+  void MergeFrom(const SimNotifyPassengerDisembarkEnd& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -4786,26 +4559,42 @@ class SimNotifyPassengerUnloadEnd : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 sid() const;
   inline void set_sid(::google::protobuf::int32 value);
   
-  // required int32 pID = 3;
+  // required int32 platformID = 3;
+  inline bool has_platformid() const;
+  inline void clear_platformid();
+  static const int kPlatformIDFieldNumber = 3;
+  inline ::google::protobuf::int32 platformid() const;
+  inline void set_platformid(::google::protobuf::int32 value);
+  
+  // required int32 pID = 4;
   inline bool has_pid() const;
   inline void clear_pid();
-  static const int kPIDFieldNumber = 3;
+  static const int kPIDFieldNumber = 4;
   inline ::google::protobuf::int32 pid() const;
   inline void set_pid(::google::protobuf::int32 value);
   
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerUnloadEnd)
+  // required int32 berthID = 5;
+  inline bool has_berthid() const;
+  inline void clear_berthid();
+  static const int kBerthIDFieldNumber = 5;
+  inline ::google::protobuf::int32 berthid() const;
+  inline void set_berthid(::google::protobuf::int32 value);
+  
+  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerDisembarkEnd)
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 vid_;
   ::google::protobuf::int32 sid_;
+  ::google::protobuf::int32 platformid_;
   ::google::protobuf::int32 pid_;
+  ::google::protobuf::int32 berthid_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -4819,425 +4608,7 @@ class SimNotifyPassengerUnloadEnd : public ::google::protobuf::Message {
   }
   
   void InitAsDefaultInstance();
-  static SimNotifyPassengerUnloadEnd* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class SimNotifyPassengerDelivered : public ::google::protobuf::Message {
- public:
-  SimNotifyPassengerDelivered();
-  virtual ~SimNotifyPassengerDelivered();
-  
-  SimNotifyPassengerDelivered(const SimNotifyPassengerDelivered& from);
-  
-  inline SimNotifyPassengerDelivered& operator=(const SimNotifyPassengerDelivered& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyPassengerDelivered& default_instance();
-  
-  void Swap(SimNotifyPassengerDelivered* other);
-  
-  // implements Message ----------------------------------------------
-  
-  SimNotifyPassengerDelivered* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyPassengerDelivered& from);
-  void MergeFrom(const SimNotifyPassengerDelivered& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const;
-  public:
-  
-  ::google::protobuf::Metadata GetMetadata() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required int32 vID = 1;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 1;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 sID = 2;
-  inline bool has_sid() const;
-  inline void clear_sid();
-  static const int kSIDFieldNumber = 2;
-  inline ::google::protobuf::int32 sid() const;
-  inline void set_sid(::google::protobuf::int32 value);
-  
-  // required int32 pID = 3;
-  inline bool has_pid() const;
-  inline void clear_pid();
-  static const int kPIDFieldNumber = 3;
-  inline ::google::protobuf::int32 pid() const;
-  inline void set_pid(::google::protobuf::int32 value);
-  
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerDelivered)
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::google::protobuf::int32 vid_;
-  ::google::protobuf::int32 sid_;
-  ::google::protobuf::int32 pid_;
-  friend void  protobuf_AddDesc_api_2eproto();
-  friend void protobuf_AssignDesc_api_2eproto();
-  friend void protobuf_ShutdownFile_api_2eproto();
-  
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static SimNotifyPassengerDelivered* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class SimNotifyPassengerMisdelivered : public ::google::protobuf::Message {
- public:
-  SimNotifyPassengerMisdelivered();
-  virtual ~SimNotifyPassengerMisdelivered();
-  
-  SimNotifyPassengerMisdelivered(const SimNotifyPassengerMisdelivered& from);
-  
-  inline SimNotifyPassengerMisdelivered& operator=(const SimNotifyPassengerMisdelivered& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyPassengerMisdelivered& default_instance();
-  
-  void Swap(SimNotifyPassengerMisdelivered* other);
-  
-  // implements Message ----------------------------------------------
-  
-  SimNotifyPassengerMisdelivered* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyPassengerMisdelivered& from);
-  void MergeFrom(const SimNotifyPassengerMisdelivered& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const;
-  public:
-  
-  ::google::protobuf::Metadata GetMetadata() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required int32 vID = 1;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 1;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 sID = 2;
-  inline bool has_sid() const;
-  inline void clear_sid();
-  static const int kSIDFieldNumber = 2;
-  inline ::google::protobuf::int32 sid() const;
-  inline void set_sid(::google::protobuf::int32 value);
-  
-  // required int32 pID = 3;
-  inline bool has_pid() const;
-  inline void clear_pid();
-  static const int kPIDFieldNumber = 3;
-  inline ::google::protobuf::int32 pid() const;
-  inline void set_pid(::google::protobuf::int32 value);
-  
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyPassengerMisdelivered)
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::google::protobuf::int32 vid_;
-  ::google::protobuf::int32 sid_;
-  ::google::protobuf::int32 pid_;
-  friend void  protobuf_AddDesc_api_2eproto();
-  friend void protobuf_AssignDesc_api_2eproto();
-  friend void protobuf_ShutdownFile_api_2eproto();
-  
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static SimNotifyPassengerMisdelivered* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class SimNotifyStationReadyLaunch : public ::google::protobuf::Message {
- public:
-  SimNotifyStationReadyLaunch();
-  virtual ~SimNotifyStationReadyLaunch();
-  
-  SimNotifyStationReadyLaunch(const SimNotifyStationReadyLaunch& from);
-  
-  inline SimNotifyStationReadyLaunch& operator=(const SimNotifyStationReadyLaunch& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyStationReadyLaunch& default_instance();
-  
-  void Swap(SimNotifyStationReadyLaunch* other);
-  
-  // implements Message ----------------------------------------------
-  
-  SimNotifyStationReadyLaunch* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyStationReadyLaunch& from);
-  void MergeFrom(const SimNotifyStationReadyLaunch& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const;
-  public:
-  
-  ::google::protobuf::Metadata GetMetadata() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required int32 vID = 1;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 1;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 sID = 2;
-  inline bool has_sid() const;
-  inline void clear_sid();
-  static const int kSIDFieldNumber = 2;
-  inline ::google::protobuf::int32 sid() const;
-  inline void set_sid(::google::protobuf::int32 value);
-  
-  // repeated int32 pID = 3 [packed = true];
-  inline int pid_size() const;
-  inline void clear_pid();
-  static const int kPIDFieldNumber = 3;
-  inline ::google::protobuf::int32 pid(int index) const;
-  inline void set_pid(int index, ::google::protobuf::int32 value);
-  inline void add_pid(::google::protobuf::int32 value);
-  inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-      pid() const;
-  inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-      mutable_pid();
-  
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyStationReadyLaunch)
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::google::protobuf::int32 vid_;
-  ::google::protobuf::int32 sid_;
-  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > pid_;
-  mutable int _pid_cached_byte_size_;
-  friend void  protobuf_AddDesc_api_2eproto();
-  friend void protobuf_AssignDesc_api_2eproto();
-  friend void protobuf_ShutdownFile_api_2eproto();
-  
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static SimNotifyStationReadyLaunch* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class SimNotifyStationUnreadyLaunch : public ::google::protobuf::Message {
- public:
-  SimNotifyStationUnreadyLaunch();
-  virtual ~SimNotifyStationUnreadyLaunch();
-  
-  SimNotifyStationUnreadyLaunch(const SimNotifyStationUnreadyLaunch& from);
-  
-  inline SimNotifyStationUnreadyLaunch& operator=(const SimNotifyStationUnreadyLaunch& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const SimNotifyStationUnreadyLaunch& default_instance();
-  
-  void Swap(SimNotifyStationUnreadyLaunch* other);
-  
-  // implements Message ----------------------------------------------
-  
-  SimNotifyStationUnreadyLaunch* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const SimNotifyStationUnreadyLaunch& from);
-  void MergeFrom(const SimNotifyStationUnreadyLaunch& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const;
-  public:
-  
-  ::google::protobuf::Metadata GetMetadata() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required int32 vID = 1;
-  inline bool has_vid() const;
-  inline void clear_vid();
-  static const int kVIDFieldNumber = 1;
-  inline ::google::protobuf::int32 vid() const;
-  inline void set_vid(::google::protobuf::int32 value);
-  
-  // required int32 sID = 2;
-  inline bool has_sid() const;
-  inline void clear_sid();
-  static const int kSIDFieldNumber = 2;
-  inline ::google::protobuf::int32 sid() const;
-  inline void set_sid(::google::protobuf::int32 value);
-  
-  // @@protoc_insertion_point(class_scope:prt.SimNotifyStationUnreadyLaunch)
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::google::protobuf::int32 vid_;
-  ::google::protobuf::int32 sid_;
-  friend void  protobuf_AddDesc_api_2eproto();
-  friend void protobuf_AssignDesc_api_2eproto();
-  friend void protobuf_ShutdownFile_api_2eproto();
-  
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static SimNotifyStationUnreadyLaunch* default_instance_;
+  static SimNotifyPassengerDisembarkEnd* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -6863,13 +6234,6 @@ class VehicleStatus : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 vid() const;
   inline void set_vid(::google::protobuf::int32 value);
   
-  // required .prt.LocationType nose_loc_type = 2;
-  inline bool has_nose_loc_type() const;
-  inline void clear_nose_loc_type();
-  static const int kNoseLocTypeFieldNumber = 2;
-  inline prt::LocationType nose_loc_type() const;
-  inline void set_nose_loc_type(prt::LocationType value);
-  
   // required int32 nose_locID = 3;
   inline bool has_nose_locid() const;
   inline void clear_nose_locid();
@@ -6883,13 +6247,6 @@ class VehicleStatus : public ::google::protobuf::Message {
   static const int kNosePosFieldNumber = 4;
   inline float nose_pos() const;
   inline void set_nose_pos(float value);
-  
-  // required .prt.LocationType tail_loc_type = 5;
-  inline bool has_tail_loc_type() const;
-  inline void clear_tail_loc_type();
-  static const int kTailLocTypeFieldNumber = 5;
-  inline prt::LocationType tail_loc_type() const;
-  inline void set_tail_loc_type(prt::LocationType value);
   
   // required int32 tail_locID = 6;
   inline bool has_tail_locid() const;
@@ -6919,17 +6276,17 @@ class VehicleStatus : public ::google::protobuf::Message {
   inline float accel() const;
   inline void set_accel(float value);
   
-  // repeated int32 passengerID = 10 [packed = true];
-  inline int passengerid_size() const;
-  inline void clear_passengerid();
-  static const int kPassengerIDFieldNumber = 10;
-  inline ::google::protobuf::int32 passengerid(int index) const;
-  inline void set_passengerid(int index, ::google::protobuf::int32 value);
-  inline void add_passengerid(::google::protobuf::int32 value);
+  // repeated int32 passengerIDs = 10 [packed = true];
+  inline int passengerids_size() const;
+  inline void clear_passengerids();
+  static const int kPassengerIDsFieldNumber = 10;
+  inline ::google::protobuf::int32 passengerids(int index) const;
+  inline void set_passengerids(int index, ::google::protobuf::int32 value);
+  inline void add_passengerids(::google::protobuf::int32 value);
   inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-      passengerid() const;
+      passengerids() const;
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-      mutable_passengerid();
+      mutable_passengerids();
   
   // optional int32 headway = 12;
   inline bool has_headway() const;
@@ -6944,22 +6301,20 @@ class VehicleStatus : public ::google::protobuf::Message {
   mutable int _cached_size_;
   
   ::google::protobuf::int32 vid_;
-  int nose_loc_type_;
   ::google::protobuf::int32 nose_locid_;
   float nose_pos_;
-  int tail_loc_type_;
   ::google::protobuf::int32 tail_locid_;
   float tail_pos_;
   float vel_;
   float accel_;
-  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > passengerid_;
-  mutable int _passengerid_cached_byte_size_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > passengerids_;
+  mutable int _passengerids_cached_byte_size_;
   ::google::protobuf::int32 headway_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(11 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(9 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -7610,12 +6965,12 @@ class PassengerStatus : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 dest_stationid() const;
   inline void set_dest_stationid(::google::protobuf::int32 value);
   
-  // required float creation_time = 7;
+  // required double creation_time = 7;
   inline bool has_creation_time() const;
   inline void clear_creation_time();
   static const int kCreationTimeFieldNumber = 7;
-  inline float creation_time() const;
-  inline void set_creation_time(float value);
+  inline double creation_time() const;
+  inline void set_creation_time(double value);
   
   // optional float wait_time = 8;
   inline bool has_wait_time() const;
@@ -7664,7 +7019,7 @@ class PassengerStatus : public ::google::protobuf::Message {
   ::google::protobuf::int32 locid_;
   ::google::protobuf::int32 src_stationid_;
   ::google::protobuf::int32 dest_stationid_;
-  float creation_time_;
+  double creation_time_;
   float wait_time_;
   float travel_time_;
   ::google::protobuf::int32 weight_;
@@ -8109,27 +7464,27 @@ Spline::mutable_polys() {
   return &polys_;
 }
 
-// repeated float times = 2 [packed = true];
+// repeated double times = 2 [packed = true];
 inline int Spline::times_size() const {
   return times_.size();
 }
 inline void Spline::clear_times() {
   times_.Clear();
 }
-inline float Spline::times(int index) const {
+inline double Spline::times(int index) const {
   return times_.Get(index);
 }
-inline void Spline::set_times(int index, float value) {
+inline void Spline::set_times(int index, double value) {
   times_.Set(index, value);
 }
-inline void Spline::add_times(float value) {
+inline void Spline::add_times(double value) {
   times_.Add(value);
 }
-inline const ::google::protobuf::RepeatedField< float >&
+inline const ::google::protobuf::RepeatedField< double >&
 Spline::times() const {
   return times_;
 }
-inline ::google::protobuf::RepeatedField< float >*
+inline ::google::protobuf::RepeatedField< double >*
 Spline::mutable_times() {
   return &times_;
 }
@@ -8230,122 +7585,6 @@ inline bool CtrlCmdVehicleItinerary::clear() const {
 inline void CtrlCmdVehicleItinerary::set_clear(bool value) {
   _set_bit(2);
   clear_ = value;
-}
-
-// -------------------------------------------------------------------
-
-// CtrlCmdStationLaunch
-
-// required int32 sID = 1;
-inline bool CtrlCmdStationLaunch::has_sid() const {
-  return _has_bit(0);
-}
-inline void CtrlCmdStationLaunch::clear_sid() {
-  sid_ = 0;
-  _clear_bit(0);
-}
-inline ::google::protobuf::int32 CtrlCmdStationLaunch::sid() const {
-  return sid_;
-}
-inline void CtrlCmdStationLaunch::set_sid(::google::protobuf::int32 value) {
-  _set_bit(0);
-  sid_ = value;
-}
-
-// required int32 vID = 2;
-inline bool CtrlCmdStationLaunch::has_vid() const {
-  return _has_bit(1);
-}
-inline void CtrlCmdStationLaunch::clear_vid() {
-  vid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 CtrlCmdStationLaunch::vid() const {
-  return vid_;
-}
-inline void CtrlCmdStationLaunch::set_vid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  vid_ = value;
-}
-
-// required int32 target_speed = 3;
-inline bool CtrlCmdStationLaunch::has_target_speed() const {
-  return _has_bit(2);
-}
-inline void CtrlCmdStationLaunch::clear_target_speed() {
-  target_speed_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 CtrlCmdStationLaunch::target_speed() const {
-  return target_speed_;
-}
-inline void CtrlCmdStationLaunch::set_target_speed(::google::protobuf::int32 value) {
-  _set_bit(2);
-  target_speed_ = value;
-}
-
-// optional int32 max_accel = 4;
-inline bool CtrlCmdStationLaunch::has_max_accel() const {
-  return _has_bit(3);
-}
-inline void CtrlCmdStationLaunch::clear_max_accel() {
-  max_accel_ = 0;
-  _clear_bit(3);
-}
-inline ::google::protobuf::int32 CtrlCmdStationLaunch::max_accel() const {
-  return max_accel_;
-}
-inline void CtrlCmdStationLaunch::set_max_accel(::google::protobuf::int32 value) {
-  _set_bit(3);
-  max_accel_ = value;
-}
-
-// optional int32 max_decel = 5;
-inline bool CtrlCmdStationLaunch::has_max_decel() const {
-  return _has_bit(4);
-}
-inline void CtrlCmdStationLaunch::clear_max_decel() {
-  max_decel_ = 0;
-  _clear_bit(4);
-}
-inline ::google::protobuf::int32 CtrlCmdStationLaunch::max_decel() const {
-  return max_decel_;
-}
-inline void CtrlCmdStationLaunch::set_max_decel(::google::protobuf::int32 value) {
-  _set_bit(4);
-  max_decel_ = value;
-}
-
-// optional int32 max_jerk = 6;
-inline bool CtrlCmdStationLaunch::has_max_jerk() const {
-  return _has_bit(5);
-}
-inline void CtrlCmdStationLaunch::clear_max_jerk() {
-  max_jerk_ = 0;
-  _clear_bit(5);
-}
-inline ::google::protobuf::int32 CtrlCmdStationLaunch::max_jerk() const {
-  return max_jerk_;
-}
-inline void CtrlCmdStationLaunch::set_max_jerk(::google::protobuf::int32 value) {
-  _set_bit(5);
-  max_jerk_ = value;
-}
-
-// optional bool emergency = 7;
-inline bool CtrlCmdStationLaunch::has_emergency() const {
-  return _has_bit(6);
-}
-inline void CtrlCmdStationLaunch::clear_emergency() {
-  emergency_ = false;
-  _clear_bit(6);
-}
-inline bool CtrlCmdStationLaunch::emergency() const {
-  return emergency_;
-}
-inline void CtrlCmdStationLaunch::set_emergency(bool value) {
-  _set_bit(6);
-  emergency_ = value;
 }
 
 // -------------------------------------------------------------------
@@ -8750,7 +7989,7 @@ inline void CtrlSetnotifyVehiclePosition::set_pos(::google::protobuf::int32 valu
 
 // CtrlSetnotifyTime
 
-// required float time = 1;
+// required double time = 1;
 inline bool CtrlSetnotifyTime::has_time() const {
   return _has_bit(0);
 }
@@ -8758,10 +7997,10 @@ inline void CtrlSetnotifyTime::clear_time() {
   time_ = 0;
   _clear_bit(0);
 }
-inline float CtrlSetnotifyTime::time() const {
+inline double CtrlSetnotifyTime::time() const {
   return time_;
 }
-inline void CtrlSetnotifyTime::set_time(float value) {
+inline void CtrlSetnotifyTime::set_time(double value) {
   _set_bit(0);
   time_ = value;
 }
@@ -8790,7 +8029,7 @@ inline void CtrlResume::set_last_sim_msgid(::google::protobuf::int32 value) {
 
 // SimGreeting
 
-// required float sim_end_time = 1;
+// required double sim_end_time = 1;
 inline bool SimGreeting::has_sim_end_time() const {
   return _has_bit(0);
 }
@@ -8798,10 +8037,10 @@ inline void SimGreeting::clear_sim_end_time() {
   sim_end_time_ = 0;
   _clear_bit(0);
 }
-inline float SimGreeting::sim_end_time() const {
+inline double SimGreeting::sim_end_time() const {
   return sim_end_time_;
 }
-inline void SimGreeting::set_sim_end_time(float value) {
+inline void SimGreeting::set_sim_end_time(double value) {
   _set_bit(0);
   sim_end_time_ = value;
 }
@@ -8856,174 +8095,76 @@ inline void SimAbortVehicleSpeed::set_msgid(::google::protobuf::int32 value) {
 
 // -------------------------------------------------------------------
 
-// SimCompleteVehicleSpeed
+// SimCompletePassengerEmbark
 
 // required int32 msgID = 1;
-inline bool SimCompleteVehicleSpeed::has_msgid() const {
+inline bool SimCompletePassengerEmbark::has_msgid() const {
   return _has_bit(0);
 }
-inline void SimCompleteVehicleSpeed::clear_msgid() {
+inline void SimCompletePassengerEmbark::clear_msgid() {
   msgid_ = 0;
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimCompleteVehicleSpeed::msgid() const {
+inline ::google::protobuf::int32 SimCompletePassengerEmbark::msgid() const {
   return msgid_;
 }
-inline void SimCompleteVehicleSpeed::set_msgid(::google::protobuf::int32 value) {
+inline void SimCompletePassengerEmbark::set_msgid(::google::protobuf::int32 value) {
   _set_bit(0);
   msgid_ = value;
 }
 
-// required int32 vID = 2;
-inline bool SimCompleteVehicleSpeed::has_vid() const {
+// optional .prt.CtrlCmdPassengersEmbark cmd = 2;
+inline bool SimCompletePassengerEmbark::has_cmd() const {
   return _has_bit(1);
 }
-inline void SimCompleteVehicleSpeed::clear_vid() {
-  vid_ = 0;
+inline void SimCompletePassengerEmbark::clear_cmd() {
+  if (cmd_ != NULL) cmd_->::prt::CtrlCmdPassengersEmbark::Clear();
   _clear_bit(1);
 }
-inline ::google::protobuf::int32 SimCompleteVehicleSpeed::vid() const {
-  return vid_;
+inline const ::prt::CtrlCmdPassengersEmbark& SimCompletePassengerEmbark::cmd() const {
+  return cmd_ != NULL ? *cmd_ : *default_instance_->cmd_;
 }
-inline void SimCompleteVehicleSpeed::set_vid(::google::protobuf::int32 value) {
+inline ::prt::CtrlCmdPassengersEmbark* SimCompletePassengerEmbark::mutable_cmd() {
   _set_bit(1);
-  vid_ = value;
-}
-
-// required int32 speed = 3;
-inline bool SimCompleteVehicleSpeed::has_speed() const {
-  return _has_bit(2);
-}
-inline void SimCompleteVehicleSpeed::clear_speed() {
-  speed_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 SimCompleteVehicleSpeed::speed() const {
-  return speed_;
-}
-inline void SimCompleteVehicleSpeed::set_speed(::google::protobuf::int32 value) {
-  _set_bit(2);
-  speed_ = value;
+  if (cmd_ == NULL) cmd_ = new ::prt::CtrlCmdPassengersEmbark;
+  return cmd_;
 }
 
 // -------------------------------------------------------------------
 
-// SimCompleteStationLaunch
+// SimCompletePassengerDisembark
 
 // required int32 msgID = 1;
-inline bool SimCompleteStationLaunch::has_msgid() const {
+inline bool SimCompletePassengerDisembark::has_msgid() const {
   return _has_bit(0);
 }
-inline void SimCompleteStationLaunch::clear_msgid() {
+inline void SimCompletePassengerDisembark::clear_msgid() {
   msgid_ = 0;
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimCompleteStationLaunch::msgid() const {
+inline ::google::protobuf::int32 SimCompletePassengerDisembark::msgid() const {
   return msgid_;
 }
-inline void SimCompleteStationLaunch::set_msgid(::google::protobuf::int32 value) {
+inline void SimCompletePassengerDisembark::set_msgid(::google::protobuf::int32 value) {
   _set_bit(0);
   msgid_ = value;
 }
 
-// required int32 sID = 2;
-inline bool SimCompleteStationLaunch::has_sid() const {
+// optional .prt.CtrlCmdPassengersDisembark cmd = 2;
+inline bool SimCompletePassengerDisembark::has_cmd() const {
   return _has_bit(1);
 }
-inline void SimCompleteStationLaunch::clear_sid() {
-  sid_ = 0;
+inline void SimCompletePassengerDisembark::clear_cmd() {
+  if (cmd_ != NULL) cmd_->::prt::CtrlCmdPassengersDisembark::Clear();
   _clear_bit(1);
 }
-inline ::google::protobuf::int32 SimCompleteStationLaunch::sid() const {
-  return sid_;
+inline const ::prt::CtrlCmdPassengersDisembark& SimCompletePassengerDisembark::cmd() const {
+  return cmd_ != NULL ? *cmd_ : *default_instance_->cmd_;
 }
-inline void SimCompleteStationLaunch::set_sid(::google::protobuf::int32 value) {
+inline ::prt::CtrlCmdPassengersDisembark* SimCompletePassengerDisembark::mutable_cmd() {
   _set_bit(1);
-  sid_ = value;
-}
-
-// required int32 vID = 3;
-inline bool SimCompleteStationLaunch::has_vid() const {
-  return _has_bit(2);
-}
-inline void SimCompleteStationLaunch::clear_vid() {
-  vid_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 SimCompleteStationLaunch::vid() const {
-  return vid_;
-}
-inline void SimCompleteStationLaunch::set_vid(::google::protobuf::int32 value) {
-  _set_bit(2);
-  vid_ = value;
-}
-
-// -------------------------------------------------------------------
-
-// SimCompletePassengerLoadVehicle
-
-// required int32 msgID = 1;
-inline bool SimCompletePassengerLoadVehicle::has_msgid() const {
-  return _has_bit(0);
-}
-inline void SimCompletePassengerLoadVehicle::clear_msgid() {
-  msgid_ = 0;
-  _clear_bit(0);
-}
-inline ::google::protobuf::int32 SimCompletePassengerLoadVehicle::msgid() const {
-  return msgid_;
-}
-inline void SimCompletePassengerLoadVehicle::set_msgid(::google::protobuf::int32 value) {
-  _set_bit(0);
-  msgid_ = value;
-}
-
-// required int32 pID = 2;
-inline bool SimCompletePassengerLoadVehicle::has_pid() const {
-  return _has_bit(1);
-}
-inline void SimCompletePassengerLoadVehicle::clear_pid() {
-  pid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 SimCompletePassengerLoadVehicle::pid() const {
-  return pid_;
-}
-inline void SimCompletePassengerLoadVehicle::set_pid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  pid_ = value;
-}
-
-// required int32 vID = 3;
-inline bool SimCompletePassengerLoadVehicle::has_vid() const {
-  return _has_bit(2);
-}
-inline void SimCompletePassengerLoadVehicle::clear_vid() {
-  vid_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 SimCompletePassengerLoadVehicle::vid() const {
-  return vid_;
-}
-inline void SimCompletePassengerLoadVehicle::set_vid(::google::protobuf::int32 value) {
-  _set_bit(2);
-  vid_ = value;
-}
-
-// required int32 sID = 4;
-inline bool SimCompletePassengerLoadVehicle::has_sid() const {
-  return _has_bit(3);
-}
-inline void SimCompletePassengerLoadVehicle::clear_sid() {
-  sid_ = 0;
-  _clear_bit(3);
-}
-inline ::google::protobuf::int32 SimCompletePassengerLoadVehicle::sid() const {
-  return sid_;
-}
-inline void SimCompletePassengerLoadVehicle::set_sid(::google::protobuf::int32 value) {
-  _set_bit(3);
-  sid_ = value;
+  if (cmd_ == NULL) cmd_ = new ::prt::CtrlCmdPassengersDisembark;
+  return cmd_;
 }
 
 // -------------------------------------------------------------------
@@ -9601,7 +8742,7 @@ inline void SimNotifyTime::set_msgid(::google::protobuf::int32 value) {
   msgid_ = value;
 }
 
-// required float time = 2;
+// required double time = 2;
 inline bool SimNotifyTime::has_time() const {
   return _has_bit(1);
 }
@@ -9609,10 +8750,10 @@ inline void SimNotifyTime::clear_time() {
   time_ = 0;
   _clear_bit(1);
 }
-inline float SimNotifyTime::time() const {
+inline double SimNotifyTime::time() const {
   return time_;
 }
-inline void SimNotifyTime::set_time(float value) {
+inline void SimNotifyTime::set_time(double value) {
   _set_bit(1);
   time_ = value;
 }
@@ -9830,411 +8971,338 @@ inline void SimNotifyVehicleCollision::set_sideswipe(bool value) {
 
 // -------------------------------------------------------------------
 
-// SimNotifyPassengerLoadStart
+// SimNotifyPassengerEmbarkStart
 
 // required int32 vID = 1;
-inline bool SimNotifyPassengerLoadStart::has_vid() const {
+inline bool SimNotifyPassengerEmbarkStart::has_vid() const {
   return _has_bit(0);
 }
-inline void SimNotifyPassengerLoadStart::clear_vid() {
+inline void SimNotifyPassengerEmbarkStart::clear_vid() {
   vid_ = 0;
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerLoadStart::vid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkStart::vid() const {
   return vid_;
 }
-inline void SimNotifyPassengerLoadStart::set_vid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerEmbarkStart::set_vid(::google::protobuf::int32 value) {
   _set_bit(0);
   vid_ = value;
 }
 
 // required int32 sID = 2;
-inline bool SimNotifyPassengerLoadStart::has_sid() const {
+inline bool SimNotifyPassengerEmbarkStart::has_sid() const {
   return _has_bit(1);
 }
-inline void SimNotifyPassengerLoadStart::clear_sid() {
+inline void SimNotifyPassengerEmbarkStart::clear_sid() {
   sid_ = 0;
   _clear_bit(1);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerLoadStart::sid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkStart::sid() const {
   return sid_;
 }
-inline void SimNotifyPassengerLoadStart::set_sid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerEmbarkStart::set_sid(::google::protobuf::int32 value) {
   _set_bit(1);
   sid_ = value;
 }
 
-// required int32 pID = 3;
-inline bool SimNotifyPassengerLoadStart::has_pid() const {
+// required int32 platformID = 3;
+inline bool SimNotifyPassengerEmbarkStart::has_platformid() const {
   return _has_bit(2);
 }
-inline void SimNotifyPassengerLoadStart::clear_pid() {
-  pid_ = 0;
+inline void SimNotifyPassengerEmbarkStart::clear_platformid() {
+  platformid_ = 0;
   _clear_bit(2);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerLoadStart::pid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkStart::platformid() const {
+  return platformid_;
+}
+inline void SimNotifyPassengerEmbarkStart::set_platformid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  platformid_ = value;
+}
+
+// required int32 pID = 4;
+inline bool SimNotifyPassengerEmbarkStart::has_pid() const {
+  return _has_bit(3);
+}
+inline void SimNotifyPassengerEmbarkStart::clear_pid() {
+  pid_ = 0;
+  _clear_bit(3);
+}
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkStart::pid() const {
   return pid_;
 }
-inline void SimNotifyPassengerLoadStart::set_pid(::google::protobuf::int32 value) {
-  _set_bit(2);
+inline void SimNotifyPassengerEmbarkStart::set_pid(::google::protobuf::int32 value) {
+  _set_bit(3);
   pid_ = value;
 }
 
+// required int32 berthID = 5;
+inline bool SimNotifyPassengerEmbarkStart::has_berthid() const {
+  return _has_bit(4);
+}
+inline void SimNotifyPassengerEmbarkStart::clear_berthid() {
+  berthid_ = 0;
+  _clear_bit(4);
+}
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkStart::berthid() const {
+  return berthid_;
+}
+inline void SimNotifyPassengerEmbarkStart::set_berthid(::google::protobuf::int32 value) {
+  _set_bit(4);
+  berthid_ = value;
+}
+
 // -------------------------------------------------------------------
 
-// SimNotifyPassengerLoadEnd
+// SimNotifyPassengerEmbarkEnd
 
 // required int32 vID = 1;
-inline bool SimNotifyPassengerLoadEnd::has_vid() const {
+inline bool SimNotifyPassengerEmbarkEnd::has_vid() const {
   return _has_bit(0);
 }
-inline void SimNotifyPassengerLoadEnd::clear_vid() {
+inline void SimNotifyPassengerEmbarkEnd::clear_vid() {
   vid_ = 0;
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerLoadEnd::vid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkEnd::vid() const {
   return vid_;
 }
-inline void SimNotifyPassengerLoadEnd::set_vid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerEmbarkEnd::set_vid(::google::protobuf::int32 value) {
   _set_bit(0);
   vid_ = value;
 }
 
 // required int32 sID = 2;
-inline bool SimNotifyPassengerLoadEnd::has_sid() const {
+inline bool SimNotifyPassengerEmbarkEnd::has_sid() const {
   return _has_bit(1);
 }
-inline void SimNotifyPassengerLoadEnd::clear_sid() {
+inline void SimNotifyPassengerEmbarkEnd::clear_sid() {
   sid_ = 0;
   _clear_bit(1);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerLoadEnd::sid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkEnd::sid() const {
   return sid_;
 }
-inline void SimNotifyPassengerLoadEnd::set_sid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerEmbarkEnd::set_sid(::google::protobuf::int32 value) {
   _set_bit(1);
   sid_ = value;
 }
 
-// required int32 pID = 3;
-inline bool SimNotifyPassengerLoadEnd::has_pid() const {
+// required int32 platformID = 3;
+inline bool SimNotifyPassengerEmbarkEnd::has_platformid() const {
   return _has_bit(2);
 }
-inline void SimNotifyPassengerLoadEnd::clear_pid() {
-  pid_ = 0;
+inline void SimNotifyPassengerEmbarkEnd::clear_platformid() {
+  platformid_ = 0;
   _clear_bit(2);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerLoadEnd::pid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkEnd::platformid() const {
+  return platformid_;
+}
+inline void SimNotifyPassengerEmbarkEnd::set_platformid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  platformid_ = value;
+}
+
+// required int32 pID = 4;
+inline bool SimNotifyPassengerEmbarkEnd::has_pid() const {
+  return _has_bit(3);
+}
+inline void SimNotifyPassengerEmbarkEnd::clear_pid() {
+  pid_ = 0;
+  _clear_bit(3);
+}
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkEnd::pid() const {
   return pid_;
 }
-inline void SimNotifyPassengerLoadEnd::set_pid(::google::protobuf::int32 value) {
-  _set_bit(2);
+inline void SimNotifyPassengerEmbarkEnd::set_pid(::google::protobuf::int32 value) {
+  _set_bit(3);
   pid_ = value;
 }
 
+// required int32 berthID = 5;
+inline bool SimNotifyPassengerEmbarkEnd::has_berthid() const {
+  return _has_bit(4);
+}
+inline void SimNotifyPassengerEmbarkEnd::clear_berthid() {
+  berthid_ = 0;
+  _clear_bit(4);
+}
+inline ::google::protobuf::int32 SimNotifyPassengerEmbarkEnd::berthid() const {
+  return berthid_;
+}
+inline void SimNotifyPassengerEmbarkEnd::set_berthid(::google::protobuf::int32 value) {
+  _set_bit(4);
+  berthid_ = value;
+}
+
 // -------------------------------------------------------------------
 
-// SimNotifyPassengerUnloadStart
+// SimNotifyPassengerDisembarkStart
 
 // required int32 vID = 1;
-inline bool SimNotifyPassengerUnloadStart::has_vid() const {
+inline bool SimNotifyPassengerDisembarkStart::has_vid() const {
   return _has_bit(0);
 }
-inline void SimNotifyPassengerUnloadStart::clear_vid() {
+inline void SimNotifyPassengerDisembarkStart::clear_vid() {
   vid_ = 0;
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerUnloadStart::vid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkStart::vid() const {
   return vid_;
 }
-inline void SimNotifyPassengerUnloadStart::set_vid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerDisembarkStart::set_vid(::google::protobuf::int32 value) {
   _set_bit(0);
   vid_ = value;
 }
 
 // required int32 sID = 2;
-inline bool SimNotifyPassengerUnloadStart::has_sid() const {
+inline bool SimNotifyPassengerDisembarkStart::has_sid() const {
   return _has_bit(1);
 }
-inline void SimNotifyPassengerUnloadStart::clear_sid() {
+inline void SimNotifyPassengerDisembarkStart::clear_sid() {
   sid_ = 0;
   _clear_bit(1);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerUnloadStart::sid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkStart::sid() const {
   return sid_;
 }
-inline void SimNotifyPassengerUnloadStart::set_sid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerDisembarkStart::set_sid(::google::protobuf::int32 value) {
   _set_bit(1);
   sid_ = value;
 }
 
-// required int32 pID = 3;
-inline bool SimNotifyPassengerUnloadStart::has_pid() const {
+// required int32 platformID = 3;
+inline bool SimNotifyPassengerDisembarkStart::has_platformid() const {
   return _has_bit(2);
 }
-inline void SimNotifyPassengerUnloadStart::clear_pid() {
-  pid_ = 0;
+inline void SimNotifyPassengerDisembarkStart::clear_platformid() {
+  platformid_ = 0;
   _clear_bit(2);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerUnloadStart::pid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkStart::platformid() const {
+  return platformid_;
+}
+inline void SimNotifyPassengerDisembarkStart::set_platformid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  platformid_ = value;
+}
+
+// required int32 pID = 4;
+inline bool SimNotifyPassengerDisembarkStart::has_pid() const {
+  return _has_bit(3);
+}
+inline void SimNotifyPassengerDisembarkStart::clear_pid() {
+  pid_ = 0;
+  _clear_bit(3);
+}
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkStart::pid() const {
   return pid_;
 }
-inline void SimNotifyPassengerUnloadStart::set_pid(::google::protobuf::int32 value) {
-  _set_bit(2);
+inline void SimNotifyPassengerDisembarkStart::set_pid(::google::protobuf::int32 value) {
+  _set_bit(3);
   pid_ = value;
 }
 
+// required int32 berthID = 5;
+inline bool SimNotifyPassengerDisembarkStart::has_berthid() const {
+  return _has_bit(4);
+}
+inline void SimNotifyPassengerDisembarkStart::clear_berthid() {
+  berthid_ = 0;
+  _clear_bit(4);
+}
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkStart::berthid() const {
+  return berthid_;
+}
+inline void SimNotifyPassengerDisembarkStart::set_berthid(::google::protobuf::int32 value) {
+  _set_bit(4);
+  berthid_ = value;
+}
+
 // -------------------------------------------------------------------
 
-// SimNotifyPassengerUnloadEnd
+// SimNotifyPassengerDisembarkEnd
 
 // required int32 vID = 1;
-inline bool SimNotifyPassengerUnloadEnd::has_vid() const {
+inline bool SimNotifyPassengerDisembarkEnd::has_vid() const {
   return _has_bit(0);
 }
-inline void SimNotifyPassengerUnloadEnd::clear_vid() {
+inline void SimNotifyPassengerDisembarkEnd::clear_vid() {
   vid_ = 0;
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerUnloadEnd::vid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkEnd::vid() const {
   return vid_;
 }
-inline void SimNotifyPassengerUnloadEnd::set_vid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerDisembarkEnd::set_vid(::google::protobuf::int32 value) {
   _set_bit(0);
   vid_ = value;
 }
 
 // required int32 sID = 2;
-inline bool SimNotifyPassengerUnloadEnd::has_sid() const {
+inline bool SimNotifyPassengerDisembarkEnd::has_sid() const {
   return _has_bit(1);
 }
-inline void SimNotifyPassengerUnloadEnd::clear_sid() {
+inline void SimNotifyPassengerDisembarkEnd::clear_sid() {
   sid_ = 0;
   _clear_bit(1);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerUnloadEnd::sid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkEnd::sid() const {
   return sid_;
 }
-inline void SimNotifyPassengerUnloadEnd::set_sid(::google::protobuf::int32 value) {
+inline void SimNotifyPassengerDisembarkEnd::set_sid(::google::protobuf::int32 value) {
   _set_bit(1);
   sid_ = value;
 }
 
-// required int32 pID = 3;
-inline bool SimNotifyPassengerUnloadEnd::has_pid() const {
+// required int32 platformID = 3;
+inline bool SimNotifyPassengerDisembarkEnd::has_platformid() const {
   return _has_bit(2);
 }
-inline void SimNotifyPassengerUnloadEnd::clear_pid() {
-  pid_ = 0;
+inline void SimNotifyPassengerDisembarkEnd::clear_platformid() {
+  platformid_ = 0;
   _clear_bit(2);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerUnloadEnd::pid() const {
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkEnd::platformid() const {
+  return platformid_;
+}
+inline void SimNotifyPassengerDisembarkEnd::set_platformid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  platformid_ = value;
+}
+
+// required int32 pID = 4;
+inline bool SimNotifyPassengerDisembarkEnd::has_pid() const {
+  return _has_bit(3);
+}
+inline void SimNotifyPassengerDisembarkEnd::clear_pid() {
+  pid_ = 0;
+  _clear_bit(3);
+}
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkEnd::pid() const {
   return pid_;
 }
-inline void SimNotifyPassengerUnloadEnd::set_pid(::google::protobuf::int32 value) {
-  _set_bit(2);
+inline void SimNotifyPassengerDisembarkEnd::set_pid(::google::protobuf::int32 value) {
+  _set_bit(3);
   pid_ = value;
 }
 
-// -------------------------------------------------------------------
-
-// SimNotifyPassengerDelivered
-
-// required int32 vID = 1;
-inline bool SimNotifyPassengerDelivered::has_vid() const {
-  return _has_bit(0);
+// required int32 berthID = 5;
+inline bool SimNotifyPassengerDisembarkEnd::has_berthid() const {
+  return _has_bit(4);
 }
-inline void SimNotifyPassengerDelivered::clear_vid() {
-  vid_ = 0;
-  _clear_bit(0);
+inline void SimNotifyPassengerDisembarkEnd::clear_berthid() {
+  berthid_ = 0;
+  _clear_bit(4);
 }
-inline ::google::protobuf::int32 SimNotifyPassengerDelivered::vid() const {
-  return vid_;
+inline ::google::protobuf::int32 SimNotifyPassengerDisembarkEnd::berthid() const {
+  return berthid_;
 }
-inline void SimNotifyPassengerDelivered::set_vid(::google::protobuf::int32 value) {
-  _set_bit(0);
-  vid_ = value;
-}
-
-// required int32 sID = 2;
-inline bool SimNotifyPassengerDelivered::has_sid() const {
-  return _has_bit(1);
-}
-inline void SimNotifyPassengerDelivered::clear_sid() {
-  sid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 SimNotifyPassengerDelivered::sid() const {
-  return sid_;
-}
-inline void SimNotifyPassengerDelivered::set_sid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  sid_ = value;
-}
-
-// required int32 pID = 3;
-inline bool SimNotifyPassengerDelivered::has_pid() const {
-  return _has_bit(2);
-}
-inline void SimNotifyPassengerDelivered::clear_pid() {
-  pid_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 SimNotifyPassengerDelivered::pid() const {
-  return pid_;
-}
-inline void SimNotifyPassengerDelivered::set_pid(::google::protobuf::int32 value) {
-  _set_bit(2);
-  pid_ = value;
-}
-
-// -------------------------------------------------------------------
-
-// SimNotifyPassengerMisdelivered
-
-// required int32 vID = 1;
-inline bool SimNotifyPassengerMisdelivered::has_vid() const {
-  return _has_bit(0);
-}
-inline void SimNotifyPassengerMisdelivered::clear_vid() {
-  vid_ = 0;
-  _clear_bit(0);
-}
-inline ::google::protobuf::int32 SimNotifyPassengerMisdelivered::vid() const {
-  return vid_;
-}
-inline void SimNotifyPassengerMisdelivered::set_vid(::google::protobuf::int32 value) {
-  _set_bit(0);
-  vid_ = value;
-}
-
-// required int32 sID = 2;
-inline bool SimNotifyPassengerMisdelivered::has_sid() const {
-  return _has_bit(1);
-}
-inline void SimNotifyPassengerMisdelivered::clear_sid() {
-  sid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 SimNotifyPassengerMisdelivered::sid() const {
-  return sid_;
-}
-inline void SimNotifyPassengerMisdelivered::set_sid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  sid_ = value;
-}
-
-// required int32 pID = 3;
-inline bool SimNotifyPassengerMisdelivered::has_pid() const {
-  return _has_bit(2);
-}
-inline void SimNotifyPassengerMisdelivered::clear_pid() {
-  pid_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 SimNotifyPassengerMisdelivered::pid() const {
-  return pid_;
-}
-inline void SimNotifyPassengerMisdelivered::set_pid(::google::protobuf::int32 value) {
-  _set_bit(2);
-  pid_ = value;
-}
-
-// -------------------------------------------------------------------
-
-// SimNotifyStationReadyLaunch
-
-// required int32 vID = 1;
-inline bool SimNotifyStationReadyLaunch::has_vid() const {
-  return _has_bit(0);
-}
-inline void SimNotifyStationReadyLaunch::clear_vid() {
-  vid_ = 0;
-  _clear_bit(0);
-}
-inline ::google::protobuf::int32 SimNotifyStationReadyLaunch::vid() const {
-  return vid_;
-}
-inline void SimNotifyStationReadyLaunch::set_vid(::google::protobuf::int32 value) {
-  _set_bit(0);
-  vid_ = value;
-}
-
-// required int32 sID = 2;
-inline bool SimNotifyStationReadyLaunch::has_sid() const {
-  return _has_bit(1);
-}
-inline void SimNotifyStationReadyLaunch::clear_sid() {
-  sid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 SimNotifyStationReadyLaunch::sid() const {
-  return sid_;
-}
-inline void SimNotifyStationReadyLaunch::set_sid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  sid_ = value;
-}
-
-// repeated int32 pID = 3 [packed = true];
-inline int SimNotifyStationReadyLaunch::pid_size() const {
-  return pid_.size();
-}
-inline void SimNotifyStationReadyLaunch::clear_pid() {
-  pid_.Clear();
-}
-inline ::google::protobuf::int32 SimNotifyStationReadyLaunch::pid(int index) const {
-  return pid_.Get(index);
-}
-inline void SimNotifyStationReadyLaunch::set_pid(int index, ::google::protobuf::int32 value) {
-  pid_.Set(index, value);
-}
-inline void SimNotifyStationReadyLaunch::add_pid(::google::protobuf::int32 value) {
-  pid_.Add(value);
-}
-inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-SimNotifyStationReadyLaunch::pid() const {
-  return pid_;
-}
-inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-SimNotifyStationReadyLaunch::mutable_pid() {
-  return &pid_;
-}
-
-// -------------------------------------------------------------------
-
-// SimNotifyStationUnreadyLaunch
-
-// required int32 vID = 1;
-inline bool SimNotifyStationUnreadyLaunch::has_vid() const {
-  return _has_bit(0);
-}
-inline void SimNotifyStationUnreadyLaunch::clear_vid() {
-  vid_ = 0;
-  _clear_bit(0);
-}
-inline ::google::protobuf::int32 SimNotifyStationUnreadyLaunch::vid() const {
-  return vid_;
-}
-inline void SimNotifyStationUnreadyLaunch::set_vid(::google::protobuf::int32 value) {
-  _set_bit(0);
-  vid_ = value;
-}
-
-// required int32 sID = 2;
-inline bool SimNotifyStationUnreadyLaunch::has_sid() const {
-  return _has_bit(1);
-}
-inline void SimNotifyStationUnreadyLaunch::clear_sid() {
-  sid_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 SimNotifyStationUnreadyLaunch::sid() const {
-  return sid_;
-}
-inline void SimNotifyStationUnreadyLaunch::set_sid(::google::protobuf::int32 value) {
-  _set_bit(1);
-  sid_ = value;
+inline void SimNotifyPassengerDisembarkEnd::set_berthid(::google::protobuf::int32 value) {
+  _set_bit(4);
+  berthid_ = value;
 }
 
 // -------------------------------------------------------------------
@@ -10695,174 +9763,140 @@ inline void VehicleStatus::set_vid(::google::protobuf::int32 value) {
   vid_ = value;
 }
 
-// required .prt.LocationType nose_loc_type = 2;
-inline bool VehicleStatus::has_nose_loc_type() const {
-  return _has_bit(1);
-}
-inline void VehicleStatus::clear_nose_loc_type() {
-  nose_loc_type_ = 0;
-  _clear_bit(1);
-}
-inline prt::LocationType VehicleStatus::nose_loc_type() const {
-  return static_cast< prt::LocationType >(nose_loc_type_);
-}
-inline void VehicleStatus::set_nose_loc_type(prt::LocationType value) {
-  GOOGLE_DCHECK(prt::LocationType_IsValid(value));
-  _set_bit(1);
-  nose_loc_type_ = value;
-}
-
 // required int32 nose_locID = 3;
 inline bool VehicleStatus::has_nose_locid() const {
-  return _has_bit(2);
+  return _has_bit(1);
 }
 inline void VehicleStatus::clear_nose_locid() {
   nose_locid_ = 0;
-  _clear_bit(2);
+  _clear_bit(1);
 }
 inline ::google::protobuf::int32 VehicleStatus::nose_locid() const {
   return nose_locid_;
 }
 inline void VehicleStatus::set_nose_locid(::google::protobuf::int32 value) {
-  _set_bit(2);
+  _set_bit(1);
   nose_locid_ = value;
 }
 
 // required float nose_pos = 4;
 inline bool VehicleStatus::has_nose_pos() const {
-  return _has_bit(3);
+  return _has_bit(2);
 }
 inline void VehicleStatus::clear_nose_pos() {
   nose_pos_ = 0;
-  _clear_bit(3);
+  _clear_bit(2);
 }
 inline float VehicleStatus::nose_pos() const {
   return nose_pos_;
 }
 inline void VehicleStatus::set_nose_pos(float value) {
-  _set_bit(3);
+  _set_bit(2);
   nose_pos_ = value;
-}
-
-// required .prt.LocationType tail_loc_type = 5;
-inline bool VehicleStatus::has_tail_loc_type() const {
-  return _has_bit(4);
-}
-inline void VehicleStatus::clear_tail_loc_type() {
-  tail_loc_type_ = 0;
-  _clear_bit(4);
-}
-inline prt::LocationType VehicleStatus::tail_loc_type() const {
-  return static_cast< prt::LocationType >(tail_loc_type_);
-}
-inline void VehicleStatus::set_tail_loc_type(prt::LocationType value) {
-  GOOGLE_DCHECK(prt::LocationType_IsValid(value));
-  _set_bit(4);
-  tail_loc_type_ = value;
 }
 
 // required int32 tail_locID = 6;
 inline bool VehicleStatus::has_tail_locid() const {
-  return _has_bit(5);
+  return _has_bit(3);
 }
 inline void VehicleStatus::clear_tail_locid() {
   tail_locid_ = 0;
-  _clear_bit(5);
+  _clear_bit(3);
 }
 inline ::google::protobuf::int32 VehicleStatus::tail_locid() const {
   return tail_locid_;
 }
 inline void VehicleStatus::set_tail_locid(::google::protobuf::int32 value) {
-  _set_bit(5);
+  _set_bit(3);
   tail_locid_ = value;
 }
 
 // required float tail_pos = 7;
 inline bool VehicleStatus::has_tail_pos() const {
-  return _has_bit(6);
+  return _has_bit(4);
 }
 inline void VehicleStatus::clear_tail_pos() {
   tail_pos_ = 0;
-  _clear_bit(6);
+  _clear_bit(4);
 }
 inline float VehicleStatus::tail_pos() const {
   return tail_pos_;
 }
 inline void VehicleStatus::set_tail_pos(float value) {
-  _set_bit(6);
+  _set_bit(4);
   tail_pos_ = value;
 }
 
 // required float vel = 8;
 inline bool VehicleStatus::has_vel() const {
-  return _has_bit(7);
+  return _has_bit(5);
 }
 inline void VehicleStatus::clear_vel() {
   vel_ = 0;
-  _clear_bit(7);
+  _clear_bit(5);
 }
 inline float VehicleStatus::vel() const {
   return vel_;
 }
 inline void VehicleStatus::set_vel(float value) {
-  _set_bit(7);
+  _set_bit(5);
   vel_ = value;
 }
 
 // required float accel = 9;
 inline bool VehicleStatus::has_accel() const {
-  return _has_bit(8);
+  return _has_bit(6);
 }
 inline void VehicleStatus::clear_accel() {
   accel_ = 0;
-  _clear_bit(8);
+  _clear_bit(6);
 }
 inline float VehicleStatus::accel() const {
   return accel_;
 }
 inline void VehicleStatus::set_accel(float value) {
-  _set_bit(8);
+  _set_bit(6);
   accel_ = value;
 }
 
-// repeated int32 passengerID = 10 [packed = true];
-inline int VehicleStatus::passengerid_size() const {
-  return passengerid_.size();
+// repeated int32 passengerIDs = 10 [packed = true];
+inline int VehicleStatus::passengerids_size() const {
+  return passengerids_.size();
 }
-inline void VehicleStatus::clear_passengerid() {
-  passengerid_.Clear();
+inline void VehicleStatus::clear_passengerids() {
+  passengerids_.Clear();
 }
-inline ::google::protobuf::int32 VehicleStatus::passengerid(int index) const {
-  return passengerid_.Get(index);
+inline ::google::protobuf::int32 VehicleStatus::passengerids(int index) const {
+  return passengerids_.Get(index);
 }
-inline void VehicleStatus::set_passengerid(int index, ::google::protobuf::int32 value) {
-  passengerid_.Set(index, value);
+inline void VehicleStatus::set_passengerids(int index, ::google::protobuf::int32 value) {
+  passengerids_.Set(index, value);
 }
-inline void VehicleStatus::add_passengerid(::google::protobuf::int32 value) {
-  passengerid_.Add(value);
+inline void VehicleStatus::add_passengerids(::google::protobuf::int32 value) {
+  passengerids_.Add(value);
 }
 inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-VehicleStatus::passengerid() const {
-  return passengerid_;
+VehicleStatus::passengerids() const {
+  return passengerids_;
 }
 inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-VehicleStatus::mutable_passengerid() {
-  return &passengerid_;
+VehicleStatus::mutable_passengerids() {
+  return &passengerids_;
 }
 
 // optional int32 headway = 12;
 inline bool VehicleStatus::has_headway() const {
-  return _has_bit(10);
+  return _has_bit(8);
 }
 inline void VehicleStatus::clear_headway() {
   headway_ = 0;
-  _clear_bit(10);
+  _clear_bit(8);
 }
 inline ::google::protobuf::int32 VehicleStatus::headway() const {
   return headway_;
 }
 inline void VehicleStatus::set_headway(::google::protobuf::int32 value) {
-  _set_bit(10);
+  _set_bit(8);
   headway_ = value;
 }
 
@@ -11452,7 +10486,7 @@ inline void PassengerStatus::set_dest_stationid(::google::protobuf::int32 value)
   dest_stationid_ = value;
 }
 
-// required float creation_time = 7;
+// required double creation_time = 7;
 inline bool PassengerStatus::has_creation_time() const {
   return _has_bit(6);
 }
@@ -11460,10 +10494,10 @@ inline void PassengerStatus::clear_creation_time() {
   creation_time_ = 0;
   _clear_bit(6);
 }
-inline float PassengerStatus::creation_time() const {
+inline double PassengerStatus::creation_time() const {
   return creation_time_;
 }
-inline void PassengerStatus::set_creation_time(float value) {
+inline void PassengerStatus::set_creation_time(double value) {
   _set_bit(6);
   creation_time_ = value;
 }

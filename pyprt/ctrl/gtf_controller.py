@@ -1,5 +1,8 @@
 """A controller which attempts to run vehicles on schedules and routes
 described by Google Transit Feed data.
+
+Notes:
+    - The simulation begins at the start of the feed.
 """
 from __future__ import division
 import optparse
@@ -42,7 +45,107 @@ class GtfController(BaseController):
     def __init__(self, log_path, commlog_path, scenario_path):
         super(GtfController, self).__init__(log_path, commlog_path)
         self.scenario_path = scenario_path
-        self.reminders = {}
+        self.t_reminders = defaultdict(list) # keyed by time, values are lists of vehicle ids
+
+        # self.v_manager and self.p_manager are added to this class upon
+        # receipt of a SIM_GREETING msg.
+
+    def run_leg(self, leg):
+        """Plans an itinerary and trajectory for the vehicle to do the next leg
+        of its schedule, then sends the appropriate commands to the simulator."""
+        assert isinstance(leg, Leg)
+        vehicle_id = leg.vehicle
+
+        dist, path = self.v_manager.get_path(leg.origin_ts, leg.dest_ts)
+        assert path[0] == self.v_manager.vehicles[vehicle_id].ts_id
+
+        itinerary_msg = api.CtrlCmdVehicleItinerary()
+        itinerary_msg.vID = vehicle_id
+        itinerary_msg.tsIDs.extend(path[1:]) # don't include the segment vehicle is currently on
+        itinerary_msg.clear = False
+        self.send(api.CTRL_CMD_VEHICLE_ITINERARY, self.sim_time, itinerary_msg)
+
+        traj_msg = api.CtrlCmdVehicleTrajectory()
+        traj_msg.vID = vehicle_id
+        departure_time = max(leg.depart, self.sim_time/1000.) # in seconds
+        spline = self.v_manager.make_trajectory(leg, dist, departure_time)
+
+        inf = 1E10000
+        spline.append(Knot(spline.q[-1], 0, 0, inf)) # stay stopped here
+        spline.fill_spline_msg(traj_msg.spline)
+        self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, self.sim_time, traj_msg)
+
+        setnotify_msg = api.CtrlSetnotifyTime()
+        setnotify_msg.time = spline.t[-2] + 1 # +one second of sitting there
+        self.send(api.CTRL_SETNOTIFY_TIME, self.sim_time, setnotify_msg)
+
+        self.t_reminders[int(setnotify_msg.time*1000)].append(vehicle_id)
+
+    def disembark_passengers(self, leg):
+        """leg is a the Leg instance that ends at the station where the passengers
+        are to be disembarked."""
+        assert isinstance(leg, Leg)
+        disembarking = self.p_manager.get_disembarking_pax(leg.vehicle, leg.dest_station, leg.arrive)
+        vehicle = self.v_manager.vehicles[leg.vehicle]
+        station = self.v_manager.stations[leg.dest_station]
+        assert isinstance(station, Station)
+
+        for idx, berth_pos in enumerate(station.berth_positions):
+            if abs(vehicle.pos - berth_pos) < 0.1:
+                berth_id = idx
+                break
+
+        disembark_msg = api.CtrlCmdPassengersDisembark()
+        disembark_msg.vID = leg.vehicle
+        disembark_msg.sID = leg.dest_station
+        disembark_msg.platformID = 0 # assumed that there is only one platform
+        disembark_msg.berthID = berth_id
+        disembark_msg.passengerIDs.extend(disembarking)
+        self.send(api.CTRL_CMD_PASSENGERS_DISEMBARK, self.sim_time, disembark_msg)
+
+    def embark_passengers(self, leg):
+        """leg is a the Leg instance that begins at the station where the passengers
+        are to be embarked."""
+        assert isinstance(leg, Leg)
+        embarking = self.p_manager.get_embarking_pax(leg.vehicle, leg.origin_station, leg.depart)
+        station = self.v_manager.stations[leg.dest_station]
+        vehicle = self.v_manager.vehicles[leg.vehicle]
+        assert isinstance(station, Station)
+        assert isinstance(vehicle, Vehicle)
+        for idx, berth_pos in enumerate(station.berth_positions):
+            if abs(vehicle.pos - berth_pos) < 0.1:
+                berth_id = idx
+                break
+
+        fill_line = vehicle.capacity - len(vehicle.pax)
+
+        embark_msg = api.CtrlCmdPassengersEmbark()
+        embark_msg.vID = leg.vehicle
+        embark_msg.sID = leg.origin_station
+        embark_msg.platformID = 0  # assumed that there is only one platform
+        embark_msg.berthID = berth_id
+        embark_msg.passengerIDs.extend(embarking[:fill_line])
+        self.send(api.CTRL_CMD_PASSENGERS_EMBARK, self.sim_time, embark_msg)
+
+        # Reschedule those passengers which didn't fit.
+        for pax_id in embarking[fill_line:]:
+            # Reschedule as though the passenger was just created. Or was created
+            # just after the vehicle is scheduled to leave for the case where
+            # the vehicle is full before it's due to leave.
+            origin_time = max(self.sim_time/1000., leg.depart+1)
+            self.p_manager.reschedule_pax(pax_id, leg.origin_station, origin_time)
+
+        # Subsequent calls to this function should not re-embark passengers.
+        self.p_manager.clear_embarking_pax(leg.vehicle, leg.origin_station, leg.depart)
+
+        if self.sim_time/1000. >= leg.depart:
+            leg.last_call = True
+
+    def set_notification(self, vehicle_id, time):
+        notify = api.CtrlSetnotifyTime()
+        notify.time = time
+        self.send(api.CTRL_SETNOTIFY_TIME, self.sim_time, notify)
+        self.t_reminders[int(notify.time*1000)].append(vehicle_id)
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg_type, msgID, msg_time, msg_str):
@@ -59,30 +162,25 @@ class GtfController(BaseController):
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
         self.log.info("Sim Start message received.")
-        inf = 1E10000
 
         for vehicle_id in self.v_manager.vehicles.keys():
-            leg, dist, path = self.v_manager.get_next_leg(vehicle_id)
+            leg = self.v_manager.get_next_leg(vehicle_id)
+            if leg is None:
+                continue # vehicle never does nothin'
+            if leg.depart != 0.0:
+                self.set_notification(leg.vehicle, leg.depart)
+            else:
+                self.embark_passengers(leg)
+        self.send_resume()
 
-            itinerary_msg = api.CtrlCmdVehicleItinerary()
-            itinerary_msg.vID = vehicle_id
-            itinerary_msg.tsIDs.extend(path[1:]) # don't include the segment vehicle is currently on
-            itinerary_msg.clear = False
-            self.send(api.CTRL_CMD_VEHICLE_ITINERARY, self.sim_time, itinerary_msg)
-
-            traj_msg = api.CtrlCmdVehicleTrajectory()
-            traj_msg.vID = vehicle_id
-            spline = self.v_manager.make_trajectory(leg, dist, leg.depart)
-            spline.append(Knot(spline.q[-1], 0, 0, inf)) # stay stopped here
-            self.fill_spline_msg(spline, traj_msg.spline)
-            self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, self.sim_time, traj_msg)
-
-            setnotify_msg = api.CtrlSetnotifyTime()
-            setnotify_msg.time = spline.t[-2] + 1
-            self.send(api.CTRL_SETNOTIFY_TIME, self.sim_time, setnotify_msg)
-
-            self.reminders[int(setnotify_msg.time*1000)] = leg # convert to an integer number of milliseconds, so that comparison is trivial
-
+    def on_SIM_EVENT_PASSENGER_CREATED(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimEventPassengerCreated()
+        msg.MergeFromString(msg_str)
+        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+        p_status = msg.p_status
+        pax = Passenger(p_status.pID, p_status.src_stationID,
+                        p_status.dest_stationID, p_status.creation_time)
+        self.p_manager.add_passenger(pax)
         self.send_resume()
 
     def on_SIM_NOTIFY_TIME(self, msg_type, msgID, msg_time, msg_str):
@@ -91,22 +189,69 @@ class GtfController(BaseController):
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 
         ms_msg_time = int(msg.time*1000) # millisec integer for easy comparison
-        leg = self.reminders[ms_msg_time]
-        assert isinstance(leg, Leg)
-        del self.reminders[ms_msg_time]
+        v_ids = self.t_reminders[ms_msg_time]
 
-        disembarking, embarking = self.p_manager.get_pax_actions(leg.vehicle, leg.dest_station, leg.arrive)
+        for v_id in v_ids:
+            req_v_status = api.CtrlRequestVehicleStatus()
+            req_v_status.vID = v_id
+            self.send(api.CTRL_REQUEST_VEHICLE_STATUS, self.sim_time, req_v_status)
+        self.send_resume()
 
+    def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimResponseVehicleStatus()
+        msg.MergeFromString(msg_str)
+        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+
+        self.v_manager.update_vehicle(msg.v_status)
+        leg = self.v_manager.get_next_leg(msg.v_status.vID)
+
+        # Normal case, just arrived at destination station.
+        if leg.dest_ts == msg.v_status.nose_locID:
+            self.disembark_passengers(leg)
+        # Vehicle starting it's trip, after the simulation has started
+        elif leg.origin_ts == msg.v_status.nose_locID:
+            self.embark_passengers(leg)
+        # Error
+        else:
+            raise Exception("Bad mojo")
 
         self.send_resume()
 
-    def on_SIM_EVENT_PASSENGER_CREATED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventPassengerCreated()
+    def on_SIM_COMPLETE_PASSENGER_DISEMBARK(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimCompletePassengerDisembark()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        p_status = msg.p_status
-        self.p_manager.add_passenger(p_status.pID, p_status.src_stationID,
-                                     p_status.dest_stationID, p_status.creation_time)
+
+        # Discard the previous leg
+        self.v_manager.pop_leg(msg.cmd.vID)
+
+        leg = self.v_manager.get_next_leg(msg.cmd.vID)
+        if leg:
+            # Start loading the vehicle, even before the departure time.
+            self.embark_passengers(leg)
+
+        self.send_resume()
+
+    def on_SIM_COMPLETE_PASSENGER_EMBARK(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimCompletePassengerEmbark()
+        msg.MergeFromString(msg_str)
+        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+
+        leg = self.v_manager.get_next_leg(msg.cmd.vID)
+        # Embarking may occur twice for a given vehicle and leg. The first (optional)
+        # phase loads any passengers who are waiting at the station. The second
+        # phase (the 'last call') occurs right before the vehicle leaves,
+        # and it loads the passengers who have shown up in the intervening time.
+        # The first phase may occur before the departure time. The last call
+        # phase always occurs >= the departure time.
+        if not leg.last_call:
+            if self.sim_time/1000. >= leg.depart:
+                self.embark_passengers(leg) # give the last call
+            else:
+                self.set_notification(leg.vehicle, leg.depart)
+        else: # Last call has been given, run the leg
+            self.run_leg(leg)
+
         self.send_resume()
 
 class VehicleManager(object):
@@ -164,15 +309,18 @@ class VehicleManager(object):
             station_str_id = station_xml.getAttribute('id')
             station_int_id = int(station_str_id.split('_')[0])
 
-            track_segs_xml = station_xml.getElementsByTagName('TrackSegments')[0]
-            ts_ids = [self._to_numeric_id(id_xml) for id_xml in track_segs_xml.getElementsByTagName('ID')]
+            ts_ids = set() # using a set because 'TrackSegmentID' includes the duplicate ts from Platform
+            for id_xml in station_xml.getElementsByTagName('TrackSegmentID'):
+                ts_ids.add(self._to_numeric_id(id_xml))
 
             platform_xml = station_xml.getElementsByTagName('Platform')[0] # Only one platform for GTF data
-            berth_length = berth_length = float(platform_xml.getAttribute('berth_length'))
-            berth_count = len(platform_xml.getElementsByTagName('Berth'))
-            platform_ts_id = self._to_numeric_id(platform_xml.getElementsByTagName('TrackSegment')[0])
+            platform_ts_id = self._to_numeric_id(platform_xml.getElementsByTagName('TrackSegmentID')[0])
+            berth_positions = []
+            for berth_xml in platform_xml.getElementsByTagName('Berth'):
+                end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
+                berth_positions.append(end_pos - 0.1) # stop 10cm before the end of the berth
 
-            stations[station_int_id] = Station(station_int_id, berth_length, berth_count, ts_ids, platform_ts_id)
+            stations[station_int_id] = Station(station_int_id, ts_ids, platform_ts_id, berth_positions)
         return stations
 
     def load_vehicles(self, vehicles_xml, models_xml):
@@ -211,9 +359,10 @@ class VehicleManager(object):
         return vehicles
 
     def load_legs(self, transit_xml, sim_end_time):
-        """Returns a heapq.heap containing Leg instances (sorted by their
-        departure times)."""
-
+        """Returns a list of lists. The outer list is indexed by vehicle id,
+        the inner list contains Legs instances, sorted by time,
+        with the earliest at the end.
+        """
         feed_start_time = to_seconds(transit_xml.getAttribute('start_time'))
         legs = [[] for i in range(len(self.vehicles))] # empty list for each vehicle
         for route_xml in transit_xml.getElementsByTagName('Route'):
@@ -230,6 +379,7 @@ class VehicleManager(object):
                     depart = to_seconds(origin_xml.getElementsByTagName('Departure')[0].firstChild.data)
                     arrive = to_seconds(dest_xml.getElementsByTagName('Arrival')[0].firstChild.data)
 
+                    # express times as number of seconds from the start of the feed.
                     depart -= feed_start_time
                     arrive -= feed_start_time
 
@@ -240,10 +390,25 @@ class VehicleManager(object):
                                              dest_station, origin_ts,
                                              dest_ts, depart, arrive))
 
-        # Each list of legs is sorted with earliest leg at the end of the list.
-        for leg_list in legs:
+
+        # Ensure that the legs are all connected. In particular, extra legs may need
+        # to be inserted to account for a vehicle ending a trip at one station,
+        # then beginning the next trip at a nearby station.
+        for idx, leg_list in enumerate(legs):
             leg_list.sort()
-            leg_list.reverse()
+            new_leg_list = [] # make a copy, to avoid altering the list whilst iterating over it
+            for leg_a, leg_b in pairwise(leg_list):
+                new_leg_list.append(leg_a)
+                if leg_a.dest_station != leg_b.origin_station:
+                    new_leg = Leg(leg_a.vehicle, leg_a.dest_station, # make a new leg connecting them
+                                  leg_b.origin_station, leg_a.dest_ts,
+                                  leg_b.origin_ts, leg_a.arrive, leg_b.depart)
+                    new_leg_list.append(new_leg)
+            new_leg_list.append(leg_b)
+
+            # Each list of legs is sorted with earliest leg at the end of the list.
+            new_leg_list.reverse()
+            legs[idx] = new_leg_list # replace the old list with the augmented one
         return legs
 
     def _to_numeric_id(self, element):
@@ -258,28 +423,14 @@ class VehicleManager(object):
         return networkx.bidirectional_dijkstra(self.graph, ts_1, ts_2)
 
     def get_next_leg(self, vehicle_id):
-        """Returns a 3-tuple. The first element is the next Leg instance, as
-        sorted by departure time. The second element is the path length
-        (in meters), and the third is the path.
+        """Returns None if no leg is available for the vehicle"""
+        try:
+            return self.legs[vehicle_id][-1]
+        except IndexError:
+            return None
 
-        The path length (dist) is the length from the start of origin to the
-        start of dest.
-
-        vehicle: A vehicle's integer id. If None, then the earliest leg is used,
-                 without regard to vehicle.
-        """
-        if vehicle_id == None:
-            earliest_time = 1E3000 # inf
-            earliest_v = 0
-            for v, leg_list in enumerate(self.legs):
-                if leg_list[-1].depart < earliest_time:
-                    earliest_time = leg_list[-1].depart
-                    earliest_v = v
-            vehicle_id = earliest_v
-
-        leg = self.legs[vehicle_id].pop()
-        dist, path = self.get_path(leg.origin_ts, leg.dest_ts)
-        return (leg, dist, path)
+    def pop_leg(self, vehicle_id):
+        return self.legs[vehicle_id].pop()
 
     def make_trajectory(self, leg, dist, start_time):
 
@@ -291,57 +442,77 @@ class VehicleManager(object):
         # or better.
 
         vehicle = self.vehicles[leg.vehicle]
+        assert isinstance(vehicle, Vehicle)
         dest_station = self.stations[leg.dest_station]
 
-        total_time = leg.arrive - leg.depart
+        total_time = leg.arrive - start_time
 
         # Find the total distance that needs to be traveled. Assume that the
         # vehicle will stop at the furthest berth at the destination station.
-        dest_dist = dest_station.berth_length * dest_station.berth_count - 0.2
-        total_dist = dist - vehicle.pos + dest_dist
+        berth_dist = dest_station.berth_positions[-1]
+        total_dist = dist - vehicle.pos + berth_dist
 
         # check that the time allowed to get between stations is reasonable. If
         # it's not, then choose a time such that it can be achieved without
         # ridiculous speed.
-        if total_time == 0 or total_dist/total_time > vehicle.v_max:
+        if total_time <= 0 or total_dist/total_time > vehicle.v_max:
             total_time = total_dist/vehicle.v_max
 
-        # SEE: trajectory_calcs.py, prob4
+        # SEE: trajectory_calcs.py, prob4. Assuming symmetry of jerk, accel! FIXME: Don't assume?
         A = (1/(2*vehicle.a_max) - 1/(2*vehicle.a_min))  # (1/(2*an) - 1/(2*ax))
         B = (total_time)                                 # (t_total)
         C = -(total_dist)                                # -(q_total)
         v_max = max(TrajectorySolver.nonnegative_roots(A, B, C))
         v_max = (v_max//self.SPEED_INCREMENT + 1)*self.SPEED_INCREMENT  # Round up
 
-        solver = TrajectorySolver(v_max, vehicle.a_max, vehicle.j_max)
         final_pos = total_dist + vehicle.pos
-        cspline = solver.target_position(Knot(vehicle.pos, 0, 0, start_time),
-                                         Knot(final_pos, 0, 0, None))
 
-        while (cspline.t[-1] - cspline.t[0] > total_time):
-            v_max += self.SPEED_INCREMENT # bump up the top speed.
-            solver = TrajectorySolver(v_max, vehicle.a_max, vehicle.j_max)
+        while True:
+            solver = TrajectorySolver(v_max, vehicle.a_max, vehicle.j_max, 0, vehicle.a_min, vehicle.j_min)
             cspline = solver.target_position(Knot(vehicle.pos, 0, 0, start_time),
                                              Knot(final_pos, 0, 0, None))
+            if cspline.t[-1] - cspline.t[0] <= total_time: # stay on or ahead of schedule
+                break
+            elif v_max >= vehicle.v_max:
+                break # vehicle will fall behind schedule, but oh well.
+            else:
+                # bump up the top speed, but not above vehicle's max
+                v_max = min(vehicle.v_max, v_max + self.SPEED_INCREMENT)
+
+##        # DEBUG: Show each planned trajectory before sending it.
+##        from pyprt.shared.cspline_plotter import CSplinePlotter
+##        plotter = CSplinePlotter(cspline, vehicle.v_max, vehicle.a_max, vehicle.j_max, 0, vehicle.a_min, vehicle.j_min)
+##        plotter.display_plot()
+
+        assert abs((cspline.q[-1] - cspline.q[0]) -(final_pos - vehicle.pos)) < 0.01
         return cspline
 
+    def update_vehicle(self, v_status):
+        v = self.vehicles[v_status.vID]
+        assert isinstance(v, Vehicle)
+        v.ts_id = v_status.nose_locID
+        v.pos = v_status.nose_pos
+        v.pax = v_status.passengerIDs[:] # copy
+
+
 class Station(object):
-    def __init__(self, id, berth_length, berth_count, ts_ids, platform_ts_id):
-        """id: An integer station id.
-        berth_length: Length of each berth, in meters.
-        berth_count: Number of berths.
-        ts_ids: An iterable containing integer TrackSegment ids.
+    def __init__(self, s_id, ts_ids, platform_ts_id, berth_positions):
+        """s_id: An integer station id.
+        ts_ids: A set containing integer TrackSegment ids.
         platform_ts_id: A TrackSegment id. Will also be found in ts_ids.
+        berth_positions: A list of floats, each one designating a position on
+                         platform_ts_id that the vehicle will target in order
+                         to park in the berth. i.e. to park in berth 1, the
+                         vehicle will go to the position found in berth_positions[1].
         """
-        self.id = id
-        self.berth_length = berth_length
-        self.berth_count = berth_count
+        self.id = s_id
         self.ts_ids = ts_ids
         self.platform_ts_id = platform_ts_id
+        self.berth_positions = berth_positions
 
 class Vehicle(object):
-    def __init__(self, id, model, capacity, ts_id, pos, j_max, j_min, a_max, a_min, v_max):
-        self.id = id
+    def __init__(self, v_id, model, capacity, ts_id, pos, j_max, j_min, a_max, a_min, v_max):
+        self.id = v_id
         self.model = model
         self.capacity = capacity
         self.ts_id = ts_id
@@ -351,6 +522,8 @@ class Vehicle(object):
         self.a_max = a_max
         self.a_min = a_min
         self.v_max = v_max
+
+        self.pax = []
 
 class Leg(object):
     """Legs of a trip. Each leg travels from one station to the next."""
@@ -372,8 +545,16 @@ class Leg(object):
         self.depart = depart_time
         self.arrive = arrive_time
 
+        # Whether the last call has been given.
+        self.last_call = False
+
     def __cmp__(self, other):
         return cmp(self.depart, other.arrive)
+
+    def __str__(self):
+        return "V:%d OS:%d DS:%d OTS:%d DTS:%d D:%f A:%f" % \
+               (self.vehicle, self.origin_station, self.dest_station,
+                self.origin_ts, self.dest_ts, self.depart, self.arrive)
 
 class PassengerManager(object):
     """Handles passenger movement through the transit network, routing them
@@ -389,10 +570,11 @@ class PassengerManager(object):
 
         self.graph, self.node_dict = self._build_graph(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time)
         self.paths = self._make_paths(self.graph, self.node_dict)
+        self.passengers = {} # keyed by integer pax_id, values are Passenger instances.
 
         assert isinstance(self.graph, networkx.classes.DiGraph)
 
-    def add_passenger(self, id, origin_id, dest_id, origin_time):
+    def add_passenger(self, pax):
         """Adds the new passenger's actions to the PassengerManager.
         Passengers embark as soon as their vehicle is available, and stay on
         the vehicle unless they need to transfer or they have arrived at their
@@ -403,17 +585,19 @@ class PassengerManager(object):
 ##        locations that are reached by vehicles before the simulation
 ##        ends. For short simulations, this means that there aren't paths
 ##        to every destination station.
+        assert isinstance(pax, Passenger)
+        assert not pax.path # pax.path is empty
 
-        nodes = self.node_dict[origin_id]
+        nodes = self.node_dict[pax.origin_id]
         origin_node = None
         for n in nodes:
-            if n.time >= origin_time:
+            if n.time >= pax.origin_time:
                 origin_node = n
                 break
         if origin_node is None:
             return # Passenger created too late. No more vehicles are scheduled to arrive or depart from this station.
 
-        dest_node = Node(dest_id, None)
+        dest_node = Node(pax.dest_id, None)
         try:
             path = self.paths[origin_node][dest_node]
         except KeyError:
@@ -424,8 +608,9 @@ class PassengerManager(object):
 
         # If the pax made it to her final destination before the sim is
         # scheduled to stop, then disembark.
-        if path[-1].station == dest_id:
-            path[-1].disembark_pax[next_v]
+        if path[-1].station == pax.dest_id:
+            path[-1].disembark_pax[next_v].append(pax.id)
+            pax.add_to_path(path[-1], next_v, False, True)
 
         # Iterate the path in reverse, noting when to embark/disembark on the nodes.
         for b, a in pairwise(reversed(path)):
@@ -435,25 +620,58 @@ class PassengerManager(object):
             elif v == api.NONE_ID:
                 # if next_v in list of vehicles arriving at b
                 if next_v in [edge[2]['vehicle'] for edge in self.graph.in_edges(b, data=True)]:
-                    b.embark_pax[next_v].append(id)
+                    b.embark_pax[next_v].append(pax.id)
                     embarked = True
+                    pax.add_to_path(b, next_v, True, False)
+
             else: # v != next_v and v != api.NONE_ID
-                b.disembark_pax[v].append(id)
+                b.disembark_pax[v].append(pax.id)
+                pax.add_to_path(b, v, False, True)
                 if not embarked:
-                    b.embark_pax[next_v].append(id)
+                    b.embark_pax[next_v].append(pax.id)
                     embarked = False
+                    pax.add_to_path(b, next_v, True, False)
                 next_v = v
 
         # Handle the case where the pax is created at a station after its
         # vehicle has already arrived (but before the vehicle departed, obviously)
         if not embarked:
-            path[0].embark_pax[next_v].append(id)
+            path[0].embark_pax[next_v].append(pax.id)
+            pax.add_to_path(path[0], next_v, True, False)
 
-    def get_pax_actions(self, vehicle_id, station_id, time):
-        """Returns the 2-tuple (disembarking_pax, embarking_pax), where each
-        element of the tuple is a list of passenger ids. The first list
-        specifies which passengers should disembark from the vehicle, and the
-        second specifies which should embark.
+        pax.path.reverse()
+        self.passengers[pax.id] = pax
+
+    def remove_pax(self, pax):
+        """Removes the passenger from the scheduled embark/disembark commands."""
+        for node, vehicle, embark, disembark in pax.path:
+            if embark:
+                try:
+                    node.embark_pax[vehicle].remove(pax.id)
+                except ValueError:
+                    pass
+            if disembark:
+                try:
+                    node.disembark_pax[vehicle].remove(pax.id)
+                except ValueError:
+                    pass
+        pax.path = []
+
+    def reschedule_pax(self, pax_id, origin_id, origin_time):
+        """Reschedules the passenger. For origin_id and origin_time, provide
+        the passenger's current station_id and sim_time."""
+        pax = self.passengers[pax_id]
+        assert isinstance(pax, Passenger)
+        self.remove_pax(pax)
+
+        pax.origin_id = origin_id
+        pax.origin_time = origin_time
+
+        self.add_passenger(pax)
+
+    def get_disembarking_pax(self, vehicle_id, station_id, time):
+        """Returns a list of passenger ids. The list is owned by the
+        PassengerManager, and any changes to it are permanent.
 
         Note that time is the vehicle's "official" arrival or departure time
         not its actual time. Time is measured in seconds, with the
@@ -465,8 +683,33 @@ class PassengerManager(object):
                 node = n
                 break
         assert isinstance(node, Node)
+        return node.disembark_pax[vehicle_id]
 
-        return (node.disembark_pax[vehicle_id], node.embark_pax[vehicle_id])
+    def get_embarking_pax(self, vehicle_id, station_id, time):
+        """Returns a list of passenger ids. The list is owned by the
+        PassengerManager, and any changes to it are permanent.
+
+        Note that time is the vehicle's "official" arrival or departure time
+        not its actual time. Time is measured in seconds, with the
+        feed_start_time as 0 (the same convention is used for Leg instances)."""
+        nodes = self.node_dict[station_id]
+        node = None
+        for n in nodes:
+            if n.time == time:
+                node = n
+                break
+        assert isinstance(node, Node)
+        return node.embark_pax[vehicle_id]
+
+    def clear_embarking_pax(self, vehicle_id, station_id, time):
+        nodes = self.node_dict[station_id]
+        node = None
+        for n in nodes:
+            if n.time == time:
+                node = n
+                break
+        assert isinstance(node, Node)
+        node.embark_pax[vehicle_id] = []
 
     def _build_graph(self, gtf_xml, sim_end_time):
         """Returns a networkx.DiGraph suitable for routing passengers over and
@@ -501,7 +744,7 @@ class PassengerManager(object):
             for trip_xml in route_xml.getElementsByTagName('Trip'):
                 vehicle = int(trip_xml.getAttribute('vehicle_id').split('_')[0])
                 stops_xml = trip_xml.getElementsByTagName('Stop')
-                for origin_xml, dest_xml in izip(stops_xml[:-1], stops_xml[1:]): # iterate over all stops pairwise
+                for origin_xml, dest_xml in pairwise(stops_xml):
                     origin_station = int(origin_xml.getAttribute('station_id').split('_')[0])
                     dest_station = int(dest_xml.getAttribute('station_id').split('_')[0])
 
@@ -553,7 +796,6 @@ class PassengerManager(object):
                     # even though it finds more results than needed. Delete the
                     # unnecessary paths to save memory. For the paths we do keep,
                     # remove the destination node from the end of the path.
-                    to_delete = []
                     for n in path_dict.keys():
                         if n.time is not None: # sink isn't a 'destination node'
                             del path_dict[n]
@@ -569,7 +811,7 @@ class PassengerManager(object):
 class Node(object):
     def __init__(self, station_id, time):
         """station_id: an integer station id
-        time: the time, in seconds, corresponding to the arrival/departure
+        time: the time, in seconds, corresponding to the scheduled arrival/departure
         """
         self.station = station_id
         self.time = time
@@ -586,6 +828,31 @@ class Node(object):
         if isinstance(other, Node):
             return self.station == other.station and self.time == other.time
         else: return False
+    def __str__(self):
+        return "Station: %d, Time: %f, Disembark: %s, Embark: %s" % \
+               (self.station, self.time, self.disembark_pax, self.embark_pax)
+
+class Passenger(object):
+    def __init__(self, pax_id, origin_id, dest_id, origin_time):
+        self.id = pax_id
+        self.origin_id = origin_id
+        self.dest_id = dest_id
+        self.origin_time = origin_time
+
+        # This information is held for the purposes of rescheduling the
+        # passenger if a vehicle is too full. See add_to_path.
+        self.path = []
+
+    def __str__(self):
+        return "id: %d, origin_id: %d, dest_id: %d, origin_time: %f, path: %s" % \
+               (self.id, self.origin_id, self.dest_id, self.origin_time, ', '.join([str(n) for n in self.path]))
+
+    def add_to_path(self, node, vehicle, embark, disembark):
+        assert isinstance(node, Node)
+        assert isinstance(vehicle, int)
+        assert isinstance(embark, bool)
+        assert isinstance(disembark, bool)
+        self.path.append((node, vehicle, embark, disembark))
 
 if __name__ == '__main__':
     main()
