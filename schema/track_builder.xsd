@@ -132,20 +132,8 @@
   </xs:complexType>
   <xs:complexType name="StationType">
     <xs:sequence>
-      <xs:element name="TrackSegments">
-        <xs:complexType>
-          <xs:sequence>
-            <xs:element minOccurs="1" maxOccurs="unbounded" name="ID" type="IDType" />
-          </xs:sequence>
-        </xs:complexType>
-      </xs:element>
-      <xs:element name="Platforms">
-        <xs:complexType>
-          <xs:sequence>
-            <xs:element minOccurs="1" maxOccurs="unbounded" name="Platform" type="PlatformType" />
-          </xs:sequence>
-        </xs:complexType>
-      </xs:element>
+      <xs:element minOccurs="1" maxOccurs="unbounded" name="TrackSegmentID" type="IDType" />
+      <xs:element minOccurs="1" maxOccurs="unbounded" name="Platform" type="PlatformType" />
       <xs:element name="Coverage" type="CoverageType" />
       <xs:element name="Usage" type="UsageType" />
     </xs:sequence>
@@ -154,16 +142,19 @@
   </xs:complexType>
   <xs:complexType name="PlatformType">
     <xs:sequence>
-      <xs:element name="TrackSegment" type="IDType" />
+      <xs:element name="TrackSegmentID" type="IDType" />
       <xs:element minOccurs="1" maxOccurs="unbounded" name="Berth" type="BerthType" />
+    </xs:sequence>
+    <xs:attribute name="index" type="xs:nonNegativeInteger" />
+  </xs:complexType>
+  <xs:complexType name="BerthType">
+    <xs:sequence>
+      <xs:element name="StartPosition" type="nonNegativeDecimal" />
+      <xs:element name="EndPosition" type="nonNegativeDecimal" />
     </xs:sequence>
     <xs:attribute name="index" type="xs:nonNegativeInteger" />
     <xs:attribute name="loading" type="xs:boolean" />
     <xs:attribute name="unloading" type="xs:boolean" />
-    <xs:attribute name="berth_length" type="xs:decimal" />
-  </xs:complexType>
-  <xs:complexType name="BerthType">
-    <xs:attribute name="index" type="xs:nonNegativeInteger" />
   </xs:complexType>
   <xs:complexType name="CoverageType">
     <xs:attribute name="radius" type="xs:nonNegativeInteger" />
@@ -230,9 +221,16 @@
   <xs:complexType name="GoogleTransitFeedType">
     <xs:sequence>
       <xs:element minOccurs="1" maxOccurs="unbounded" name="Route" type="RouteType" />
+      <xs:element name="Neighbors">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element minOccurs="1" maxOccurs="unbounded" name="Station" type="NeighborStationType" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
     </xs:sequence>
     <xs:attribute name="date" type="xs:date" use="optional" />
-    <xs:attribute name="time" type="xs:time" use="optional" />
+    <xs:attribute name="start_time" type="xs:time" use="optional" />
   </xs:complexType>
   <xs:complexType name="RouteType">
     <xs:sequence>
@@ -254,5 +252,15 @@
       <xs:element name="Departure" type="xs:integer" />
     </xs:sequence>
     <xs:attribute name="station_id" type="IDType" use="required" />
+  </xs:complexType>
+  <xs:complexType name="NeighborStationType">
+    <xs:sequence>
+      <xs:element name="Neighbor" type="NeighborType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="id" type="IDType" />
+  </xs:complexType>
+  <xs:complexType name="NeighborType">
+    <xs:attribute name="station_id" type="IDType" />
+    <xs:attribute name="distance" type="xs:nonNegativeInteger" />
   </xs:complexType>
 </xs:schema>

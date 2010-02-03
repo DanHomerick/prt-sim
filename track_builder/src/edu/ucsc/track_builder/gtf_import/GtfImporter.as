@@ -14,6 +14,7 @@ package edu.ucsc.track_builder.gtf_import
 	import edu.ucsc.graph.Node;
 	import edu.ucsc.neartree.NearTree;
 	import edu.ucsc.neartree.Result;
+	import edu.ucsc.track_builder.Berth;
 	import edu.ucsc.track_builder.Globals;
 	import edu.ucsc.track_builder.IdGenerator;
 	import edu.ucsc.track_builder.Platform;
@@ -30,6 +31,8 @@ package edu.ucsc.track_builder.gtf_import
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.geom.Vector3D;
+	
+	import mx.collections.XMLListCollection;
 	
 	public class GtfImporter
 	{
@@ -191,7 +194,7 @@ package edu.ucsc.track_builder.gtf_import
 				
 				// make a new latlng that will be the end of the station segment
 				var direction:Vector3D = Utility.calcVectorFromLatLngs(nearNode.latlng, closestAdjNode.latlng);
-				direction.scaleBy(STATION_BERTH_LENGTH*STATION_BERTH_COUNT/direction.length); // make it as long as required
+				direction.scaleBy((STATION_BERTH_LENGTH+0.5)*STATION_BERTH_COUNT/direction.length); // make it as long as required
 				var stationEnd:LatLng = Utility.calcLatLngFromVector(stationStartNode.latlng, direction);
 				var stationEndNode:Node = Node.fromLatLng(stationEnd);
 				
@@ -309,7 +312,13 @@ package edu.ucsc.track_builder.gtf_import
 				segs.push(Globals.tracks.getTrackSegment(boardingSeg.next_ids[0]));
 				
 				var platforms:Vector.<Platform> = new Vector.<Platform>();
-				platforms.push(new Platform(boardingSeg.id, 0, STATION_BERTH_COUNT, STATION_BERTH_LENGTH, true, true));
+				var platform:Platform = new Platform(boardingSeg.id, 0);
+				// The true boardingSeg.length varies a bit, and we want to guarantee the berths remain fully on this seg
+				var berthLength:Number = Math.min(boardingSeg.length/STATION_BERTH_COUNT, STATION_BERTH_LENGTH) 
+				for (var i:uint=0; i < STATION_BERTH_COUNT; ++i) {
+					platform.berths.push(new Berth(i, i*berthLength, (i+1)*berthLength, true, true))
+				}
+				platforms.push(platform);
 				var id:String = IdGenerator.getStationId();
 				var station:Station = new Station(id, stop.name, segs, platforms, STATION_COVERAGE_RADIUS, 0, 0);			
 				new StationOverlay(station); // placed in the global store by side effect
@@ -324,7 +333,7 @@ package edu.ucsc.track_builder.gtf_import
 		 */
 		public function makeVehicles(rBundles:Vector.<RouteBundle>, graph:Graph, trackOverlays:Object, stops:Object, stopTree:NearTree, stations:Object, time:Time):Object {
 			trace('MakeVehicles');						
-			var vehicles:Object = new Object();
+			var tripIds2vehicles:Object = new Object();
 			var vehicle:Vehicle;
 			var vehicleSeg:TrackSegment;
 			for each (var rBundle:RouteBundle in rBundles) {
@@ -380,16 +389,15 @@ package edu.ucsc.track_builder.gtf_import
 				/* Now that schedules for each required vehicle have been planned, create the vehicles at
 				 * appropriate starting points.
 				 */
+				var placedVehicles:Vector.<Vehicle> = new Vector.<Vehicle>()
 				for each (vSchedule in availableVehicles) {
 					tBundle = vSchedule[0]; // consider the first trip
 					
 					/* Case 1: At the simulation start time, the vehicle has no active trips. Note that
-					 * trips that complete prior the sim start time are already culled from the data. */					
+					 * trips that complete prior to the sim start time are already culled from the data. */					
 					if (tBundle.beginStopTime.arrival.toSeconds() > time.toSeconds()) {
 						var station:Station = stations[vSchedule[0].beginStopTime.stopId];
-						vehicle = null;
-						vehicle = station.makeVehicle(tBundle.trip.id, Station.ENTRANCE); // place close to the entrance
-						if (vehicle == null) throw new GtfImportError("Insufficient vehicle berths for starting vehicles.");
+						vehicle = makeVehicleAtStation(station, placedVehicles);							
 					}
 
 					/* For other cases, walk through all the stop times of a vehicle's first trip, 
@@ -411,9 +419,7 @@ package edu.ucsc.track_builder.gtf_import
 							else if (time.toSeconds() >= currStopTime.arrival.toSeconds() && 
 							    		time.toSeconds() <= currStopTime.departure.toSeconds()) {
 							    station = stations[currStopTime.stopId];
-							    vehicle = null;
-							    vehicle = station.makeVehicle(tBundle.trip.id, Station.EXIT);
-							    if (vehicle == null) throw new GtfImportError("Insufficient vehicle berths for starting vehicles.");
+							    vehicle = makeVehicleAtStation(station, placedVehicles);
 							    placedVehicle = true;
 							    break;											              	
 							}
@@ -474,7 +480,7 @@ package edu.ucsc.track_builder.gtf_import
 							                            vehicleSeg.getLatLng(distRemaining),
 							                            vehicleSeg.getElevation(distRemaining),
 							                            tBundle.trip.id,
-							                            'DEFAULT',
+							                            'BUS', // FIXME: Don't hardcode for just buses!
 							                            false
 							                          );
 									new VehicleOverlay(vehicle, tOverlay); // added to global store as a side effect
@@ -485,17 +491,87 @@ package edu.ucsc.track_builder.gtf_import
 							if (placedVehicle) break; // break the iteration over stopTimes
 						} // end iteration over stopTimes					
 					} // end case 2 and case 3
+					
 					/* Use the just created vehicle for the remainder of the trips in its schedule. */					
 					for each (tBundle in vSchedule) {
-						vehicles[tBundle.trip.id] = vehicle;
-					}
+						tripIds2vehicles[tBundle.trip.id] = vehicle;
+					}					
+					placedVehicles.push(vehicle);
 				} // end iteration over availableVehicles
-			} // end iteration over rBundles
-			return vehicles;
+			} // end iteration over rBundles					
+			return tripIds2vehicles;
 		}
 	
-		public function makeGtfXml(vehicles:Object, stations:Object, rBundles:Vector.<RouteBundle>, time:Time):XML {
-			var xml:XML = <GoogleTransitFeed start_time={time.toString()}/>;
+		/** Creates a vehicle in station. Places the vehicle in an unoccupied berth, as close to the station
+		 * exit as possible. Also creates an overlay for the vehicle, though only the vehicle is returned.
+		 * @param station Expected to have a single platform.
+		 * @param vehicles An object used as a dictionary, containing the vehicles that are already created. 
+		 * @throws GtfImportError if no unoccupied berths are available.
+	     */
+		public function makeVehicleAtStation(station:Station, vehicles:Object):Vehicle {
+			// Find the berth closest to the station exit which is not already occupied.
+			var berth_idx:int = station.platforms[0].berths.length-1
+			for each (var v:Vehicle in vehicles) {							
+				if (v.location.id == station.platforms[0].trackSegId) {
+					berth_idx -= 1
+				}
+			}
+			if (berth_idx < 0) { // Whoops. Too many vehicles are already parked in that station.
+				throw new GtfImportError("Insufficient vehicle berths for starting vehicles.");
+			} else {
+				var berth:Berth = station.platforms[0].berths[berth_idx];
+				var pos:Number = berth.endPos - 0.1; // Give 10cm between the vehicle nose and the end of the berth
+				var trackSeg:TrackSegment = Globals.tracks.getTrackSegment(station.platforms[0].trackSegId);  
+				var vehicle:Vehicle = new Vehicle(
+							              	IdGenerator.getVehicleId(),
+							              	pos,
+							              	0,
+							              	0,
+							              	trackSeg,
+				                            trackSeg.getLatLng(pos),
+				                            trackSeg.getElevation(pos),
+				                            '',
+				                            'BUS', // FIXME: Don't hardcode for Buses!
+				                            false);
+			}
+			
+			new VehicleOverlay(vehicle, Globals.tracks.getTrackOverlay(vehicle.location.id), false);
+			return vehicle
+		}
+	
+	
+		/** Gives each stops' closest neighbors, and the distances separating them.
+		 * @param stopTree Contains Stop instances.
+		 * @param allStops An associative array where keys are stopIds and values are Stop instances.
+		 * @param stations An associative array where keys are stopIds and values are Station instances.
+		 * @param maxDist Maximum inter-stop distance to give info for.
+		 * @returns XML containing the info.        
+		 */
+		public function makeNeighborsXml(stopTree:NearTree, allStops:Object, stations:Object, maxDist:Number):XML {
+			var neighborsXml:XML = <Neighbors/>
+			for (var stopId:String in stations) {
+				var stop:Stop = allStops[stopId]							
+				var station:Station = stations[stopId];
+				var stationXml:XML = <Station id={station.id}/>
+				var results:Vector.<Result> = stopTree.withinRadius(stop.latlng, maxDist);
+				for each (var result:Result in results) {
+					for each (var neighborStop:Stop in result.objs) {
+						if (neighborStop.id != stop.id) { // don't include myself as a neighbor							
+							var neighborStation:Station = stations[neighborStop.id]
+							if (neighborStation != null) { // don't include the unimported stops	
+								var dist:Number = Math.round(stop.latlng.distanceFrom(neighborStop.latlng))						
+								stationXml.appendChild(<Neighbor station_id={neighborStation.id} distance={dist} />)
+							}
+						}
+					}				
+				}
+				neighborsXml.appendChild(stationXml)			
+			}
+			return neighborsXml
+		}
+	
+		public function makeRoutesXml(vehicles:Object, stations:Object, rBundles:Vector.<RouteBundle>):XMLListCollection {
+			var collection:XMLListCollection = new XMLListCollection()
 			for each (var rBundle:RouteBundle in rBundles) {
 				var routeXml:XML = <Route route_id={rBundle.route.id} service_id={rBundle.service.id} />;				
 				for each (var tBundle:TripBundle in rBundle.tripBundles) {
@@ -512,9 +588,9 @@ package edu.ucsc.track_builder.gtf_import
 					}
 					routeXml.appendChild(tripXml);
 				}
-				xml.appendChild(routeXml);
-			}
-			return xml;
+				collection.addItem(routeXml)
+			}				
+			return collection;
 		}
 	
 		/** Parses the txt files residing in feedDirectory and creates TrackSegments and TrackOverlays accordingly.
@@ -620,7 +696,11 @@ package edu.ucsc.track_builder.gtf_import
 			graph = null; // allow the graph to be garbage collected
 
 			/* Make and store the GTF save data */
-			gtfXml = makeGtfXml(vehicles, stations, rBundles, time);
+			gtfXml = <GoogleTransitFeed start_time={time.toString()}/>;
+			for each (var routeXml:XML in makeRoutesXml(vehicles, stations, rBundles)) { 
+				gtfXml.appendChild(routeXml);
+			}
+			gtfXml.appendChild(makeNeighborsXml(stopTree, allStops, stations, 500));
 
 			// Change the location and zoom to show the entire track.
 			var bounds:LatLngBounds = Globals.tracks.getLatLngBounds();

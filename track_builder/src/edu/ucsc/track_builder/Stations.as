@@ -125,9 +125,9 @@ package edu.ucsc.track_builder
 			
 			// make a TrackSegment for each Platform, then make the Platform
 			var platforms:Vector.<Platform> = new Vector.<Platform>();
-			var slots:Vector.<Number> = Vector.<Number>([unloadSlots, queueSlots, loadSlots]);
-			for (var i:uint=0; i < slots.length; ++i) {
-				stationDir.scaleBy(slotLength*slots[i] / stationDir.length); // rescale to slotLength*slots
+			var num_slots:Vector.<Number> = Vector.<Number>([unloadSlots, queueSlots, loadSlots]);
+			for (var i:uint=0; i < num_slots.length; ++i) {
+				stationDir.scaleBy(slotLength*num_slots[i] / stationDir.length); // rescale to slotLength*slots
 				var platformSegStart:LatLng = segs[segs.length-1].getEnd();
 				var platformSegEnd:LatLng = Utility.calcLatLngFromVector(platformSegStart, stationDir);			
 				segs.push(new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
@@ -141,12 +141,20 @@ package edu.ucsc.track_builder
 				                           0,
 				                           null,
 				                           preview)); // creates the station main line
-				platforms.push(new Platform(segs[segs.length-1].id,
-											i,
-				                            slots[i],
-				                            slotLength,
-				                            i == 0 ? true : false,  // unloading
-				                            i == 2 ? true : false)); // loading
+				var platform:Platform = new Platform(segs[segs.length-1].id, i)
+				for (var j:uint=0; j < num_slots[i]; ++j) {
+					if (i == 0) {
+						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, true, false))
+					} else if (i == 1) {
+						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, false, false))
+					} else if (i == 2) {
+						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, false, true))
+					} else {
+						throw new Error("Whoops. Bug.")
+					}
+				}
+				platforms.push(platform);
+				
 			}
 
 			// make the on ramp (accel run + squiggle)			                           

@@ -146,7 +146,7 @@ package edu.ucsc.track_builder
 			Globals.map.addOverlay(Globals.originMarker);
 			Globals.map.addOverlay(Globals.destMarker);
 			Globals.originMarker.overlay = null;
-			Globals.destMarker.overlay = null;								
+			Globals.destMarker.overlay = null;
 			originMarker.setLatLng(Globals.map.getCenter());
 			
 			haveClicked = false;

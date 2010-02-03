@@ -3,6 +3,7 @@ package edu.ucsc.track_builder
 	import com.google.maps.LatLng;
 	import com.google.maps.LatLngBounds;
 	
+	import edu.ucsc.track_builder.gtf_import.GtfImporter;
 	import edu.ucsc.track_builder.gtf_import.GtfImportError;
 	import edu.ucsc.track_builder.gtf_import.GtfImportUI;
 	
@@ -285,6 +286,7 @@ package edu.ucsc.track_builder
 		// Handler for "New" file menuitem.
 		public function onNew(event:Event):void {
 			rescueDirty(Globals.reinitialize);
+			GtfImporter.gtfXml = null
 		}
 		
 		// Handler for "Open" file menuitem.

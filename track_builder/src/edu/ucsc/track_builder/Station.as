@@ -48,83 +48,79 @@ package edu.ucsc.track_builder
 			Globals.stations.stations.push(this);
 		}
 		
-		/** Creates a new vehicle in an available berth closest to the departure end of the station.
-		 * @param side If EXIT (the default) place in an available berth closest to the departure.
-		 *                  If ENTRANCE, place the vehicle in an available berth closest to the arrival.
-		 * @return The vehicle that was created. If no berths are available, returns null. */  
-		public function makeVehicle(label:String, side:int=EXIT):Vehicle {
-			var platform:Platform;
-			var berthIndex:int;
-			var foundAvail:Boolean = false;
-			
-			if (side == EXIT) { // iterate in reverse
-				for (var i:int=platforms.length-1; i > -1; --i) {
-					platform = platforms[i];
-					var berths:Vector.<String> = platform.berths;
-					for (berthIndex = berths.length-1; berthIndex > -1; --berthIndex) {
-						if (berths[berthIndex] == null) {
-							foundAvail = true;
-							break;
-						}
-					}
-					if (foundAvail) break;
-				}
-			}
-			
-			else if (side == ENTRANCE) { // iterate forward
-				for (i=0; i < platforms.length; ++i) {
-					platform = platforms[i];
-					berths = platform.berths;
-					for (berthIndex=0; berthIndex < berths.length; ++berthIndex) {
-						if (berths[berthIndex] == null) {
-							foundAvail = true;
-							break;
-						}
-					}
-					if (foundAvail) break;
-				}
-			}
-			
-			else throw new Error("Unknown side.");
-							
-			/* Bail if no empty berths found */
-			if (!foundAvail) return null;
-			
-			/* Create the vehicle in the empty berth */
-			var vehicleSeg:TrackSegment = Globals.tracks.getTrackSegment(platform.trackSegId);
-			var pos:Number = platform.berthLength * (berthIndex+1); // place the nose at the downstream edge of the berth
-			var vehicle:Vehicle = new Vehicle(
-						              	IdGenerator.getVehicleId(),
-						              	pos,
-						              	0,
-						              	0,
-						              	vehicleSeg,
-			                            vehicleSeg.getLatLng(pos),
-			                            vehicleSeg.getElevation(pos),
-			                            label,
-			                            'DEFAULT',
-			                            false
-			                          );
-			new VehicleOverlay(vehicle, Globals.tracks.getTrackOverlay(vehicleSeg.id)); // Placed in the global store by side effect.
-			berths[berthIndex] = vehicle.id
-			return vehicle;
-		}
+//		/** Creates a new vehicle in an available berth closest to the departure end of the station.
+//		 * @param side If EXIT (the default) place in an available berth closest to the departure.
+//		 *                  If ENTRANCE, place the vehicle in an available berth closest to the arrival.
+//		 * @return The vehicle that was created. If no berths are available, returns null. */  
+//		public function makeVehicle(label:String, platform_index, side:int=EXIT):Vehicle {
+//			var platform:Platform;
+//			var berthIndex:int;
+//			var foundAvail:Boolean = false;
+//			
+//			if (side == EXIT) { // iterate in reverse
+//				platform = platforms[platform_index];
+//				var berths:Vector.<Berth> = platform.berths;
+//				for (berthIndex = berths.length-1; berthIndex > -1; --berthIndex) {
+//					if (berths[berthIndex] == null) {
+//						foundAvail = true;
+//						break;
+//					}
+//				}
+//				if (foundAvail) break;
+//			}
+//			
+//			else if (side == ENTRANCE) { // iterate forward
+//				for (i=0; i < platforms.length; ++i) {
+//					platform = platforms[i];
+//					berths = platform.berths;
+//					for (berthIndex=0; berthIndex < berths.length; ++berthIndex) {
+//						if (berths[berthIndex] == null) {
+//							foundAvail = true;
+//							break;
+//						}
+//					}
+//					if (foundAvail) break;
+//				}
+//			}
+//			
+//			else throw new Error("Unknown side.");
+//							
+//			/* Bail if no empty berths found */
+//			if (!foundAvail) return null;
+//			
+//			/* Create the vehicle in the empty berth */
+//			var vehicleSeg:TrackSegment = Globals.tracks.getTrackSegment(platform.trackSegId);
+//			var pos:Number = platform.berthLength * (berthIndex+1); // place the nose at the downstream edge of the berth
+//			var vehicle:Vehicle = new Vehicle(
+//						              	IdGenerator.getVehicleId(),
+//						              	pos,
+//						              	0,
+//						              	0,
+//						              	vehicleSeg,
+//			                            vehicleSeg.getLatLng(pos),
+//			                            vehicleSeg.getElevation(pos),
+//			                            label,
+//			                            'DEFAULT',
+//			                            false
+//			                          );
+//			new VehicleOverlay(vehicle, Globals.tracks.getTrackOverlay(vehicleSeg.id)); // Placed in the global store by side effect.
+//			berths[berthIndex] = vehicle.id
+//			return vehicle;
+//		}
 		
 		public function toXML():XML {			
-			var xml:XML = <Station id={id} label={label} >
-								<TrackSegments/>
-								<Platforms/>
-							    <Coverage radius={coverageRadius}/>
-							    <Usage peak_hour={peakHour} daily={daily} />
-						  </Station>;
+			var xml:XML = <Station id={id} label={label} />;
 			
 			for each (var ts:TrackSegment in allSegments) {
-				xml.TrackSegments.appendChild(<ID>{ts.id}</ID>);
+				xml.appendChild(<TrackSegmentID>{ts.id}</TrackSegmentID>);
 			}
 			
 			for each (var plat:Platform in platforms) {
-				xml.Platforms.appendChild(plat.toXML());
+				xml.appendChild(plat.toXML());
 			}
+
+			xml.appendChild(<Coverage radius={coverageRadius}/>)
+			xml.appendChild(<Usage peak_hour={peakHour} daily={daily}/>)
 			 
 			return xml;	
 		}
@@ -132,17 +128,17 @@ package edu.ucsc.track_builder
 		/** Requires that TrackSegments have been created already. */
 		public static function fromXML(xml:XML):Station {
 			var segments:Vector.<TrackSegment> = new Vector.<TrackSegment>();
-			for each (var id:String in xml.TrackSegments.ID) {
+			for each (var id:String in xml.TrackSegmentID) {
 				var match:TrackSegment = Globals.tracks.getTrackSegment(id);
 				if (!match) {
-					Alert.show("Invalid XML file.");
+					throw new Error("Unknown TrackSegmentID: " + match.id)
 				} else {
 					segments.push(match);
 				}
 			}
 			
 			var platforms:Vector.<Platform> = new Vector.<Platform>();
-			for each (var platXml:XML in xml.Platforms.Platform) {
+			for each (var platXml:XML in xml.Platform) {
 				platforms.push(Platform.fromXML(platXml));
 			}
 			
