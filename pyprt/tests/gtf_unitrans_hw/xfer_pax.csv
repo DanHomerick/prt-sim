@@ -1,0 +1,13 @@
+# pID	sStat	dStat	sTime	load	unload
+
+# Heading from "LaRue Rd & Garrod Dr (EB)" to "Cowell Blvd & Research Park S Dr (EB)".
+# Requires riding the H line, disembarking at station 17 (Silo & Center Silo EB),
+# walking to station 5 (Hutchison & California WB), then riding the W line to the final
+# destination.
+1	3	4	0
+
+# Very similar to the above passenger, but the final destination is at
+# "Cowell Blvd & Research Park S Dr (EB)" which is just across the street. An incorrect
+# route will ride the bus all the way around the loop. A correct route will get off at
+# Cowell Blvd & Research Park S Dr (EB) and walk across the street.
+2	3	25	0

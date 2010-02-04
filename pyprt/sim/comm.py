@@ -10,7 +10,7 @@ import pyprt.shared.api_pb2 as api
 import google.protobuf.text_format as text_format
 import SimPy.SimulationRT as Sim
 
-import globals
+import common
 
 #import pdb  # python debugger
 
@@ -23,7 +23,7 @@ def receive(sock, queue, comm_idx):
     socket: An already established TCP connection. May be the same socket that
         is also controlled by the transmit function.
     queue: a Queue.Queue, used to communicate the recieved messages to the
-        globals.interface.
+        common.interface.
     comm_idx: An index used to identify the comm in cases where the source of
         the message is important.
 
@@ -33,7 +33,7 @@ def receive(sock, queue, comm_idx):
 
     Raises an exception if msg_sep or msg_size is invalid.
     """
-    while not globals.sim_ended:
+    while not common.sim_ended:
         # Get msg_sep and msg_size
         hdr = []
         hdr_size = api.MSG_HEADER_SIZE
@@ -43,7 +43,7 @@ def receive(sock, queue, comm_idx):
                 hdr_size -= len(frag)
                 hdr.append(frag)
             except socket.error:
-                if globals.sim_ended:
+                if common.sim_ended:
                     return # let the thread die
                 else:
                     raise
@@ -73,7 +73,7 @@ def receive(sock, queue, comm_idx):
                 msg_size -= len(frag)
                 body.append(frag)
             except socket.error: # socket has been shutdown
-                if globals.sim_ended:
+                if common.sim_ended:
                     return # let the thread die
                 else:
                     raise
@@ -93,7 +93,7 @@ def transmit(sock, queue):
 
     The ControlInterface is responsible for closing down the socket.
     """
-    while not globals.sim_ended:
+    while not common.sim_ended:
         message = queue.get(block=True)
         sock.sendall(message)
         #queue.task_done()
@@ -185,7 +185,7 @@ class ControlInterface(Sim.Process):
         self.TCP_server_socket = None
 
         greeting = api.SimGreeting()
-        greeting.sim_end_time = globals.config_manager.get_sim_end_time()
+        greeting.sim_end_time = common.config_manager.get_sim_end_time()
         self.send(api.SIM_GREETING, greeting)
 
     def disconnect(self):
@@ -240,7 +240,7 @@ class ControlInterface(Sim.Process):
                     msg.ParseFromString(msg_str)
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
                     # Ignore Resume if ctrl hasn't seen latest msg from Sim
-                    if msg.last_sim_msgID == globals.msg_id_widget.last_id():
+                    if msg.last_sim_msgID == common.msg_id_widget.last_id():
                         # set the 'resume' that corresponds to the controller to True
                         self.resume_list[comm_idx] = True
                         logging.debug("Processed current resume. msgID:%s, msg_time:%s", msgID, msg_time )
@@ -276,8 +276,8 @@ class ControlInterface(Sim.Process):
 
                     # If not a valid track segment to switch to or it's already
                     # switching, then complain.
-                    if next not in globals.digraph.neighbors(ts) or ts.next is None:
-                        raise globals.InvalidTrackSegID, msg.nextID
+                    if next not in common.digraph.neighbors(ts) or ts.next is None:
+                        raise common.InvalidTrackSegID, msg.nextID
 
                     ts.switch(next, msgID)
 
@@ -298,6 +298,20 @@ class ControlInterface(Sim.Process):
                     b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
                     passengers = map(self.get_passenger, msg.passengerIDs)
                     b.disembark(v, passengers, msg, msgID)
+
+                elif msg_type == api.CTRL_CMD_PASSENGER_WALK:
+                    msg = api.CtrlCmdPassengerWalk()
+                    msg.MergeFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    pax = self.get_passenger(msg.passengerID)
+                    origin = self.get_station(msg.origin_stationID)
+                    if origin is not pax.loc:
+                        raise common.InvalidStationID, msg.origin_stationID
+                    dest = self.get_station(msg.dest_stationID)
+                    travel_time = msg.travel_time
+                    if travel_time < 0:
+                        raise common.MsgError
+                    pax.walk(origin, dest, travel_time, msg, msgID)
 
                 # REQUESTS
                 elif msg_type == api.CTRL_REQUEST_VEHICLE_STATUS:
@@ -368,11 +382,11 @@ class ControlInterface(Sim.Process):
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 
                     if msg.time < Sim.now():
-                        raise globals.InvalidTimeStamp
+                        raise common.InvalidTimeStamp
                     resp = api.SimNotifyTime()
                     resp.msgID = msgID
                     resp.time = msg.time
-                    alarm = AlarmClock(msg.time, self.send, api.SIM_NOTIFY_TIME, resp)
+                    alarm = common.AlarmClock(msg.time, self.send, api.SIM_NOTIFY_TIME, resp)
 
 #                # Works, but spams the log with erroneous RCVD messages
 #                # TODO: Move to a vehicle co-routine, which waits on
@@ -383,7 +397,7 @@ class ControlInterface(Sim.Process):
 #                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 #                    v = self.get_vehicle(msg.vID)
 #                    loc = self.get_trackSeg(msg.eID)
-#                    if v.loc is loc and globals.dist_eql(v.pos, msg.pos/100): # convert from cm to meters
+#                    if v.loc is loc and common.dist_eql(v.pos, msg.pos/100): # convert from cm to meters
 #                        resp = api.SimNotifyVehiclePosition()
 #                        resp.msgID = msgID
 #                        resp.vID = self.ID
@@ -400,7 +414,7 @@ class ControlInterface(Sim.Process):
 #                    print "Time to notification pos, or end of seg:", time
 #                    if not time: # pos eqn expires first
 #                        time = v.pos_eqn_duration
-#                    AlarmClock(time, AlarmClock.delayed_msg, None)
+#                    common.AlarmClock(time, AlarmClock.delayed_msg, None)
 #                    time_ms = int(round(time,3)*1000) # ??? Remove?
 #                    self.waitQ.append( (msg_type, msgID, msg_time, msg_str) )
 
@@ -411,56 +425,56 @@ class ControlInterface(Sim.Process):
                     logging.debug("Msg type %d received, but not yet implemented.",
                                   msg_type)
 
-            except globals.InvalidMsgType:
+            except common.InvalidMsgType:
                 err_msg = api.SimMsgHdrInvalidType()
                 err_msg.msgID = msgID
                 err_msg.msg_type = msg_type
                 self.send(api.SIM_MSG_HDR_INVALID_TYPE, err_msg)
                 logging.error("Received invalid msg type: %s", msg_type)
-                globals.errors += 1
-            except globals.InvalidTrackSegID, e:
+                common.errors += 1
+            except common.InvalidTrackSegID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.TRACK_SEGMENT
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidSwitchID, e:
+            except common.InvalidSwitchID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.SWITCH
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidStationID, e:
+            except common.InvalidStationID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.STATION
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidPlatformID, e:
+            except common.InvalidPlatformID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.PLATFORM
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidBerthID, e:
+            except common.InvalidBerthID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.BERTH
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidVehicleID, e:
+            except common.InvalidVehicleID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.VEHICLE
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.InvalidPassengerID, e:
+            except common.InvalidPassengerID, e:
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.PASSENGER
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except globals.MsgError:
+            except common.MsgError:
                 err_msg = api.SimMsgBodyInvalid()
                 err_msg.msgID = msgID
                 self.send(api.SIM_MSG_BODY_INVALID, err_msg)
@@ -468,7 +482,7 @@ class ControlInterface(Sim.Process):
         # if packet time is in future, set an alarm to wake up interface
         # at the time, and revive the message then.
         elif msg_time > ms_now():
-            AlarmClock(msg_time/1000.0, AlarmClock.delayed_msg, (comm_idx, msg_type, msgID, msg_time, msg_str))
+            common.AlarmClock(msg_time/1000.0, AlarmClock.delayed_msg, (comm_idx, msg_type, msgID, msg_time, msg_str))
         else: # msg_time < ms_now()
             err = api.SimMsgHdrInvalidTime()
             err.msgID = msgID
@@ -476,7 +490,7 @@ class ControlInterface(Sim.Process):
             self.send(api.SIM_MSG_HDR_INVALID_TIME, err)
             logging.error("Time stamp for RCVD message %s type %s in the past. Stamp: %s Now: %s ",
                   msgID, msg_type, msg_time, ms_now())
-            globals.errors += 1
+            common.errors += 1
 
         return msg_type
 
@@ -495,7 +509,7 @@ class ControlInterface(Sim.Process):
 
         TEMP: Transmits to all clients (no filtering)
         """
-        msgID = globals.msg_id_widget.next_id()
+        msgID = common.msg_id_widget.next_id()
         msg_time = ms_now()
         msg_str = msg.SerializeToString()
         msg_size = len(msg_str)
@@ -510,7 +524,7 @@ class ControlInterface(Sim.Process):
         for q in self.sendQs:
             q.put(message)
 
-        if self.passive() and not globals.sim_ended:
+        if self.passive() and not common.sim_ended:
             # Reset the resume_list to all False
             self.resume_list[:] = [False] * len(self.resume_list)
             # Reactivate the ControlInterface, placing it at the end of the
@@ -533,35 +547,35 @@ class ControlInterface(Sim.Process):
         """"Return the TrackSegment object specified by the ID.
         Raise InvalidTrackSegID if not found."""
         try:
-            return globals.track_segments[ID]
+            return common.track_segments[ID]
         except KeyError:
-            raise globals.InvalidTrackSegID, ID
+            raise common.InvalidTrackSegID, ID
 
     def get_station(self, ID):
         """"Return the station object specified by the ID.
         Raise InvalidStationID if not found."""
         try:
-            s = globals.stations[ID]
+            s = common.stations[ID]
         except KeyError:
-            raise globals.InvalidStationID, ID
+            raise common.InvalidStationID, ID
         return s
 
     def get_vehicle(self, ID):
         """Return the vehicle object specified by the ID.
         Raise InvalidVehicleID if not found."""
         try:
-            v = globals.vehicles[ID]
+            v = common.vehicles[ID]
         except KeyError:
-            raise globals.InvalidVehicleID, ID
+            raise common.InvalidVehicleID, ID
         return v
 
     def get_passenger(self, ID):
         """"Return the passenger object specified by the ID.
         Raise InvalidPassengerID if not found."""
         try:
-            pax = globals.passengers[ID]
+            pax = common.passengers[ID]
         except KeyError:
-            raise globals.InvalidPassengerID, ID
+            raise common.InvalidPassengerID, ID
         return pax
 
     def get_berth(self, station_id, platform_id, berth_id):
@@ -569,11 +583,11 @@ class ControlInterface(Sim.Process):
         try:
             platform = station.platforms[platform_id]
         except KeyError:
-            raise globals.InvalidPlatformID, platform_id
+            raise common.InvalidPlatformID, platform_id
         try:
             berth = platform.berths[berth_id]
         except KeyError:
-            raise globals.InvalidBerthID, berth_id
+            raise common.InvalidBerthID, berth_id
         return berth
 
     def validate_spline(self, spline):
@@ -581,17 +595,17 @@ class ControlInterface(Sim.Process):
         # Check that the times for the spline are valid, meaning that the first
         # time is not in the past, and that they are in non-decreasing order
         if len(spline.times) == 0:
-            raise globals.MsgError
+            raise common.MsgError
 
-        if globals.time_lt(spline.times[0], Sim.now()):
+        if common.time_lt(spline.times[0], Sim.now()):
             logging.info("T=%4.3f First spline time %s is in the past.",
                          Sim.now(), spline.times[0])
-            raise globals.MsgError
+            raise common.MsgError
         for t1, t2 in pairwise(spline.times):
             if t2 < t1:
                 logging.info("T=%4.3f Spline times are not in non-decreasing order: %s",
                              Sim.now(), spline.times)
-                raise globals.MsgError
+                raise common.MsgError
 
     def validate_itinerary(self, vehicle, ids):
         if len(ids) == 0:
@@ -599,9 +613,9 @@ class ControlInterface(Sim.Process):
         latest_loc = vehicle.path.traversals[-1].loc
         for id in ids:
             loc = self.get_trackSeg(id)
-            neighbors = globals.digraph.neighbors(latest_loc)
+            neighbors = common.digraph.neighbors(latest_loc)
             if loc not in neighbors:
-                raise globals.InvalidTrackSegID, ids[0]
+                raise common.InvalidTrackSegID, ids[0]
             latest_loc = loc
 
     def fill_TotalStatus(self, ts, msgID=None):
@@ -611,52 +625,25 @@ class ControlInterface(Sim.Process):
         msgID: The msgID that this is a response to, if any."""
         if msgID:
             ts.msgID = msgID
-        for v in globals.vehicles.itervalues():
+        for v in common.vehicles.itervalues():
             v_status = api.VehicleStatus()
             v.fill_VehicleStatus(v_status)
             ts.v_statuses.append(v_status)
         # send track segment status for all track segments
-        for ts in globals.track_segments.itervalues():
+        for ts in common.track_segments.itervalues():
             ts_status = api.TrackSegmentStatus()
             ts.fill_TrackSegmentStatus(ts_status)
             ts.ts_statuses.append(ts_status)
         # send Switch status msgs
-        for switch in globals.switch_list:
+        for switch in common.switch_list:
             sw_status = api.SwitchStatus()
             switch.fill_SwitchStatus(sw_status)
             ts.sw_statuses.append(sw_status)
         # send Station status msgs and summary msgs
-        for station in globals.stations.itervalues():
+        for station in common.stations.itervalues():
             s_status = api.StationStatus()
             station.fill_StationStatus(s_status)
             ts.s_statuses.append(s_status)
-
-class AlarmClock(Sim.Process):
-    """A Sim.Process that wakes up at time and executes the payload function.
-
-    time: The (simulation) time that the alarm should go off at.
-    payload: A function that executes once the alarm clock goes off.
-    args: Any number of additional arguments. They are passed to payload.
-    kwargs: Keyword args. Pass as **{'var_name':value}
-"""
-    def __init__(self, time, payload, *args, **kwargs):
-        Sim.Process.__init__(self, name="AlarmClock")
-        self.time = time
-        self.payload = payload
-        self.args = args
-        self.kwargs = kwargs
-        Sim.activate(self, self.ring())
-
-    def ring(self):
-        yield Sim.hold, self, self.time - Sim.now()
-        self.payload(*self.args, **self.kwargs)
-
-    @staticmethod
-    def delayed_msg(msg):
-        if msg:
-            globals.interface.receiveQ.put(msg)
-        if globals.interface.passive():
-            Sim.reactivate(globals.interface, prior=False)
 
 def ms_now():
     """Return Sim.now() in integer form, rounded to milliseconds. This is the

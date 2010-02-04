@@ -1,5 +1,7 @@
 import threading
 
+import SimPy.SimulationRT as Sim
+
 scenario_manager = None
 config_manager = None
 
@@ -40,17 +42,17 @@ errors = 0
 
 #def reset():
 #    print "Clearing previous configuration" # temp debug
-#    globals.digraph = None
-#    globals.interface = None
-#    globals.vehicle_viz_data_collector = None
-#    globals.station_viz_data_collector = None
-#    globals.track_segments = dict()
-#    globals.vehicles = dict()
-#    globals.passengers = dict()
-#    globals.delivered_pax = set()
-#    globals.wxApp = None
-#    globals.event_manager = None
-#    globals.sim_ended = False
+#    common.digraph = None
+#    common.interface = None
+#    common.vehicle_viz_data_collector = None
+#    common.station_viz_data_collector = None
+#    common.track_segments = dict()
+#    common.vehicles = dict()
+#    common.passengers = dict()
+#    common.delivered_pax = set()
+#    common.wxApp = None
+#    common.event_manager = None
+#    common.sim_ended = False
 
 class MsgIdWidget(object):
     """A thread-safe msgID counter. Increments counter whenever next_id is called."""
@@ -61,14 +63,41 @@ class MsgIdWidget(object):
     def next_id(self):
         self._lock.acquire()
         self._id += 1
-        id = self._id
+        id_ = self._id
         self._lock.release()
-        return id
+        return id_
 
     def last_id(self):
         return self._id
 
 msg_id_widget = MsgIdWidget()
+
+class AlarmClock(Sim.Process):
+    """A SimPy.Lib.Process that wakes up at time and executes the payload function.
+
+    time: The (simulation) time that the alarm should go off at.
+    payload: A function that executes once the alarm clock goes off.
+    args: Any number of additional arguments. They are passed to payload.
+    kwargs: Keyword args. Pass as **{'var_name':value}
+"""
+    def __init__(self, time, payload, *args, **kwargs):
+        super(AlarmClock, self).__init__(name="AlarmClock")
+        self.time = time
+        self.payload = payload
+        self.args = args
+        self.kwargs = kwargs
+        Sim.activate(self, self.ring())
+
+    def ring(self):
+        yield Sim.hold, self, self.time - Sim.now()
+        self.payload(*self.args, **self.kwargs)
+
+    @staticmethod
+    def delayed_msg(msg):
+        if msg:
+            interface.receiveQ.put(msg)
+        if interface.passive():
+            Sim.reactivate(interface, prior=False)
 
 # Divide resolution by two for rounding.
 DIST_RES = 0.01

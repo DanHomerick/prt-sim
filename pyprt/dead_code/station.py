@@ -8,7 +8,7 @@ import enthought.traits.ui.table_column as ui_tc
 import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
-import globals
+import common
 import events
 
 
@@ -67,7 +67,7 @@ class Berth(Sim.Process, traits.HasTraits):
         return self._busy
 
     def run(self):
-        station = globals.stations[self.station_id]
+        station = common.stations[self.station_id]
         while True:
             # Unloading
             if self._unload:
@@ -80,7 +80,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     pax.trip_end = Sim.now()
                     if self.station_id == pax.dest_station.ID:
                         pax.trip_success = True
-                        globals.delivered_pax.add(pax)
+                        common.delivered_pax.add(pax)
                         logging.info("T=%4.3f %s delivered to %s by %s. Unloaded in berth %s",
                                       Sim.now(), pax, self.station_id, self.vehicle, self.label)
 
@@ -98,7 +98,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     s_notify.vID = self.vehicle.ID
                     s_notify.sID = self.station_id
                     s_notify.pID = pax.ID
-                    globals.interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_START,
+                    common.interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_START,
                                           s_notify)
                     yield Sim.hold, self, pax.load_delay
                     self.vehicle.passengers.append(pax)
@@ -110,7 +110,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     e_notify.vID = self.vehicle.ID
                     e_notify.sID = self.station_id
                     e_notify.pID = pax.ID
-                    globals.interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_END,
+                    common.interface.send(api.SIM_NOTIFY_PASSENGER_LOAD_END,
                                           e_notify)
                     # If using the LOBBY policy, notify that passenger load command
                     # has completed.
@@ -120,7 +120,7 @@ class Berth(Sim.Process, traits.HasTraits):
                         cmd_notify.vID = self.vehicle.ID
                         cmd_notify.sID = self.station_id
                         cmd_notify.pID = pax.ID
-                        globals.interface.send(api.SIM_COMPLETE_PASSENGER_LOAD_VEHICLE,
+                        common.interface.send(api.SIM_COMPLETE_PASSENGER_LOAD_VEHICLE,
                                           cmd_notify)
                         self._load_msgID = None
 
@@ -306,14 +306,14 @@ class Station(traits.HasTraits):
 ###                          (Sim.now(), veh, self, veh.speed)
 ###            logging.error("T=%4.3f %s entered %s at too high of a speed: %f.",
 ###                          Sim.now(), veh, self, veh.speed)
-###            raise globals.StationOvershootError
+###            raise common.StationOvershootError
 ###        if rb_vehicle:
 ###            self.totalCrashes += 1
 ###            print "CRASH T=%4.3f %s entered %s without room to accept. Hit %s" %\
 ###                          (Sim.now(), veh, self, rb_vehicle)
 ###            logging.error("T=%4.3f %s entered %s without room to accept. Hit %s",
 ###                          Sim.now(), veh, self, rb_vehicle)
-###            raise globals.StationFullError
+###            raise common.StationFullError
 
 #    def ctrl_loop(self):
 #        # Startup Code
@@ -399,7 +399,7 @@ class Station(traits.HasTraits):
 #                    rl_msg = api.SimNotifyVehicleReadyLoad()
 #                    rl_msg.vID = v.ID
 #                    rl_msg.sID = self.ID
-#                    globals.interface.send(api.SIM_NOTIFY_VEHICLE_READY_LOAD,
+#                    common.interface.send(api.SIM_NOTIFY_VEHICLE_READY_LOAD,
 #                                          rl_msg)
 
 #    def load_passengers(self, platform):
@@ -483,12 +483,12 @@ class Station(traits.HasTraits):
 #    def launch(self, vehicle, target_speed, max_accel, max_decel, max_jerk, msgID):
 #        """Intended for use by other objects (e.g. a comm instance).
 #        Immediately launches the vehicle if ready. Otherwise raises
-#        a globals.InvalidVehicleID exception.
+#        a common.InvalidVehicleID exception.
 #
 #        Note that vehicle is a vehicle instance, not an ID.
 #        """
 #        if not self.is_launchable(vehicle):
-#            raise globals.InvalidVehicleID, vehicle.ID
+#            raise common.InvalidVehicleID, vehicle.ID
 #        front_berth = self.load_platform[0]
 #        vehicle.set_speed(target_speed, max_accel, max_decel, max_jerk, 0)
 #        self.totalDepartures += 1
@@ -499,7 +499,7 @@ class Station(traits.HasTraits):
 #        l_msg.msgID = msgID
 #        l_msg.vID = vehicle.ID
 #        l_msg.sID = self.ID
-#        globals.interface.send(api.SIM_COMPLETE_STATION_LAUNCH, l_msg)
+#        common.interface.send(api.SIM_COMPLETE_STATION_LAUNCH, l_msg)
 #        logging.info("T=%4.3f %s launched from berth %s of %s with pax %s",
 #                     Sim.now(), vehicle, front_berth.ID, self,
 #                     [pax.ID for pax in vehicle.passengers if pax])
@@ -519,7 +519,7 @@ class Station(traits.HasTraits):
 #            rdy_launch_msg.sID = self.ID
 #            for pax in flb.vehicle.passengers:
 #                rdy_launch_msg.pID.append(pax.ID)
-#            globals.interface.send(api.SIM_NOTIFY_STATION_READY_LAUNCH,
+#            common.interface.send(api.SIM_NOTIFY_STATION_READY_LAUNCH,
 #                                  rdy_launch_msg)
 #        elif flb.vehicle and flb.is_busy() and self.rdy_launch_sent \
 #                 and not self.unrdy_launch_sent:
@@ -528,7 +528,7 @@ class Station(traits.HasTraits):
 #            urdy_launch_msg = api.SimNotifyStationUnreadyLaunch()
 #            urdy_launch_msg.vID = flb.vehicle.ID
 #            urdy_launch_msg.sID = self.ID
-#            globals.interface.send(api.SIM_NOTIFY_STATION_UNREADY_LAUNCH,
+#            common.interface.send(api.SIM_NOTIFY_STATION_UNREADY_LAUNCH,
 #                                  urdy_launch_msg)
 
 #    def fill_StationStatus(self, s_status):
@@ -639,7 +639,7 @@ class Station(traits.HasTraits):
         pax_table_editor = ui.TableEditor(
                             # Only the passenger data relevant when looking at a station.
                             columns = [ui_tc.ObjectColumn(name='label', label='Name'),
-                                       ui_tc.ObjectColumn(name='trip_start'),
+                                       ui_tc.ObjectColumn(name='_start_time'),
                                        ui_tc.ObjectColumn(name='dest_station', label='Destination'),
                                        ui_tc.ObjectColumn(name='wait_time', label='Waiting (sec)', format="%.2f"),
                                        ui_tc.ObjectColumn(name='will_share', label='Will Share'),

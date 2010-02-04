@@ -6,7 +6,7 @@ import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
 import enthought.traits.ui.table_column as ui_tc
 
-import globals
+import common
 import pyprt.shared.api_pb2 as api
 import SimPy.SimulationRT as Sim
 
@@ -36,21 +36,21 @@ class EventManager(Sim.Process):
 
     def spawn_events(self):
         while self.list:
-            assert globals.time_ge(self.list[0].time, Sim.now())
+            assert common.time_ge(self.list[0].time, Sim.now())
             if self.list[0].time > Sim.now():
                 yield Sim.hold, self, self.list[0].time - Sim.now()
                 continue
 
             evt = heapq.heappop(self.list)
             if isinstance(evt, Passenger):
-                assert not globals.passengers.get(evt.ID)
-                globals.passengers[evt.ID] = evt # add to global dict
+                assert not common.passengers.get(evt.ID)
+                common.passengers[evt.ID] = evt # add to common dict
 
                 evt.loc = evt.src_station # set pax loc
                 evt.loc.add_passenger(evt)
                 msg = api.SimEventPassengerCreated()
                 evt.fill_PassengerStatus(msg.p_status)
-                globals.interface.send(api.SIM_EVENT_PASSENGER_CREATED, msg)
+                common.interface.send(api.SIM_EVENT_PASSENGER_CREATED, msg)
 
     def clear_events(self):
         self.list = list()
@@ -97,16 +97,18 @@ class PrtEvent(traits.HasTraits):
 
 class Passenger(PrtEvent):
     """A passenger."""
-    weight = traits.Int()
+    mass = traits.Int()
+    _loc = traits.Either(traits.Instance('station.Station'),
+                         traits.Instance('layout.BaseVehicle'), None)
 
     traits_view = ui.View(ui.Item(name='label'),
                           ui.Item(name='ID'),
                           ui.Item(name='loc'),
-                          ui.Item(name='weight'), # in kg
-                          ui.Item(name='trip_start'),
-                          ui.Item(name='trip_boarded'),
-                          ui.Item(name='trip_end'),
+                          ui.Item(name='mass'), # in kg
                           ui.Item(name='trip_success'),
+                          ui.Item(name='wait_time'),
+                          ui.Item(name='walk_time'),
+                          ui.Item(name='ride_time'),
                           ui.Item(name='will_share'),
                           ui.Item(name='src_station'),
                           ui.Item(name='dest_station'),
@@ -117,7 +119,6 @@ class Passenger(PrtEvent):
     # Subset of passenger data in table format.
     pax_table_editor = ui.TableEditor(
                     columns = [ui_tc.ObjectColumn(name='label', label='Name'),
-                               ui_tc.ObjectColumn(name='trip_start'),
                                ui_tc.ObjectColumn(name='dest_station', label='Destination'),
                                ui_tc.ObjectColumn(name='wait_time', label='Waiting (sec)', format="%.2f"),
                                ui_tc.ObjectColumn(name='will_share', label='Will Share'),
@@ -128,68 +129,145 @@ class Passenger(PrtEvent):
                     auto_size = True,
                     orientation = 'vertical',
                     show_toolbar = True,
-                    reorderable = True, # Does this affect the actual boarding order (think no...)
+                    reorderable = False,
                     rows = 5,
                     row_factory = traits.This)
 
     def __init__(self, time, ID, src_station, dest_station,
-                 load_delay, unload_delay, will_share, weight):
+                 load_delay, unload_delay, will_share, mass):
         super(Passenger, self).__init__(time, ID)
         self.src_station = src_station
         self.dest_station = dest_station
         self.load_delay = load_delay
         self.unload_delay = unload_delay
         self.will_share = will_share  # Willing to share pod (if same dest)
-        self.weight = weight
-        self.loc = None
+        self.mass = mass
+        self.trip_success = False
+        self._loc = src_station
 
-        self.trip_start = time
-        self.trip_boarded = None
-        self.trip_end = None
-        self.trip_success = None
+        # The following are lists containing pairs:
+        #    [[start, end], [start, end], ...]
+        # All times in seconds, with 0 being the start of the sim.
+        self._wait_times = [[time, None]]
+        self._ride_times = []
+        self._walk_times = []
+
+        self._start_time = time
+        self._end_time = None
+
 
     @property
     def wait_time(self): # in seconds
-        if self.trip_end or self.trip_boarded:
-            return self.trip_boarded - self.trip_start
-        else:
-            return Sim.now() - self.trip_start
+        total = 0
+        for start, end in self._wait_times:
+            if end is None:
+                total += Sim.now() - start
+            else:
+                total += end - start
+        return total
 
     @property
-    def travel_time(self): # in seconds
-        if self.trip_end:
-            return self.trip_end - self.trip_boarded
-        elif self.trip_boarded:
-            return Sim.now() - self.trip_boarded
+    def ride_time(self): # in seconds
+        total = 0
+        for start, end in self._ride_times:
+            if end is None:
+                total += Sim.now() - start
+            else:
+                total += end - start
+        return total
+
+    @property
+    def walk_time(self): # in seconds
+        total = 0
+        for start, end in self._walk_times:
+            if end is None:
+                total += Sim.now() - start
+            else:
+                total += end - start
+        return total
+
+    @property
+    def total_time(self):
+        if self._end_time is None:
+            return Sim.now() - self._start_time
         else:
-            return 0
+            return self._end_time - self._start_time
+
+    def get_loc(self):
+        return self._loc
+    def set_loc(self, loc):
+        """Changes the loc, and keeps track of how much time is spent in each
+        mode of transit: waiting, riding, or walking."""
+        ### Track time spent in each mode of transit ###
+        if self._loc is None: # Was walking
+            self._walk_times[-1][1] = Sim.now()
+        elif hasattr(self._loc, 'v_mass'): # was in vehicle
+            self._ride_times[-1][1] = Sim.now()
+        elif hasattr(self._loc, 'platforms'): # was at station
+            self._wait_times[-1][1] = Sim.now()
+        else:
+            raise Exception("Unknown loc type")
+
+        ### Note if trip is completed. ###
+        if loc is self.dest_station:
+            self._end_time = Sim.now()
+            self.trip_success = True
+
+        ### More time tracking ###
+        if not self.trip_success:
+            if loc is None: self._walk_times.append( [Sim.now(), None] )
+            elif hasattr(loc, 'v_mass'): self._ride_times.append( [Sim.now(), None] )
+            elif hasattr(loc, 'platforms'): self._wait_times.append( [Sim.now(), None] )
+            else: raise Exception("Unknown loc type")
+
+        self._loc = loc
+
+    loc = property(get_loc, set_loc, doc="loc is expected to be a Station, a "
+                   "Vehicle, or None (which indicates walking from one station "
+                   "to another). Setting the loc has side-effects, see set_loc.")
+
+    def walk(self, origin_station, dest_station, travel_time, cmd_msg, cmd_id):
+        assert self._loc is origin_station
+        assert travel_time >= 0
+        assert isinstance(cmd_msg, api.CtrlCmdPassengerWalk)
+        assert isinstance(cmd_id, int)
+        self.loc = None
+        common.AlarmClock(Sim.now() + travel_time,
+                          self._post_walk,
+                          dest_station, travel_time, cmd_msg, cmd_id)
+
+    def _post_walk(self, dest_station, travel_time, cmd_msg, cmd_id):
+        """Updates stats, changes location, and sends a SimCompletePassengerWalk
+        message. To be called once the walk is complete."""
+        assert self._loc is None
+        self.loc = dest_station
+        self.walk_time += travel_time
+
+        msg = api.SimCompletePassengerWalk()
+        msg.msgID = cmd_id
+        msg.cmd.CopyFrom(cmd_msg)
+        common.interface.send(api.SIM_COMPLETE_PASSENGER_WALK, msg)
 
     def fill_PassengerStatus(self, ps):
         ps.pID = self.ID
         # I'd much rather use isinstance checks, but circular imports are killing me
-        if hasattr(self.loc, 'v_mass'):
-            lt = api.VEHICLE
-        elif hasattr(self.loc, 'platforms'):
-            lt = api.STATION
+        if self._loc is None:
+            ps.loc_type = api.WALKING
+            ps.locID = api.NONE_ID
+        elif hasattr(self._loc, 'v_mass'): # a vehicle
+            ps.loc_type = api.VEHICLE
+            ps.locID = self._loc.ID
+        elif hasattr(self._loc, 'platforms'): # a station
+            ps.loc_type = api.STATION
+            ps.locID = self._loc.ID
         else:
-            raise Exception, "Unknown passenger location type: %s" % self.loc
+            raise Exception, "Unknown passenger location type: %s" % self._loc
 
-        ps.loc_type = lt
-        ps.locID = self.loc.ID
         ps.src_stationID = self.src_station.ID
         ps.dest_stationID = self.dest_station.ID
-        ps.creation_time = self.trip_start
-        ps.wait_time = self.wait_time
-        ps.travel_time = self.travel_time
-        ps.weight = self.weight
-
-        # In python, a bool is a tri-state (True, False, None)
-        # In protobuf, need two bools.
-        if self.trip_success is None:
-            ps.trip_complete = False
-        else:
-            ps.trip_success = self.trip_success
-            ps.trip_complete = True
+        ps.creation_time = self._start_time
+        ps.mass = self.mass
+        ps.trip_success = self.trip_success
 
 def to_millisec(sec):
     """Convert from floating point seconds to integer milliseconds, rounding."""

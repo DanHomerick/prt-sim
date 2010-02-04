@@ -217,8 +217,8 @@ class GtfController(BaseController):
 
         self.send_resume()
 
-    def on_SIM_COMPLETE_PASSENGER_DISEMBARK(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimCompletePassengerDisembark()
+    def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimCompletePassengersDisembark()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 
@@ -232,8 +232,8 @@ class GtfController(BaseController):
 
         self.send_resume()
 
-    def on_SIM_COMPLETE_PASSENGER_EMBARK(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimCompletePassengerEmbark()
+    def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg_type, msgID, msg_time, msg_str):
+        msg = api.SimCompletePassengersEmbark()
         msg.MergeFromString(msg_str)
         self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 
@@ -711,10 +711,12 @@ class PassengerManager(object):
         assert isinstance(node, Node)
         node.embark_pax[vehicle_id] = []
 
-    def _build_graph(self, gtf_xml, sim_end_time):
+    def _build_graph(self, gtf_xml, sim_end_time): # , walk_speed
         """Returns a networkx.DiGraph suitable for routing passengers over and
         a dictionary whose keys are station_ids and whose values are lists
         containing all Node instances for that station_id.
+
+        sim_end_time has units of seconds, and walk_speed has units of meters/sec.
 
         The DiGraph is a time-expanded graph of the transit network.
         Each station has multiple Node instances; one Node for each time at which a
@@ -734,7 +736,7 @@ class PassengerManager(object):
         each vehicle arrival.
 
         Usage example:
-        graph, node_dict = build_graph(xml)
+        graph, node_dict = build_graph(xml, end_time, 1.33)
         """
         graph = networkx.DiGraph()
 
@@ -772,6 +774,19 @@ class PassengerManager(object):
             node_list.sort(key=attrgetter('time'))
             for a, b in pairwise(node_list):
                 graph.add_edge(a, b, weight=b.time-a.time, vehicle=api.NONE_ID)
+
+        ### Create edges that represent walking between nearby stations. ###
+##        neighbors_xml = gtf_xml.getElementsByTagName('Neighbors')[0]
+##        for station_xml in neighbors_xml.getElementsByTagName('Station'):
+##            s_id = int(station_xml.getAttribute('id').split('_')[0])
+##            for neighbor_xml in station_xml.getElementsByTagName('Neighbor'):
+##                neighbor_id = int(neighbor_xml.getAttribute('station_id').split('_')[0])
+##                neighbor_dist = int(neighbor_xml.getAttribute('distance'))
+##
+##                for node_list in node_dict[s_id]:
+##                    for node in no
+
+
 
         ### Add a 'destination' node that does not have a time. This gives a target to route
         ### to without requiring the time of arrival to be known. Every Node

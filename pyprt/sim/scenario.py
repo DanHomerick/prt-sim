@@ -3,7 +3,7 @@ import enthought.traits.api as traits
 import os.path
 
 from station import Berth
-import globals
+import common
 import layout
 import station
 import events
@@ -14,7 +14,7 @@ class ScenarioManager(object):
 
     def load_scenario(self, xml_path):
         """Loads the scenario, storing the resulting data structures in various
-        global variables (TODO: change to functional style?).
+        common variables (TODO: change to functional style?).
         Sets self.scenario_loaded to True upon success."""
         import xml.dom.minidom
         doc = xml.dom.minidom.parse(xml_path)
@@ -24,12 +24,12 @@ class ScenarioManager(object):
 
         # Track Segments
         tracks_xml = doc.getElementsByTagName('TrackSegments')[0]
-        globals.track_segments = self.load_track_segments(tracks_xml)
-        globals.digraph = self.build_graph(tracks_xml, globals.track_segments)
+        common.track_segments = self.load_track_segments(tracks_xml)
+        common.digraph = self.build_graph(tracks_xml, common.track_segments)
 
         # Fill in the next fields for the TrackSegments. Arbitrarily choosen
         # when there is more then one neighbor.
-        graph = globals.digraph
+        graph = common.digraph
         for n in graph.nodes_iter():
             neighbors = graph.neighbors(n)
             if neighbors:
@@ -37,32 +37,32 @@ class ScenarioManager(object):
             # else n.next is left as None
 
         # Vehicles
-        globals.vehicle_models = self.make_vehicle_classes(doc.getElementsByTagName('VehicleModels')[0])
-        globals.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], globals.vehicle_models)
+        common.vehicle_models = self.make_vehicle_classes(doc.getElementsByTagName('VehicleModels')[0])
+        common.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], common.vehicle_models)
 
         # Stations
-        globals.stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
+        common.stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
 
         # Passengers
-        passengers_path = globals.config_manager.get_passengers_path()
+        passengers_path = common.config_manager.get_passengers_path()
         if passengers_path == None:
             logging.warning("No passenger file found. Running simulation with no passengers.")
         else:
-            default_load_time = globals.config_manager.get_pax_load_time()
-            default_unload_time = globals.config_manager.get_pax_unload_time()
-            default_will_share = globals.config_manager.get_pax_will_share()
-            default_weight = globals.config_manager.get_pax_weight()
-            pax_list = self.load_passengers(passengers_path, default_load_time, default_unload_time, default_will_share, default_weight)
-            globals.event_manager.clear_events()
-            globals.event_manager.add_events(pax_list)
+            default_load_time = common.config_manager.get_pax_load_time()
+            default_unload_time = common.config_manager.get_pax_unload_time()
+            default_will_share = common.config_manager.get_pax_will_share()
+            default_mass = common.config_manager.get_pax_weight()
+            pax_list = self.load_passengers(passengers_path, default_load_time, default_unload_time, default_will_share, default_mass)
+            common.event_manager.clear_events()
+            common.event_manager.add_events(pax_list)
 
         # Background Image
         self.load_image_meta(doc.getElementsByTagName('Image')[0], xml_path) # only one element
 
         # TODO: Necessary?
-        globals.station_list = sorted(s for s in globals.stations.itervalues()) # by ID
-        globals.switch_list.sort()
-        globals.vehicle_list = sorted(v for v in globals.vehicles.itervalues())
+        common.station_list = sorted(s for s in common.stations.itervalues()) # by ID
+        common.switch_list.sort()
+        common.vehicle_list = sorted(v for v in common.vehicles.itervalues())
 
         self.scenario_loaded = True
 
@@ -132,7 +132,7 @@ class ScenarioManager(object):
                     plt.show()
                 except ImportError:
                     pass
-                raise globals.ConfigError("DiGraph is not strongly connected.")
+                raise common.ConfigError("DiGraph is not strongly connected.")
 
         return graph
 
@@ -154,19 +154,19 @@ class ScenarioManager(object):
     #
     #    # data validation
     #    if length < 0:
-    #        raise globals.ConfigError, "Negative vehicle length: %s" % length
+    #        raise common.ConfigError, "Negative vehicle length: %s" % length
     #    if max_pax_capacity < 0:
-    #        raise globals.ConfigError, "Negative maximum vehicle passenger capacity: %s" % max_pax_capacity
+    #        raise common.ConfigError, "Negative maximum vehicle passenger capacity: %s" % max_pax_capacity
     #    if norm_max_accel <= 0:
-    #        raise globals.ConfigError, "Invalid norm_max_accel: %s" % norm_max_accel
+    #        raise common.ConfigError, "Invalid norm_max_accel: %s" % norm_max_accel
     #    if emerg_max_accel <= 0:
-    #        raise globals.ConfigError, "Invalid emerg_max_accel: %s" % emerg_max_accel
+    #        raise common.ConfigError, "Invalid emerg_max_accel: %s" % emerg_max_accel
     #    if norm_max_decel >= 0:
-    #        raise globals.ConfigError, "Invalid norm_max_decel (must be neg): %s" % norm_max_decel
+    #        raise common.ConfigError, "Invalid norm_max_decel (must be neg): %s" % norm_max_decel
     #    if emerg_max_decel >= 0:
-    #        raise globals.ConfigError, "Invalid emerg_max_decel (must be neg): %s" % emerg_max_decel
+    #        raise common.ConfigError, "Invalid emerg_max_decel (must be neg): %s" % emerg_max_decel
     #    if v_mass <= 0:
-    #        raise globals.ConfigError, "Invalid vehicle mass (v_mass): %s" % v_mass
+    #        raise common.ConfigError, "Invalid vehicle mass (v_mass): %s" % v_mass
 
         for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
             vId = vehicle_xml.getAttribute('id')
@@ -174,11 +174,11 @@ class ScenarioManager(object):
             v_model = vehicle_xml.getAttribute('model')
             eId = vehicle_xml.getAttribute('location')
             e_intId = int(eId.split("_")[0])
-            loc = globals.track_segments[e_intId] # look up edge by id
+            loc = common.track_segments[e_intId] # look up edge by id
             position = float(vehicle_xml.getAttribute('position'))
 
             if position > loc.length:
-                raise globals.ConfigError("Vehicle %s starting position: %s is greater than location %s length: %s" % (v_intId, position, loc.ID, loc.length))
+                raise common.ConfigError("Vehicle %s starting position: %s is greater than location %s length: %s" % (v_intId, position, loc.ID, loc.length))
             vehicle = vehicle_classes[v_model](ID=v_intId,
                                      loc=loc,
     #                                 length=length,
@@ -207,7 +207,7 @@ class ScenarioManager(object):
             track_segments = set() # using a set because 'TrackSegmentID' includes the duplicate ts from Platform
             for track_id_xml in station_xml.getElementsByTagName('TrackSegmentID'):
                     track_id = self._to_numeric_id(track_id_xml)
-                    track_segments.add(globals.track_segments[track_id])
+                    track_segments.add(common.track_segments[track_id])
 
             station_ = station.Station(station_id, station_label, track_segments)
 
@@ -216,7 +216,7 @@ class ScenarioManager(object):
             platforms = [None]*len(platforms_xml)
             for platform_xml in platforms_xml:
                 platform_trackseg_id = self._to_numeric_id(platform_xml.getElementsByTagName('TrackSegmentID')[0])
-                platform_trackseg = globals.track_segments[platform_trackseg_id]
+                platform_trackseg = common.track_segments[platform_trackseg_id]
                 platform_index = int(platform_xml.getAttribute('index'))
                 platform = station.Platform(platform_index, platform_trackseg)
 
@@ -239,7 +239,7 @@ class ScenarioManager(object):
             all_stations[station_.ID] = station_
         return all_stations
 
-    def load_passengers(self, filename, default_load_time, default_unload_time, default_will_share, default_weight):
+    def load_passengers(self, filename, default_load_time, default_unload_time, default_will_share, default_mass):
         """Load the list of passenger creation events. See /doc/samplePassenger.tsv
         for format. Station labels may be used in place of station IDs."""
         f = open(filename, 'rU')
@@ -248,7 +248,7 @@ class ScenarioManager(object):
 
         # generate dict mapping both ids and labels to stations
         aliases = {}
-        for station in globals.stations.values():
+        for station in common.stations.values():
             aliases[station.label] = station # the label
             aliases[str(station.ID)] = station # the integer id, in string form
 
@@ -265,10 +265,10 @@ class ScenarioManager(object):
                     dStatID = data[2].strip() # left in string form
                     sTime = float(data[3])
                 except IndexError:
-                    raise globals.ConfigError, "Line %s of passengerfile %s has too few fields." %\
+                    raise common.ConfigError, "Line %s of passengerfile %s has too few fields." %\
                                        (line_num+1, filename)
                 except ValueError:
-                    raise globals.ConfigError, "Line %s of passengerfile %s has a field of the incorrect type." %\
+                    raise common.ConfigError, "Line %s of passengerfile %s has a field of the incorrect type." %\
                                        (line_num+1, filename)
                 try:
                     load_delay = float(data[4])
@@ -287,43 +287,43 @@ class ScenarioManager(object):
                     elif not will_share_str:
                         raise ValueError
                     else:
-                        raise globals.ConfigError, "On line %s of passengerfile %s: '%s' is " \
+                        raise common.ConfigError, "On line %s of passengerfile %s: '%s' is " \
                                           "not an acceptable boolean value." % \
                                        (line_num+1, filename, will_share_str)
                 except (IndexError, ValueError):
                     will_share = default_will_share
                 try:
-                    weight = int(data[7])
+                    mass = int(data[7])
                 except (IndexError, ValueError):
-                    weight = default_weight
+                    mass = default_mass
                 try:
                     sStat = aliases[sStatID]
                     dStat = aliases[dStatID]
                 except KeyError:
-                    raise globals.ConfigError, "On line %s of passengerfile %s, at least one of the following ID's is not a station: %s, %s" %\
+                    raise common.ConfigError, "On line %s of passengerfile %s, at least one of the following ID's is not a station: %s, %s" %\
                                    (line_num+1, filename, sStatID, dStatID)
                 e = events.Passenger(time=sTime, ID=pID,
                                       src_station=sStat, dest_station=dStat,
                                       load_delay=load_delay,
                                       unload_delay=unload_delay,
                                       will_share=will_share,
-                                      weight=weight)
+                                      mass=mass)
                 paxlist.append(e)
 
         return paxlist
 
     def load_image_meta(self, image_xml, xml_path):
-        """Sets globals.img_ybounds and globals.img_xbounds to 2-tuples containing the
-        min/max lat/lng values. Also stores the image path in globals.image_path"""
+        """Sets common.img_ybounds and common.img_xbounds to 2-tuples containing the
+        min/max lat/lng values. Also stores the image path in common.image_path"""
         nw_xml = image_xml.getElementsByTagName('Northwest')[0]
         se_xml = image_xml.getElementsByTagName('Southeast')[0]
         lngs = [float(x.getAttribute('lng')) for x in (nw_xml, se_xml)]
         lats = [float(x.getAttribute('lat')) for x in (nw_xml, se_xml)]
-        globals.img_xbounds = (min(lngs), max(lngs))
-        globals.img_ybounds = (min(lats), max(lats))
-        globals.img_width = int(image_xml.getAttribute('width'))
-        globals.img_height = int(image_xml.getAttribute('height'))
-        globals.img_path = os.path.dirname(xml_path) + '/' + image_xml.getAttribute('filename')
+        common.img_xbounds = (min(lngs), max(lngs))
+        common.img_ybounds = (min(lats), max(lats))
+        common.img_width = int(image_xml.getAttribute('width'))
+        common.img_height = int(image_xml.getAttribute('height'))
+        common.img_path = os.path.dirname(xml_path) + '/' + image_xml.getAttribute('filename')
 
     def _to_numeric_id(self, element):
         """For elements similar to:
@@ -368,7 +368,7 @@ class ScenarioManager(object):
             all_models[model_name] = type(str(model_name), (layout.BaseVehicle,), type_dict)
             max_pax = max(max_pax, max_pax_capacity)
 
-        globals.max_vehicle_pax_capacity = max_pax
+        common.max_vehicle_pax_capacity = max_pax
         return all_models
 
 # a testing stub
@@ -391,13 +391,13 @@ if __name__ == '__main__':
         manager.load_scenario()
 
         print "Switches:"
-        print globals.switch_list
+        print common.switch_list
         print "------"
         print "Stations:"
-        print [stat.ID for stat in globals.station_list]
+        print [stat.ID for stat in common.station_list]
         print "------"
         print "TrackSegments:"
-        print globals.track_segments.values()
+        print common.track_segments.values()
         print "------"
         print "Vehicles:"
-        print [v.ID for v in globals.vehicles.itervalues()];
+        print [v.ID for v in common.vehicles.itervalues()];

@@ -1,26 +1,24 @@
-import globals
-
-import SimPy
+import common
 
 def main():
     import config
 
-    globals.config_manager = config.ConfigManager()
-    scenario_path = globals.config_manager.get_scenario_path()
+    common.config_manager = config.ConfigManager()
+    scenario_path = common.config_manager.get_scenario_path()
 
-    initialize_logging(globals.config_manager)
+    initialize_logging(common.config_manager)
 
     import events
-    globals.event_manager = events.EventManager()
+    common.event_manager = events.EventManager()
 
     import comm
-    globals.interface = comm.ControlInterface(log=globals.config_manager.get_comm_logfile())
+    common.interface = comm.ControlInterface(log=common.config_manager.get_comm_logfile())
 
     import scenario
-    globals.scenario_manager = scenario.ScenarioManager()
+    common.scenario_manager = scenario.ScenarioManager()
 
     ###    Start GUI, unless otherwise specified    ###
-    disable_gui = globals.config_manager.get_disable_gui()
+    disable_gui = common.config_manager.get_disable_gui()
     if disable_gui:
         if scenario_path == None:
             print "A scenario file must be specified in either the configuration " \
@@ -33,7 +31,10 @@ def main():
 
     if not disable_gui:
         import gui
-        globals.Sim = SimPy.SimulationRT.SimulationRT()
+
+        # Should switch over to holding the Sim as an object, instead of a
+        # treating it as a magic variable at some point. But not yet.
+##        common.Sim = SimPy.SimulationRT.SimulationRT()
 
         gui_app = gui.GUI_App(0)
         gui_app.MainLoop()
@@ -43,7 +44,7 @@ def initialize_logging(config_manager):
     import logging
     from sys import stdout
     logfile = config_manager.get_logfile()
-    loglevel = config_manager.get_loglevel()    
+    loglevel = config_manager.get_loglevel()
 
     if logfile == "stdout":
         logging.basicConfig(format='%(filename)10s %(funcName)20s %(lineno)d' \

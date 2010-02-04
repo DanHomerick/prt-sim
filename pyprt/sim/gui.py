@@ -26,8 +26,8 @@ from enthought.chaco.default_colormaps import fix
 # This Window object allows the plot to look like a generic Panel to WX.
 from enthought.enable.wx_backend.api import Window
 
-import globals
-globals.real_time = True
+import common
+common.real_time = True
 
 import SimPy.SimulationRT as SimPy
 
@@ -64,11 +64,11 @@ class MainWindow(wx.Frame):
         self.__do_layout()
 
         # If the scenario file has already been specified, load it.
-        scenario_path = globals.config_manager.get_scenario_path()
+        scenario_path = common.config_manager.get_scenario_path()
         if scenario_path != None:
             self.load_scenario(scenario_path)
 
-        if globals.config_manager.get_start_controllers() == True:
+        if common.config_manager.get_start_controllers() == True:
             self.simmenu_connectcontroller_handler(None)
 
     def __set_properties(self):
@@ -85,18 +85,18 @@ class MainWindow(wx.Frame):
 
     def load_scenario(self, filename):
         if filename:
-            manager = globals.scenario_manager
+            manager = common.scenario_manager
             manager.load_scenario(filename)
 
             # adjust the window size to match the image.
-            self.SetSize(wx.Size(globals.img_width, globals.img_height)) # width, height
+            self.SetSize(wx.Size(common.img_width, common.img_height)) # width, height
             my_size = self.GetSize()
             display_size = wx.GetDisplaySize()
 ##            if (my_size[0] > display_size[0] or my_size[1] > display_size[1]): # if too big
-##                self.SetSize(wx.Size(globals.img_width/2, globals.img_height/2)) # use half-resolution
+##                self.SetSize(wx.Size(common.img_width/2, common.img_height/2)) # use half-resolution
 
             # Create the Visualizer
-            self.visualizer = Visualizer(globals.digraph, globals.max_vehicle_pax_capacity)
+            self.visualizer = Visualizer(common.digraph, common.max_vehicle_pax_capacity)
             self.chaco_window.component = self.visualizer.plot
 
             # update what options are enabled in the menu
@@ -140,7 +140,7 @@ class MainWindow(wx.Frame):
 
     def simmenu_startsim_handler(self, event):
         # Create a new thread for the sim
-        end_time = globals.config_manager.get_sim_end_time()
+        end_time = common.config_manager.get_sim_end_time()
         sim_thread = threading.Thread(name='sim_thread',
                                       target=run_sim,
                                       args=[end_time, self.sim_end_callback])
@@ -159,7 +159,7 @@ class MainWindow(wx.Frame):
 
         # Start the timers
         try:
-            timer_interval = (1.0 / globals.config_manager.get_fps()) * 1000 # in millisec
+            timer_interval = (1.0 / common.config_manager.get_fps()) * 1000 # in millisec
         except ZeroDivisionError:
             timer_interval = 200 # 5 updates per sec
         self.viz_timer.Start(timer_interval, wx.TIMER_CONTINUOUS)
@@ -172,8 +172,8 @@ class MainWindow(wx.Frame):
         self.menubar_manager.sim_started()
 
     def simmenu_connectcontroller_handler(self, event): # wxGlade: MainWindow.<event_handler>
-        if globals.interface:
-            TCP_port = globals.config_manager.get_TCP_port()
+        if common.interface:
+            TCP_port = common.config_manager.get_TCP_port()
 ##            # NumberEntryDialog has a bug that caps the default to a max of 100, always.
 ##            dialog = wx.NumberEntryDialog(self,
 ##                              message='Choose connection port (TCP)',
@@ -189,9 +189,9 @@ class MainWindow(wx.Frame):
 ###                                    message='Waiting for controller to connect on port: %s' % TCP_port,
 ###                                    style=wx.CANCEL)
 ###                waiting_dialog.ShowModal()
-##                globals.interface.connect(TCP_port)
-            globals.interface.setup_server_sockets(TCP_port=TCP_port)
-            controllers = globals.config_manager.get_controllers()
+##                common.interface.connect(TCP_port)
+            common.interface.setup_server_sockets(TCP_port=TCP_port)
+            controllers = common.config_manager.get_controllers()
             for cmd in controllers:
                 cmd = cmd.split()
                 try:
@@ -204,7 +204,7 @@ class MainWindow(wx.Frame):
                     dialog.ShowModal()
                     return
 
-            globals.interface.accept_connections( len(controllers) )
+            common.interface.accept_connections( len(controllers) )
 
             # update what menu options are enabled
             self.menubar_manager.controllers_connected()
@@ -220,13 +220,13 @@ class MainWindow(wx.Frame):
                           message="Debugging Tool.\nOpens the specified TCP port.\nThe sim will block until a controller\nconnects at the specified port.\n\nChoose connection port (TCP)",
                           prompt='Port:',
                           caption='Connect External Controller...',
-                          value=globals.config_manager.get_TCP_port(),
+                          value=common.config_manager.get_TCP_port(),
                           min=2,
                           max=65535)
         if dialog.ShowModal() == wx.ID_OK:
             port_num = dialog.GetValue()
-            globals.interface.setup_server_sockets(TCP_port=port_num)
-            globals.interface.accept_connections( 1 )
+            common.interface.setup_server_sockets(TCP_port=port_num)
+            common.interface.accept_connections( 1 )
             # Sim blocks, then resumes once connection is made.
             self.menubar_manager.controllers_connected()
 
@@ -267,36 +267,36 @@ class MainWindow(wx.Frame):
 
 
     def viewmenu_vehicle_handler(self, event): # wxGlade: MaSimPyinWindow.<event_handler>
-        labels = [str(v) for v in globals.vehicle_list]
+        labels = [str(v) for v in common.vehicle_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Vehicles', labels)
         dialog.ShowModal()
         selections = dialog.GetSelections() # indexes of the selections
         for i in selections:
-            globals.vehicle_list[i].configure_traits()
+            common.vehicle_list[i].configure_traits()
 
     def viewmenu_station_handler(self, event): # wxGlade: MainWindow.<event_handler>
-        labels = [str(s) for s in globals.station_list]
+        labels = [str(s) for s in common.station_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Stations', labels)
         dialog.ShowModal()
         selections = dialog.GetSelections() # indexes of the selections
         for i in selections:
-            s = globals.station_list[i]
+            s = common.station_list[i]
             s.configure_traits(view=s.view)
 
     def viewmenu_switch_handler(self, event): # wxGlade: MainWindow.<event_handler>
-        labels = [str(sw) for sw in globals.switch_list]
+        labels = [str(sw) for sw in common.switch_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Stations', labels)
         dialog.ShowModal()
         selections = dialog.GetSelections() # indexes of the selections
         for i in selections:
-            globals.switch_list[i].configure_traits()
+            common.switch_list[i].configure_traits()
 
     def viewmenu_track_handler(self, event): # wxGlade: MainWindow.<event_handler>
         print "Event handler `viewmenu_track_handler' not implemented"
         event.Skip()
 
     def viewmenu_passenger_handler(self, event):
-        pax_list = sorted(globals.passengers.itervalues())
+        pax_list = sorted(common.passengers.itervalues())
         labels = [str(p) for p in pax_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Passengers', labels)
         dialog.ShowModal()
@@ -312,7 +312,7 @@ class MainWindow(wx.Frame):
         # setup the timer
         try:
             record_timerId = wx.NewId()
-            timer_interval = (1.0 / globals.config_manager.get_fps()) * 1000 # in millisec
+            timer_interval = (1.0 / common.config_manager.get_fps()) * 1000 # in millisec
             self.record_timer = wx.Timer(self, record_timerId)
             self.Bind(wx.EVT_TIMER, self.record_handler, id=record_timerId)
         except ZeroDivisionError:
@@ -354,7 +354,7 @@ class MainWindow(wx.Frame):
         self.menubar_manager.record_stopped()
 
     def record_handler(self, event):
-        if not globals.sim_ended:
+        if not common.sim_ended:
             try:
                 filename = self._record_filename_base + '_%05d' % self._record_count + '.' + self._record_filename_ext
                 self.visualizer.save_plot(filename)
@@ -373,10 +373,10 @@ class MainWindow(wx.Frame):
 
     def close_handler(self, event):
         # TODO: Check if user wants to save config
-        globals.sim_ended = True
+        common.sim_ended = True
 
-        if globals.interface:
-            globals.interface.disconnect()
+        if common.interface:
+            common.interface.disconnect()
 
         for t in threading.enumerate():
             print t.getName()
@@ -384,12 +384,12 @@ class MainWindow(wx.Frame):
         self.Destroy()
 
     def update_statusbar(self, evt):
-        if not globals.sim_ended:
+        if not common.sim_ended:
             # calc some passenger stats
             pax_waiting = 0
             total_wait = 0
             max_wait = 0
-            for stat in globals.stations.itervalues(): # collected in 'seconds'
+            for stat in common.stations.itervalues(): # collected in 'seconds'
                 for pax in stat.passengers:
                     pax_waiting += 1
                     pax_wait = pax.wait_time # don't force it to calc the wait time twice
@@ -403,9 +403,9 @@ class MainWindow(wx.Frame):
             # calc some vehicle stats
             seats_occupied = 0
             vehicles_occupied = 0
-            total_vehicles = len(globals.vehicles)
+            total_vehicles = len(common.vehicles)
             total_seats = 0
-            for vehicle in globals.vehicles.itervalues():
+            for vehicle in common.vehicles.itervalues():
                 total_seats += vehicle.max_pax_capacity
                 if vehicle.passengers:
                     vehicles_occupied += 1
@@ -479,7 +479,7 @@ class Visualizer(object):
         # Determine placement of the Node markers
         # Note that it's important that they are loaded by the list ordering.
         # When mousing over, their ordering is used to recover the true object.
-        for s in globals.station_list:
+        for s in common.station_list:
             assert isinstance(s, station.Station)
             stat_x.append( (s.platforms[0].track_segment.x_start + s.platforms[0].track_segment.x_end)/2.0 )
             stat_y.append( (s.platforms[0].track_segment.y_start + s.platforms[0].track_segment.y_end)/2.0 )
@@ -489,7 +489,7 @@ class Visualizer(object):
                 stat_track_y.append( plat.track_segment.y_start )
                 stat_track_y.append( plat.track_segment.y_end   )
 
-        for node in globals.switch_list:
+        for node in common.switch_list:
             switch_x.append( (node.x_start + node.x_end)/2.0 )
             switch_y.append( (node.y_start + node.y_end)/2.0 )
             switch_track_x.append( node.x_start )
@@ -529,10 +529,10 @@ class Visualizer(object):
         plot = chaco.Plot(plot_data)
 
         # Add the background img
-        img = chaco.ImageData.fromfile(globals.img_path)
+        img = chaco.ImageData.fromfile(common.img_path)
         # note that I flip the image in the y-axis. Just using the 'origin' style doesn't result in the correct panning behavior.
         plot_data.set_data("imagedata", numpy.flipud(img.get_data()))
-        img_plot = plot.img_plot("imagedata",  xbounds=globals.img_xbounds, ybounds=globals.img_ybounds)[0]
+        img_plot = plot.img_plot("imagedata",  xbounds=common.img_xbounds, ybounds=common.img_ybounds)[0]
 
         ##### Causes an error on a some computers ####
         ## Create a custom vehicle marker
@@ -644,22 +644,22 @@ class Visualizer(object):
         plot_gc.save(filename)
 
     def update_plot(self, evt):
-        """Retreives data from the globals.vehicle_data_queue and
-        globals.station_data_queue and updates the plot's datasources.
+        """Retreives data from the common.vehicle_data_queue and
+        common.station_data_queue and updates the plot's datasources.
         """
         try:
-            x, y, pax_cnt = globals.vehicle_data_queue.get_nowait() # non-blocking
+            x, y, pax_cnt = common.vehicle_data_queue.get_nowait() # non-blocking
             self.plot.datasources['vehicle_x'].set_data(x)
             self.plot.datasources['vehicle_y'].set_data(y)
             self.plot.datasources['v_pax_cnt'].set_data(pax_cnt)
-            globals.vehicle_data_queue.task_done()
+            common.vehicle_data_queue.task_done()
         except Queue.Empty:
             pass
 
         try:
-            pax_count = globals.station_data_queue.get_nowait() # non-blocking
+            pax_count = common.station_data_queue.get_nowait() # non-blocking
             self.plot.datasources['stat_pax_cnt'].set_data(pax_count)
-            globals.station_data_queue.task_done()
+            common.station_data_queue.task_done()
         except Queue.Empty:
             pass
 
@@ -682,7 +682,7 @@ class Visualizer(object):
 #            print metadata["selections"]
             try:
                 for select in metadata["selections"]:
-                    v = globals.vehicle_list[select]
+                    v = common.vehicle_list[select]
                     v.configure_traits()
                 del metadata["selections"] # clear the selection list
             except IndexError:
@@ -712,11 +712,11 @@ class Visualizer(object):
             point = (self.plot_data.get_data('stat_x')[select],
                      self.plot_data.get_data('stat_y')[select])
 #            print "Point:", point
-            stat = globals.station_list[select]
+            stat = common.station_list[select]
             stat_name = stat.label
             num_pax = len(stat.passengers)
             now = SimPy.now()
-            wait_times = [(now - pax.trip_start) for pax in stat.passengers]
+            wait_times = [pax.wait_time for pax in stat.passengers]
             if wait_times:
                 max_wait = max(wait_times)
                 avg_wait = sum(wait_times) / len(wait_times)
@@ -754,7 +754,7 @@ class Visualizer(object):
 #            print metadata["selections"]
             try:
                 for select in metadata["selections"]:
-                    stat = globals.station_list[select]
+                    stat = common.station_list[select]
                     stat.configure_traits() # old params: view=stat.view
                 del metadata["selections"] # clear the selection list
             except IndexError:
@@ -919,7 +919,7 @@ def run_sim(end_time, callback, *args):
 
     # Reorder the vehicles so that the queue will have proper FIFO ordering
     # on the TrackSegment.
-    vehicle_list = globals.vehicles.values()  # the Vehicle instances
+    vehicle_list = common.vehicles.values()  # the Vehicle instances
     def sort_by_vehicle_pos(a, b):
         if a.loc is b.loc: # if a and b are both at the same location
             return cmp(b.pos, a.pos) # sort by position, descending order
@@ -932,57 +932,57 @@ def run_sim(end_time, callback, *args):
         SimPy.activate(v, v.ctrl_loop())
 
     # activate the stations
-    for s in globals.stations.itervalues():
+    for s in common.stations.itervalues():
         s.startup()
 
     # activate the event manager
-    SimPy.activate(globals.event_manager, globals.event_manager.spawn_events())
+    SimPy.activate(common.event_manager, common.event_manager.spawn_events())
 
     # create queues for communication between the plot and the sim
-    globals.vehicle_data_queue = Queue.Queue()
-    globals.station_data_queue = Queue.Queue()
+    common.vehicle_data_queue = Queue.Queue()
+    common.station_data_queue = Queue.Queue()
 
     # If viz is not disabled, setup and start the data collectors
-    if not globals.config_manager.get_disable_viz():
+    if not common.config_manager.get_disable_viz():
         try:
-            chaco_frame_interval = 1.0 / globals.config_manager.get_fps()
+            chaco_frame_interval = 1.0 / common.config_manager.get_fps()
         except ZeroDivisionError:
             logging.info("fps is set to 0. Running without visualization.")
         else:
             # Create and activate the SimPy Processes which collect data and
             # push it to the visualization module via queues.
-            globals.vehicle_viz_data_collector = VisDataCollector(data_interval=chaco_frame_interval,
-                                                     queue=globals.vehicle_data_queue,
+            common.vehicle_viz_data_collector = VisDataCollector(data_interval=chaco_frame_interval,
+                                                     queue=common.vehicle_data_queue,
                                                      chaco_interval=chaco_frame_interval)
-            SimPy.activate(globals.vehicle_viz_data_collector,
-                         globals.vehicle_viz_data_collector.collect_vehicle_data())
+            SimPy.activate(common.vehicle_viz_data_collector,
+                         common.vehicle_viz_data_collector.collect_vehicle_data())
 
-            globals.station_viz_data_collector = VisDataCollector(data_interval=1.0, # don't need station updates < 1 sec
-                                                     queue=globals.station_data_queue,
+            common.station_viz_data_collector = VisDataCollector(data_interval=1.0, # don't need station updates < 1 sec
+                                                     queue=common.station_data_queue,
                                                      chaco_interval=chaco_frame_interval)
-            SimPy.activate(globals.station_viz_data_collector,
-                         globals.station_viz_data_collector.collect_station_data())
+            SimPy.activate(common.station_viz_data_collector,
+                         common.station_viz_data_collector.collect_station_data())
 
     # start the communication control
-    SimPy.activate(globals.interface, globals.interface.talk())
+    SimPy.activate(common.interface, common.interface.talk())
 
     # Tell the controller that the sim is starting.
     start_msg = api.SimStart()
-    globals.interface.send(api.SIM_START, start_msg)
+    common.interface.send(api.SIM_START, start_msg)
 
     # start the sim
     print end_time
     SimPy.simulate(until=end_time, real_time=True, rel_speed=1)
     print 'ended sim'
-    globals.sim_ended = True
+    common.sim_ended = True
 
     # notify the controller(s) that the simulation is finished
     end_msg = api.SimEnd()
-    globals.interface.send(api.SIM_END, end_msg)
+    common.interface.send(api.SIM_END, end_msg)
 
     # Disconnect from the controller(s)
     print "Disconnecting"
-    globals.interface.disconnect()
+    common.interface.disconnect()
 
     callback(*args)
 
@@ -1014,7 +1014,7 @@ class VisDataCollector(SimPy.Process):
         # Holds arrays for translating from vehicle pos to plot coordinates.
         pos2img = {}
         # precalculate coordinate transform matrixes
-        for track_seg in globals.track_segments.itervalues():
+        for track_seg in common.track_segments.itervalues():
             dx = track_seg.x_end - track_seg.x_start
             dy = track_seg.y_end - track_seg.y_start
             angle = math.atan2(dy, dx)
@@ -1029,7 +1029,7 @@ class VisDataCollector(SimPy.Process):
             x_coords = []
             y_coords = []
             pax_cnt = []
-            for v in globals.vehicle_list:
+            for v in common.vehicle_list:
                 pos, loc = v.nose
                 position = array([pos, 1])
                 x, y = numpy.dot(pos2img[loc], position) # matrix mult
@@ -1063,10 +1063,10 @@ class VisDataCollector(SimPy.Process):
 
         Polling is not the most efficient way to update, of course.
         """
-        data = array([0 for x in globals.station_list])
+        data = array([0 for x in common.station_list])
         while True:
             changed = False
-            for idx, stat in enumerate(globals.station_list):
+            for idx, stat in enumerate(common.station_list):
                 if len(stat.passengers) != data[idx]:
                     data[idx] = len(stat.passengers)
                     changed = True
@@ -1128,11 +1128,11 @@ def add_xy_plot(index_name, value_name, plot, renderer_factory, name=None,
 def postsim_summary():
     """Returns a formatted string containing summary statistics."""
     summary = []
-    end_time = globals.config_manager.get_sim_end_time()
+    end_time = common.config_manager.get_sim_end_time()
     summary.append("\nPost Sim Vehicle Status")
     summary.append("%4s%15s%15s%15s%15s" \
         % ('vID', 'vPos', 'vSpeed', 'location', 'distTrav'))
-    for v in globals.vehicle_list:
+    for v in common.vehicle_list:
         summary.append("%4d%15s%15s%15s%15d" \
                 % (v.ID, v.pos, v.speed, v.loc, v.path.get_dist_travelled()))
 
@@ -1140,7 +1140,7 @@ def postsim_summary():
     summary.append(("%4s"+"%12s"+"%15s%15s"+"%15s"+"%10s%10s%10s") \
            % ('vID', 'time', 'loc', 'pos', 'leadVehicle', 'rearend',
               'sideswipe', 'occurred'))
-    for v in globals.vehicle_list:
+    for v in common.vehicle_list:
         for crash in v.collisions:
             summary.append(("%4d"+"%12.3f"+"%15s%15s"+"%15d"+"%10s%10s%10s") \
                 % (v.ID, crash.time, crash.trav.loc,
@@ -1148,33 +1148,37 @@ def postsim_summary():
                    crash.lv.ID, crash.rearend, crash.sideswipe, crash.occurred))
 
     summary.append("\nPost Sim Passenger Report")
-    pax_display_limit = 30 # Limit the report to include a manageble number of records
-    summary.append(("%4s" + "%15s"*6) \
-            % ('pID','srcStat','destStat','curLoc','waitT','TravelT','Success'))
-    for p in globals.passengers.values()[:pax_display_limit]:
-        if p.trip_end:
-            travel = p.trip_end - p.trip_boarded
-            wait = p.trip_boarded - p.trip_start
-        elif p.trip_boarded:
-            travel = end_time - p.trip_boarded
-            wait = p.trip_boarded - p.trip_start
-        else:
-            travel = 0.0
-            wait = end_time - p.trip_start
-        summary.append(("%4d" + "%15s"*3 + "%15.3f"*2 + "%15s") \
-                % (p.ID, p.src_station, p.dest_station,
-                   p.loc, wait, travel, p.trip_success))
-    if len(globals.passengers) > pax_display_limit:
-        summary.append('An additional %d passenger records not shown...' % (len(globals.passengers) - pax_display_limit,) )
+    pax_display_limit = 20 # Limit the report to include a manageble number of records
+    pax_list = common.passengers.values()
+    pax_list.sort()
+    summary.append(("%4s" + "%15s"*8) \
+            % ('pID','srcStat','destStat','curLoc','waitT','walkT','rideT','totalT','Success'))
+    for p in pax_list[:pax_display_limit]:
+        summary.append(("%4d" + "%15s"*3 + "%15.3f"*4 + "%15s") \
+                % (p.ID, p.src_station, p.dest_station, p.loc, p.wait_time,
+                   p.walk_time, p.ride_time, p.total_time, p.trip_success))
+    if len(pax_list) > pax_display_limit:
+        summary.append('An additional %d passenger records not shown...' % (len(pax_list) - pax_display_limit) )
+
+    summary.append("\nPost Sim Passenger Summary Statistics")
+    summary.append(("%7s" + "%15s"*4 + "%15s") \
+            % ('numPax','aveWait','aveWalk','aveRide','aveTotal','%Success'))
+    ave_wait = sum(p.wait_time for p in pax_list)/len(pax_list)
+    ave_walk = sum(p.walk_time for p in pax_list)/len(pax_list)
+    ave_ride = sum(p.ride_time for p in pax_list)/len(pax_list)
+    ave_total = sum(p.total_time for p in pax_list)/len(pax_list)
+    success_rate = sum(1 for p in pax_list if p.trip_success)/len(pax_list) * 100
+    summary.append(("%7d" + "%15.3f"*5) \
+            % (len(pax_list), ave_wait, ave_walk, ave_ride, ave_total, success_rate))
 
 ##    summary.append("\nPost Sim Switch Report")
 ##    summary.append("%4s%15s%10s" % ('ID', 'Name', 'Errors'))
-##    for sw in globals.switch_list:
+##    for sw in common.switch_list:
 ##        summary.append("%4d%15s%10d" % (sw.ID, sw, sw.errors))
 
 ##    summary.append("\nPost Sim Station Report")
 ##    summary.append(("%4s%17s" + "%10s"*7) % ('ID', 'Name', 'Departs', 'Arrives', 'Crashes', 'Unload', 'Queue', 'Load', 'Storage'))
-##    for s in globals.station_list:
+##    for s in common.station_list:
 ##        summary.append(("%4d%17s" + "%10d"*7) % \
 ##                (s.ID, s.label, s.totalArrivals, s.totalDepartures, s.totalCrashes,
 ##                 s.num_load_berths, s.num_queue_slots, s.num_load_berths,

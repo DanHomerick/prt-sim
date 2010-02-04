@@ -6,5 +6,6 @@ setup(name="pyPRT",
       author="Dan Homerick",
       author_email="danhomerick@gmail.com",
       url="http://code.google.com/p/prt-sim/",
-      packages=['pyprt', 'pyprt.sim', 'pyprt.ctrl', 'pyprt.tests']
+      packages=['pyprt', 'pyprt.sim', 'pyprt.ctrl', 'pyprt.tests'],
+      requires=['protobuf (>=2.3.0)', 'networkx (>=5.0)']
       )

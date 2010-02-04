@@ -16,7 +16,7 @@ from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 import wx
 import SimPy.SimulationRT as Sim
 
-import globals
+import common
 import config
 
 TIMER_ID = wx.NewId()
@@ -47,17 +47,17 @@ class Visualizer(Sim.Process, wx.Frame):
         # These should only need to change when the track layout changes
         layout = config.conf.get('Visualization', 'layout')
         if layout.upper() == 'SPRING':
-            self.node_pos = NX.spring_layout(globals.digraph)
+            self.node_pos = NX.spring_layout(common.digraph)
         elif layout.upper() == 'SHELL':
-            self.node_pos = NX.shell_layout(globals.digraph)
+            self.node_pos = NX.shell_layout(common.digraph)
         elif layout.upper() == 'SPECTRAL':
-            self.node_pos = NX.spectral_layout(globals.digraph)
+            self.node_pos = NX.spectral_layout(common.digraph)
         elif layout.upper() == 'CIRCULAR':
-            self.node_pos = NX.circular_layout(globals.digraph)
+            self.node_pos = NX.circular_layout(common.digraph)
         elif layout.upper() == 'RANDOM':
-            self.node_pos = NX.random_layout(globals.digraph)
+            self.node_pos = NX.random_layout(common.digraph)
         elif layout.upper() == 'FIXED':
-            self.node_pos = self.fixed_layout(globals.digraph)
+            self.node_pos = self.fixed_layout(common.digraph)
         else:
             raise Exception, 'Unknown node layout method'
         self.edge_pos = self.calc_edge_coords()
@@ -87,7 +87,7 @@ class Visualizer(Sim.Process, wx.Frame):
     def fixed_layout(G, dim=2):
         """ fixed layout based on node x,y"""
         vpos={}
-        for v in globals.digraph.nodes():
+        for v in common.digraph.nodes():
             vpos[v]=N.array([v.x,v.y])
         return vpos
 
@@ -105,7 +105,7 @@ class Visualizer(Sim.Process, wx.Frame):
 
 
         # draw the track once
-        NX.draw_networkx(globals.digraph, pos=self.node_pos, ax=self.ax)
+        NX.draw_networkx(common.digraph, pos=self.node_pos, ax=self.ax)
         self.ax.axis('off')  # Don't draw the axis numbers or lines
 
         # add the vehicles
@@ -132,7 +132,7 @@ class Visualizer(Sim.Process, wx.Frame):
                     'upper right') # fig position
         self.Show()
         wx.EVT_IDLE(wx.GetApp(), self.update_drawing)
-        globals.wxApp.MainLoop()
+        common.wxApp.MainLoop()
 
 
         # TODO: change to timer based to run at some multiple of real-time
@@ -156,7 +156,7 @@ class Visualizer(Sim.Process, wx.Frame):
             self._frame_num += 1
         except IndexError:
             print "Done!"
-            globals.wxApp.ExitMainLoop()
+            common.wxApp.ExitMainLoop()
             return True
 
 
@@ -179,7 +179,7 @@ class Visualizer(Sim.Process, wx.Frame):
         coordinates for each edge:
         [edge_object, ( (x_start, y_start), (x_end, y_end) ), ... ]
         """
-        edgelist = globals.digraph.edges(data=True)
+        edgelist = common.digraph.edges(data=True)
 
         e_pos = [(data,
                      ((self.node_pos[src][0], self.node_pos[src][1]),

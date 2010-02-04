@@ -42,7 +42,7 @@ package edu.ucsc.track_builder.gtf_import
 		 * simple way of merging nodes that are in close proximity to each other. */ 
 		public var PRECISION:uint = 5;
 		public var STATION_BERTH_LENGTH:Number = 15; // meters
-		public var STATION_BERTH_COUNT:uint = 3;
+		public var STATION_BERTH_COUNT:uint = 4;
 		public var STATION_COVERAGE_RADIUS:Number = 150; // meters
 		public var VEHICLE_SPEED:Number = 15; // 15 meters/sec == 34 miles/hour
 		

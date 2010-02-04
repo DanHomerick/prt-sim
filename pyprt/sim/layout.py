@@ -12,10 +12,9 @@ import enthought.traits.ui.api as ui
 import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
-import globals
+import common
 import station
 from pyprt.shared.utility import pairwise
-from comm import AlarmClock
 
 # arbitrarily chosen
 TRACK_CAPACITY = 1000
@@ -174,7 +173,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     @traits.on_trait_change('passengers')
     def _update_passanger_mass(self):
         """Keep the passenger_mass up to date"""
-        self.passenger_mass = sum(p.weight for p in self.passengers)
+        self.passenger_mass = sum(p.mass for p in self.passengers)
 
     @traits.on_trait_change('v_mass, passenger_mass')
     def _update_total_mass(self):
@@ -184,12 +183,10 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def get_pos(self):
         trav = self.path.get_active_traversal()
         return trav.get_x_from_time(POS, Sim.now())
-
     pos = property(fget = get_pos)
 
     def get_loc(self):
         return self.path.get_active_loc()
-
     loc = property(fget = get_loc)
 
     def get_nose(self):
@@ -278,7 +275,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             # in rounding errors. Use points in the trajectory where the vehicle
             # has clearly come to a complete stop to zero out any accumulated
             # rounding errors in the velocity and acceleration.
-            if globals.dist_eql(coeffs[VEL], 0) and globals.dist_eql(coeffs[ACCEL], 0):
+            if common.dist_eql(coeffs[VEL], 0) and common.dist_eql(coeffs[ACCEL], 0):
                 coeffs[VEL] = 0
                 coeffs[ACCEL] = 0
 
@@ -343,7 +340,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 ##        if not (self.get_speed() == self.target_speed and self.get_accel() == 0):
 ##            msg = api.SimAbortVehicleSpeed()
 ##            msg.msgID = self.co_speed.msgID
-##            globals.interface.send(api.SIM_ABORT_VEHICLE_SPEED, msg)
+##            common.interface.send(api.SIM_ABORT_VEHICLE_SPEED, msg)
 ##            self.cancel(self.co_speed)
 #
 #        # add trajectory to self.path
@@ -410,7 +407,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                         if self.interrupted():
                             self.handle_interrupt()
 
-            except globals.CollisionError: # currently unused
+            except common.CollisionError: # currently unused
                 logging.error("A collision occured. TODO: Handle properly.")
 
     def traverse_gen(self):
@@ -434,8 +431,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         except IndexError:
             next_c = None
         if next_c:
-            assert globals.time_ge(next_c.time, Sim.now())
-            if globals.time_eql(next_c.time, Sim.now()):
+            assert common.time_ge(next_c.time, Sim.now())
+            if common.time_eql(next_c.time, Sim.now()):
                 # just had a collision
                 msg = api.SimNotifyVehicleCollision()
                 msg.v1ID = next_c.lv.ID
@@ -449,7 +446,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                     msg.rearend = True
                     # think bug may be in get_tail...
                     if __debug__:
-                        if not globals.dist_eql(self.pos, next_c.lv.get_tail()[0]): # is get tail pos WRONG?
+                        if not common.dist_eql(self.pos, next_c.lv.get_tail()[0]): # is get tail pos WRONG?
                             tail_pos, tail_loc = next_c.lv.get_tail()
                             print "297| Now:%s, self.pos:%s, self.loc:%s, lv.tail_pos:%s, lv.tail_loc:%s" \
                             % ( Sim.now(), self.pos, self.loc, tail_pos, tail_loc )
@@ -461,10 +458,10 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 #                            self.path.plot(title='rear vehicle', show=False)
 #                            next_c.lv.path.plot(title='lead vehicle', show=True)
                             print_activeQs()
-                            assert globals.dist_eql(self.pos, next_c.lv.get_tail()[0])
+                            assert common.dist_eql(self.pos, next_c.lv.get_tail()[0])
                 if next_c.sideswipe:
                     msg.sideswipe = True
-                globals.interface.send(api.SIM_NOTIFY_VEHICLE_COLLISION, msg)
+                common.interface.send(api.SIM_NOTIFY_VEHICLE_COLLISION, msg)
                 assert next_c.lv is self.find_vehicle_ahead()
                 next_c.occurred = True
                 my_nose_pos, my_nose_loc = self.nose
@@ -487,11 +484,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         if self.tail_releases:
             # at a tail release point
-            if globals.time_eql(self.tail_releases[0].time, Sim.now()):
+            if common.time_eql(self.tail_releases[0].time, Sim.now()):
                 loc = self.tail_releases[0].trav.loc
                 msg = api.SimNotifyVehicleExit()
                 self.fill_VehicleStatus(msg.v_status)
-                globals.interface.send(api.SIM_NOTIFY_VEHICLE_EXIT, msg)
+                common.interface.send(api.SIM_NOTIFY_VEHICLE_EXIT, msg)
                 del self.tail_releases[0]
                 if isinstance(loc, station.Station):
                     self.interrupt(loc) # notify station that I'm clear
@@ -526,7 +523,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 logging.debug("T=%4.3f %s is traversing %s until next collision time %4.3f",
                               Sim.now(), self, self.loc, next_collision_time)
 
-        assert globals.time_ge(delay, 0)
+        assert common.time_ge(delay, 0)
         yield Sim.hold, self, delay
 
     def check_for_collisions(self, lv=None):
@@ -563,12 +560,12 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             lv_tail_trav = lv.get_tail_traversal()
 
             if lv_tail_trav.loc is not s_trav.loc \
-                    and globals.time_eql(Sim.now(), s_trav.start_time):
+                    and common.time_eql(Sim.now(), s_trav.start_time):
                 # I just started traversing this TrackSegment, but the tail of
                 # lv isn't ahead of me--it's on another TrackSegment entirely.
                 # The only explaination for this is that I am merging, and am
                 # sideswiping lv.
-                assert len(globals.digraph.predecessors(s_trav.loc)) >= 2
+                assert len(common.digraph.predecessors(s_trav.loc)) >= 2
                 self.collisions.append(Collision(s_trav.start_time, lv,
                                                  s_trav, sideswipe=True))
                 return
@@ -607,7 +604,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 #                # of it's traversal, or if self is stopped.
 #                # TODO: Change this so that we stop checking for collisions
 #                # once lv's tail leaves self's current location.
-#                if globals.time_le(s_trav.end_time, lv_trav.end_time) or s_trav.end_time == inf:
+#                if common.time_le(s_trav.end_time, lv_trav.end_time) or s_trav.end_time == inf:
 #                    break
 #
 #                else:
@@ -623,7 +620,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
             if __debug__:
                 for c in self.collisions[self.collision_idx:]:
-                    assert globals.time_ge(c.time, Sim.now())
+                    assert common.time_ge(c.time, Sim.now())
 
     def handle_boundry_gen(self):
         """Handle the transitions from one traversal to the next."""
@@ -632,7 +629,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         # --- Decide what location will be next ---
         try:    # Next location has already been decided (vehicle switching)
             new_loc = self.path.traversals[self.path.active_idx+1].loc
-            assert new_loc in globals.digraph.neighbors(old_loc)
+            assert new_loc in common.digraph.neighbors(old_loc)
         except IndexError:
             new_loc = old_loc.next
             if new_loc is None: # can be caused by a dead-end track or a track switch in mid-throw
@@ -657,13 +654,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 #            yield Sim.request, self, new_loc.resource
 ###            try:
 ###                new_loc.accept(self)             # enter the station
-###            except globals.StationOvershootError:
+###            except common.StationOvershootError:
 ###                # TEMP kludge to keep things behaving rationally. Introduce a
 ###                # discontinuity in the vehicle speed, instantly bringing it
 ###                # down to the station's max_speed. Longer term soln?
 ###                seg = Segment(poly1d([0,0,new_loc.max_speed,0]), inf, Sim.now(), self.total_mass)
 ###                self.path.change_trajectory( [seg] )
-###            except globals.StationFullError:
+###            except common.StationFullError:
 ###                # FIXME: Undefined what happens to vehicle. Currently
 ###                # 'overwrites' old vehicle in the station entry berth.
 ###                pass
@@ -721,13 +718,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 #        if __debug__:
 #            trav = self.path.get_active_traversal()
 #            # if not trav.start_time <= Sim.now() <= trav.end_time:
-#            if not (globals.time_le(trav.start_time, Sim.now()) and globals.time_le(Sim.now(), trav.end_time)):
+#            if not (common.time_le(trav.start_time, Sim.now()) and common.time_le(Sim.now(), trav.end_time)):
 #                raise Exception, (trav.start_time, Sim.now(), trav.end_time)
 
         # Send Arrival Msg
         notify_msg = api.SimNotifyVehicleArrive()
         self.fill_VehicleStatus(notify_msg.v_status)
-        globals.interface.send(api.SIM_NOTIFY_VEHICLE_ARRIVE, notify_msg)
+        common.interface.send(api.SIM_NOTIFY_VEHICLE_ARRIVE, notify_msg)
 
         # Now that we're effectively on the new_loc, do some collision checking.
         self.check_for_collisions()
@@ -888,7 +885,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         will look in the switch's routing table -- will raise a ValueError
         if this vehicle doesn't have an entry.
         """
-        neighbors = globals.digraph.neighbors(old_loc)
+        neighbors = common.digraph.neighbors(old_loc)
         if len(neighbors) == 1:
             return neighbors[0]
         else:
@@ -1121,7 +1118,7 @@ class Times(object):
 def print_activeQs():
     """For debug puposes. Prints out all vehicles that are holding each edge and node."""
     print "ActiveQ printout - TrackSegments"
-    for e in globals.track_segments.values():
+    for e in common.track_segments.values():
         print "  " + str(e), [str(v) for v in e.resource.activeQ]
 
 
@@ -1202,8 +1199,8 @@ class Segment(traits.HasTraits):
         (included) to end_time (excluded)."""
         if time is None:
             time = Sim.now()
-        if globals.time_ge(time, self.start_time) and \
-                globals.time_lt(time, self.end_time):
+        if common.time_ge(time, self.start_time) and \
+                common.time_lt(time, self.end_time):
             return True
         else:
             return False
@@ -1231,21 +1228,21 @@ class Segment(traits.HasTraits):
         ret = Times()
         # stopped at pos
         if self.pos_eqn.order == 0 and \
-                globals.dist_eql(self.pos_eqn[0], pos):
+                common.dist_eql(self.pos_eqn[0], pos):
             ret.ranges = [ (self.start_time, self.end_time) ]
 
         else:
             # Only real roots in the correct time range are valid
             roots = (self.pos_eqn - pos).r
             pts = [t.real for t in roots if
-                     globals.time_eql(t.imag, 0.0000) and \
-                     globals.time_ge(t.real, 0.0) and \
-                     globals.time_le(t.real, self.duration)]
+                     common.time_eql(t.imag, 0.0000) and \
+                     common.time_ge(t.real, 0.0) and \
+                     common.time_le(t.real, self.duration)]
             pts.sort()
 
             # Remove duplicates that arise from rounding errors
             for i in reversed(xrange(1, len(pts))): # backward to 1
-                if globals.time_eql(pts[i], pts[i-1]):
+                if common.time_eql(pts[i], pts[i-1]):
                     avg = (pts[i-1]+pts[i])/2.0
                     del pts[i]
                     pts[i-1] = avg
@@ -1283,7 +1280,7 @@ class Segment(traits.HasTraits):
             time = time + Sim.now()
 
         # end_time is treated as valid
-        if globals.time_lt(time, self.start_time) or globals.time_gt(time, self.end_time):
+        if common.time_lt(time, self.start_time) or common.time_gt(time, self.end_time):
             raise InvalidTimeError, (time, self.start_time, self.end_time)
 
         ret = None
@@ -1314,7 +1311,7 @@ class Segment(traits.HasTraits):
             ret = self.pos_eqn.deriv(x)(time - self.start_time)
 
         if rnd:
-            ret =  round(ret, globals.DIST_RND)
+            ret =  round(ret, common.DIST_RND)
 
         return ret
 
@@ -1332,7 +1329,7 @@ class Segment(traits.HasTraits):
         s2_eqn = shift_poly(self.pos_eqn, -dur1, -pos)
         dur2 = self.end_time - time
         s2 = Segment(s2_eqn, dur2, time, self.mass)
-        assert globals.dist_eql(s2.pos_eqn(0), 0)
+        assert common.dist_eql(s2.pos_eqn(0), 0)
         return (s1, s2)
 
     def split_at_time(self, time):
@@ -1347,7 +1344,7 @@ class Segment(traits.HasTraits):
         s2_eqn = shift_poly(self.pos_eqn, -dur1, -s1_end_pos)
         dur2 = self.end_time - time
         s2 = Segment(s2_eqn, dur2, time, self.mass)
-        assert globals.dist_eql(s2.pos_eqn(0), 0)
+        assert common.dist_eql(s2.pos_eqn(0), 0)
         return (s1, s2)
 
     def collision_check(self, lv_seg, offset, relative=False):
@@ -1382,13 +1379,13 @@ class Segment(traits.HasTraits):
 
         start_time = max(self.start_time, lv_seg.start_time)
         dur = min(self.end_time, lv_seg.end_time) - start_time
-        if globals.time_lt(dur, 0.0):
+        if common.time_lt(dur, 0.0):
             raise InvalidTimeError, "No overlap: (%s, %s), (%s, %s)" % \
                 (self.start_time, self.end_time, lv_seg.start_time, lv_seg.end_time)
 
         intersect_eqn = s_eqn - lv_eqn
         if intersect_eqn.order == 0: # jerk, accel, and vel are identical
-            if globals.dist_eql(intersect_eqn[0], 0): # position is the same
+            if common.dist_eql(intersect_eqn[0], 0): # position is the same
                 times = [0]
             else:
                 times = []
@@ -1445,7 +1442,7 @@ class Traversal(traits.HasTraits):
 
     def get_elapsed_time(self):
         t = Sim.now() - self.start_time
-        assert globals.time_eql( t, sum([seg.get_elapsed_time() for seg in self.segments]) )
+        assert common.time_eql( t, sum([seg.get_elapsed_time() for seg in self.segments]) )
         return t
 
     def get_elapsed_dist(self):
@@ -1462,8 +1459,8 @@ class Traversal(traits.HasTraits):
         to end_time (excluded)."""
         if time is None:
             time = Sim.now()
-        if globals.time_ge(time, self.start_time) and \
-                globals.time_lt(time, self.end_time):
+        if common.time_ge(time, self.start_time) and \
+                common.time_lt(time, self.end_time):
             return True
         else:
             return False
@@ -1481,7 +1478,7 @@ class Traversal(traits.HasTraits):
             raise InvalidTimeError, time
         if not self.is_current(time):
             raise InvalidTimeError, time
-        for seg in reversed(self.segments): # globals case is lastest seg
+        for seg in reversed(self.segments): # common case is lastest seg
             if seg.is_current(time):
                 return seg
 
@@ -1497,7 +1494,7 @@ class Traversal(traits.HasTraits):
         If `relative` is True, will return the time relative to
         Sim.now() rather than the absolute time.
         """
-        if globals.dist_lt(pos, 0) or globals.dist_gt(pos, self.length):
+        if common.dist_lt(pos, 0) or common.dist_gt(pos, self.length):
             raise InvalidPosError, pos
 
         times = Times()
@@ -1507,7 +1504,7 @@ class Traversal(traits.HasTraits):
         # Remove duplicates. A pos on a segment boundry will receive identical
         # times from each segment.
         for i in reversed(xrange(1, len(times.points))): # backward to 1
-            if globals.time_eql(times.points[i], times.points[i-1]):
+            if common.time_eql(times.points[i], times.points[i-1]):
                 avg = (times.points[i-1]+times.points[i])/2.0
                 del times.points[i]
                 times.points[i-1] = avg
@@ -1533,8 +1530,8 @@ class Traversal(traits.HasTraits):
         else:
             abs_time = time
 
-        if globals.time_lt(abs_time, self.start_time) or \
-                globals.time_gt(abs_time, self.end_time):
+        if common.time_lt(abs_time, self.start_time) or \
+                common.time_gt(abs_time, self.end_time):
             raise InvalidTimeError, time
 
         for seg in self.segments:
@@ -1556,20 +1553,20 @@ class Traversal(traits.HasTraits):
         Raises TraversalFullError if `seg` has an end position beyond the
         location's length.
         """
-        assert globals.time_ge(seg.start_time, Sim.now())
-        assert globals.dist_ge(seg.get_start_pos(), 0)
+        assert common.time_ge(seg.start_time, Sim.now())
+        assert common.dist_ge(seg.get_start_pos(), 0)
 
         # Ensure that segment really starts in loc
-        if globals.dist_gt(seg.get_start_pos(), self.length):
+        if common.dist_gt(seg.get_start_pos(), self.length):
             raise InvalidPosError, seg.get_start_pos()
 
         # Ensure that the segment doesn't go beyond the location length.
         end_pos = seg.get_end_pos()
-        if globals.dist_gt(end_pos, self.length):
+        if common.dist_gt(end_pos, self.length):
             raise TraversalFullError
 
         if self.segments:
-            assert globals.dist_eql(self.segments[-1].get_end_pos(), seg.get_start_pos())
+            assert common.dist_eql(self.segments[-1].get_end_pos(), seg.get_start_pos())
 
         self.segments.append(seg)
 ##        try:
@@ -1578,7 +1575,7 @@ class Traversal(traits.HasTraits):
 ##            tail_seg = None
 ##        if tail_seg:
 ##            # If seg starts at same time as tail_seg starts, use change_trajectory instead
-##            if globals.time_lt(seg.start_time, tail_seg.start_time):
+##            if common.time_lt(seg.start_time, tail_seg.start_time):
 ##                raise InvalidTimeError, (seg.start_time, tail_seg.start_time)
 ##
 ##            # clip duration of the old tail_seg
@@ -1596,15 +1593,15 @@ class Traversal(traits.HasTraits):
 
     def clear(self, time):
         """Clears the traversal from time onwards."""
-        assert globals.time_ge(time, Sim.now()) # don't change the past.
+        assert common.time_ge(time, Sim.now()) # don't change the past.
         if not self.segments:
             return
 
-        if globals.time_le(time, self.start_time): # at start or before. Wipe everything.
+        if common.time_le(time, self.start_time): # at start or before. Wipe everything.
             self.segments = []
             return
 
-        if globals.time_ge(time, self.end_time): # doesn't apply to me
+        if common.time_ge(time, self.end_time): # doesn't apply to me
             return
 
         # Find the relevant segment
@@ -1870,7 +1867,7 @@ class Path(traits.HasTraits):
         if self.future.is_current(time):
             return self.future
         else:
-            for trav in reversed(self.traversals): # globals case is lastest seg
+            for trav in reversed(self.traversals): # common case is lastest seg
                 if trav.is_current(time):
                     return trav
 
@@ -1922,7 +1919,7 @@ class Path(traits.HasTraits):
         Segements should be an iterable (e.g. tuple or list) containing
         Segment objects."""
         t = segments[0].start_time
-        assert globals.time_ge(t, Sim.now()) # don't change the past
+        assert common.time_ge(t, Sim.now()) # don't change the past
         current_trav = self.get_traversal_from_time(t)
 
         # clear planned trajectory past time t
@@ -2088,8 +2085,8 @@ class TrackSegment(Node):
                         raise Exception("Crash. Threw a track switch while a vehicle was on top of it.")
 
             self.next = None # transitioning - switch is unusable
-            switch_delay = globals.config_manager.get_track_switch_time()
-            AlarmClock(Sim.now()+switch_delay, self._delayed_switch, new_next, msg_id)
+            switch_delay = common.config_manager.get_track_switch_time()
+            common.AlarmClock(Sim.now()+switch_delay, self._delayed_switch, new_next, msg_id)
 
     def _delayed_switch(self, new_next, msg_id):
         """Changes self.next to point to the new TrackSegment. Sends a
@@ -2099,7 +2096,7 @@ class TrackSegment(Node):
         complete_msg.msgID = msg_id
         complete_msg.tsID = self.ID
         complete_msg.nextID = self.next.ID
-        globals.interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
+        common.interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
 
     def fill_TrackSegmentStatus(self, ts):
         """Fills an api.TrackSegmentStatus instance with current information."""
@@ -2150,7 +2147,7 @@ class TrackSegment(Node):
 #    def get_outbound_edges(self):
 #        """Returns the outbound edge instances.
 #        TEMP: Using graph lookup each time."""
-#        return [data for src, sink, data in globals.digraph.edges(self, data=True)]
+#        return [data for src, sink, data in common.digraph.edges(self, data=True)]
 #
 #    def add_rt_entry(self, veh, edge, msgID):
 #        """Adds a vehicle: (edge, msgID) entry to the routing table. If an

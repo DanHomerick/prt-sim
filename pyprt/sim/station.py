@@ -6,7 +6,7 @@ import enthought.traits.ui.api as ui
 import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
-import globals
+import common
 from events import Passenger
 
 class Berth(Sim.Process, traits.HasTraits):
@@ -93,7 +93,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.msgID = self._disembark_cmd_id
                     error_msg.id_type = api.VEHICLE
                     error_msg.ID = self._disembark_vehicle.ID
-                    globals.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                     break
 
                 pax = self._disembark_pax.pop()
@@ -106,7 +106,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.msgID = self._disembark_cmd_id
                     error_msg.id_type = api.PASSENGER
                     error_msg.ID = pax.ID
-                    globals.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                     continue # process other passengers
 
                 self._busy = True
@@ -118,7 +118,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 dis_start_msg.platformID = self.platform.ID
                 dis_start_msg.pID = pax.ID
                 dis_start_msg.berthID = self.ID
-                globals.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_START,
+                common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_START,
                                        dis_start_msg)
 
                 # Wait while passenger disembarks
@@ -130,7 +130,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.msgID = self._disembark_cmd_id
                     error_msg.id_type = api.VEHICLE
                     error_msg.ID = self._disembark_vehicle.ID
-                    globals.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                     break
 
                 # Move the passenger from the vehicle to the station
@@ -142,7 +142,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 if self.station.ID == pax.dest_station.ID:
                     pax.trip_end = Sim.now()
                     pax.trip_success = True
-                    globals.delivered_pax.add(pax)
+                    common.delivered_pax.add(pax)
                     logging.info("T=%4.3f %s delivered to platform %s in %s by %s. disembarked in berth %s",
                                  Sim.now(), pax, self.platform.ID, self.station.ID, self._disembark_vehicle.ID, self.ID)
                 else:
@@ -155,17 +155,17 @@ class Berth(Sim.Process, traits.HasTraits):
                 dis_end_msg.platformID = self.platform.ID
                 dis_end_msg.pID = pax.ID
                 dis_end_msg.berthID = self.ID
-                globals.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_END,
+                common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_END,
                                        dis_end_msg)
 
             self._busy = False
 
             # Notify controller that passenger disembarkment is done.
             if self._disembark_cmd_id != api.NONE_ID:
-                dis_cmd_complete = api.SimCompletePassengerDisembark()
+                dis_cmd_complete = api.SimCompletePassengersDisembark()
                 dis_cmd_complete.msgID = self._disembark_cmd_id
                 dis_cmd_complete.cmd.CopyFrom(self._disembark_cmd)
-                globals.interface.send(api.SIM_COMPLETE_PASSENGER_DISEMBARK,
+                common.interface.send(api.SIM_COMPLETE_PASSENGERS_DISEMBARK,
                                        dis_cmd_complete)
 
                 # Reset state
@@ -188,7 +188,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.msgID = self._embark_cmd_id
                     error_msg.id_type = api.VEHICLE
                     error_msg.ID = self._embark_vehicle.ID
-                    globals.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                     break
 
                 pax = self._embark_pax.pop()
@@ -201,7 +201,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.msgID = self._disembark_cmd_id
                     error_msg.id_type = api.PASSENGER
                     error_msg.ID = pax.ID
-                    globals.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                     continue # process other passengers
 
                 # Error if the vehicle is at full capacity
@@ -212,7 +212,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.msgID = self._disembark_cmd_id
                     error_msg.id_type = api.PASSENGER
                     error_msg.ID = pax.ID
-                    globals.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                     continue
 
                 self._busy = True
@@ -224,7 +224,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 em_start_msg.platformID = self.platform.ID
                 em_start_msg.pID = pax.ID
                 em_start_msg.berthID = self.ID
-                globals.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_START,
+                common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_START,
                                        em_start_msg)
 
                 yield Sim.hold, self, pax.load_delay
@@ -235,7 +235,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.msgID = self._embark_cmd_id
                     error_msg.id_type = api.VEHICLE
                     error_msg.ID = self._embark_vehicle.ID
-                    globals.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                     break
 
                 # Move passenger's location to the vehicle
@@ -253,17 +253,17 @@ class Berth(Sim.Process, traits.HasTraits):
                 em_end_msg.platformID = self.platform.ID
                 em_end_msg.pID = pax.ID
                 em_end_msg.berthID = self.ID
-                globals.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_END,
+                common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_END,
                                        em_end_msg)
 
             self._busy = False
 
             # Notify controller that passenger embarkment is done.
             if self._embark_cmd_id != api.NONE_ID:
-                em_cmd_complete = api.SimCompletePassengerEmbark()
+                em_cmd_complete = api.SimCompletePassengersEmbark()
                 em_cmd_complete.msgID = self._embark_cmd_id
                 em_cmd_complete.cmd.CopyFrom(self._embark_cmd)
-                globals.interface.send(api.SIM_COMPLETE_PASSENGER_EMBARK,
+                common.interface.send(api.SIM_COMPLETE_PASSENGERS_EMBARK,
                                        em_cmd_complete)
 
                 # Reset state

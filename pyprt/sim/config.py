@@ -3,7 +3,7 @@ import optparse
 import ConfigParser
 import logging
 
-import globals
+import common
 
 class ConfigManager(object):
     loglevels = {'DEBUG':logging.DEBUG, 'INFO':logging.INFO,
@@ -12,7 +12,7 @@ class ConfigManager(object):
 
     def __init__(self):
         # Command line options
-        self.options, positional_args = self.read_args()        
+        self.options, positional_args = self.read_args()
 
         if len(positional_args) > 1 or (len(positional_args) == 1 and self.options.config_path != None):
             raise Exception("Unrecognized command line arguments: %s" % positional_args)
@@ -22,7 +22,7 @@ class ConfigManager(object):
         if len(positional_args) == 1:
             self.config_path = positional_args[0]
         elif self.options.config_path != None:
-           self.config_path = self.options.config_path
+            self.config_path = self.options.config_path
         else: # Fallback to a default.
             from pyprt.sim import __path__ as sim_path
             self.config_path = sim_path[0] + '/default.cfg'
@@ -31,12 +31,12 @@ class ConfigManager(object):
         self.config_dir = os.path.abspath(os.path.dirname(self.config_path)) + os.path.sep
         # Parse the config file
         if not self.config_parser.read(self.config_path): # returned an empty list
-            raise globals.ConfigError("Unable to read config file: " + self.config_path)
-        
-        self.logfile = None        
+            raise common.ConfigError("Unable to read config file: " + self.config_path)
+
+        self.logfile = None
 
     def read_args(self):
-        """Parse the command line arguments. Returns the 2-tuple (options, args) from optparse.OptionParser"""        
+        """Parse the command line arguments. Returns the 2-tuple (options, args) from optparse.OptionParser"""
         optpar = optparse.OptionParser(usage="usage: %prog [options] [CONFIG]")
         optpar.add_option("--disable_gui", action="store_true", dest="disable_gui",
                   help="Console only. Do not launch a GUI.")
@@ -199,7 +199,7 @@ class ConfigManager(object):
         if self.options.fps != None:
             return self.options.fps
         else:
-            return self.config_parser.getfloat('Visualization', 'fps')            
+            return self.config_parser.getfloat('Visualization', 'fps')
 
     def get_track_switch_time(self):
         if self.options.track_switch_time != None:

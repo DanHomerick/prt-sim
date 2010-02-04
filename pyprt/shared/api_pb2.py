@@ -10,7 +10,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='api.proto',
   package='prt',
-  serialized_pb='\n\tapi.proto\x12\x03prt\" \n\nPolyCoeffs\x12\x12\n\x06\x63oeffs\x18\x01 \x03(\x02\x42\x02\x10\x01\";\n\x06Spline\x12\x1e\n\x05polys\x18\x01 \x03(\x0b\x32\x0f.prt.PolyCoeffs\x12\x11\n\x05times\x18\x02 \x03(\x01\x42\x02\x10\x01\"D\n\x18\x43trlCmdVehicleTrajectory\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x1b\n\x06spline\x18\x02 \x02(\x0b\x32\x0b.prt.Spline\"H\n\x17\x43trlCmdVehicleItinerary\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x11\n\x05tsIDs\x18\x02 \x03(\x05\x42\x02\x10\x01\x12\r\n\x05\x63lear\x18\x03 \x01(\x08\"r\n\x17\x43trlCmdPassengersEmbark\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x04 \x02(\x05\x12\x18\n\x0cpassengerIDs\x18\x05 \x03(\x05\x42\x02\x10\x01\"u\n\x1a\x43trlCmdPassengersDisembark\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x04 \x02(\x05\x12\x18\n\x0cpassengerIDs\x18\x05 \x03(\x05\x42\x02\x10\x01\"-\n\rCtrlCmdSwitch\x12\x0c\n\x04tsID\x18\x01 \x02(\x05\x12\x0e\n\x06nextID\x18\x02 \x02(\x05\"\'\n\x18\x43trlRequestVehicleStatus\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"\'\n\x18\x43trlRequestStationStatus\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"(\n\x19\x43trlRequestStationSummary\x12\x0b\n\x03sID\x18\x02 \x02(\x05\")\n\x1a\x43trlRequestPassengerStatus\x12\x0b\n\x03pID\x18\x02 \x02(\x05\"\'\n\x17\x43trlRequestSwitchStatus\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"-\n\x1d\x43trlRequestTrackSegmentStatus\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"\x18\n\x16\x43trlRequestTotalStatus\"F\n\x1c\x43trlSetnotifyVehiclePosition\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04tsID\x18\x03 \x02(\x05\x12\x0b\n\x03pos\x18\x04 \x02(\x05\"!\n\x11\x43trlSetnotifyTime\x12\x0c\n\x04time\x18\x01 \x02(\x01\"$\n\nCtrlResume\x12\x16\n\x0elast_sim_msgID\x18\x01 \x02(\x05\"#\n\x0bSimGreeting\x12\x14\n\x0csim_end_time\x18\x01 \x02(\x01\"\n\n\x08SimStart\"\x08\n\x06SimEnd\"!\n\x10SimUnimplemented\x12\r\n\x05msgID\x18\x01 \x02(\x05\"%\n\x14SimAbortVehicleSpeed\x12\r\n\x05msgID\x18\x01 \x02(\x05\"V\n\x1aSimCompletePassengerEmbark\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12)\n\x03\x63md\x18\x02 \x01(\x0b\x32\x1c.prt.CtrlCmdPassengersEmbark\"\\\n\x1dSimCompletePassengerDisembark\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12,\n\x03\x63md\x18\x02 \x01(\x0b\x32\x1f.prt.CtrlCmdPassengersDisembark\"@\n\x11SimCompleteSwitch\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\x0e\n\x06nextID\x18\x03 \x02(\x05\"O\n\x18SimResponseVehicleStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\x08v_status\x18\x02 \x02(\x0b\x32\x12.prt.VehicleStatus\"O\n\x18SimResponseStationStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\x08s_status\x18\x02 \x02(\x0b\x32\x12.prt.StationStatus\"R\n\x19SimResponseStationSummary\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\ts_summary\x18\x02 \x02(\x0b\x32\x13.prt.StationSummary\"S\n\x1aSimResponsePassengerStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\x08p_status\x18\x02 \x02(\x0b\x32\x14.prt.PassengerStatus\"N\n\x17SimResponseSwitchStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\tsw_status\x18\x02 \x02(\x0b\x32\x11.prt.SwitchStatus\"Z\n\x1dSimResponseTrackSegmentStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12*\n\tts_status\x18\x02 \x02(\x0b\x32\x17.prt.TrackSegmentStatus\"\xf7\x01\n\x16SimResponseTotalStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\nv_statuses\x18\x02 \x03(\x0b\x32\x12.prt.VehicleStatus\x12&\n\ns_statuses\x18\x03 \x03(\x0b\x32\x12.prt.StationStatus\x12(\n\np_statuses\x18\x04 \x03(\x0b\x32\x14.prt.PassengerStatus\x12&\n\x0bsw_statuses\x18\x05 \x03(\x0b\x32\x11.prt.SwitchStatus\x12,\n\x0bts_statuses\x18\x06 \x03(\x0b\x32\x17.prt.TrackSegmentStatus\"N\n\x13SimRequestSwitchCmd\x12\x0c\n\x04swID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\r\n\x05ts1ID\x18\x03 \x02(\x05\x12\r\n\x05ts2ID\x18\x04 \x02(\x05\"Q\n\x18SimNotifyVehiclePosition\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04tsID\x18\x03 \x02(\x05\x12\x0b\n\x03pos\x18\x04 \x02(\x05\",\n\rSimNotifyTime\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12\x0c\n\x04time\x18\x02 \x02(\x01\">\n\x16SimNotifyVehicleArrive\x12$\n\x08v_status\x18\x01 \x02(\x0b\x32\x12.prt.VehicleStatus\"<\n\x14SimNotifyVehicleExit\x12$\n\x08v_status\x18\x01 \x02(\x0b\x32\x12.prt.VehicleStatus\"5\n\x19SimNotifyVehicleReadyLoad\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"\xad\x01\n\x19SimNotifyVehicleCollision\x12\x0c\n\x04v1ID\x18\x01 \x02(\x05\x12\x0c\n\x04v2ID\x18\x02 \x02(\x05\x12#\n\x08loc_type\x18\x03 \x02(\x0e\x32\x11.prt.LocationType\x12\r\n\x05locID\x18\x04 \x02(\x05\x12\x0b\n\x03pos\x18\x05 \x02(\x05\x12\x0f\n\x07\x64\x65lta_v\x18\x06 \x02(\x05\x12\x0f\n\x07rearend\x18\x07 \x01(\x08\x12\x11\n\tsideswipe\x18\x08 \x01(\x08\"k\n\x1dSimNotifyPassengerEmbarkStart\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\"i\n\x1bSimNotifyPassengerEmbarkEnd\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\"n\n SimNotifyPassengerDisembarkStart\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\"l\n\x1eSimNotifyPassengerDisembarkEnd\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\",\n\x1cSimEventTrackSegmentDisabled\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"-\n\x1dSimEventTrackSegmentReenabled\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"&\n\x16SimEventSwitchDisabled\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"\'\n\x17SimEventSwitchReenabled\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"&\n\x17SimEventStationDisabled\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"\'\n\x18SimEventStationReenabled\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"&\n\x17SimEventVehicleDisabled\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"\'\n\x18SimEventVehicleReenabled\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"B\n\x18SimEventPassengerCreated\x12&\n\x08p_status\x18\x01 \x02(\x0b\x32\x14.prt.PassengerStatus\"*\n\x1bSimEventPassengerChangedest\x12\x0b\n\x03pID\x18\x01 \x02(\x05\";\n\x19SimMsgHdrInvalidSeparator\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0f\n\x07msg_sep\x18\x02 \x02(\x05\"7\n\x14SimMsgHdrInvalidType\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_type\x18\x02 \x02(\x05\"#\n\x12SimMsgHdrInvalidID\x12\r\n\x05msgID\x18\x01 \x02(\x05\"7\n\x14SimMsgHdrInvalidTime\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_time\x18\x02 \x02(\x05\"7\n\x14SimMsgHdrInvalidSize\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_size\x18\x02 \x02(\x05\"\"\n\x11SimMsgBodyInvalid\x12\r\n\x05msgID\x18\x01 \x02(\x05\"T\n\x13SimMsgBodyInvalidId\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\"\n\x07id_type\x18\x02 \x02(\x0e\x32\x11.prt.LocationType\x12\n\n\x02ID\x18\x03 \x02(\x05\"\xaf\x01\n\rVehicleStatus\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x12\n\nnose_locID\x18\x03 \x02(\x05\x12\x10\n\x08nose_pos\x18\x04 \x02(\x02\x12\x12\n\ntail_locID\x18\x06 \x02(\x05\x12\x10\n\x08tail_pos\x18\x07 \x02(\x02\x12\x0b\n\x03vel\x18\x08 \x02(\x02\x12\r\n\x05\x61\x63\x63\x65l\x18\t \x02(\x02\x12\x18\n\x0cpassengerIDs\x18\n \x03(\x05\x42\x02\x10\x01\x12\x0f\n\x07headway\x18\x0c \x01(\x05\"\xb4\x01\n\x0eStationSummary\x12\x0b\n\x03sID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12\x1f\n\x13loaded_ready_launch\x18\x03 \x03(\x05\x42\x02\x10\x01\x12!\n\x15unloaded_ready_launch\x18\x04 \x03(\x05\x42\x02\x10\x01\x12\x0f\n\x03pID\x18\x05 \x03(\x05\x42\x02\x10\x01\x12\x18\n\x10next_accept_time\x18\x06 \x02(\x05\x12\x17\n\x0fvehicles_needed\x18\x07 \x02(\x05\"\xa2\x01\n\rStationStatus\x12\x0b\n\x03sID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12,\n\x0fplatform_status\x18\x03 \x03(\x0b\x32\x13.prt.PlatformStatus\x12\x0f\n\x03pID\x18\x04 \x03(\x05\x42\x02\x10\x01\x12\x12\n\nv_adv_time\x18\x05 \x02(\x05\x12\"\n\x06policy\x18\x06 \x02(\x0e\x32\x12.prt.StationPolicy\"t\n\x0ePlatformStatus\x12\x0e\n\x06platID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\x11\n\tunloading\x18\x03 \x02(\x08\x12\x0f\n\x07loading\x18\x04 \x02(\x08\x12 \n\x06\x62\x65rths\x18\x05 \x03(\x0b\x32\x10.prt.BerthStatus\"5\n\x0b\x42\x65rthStatus\x12\x0b\n\x03\x62ID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04\x62usy\x18\x03 \x02(\x08\"\x8c\x02\n\x0fPassengerStatus\x12\x0b\n\x03pID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12#\n\x08loc_type\x18\x03 \x02(\x0e\x32\x11.prt.LocationType\x12\r\n\x05locID\x18\x04 \x02(\x05\x12\x15\n\rsrc_stationID\x18\x05 \x02(\x05\x12\x16\n\x0e\x64\x65st_stationID\x18\x06 \x02(\x05\x12\x15\n\rcreation_time\x18\x07 \x02(\x01\x12\x11\n\twait_time\x18\x08 \x01(\x02\x12\x13\n\x0btravel_time\x18\t \x01(\x02\x12\x0e\n\x06weight\x18\n \x01(\x05\x12\x15\n\rtrip_complete\x18\x0b \x01(\x08\x12\x14\n\x0ctrip_success\x18\x0c \x01(\x08\"8\n\x0cRoutingEntry\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\r\n\x05msgID\x18\x03 \x01(\x05\"M\n\x0cSwitchStatus\x12\x0c\n\x04swID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12 \n\x05\x65ntry\x18\x03 \x03(\x0b\x32\x11.prt.RoutingEntry\"s\n\x12TrackSegmentStatus\x12\x0c\n\x04tsID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12\x11\n\tmax_speed\x18\x03 \x02(\x05\x12\x0e\n\x06length\x18\x04 \x02(\x05\x12\x0f\n\x03vID\x18\x05 \x03(\x05\x42\x02\x10\x01\x12\x0c\n\x04next\x18\x06 \x02(\x05*G\n\x04Misc\x12\x14\n\x07MSG_SEP\x10\x85\x85\xfe\xff\xff\xff\xff\xff\xff\x01\x12\x13\n\x0fMSG_HEADER_SIZE\x10\x0e\x12\x14\n\x07NONE_ID\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01*\xe1\x03\n\x0b\x43trlMsgType\x12\x1f\n\x1b\x43TRL_CMD_VEHICLE_TRAJECTORY\x10\x01\x12\x1e\n\x1a\x43TRL_CMD_VEHICLE_ITINERARY\x10\x02\x12\x13\n\x0f\x43TRL_CMD_SWITCH\x10\x03\x12\x1e\n\x1a\x43TRL_CMD_PASSENGERS_EMBARK\x10\x04\x12!\n\x1d\x43TRL_CMD_PASSENGERS_DISEMBARK\x10\x05\x12\x1f\n\x1b\x43TRL_REQUEST_VEHICLE_STATUS\x10\n\x12\x1f\n\x1b\x43TRL_REQUEST_STATION_STATUS\x10\x0b\x12 \n\x1c\x43TRL_REQUEST_STATION_SUMMARY\x10\x0c\x12!\n\x1d\x43TRL_REQUEST_PASSENGER_STATUS\x10\r\x12\x1e\n\x1a\x43TRL_REQUEST_SWITCH_STATUS\x10\x0e\x12$\n CTRL_REQUEST_TRACKSEGMENT_STATUS\x10\x0f\x12\x1d\n\x19\x43TRL_REQUEST_TOTAL_STATUS\x10\x10\x12#\n\x1f\x43TRL_SETNOTIFY_VEHICLE_POSITION\x10\x14\x12\x17\n\x13\x43TRL_SETNOTIFY_TIME\x10\x32\x12\x0f\n\x0b\x43TRL_RESUME\x10[*y\n\x0cLocationType\x12\x11\n\rTRACK_SEGMENT\x10\x00\x12\n\n\x06SWITCH\x10\n\x12\x0b\n\x07STATION\x10\x14\x12\x0c\n\x08PLATFORM\x10\x1e\x12\t\n\x05\x42\x45RTH\x10(\x12\x0b\n\x07VEHICLE\x10\x32\x12\r\n\tPASSENGER\x10<\x12\x08\n\x04NONE\x10\x46*%\n\rStationPolicy\x12\t\n\x05LOBBY\x10\x01\x12\t\n\x05QUEUE\x10\x02*\x99\x0b\n\nSimMsgType\x12\x11\n\x0cSIM_GREETING\x10\xe8\x07\x12\"\n\x1dSIM_COMPLETE_PASSENGER_EMBARK\x10\xea\x07\x12%\n SIM_COMPLETE_PASSENGER_DISEMBARK\x10\xeb\x07\x12\x18\n\x13SIM_COMPLETE_SWITCH\x10\xec\x07\x12 \n\x1bSIM_RESPONSE_VEHICLE_STATUS\x10\xf2\x07\x12 \n\x1bSIM_RESPONSE_STATION_STATUS\x10\xf3\x07\x12!\n\x1cSIM_RESPONSE_STATION_SUMMARY\x10\xf4\x07\x12\"\n\x1dSIM_RESPONSE_PASSENGER_STATUS\x10\xf5\x07\x12\x1f\n\x1aSIM_RESPONSE_SWITCH_STATUS\x10\xf6\x07\x12%\n SIM_RESPONSE_TRACKSEGMENT_STATUS\x10\xf7\x07\x12\x1e\n\x19SIM_RESPONSE_TOTAL_STATUS\x10\xf8\x07\x12 \n\x1bSIM_NOTIFY_VEHICLE_POSITION\x10\xfc\x07\x12\x1e\n\x19SIM_NOTIFY_VEHICLE_ARRIVE\x10\xfd\x07\x12\x1c\n\x17SIM_NOTIFY_VEHICLE_EXIT\x10\xfe\x07\x12\"\n\x1dSIM_NOTIFY_VEHICLE_READY_LOAD\x10\xff\x07\x12!\n\x1cSIM_NOTIFY_VEHICLE_COLLISION\x10\x80\x08\x12&\n!SIM_NOTIFY_PASSENGER_EMBARK_START\x10\x87\x08\x12$\n\x1fSIM_NOTIFY_PASSENGER_EMBARK_END\x10\x88\x08\x12)\n$SIM_NOTIFY_PASSENGER_DISEMBARK_START\x10\x89\x08\x12\'\n\"SIM_NOTIFY_PASSENGER_DISEMBARK_END\x10\x8a\x08\x12\x14\n\x0fSIM_NOTIFY_TIME\x10\x9a\x08\x12\x1b\n\x16SIM_REQUEST_SWITCH_CMD\x10\xa4\x08\x12$\n\x1fSIM_EVENT_TRACKSEGMENT_DISABLED\x10\xcc\x08\x12%\n SIM_EVENT_TRACKSEGMENT_REENABLED\x10\xcd\x08\x12\x1e\n\x19SIM_EVENT_SWITCH_DISABLED\x10\xce\x08\x12\x1f\n\x1aSIM_EVENT_SWITCH_REENABLED\x10\xcf\x08\x12\x1f\n\x1aSIM_EVENT_STATION_DISABLED\x10\xd0\x08\x12 \n\x1bSIM_EVENT_STATION_REENABLED\x10\xd1\x08\x12\x1f\n\x1aSIM_EVENT_VEHICLE_DISABLED\x10\xd2\x08\x12 \n\x1bSIM_EVENT_VEHICLE_REENABLED\x10\xd3\x08\x12 \n\x1bSIM_EVENT_PASSENGER_CREATED\x10\xd4\x08\x12#\n\x1eSIM_EVENT_PASSENGER_CHANGEDEST\x10\xd5\x08\x12\x0e\n\tSIM_START\x10\xb0\t\x12\x0c\n\x07SIM_END\x10\xb1\t\x12\x16\n\x11SIM_UNIMPLEMENTED\x10\xb2\t\x12\"\n\x1dSIM_MSG_HDR_INVALID_SEPARATOR\x10\x94\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_TYPE\x10\x95\n\x12\x1b\n\x16SIM_MSG_HDR_INVALID_ID\x10\x96\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_TIME\x10\x97\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_SIZE\x10\x98\n\x12\x1e\n\x19SIM_MSG_HDR_INVALID_PBSTR\x10\x99\n\x12\x19\n\x14SIM_MSG_BODY_INVALID\x10\x9e\n\x12\x1c\n\x17SIM_MSG_BODY_INVALID_ID\x10\x9f\n\x12\x1c\n\x17SIM_ABORT_VEHICLE_SPEED\x10\xf9\n')
+  serialized_pb='\n\tapi.proto\x12\x03prt\" \n\nPolyCoeffs\x12\x12\n\x06\x63oeffs\x18\x01 \x03(\x02\x42\x02\x10\x01\";\n\x06Spline\x12\x1e\n\x05polys\x18\x01 \x03(\x0b\x32\x0f.prt.PolyCoeffs\x12\x11\n\x05times\x18\x02 \x03(\x01\x42\x02\x10\x01\"D\n\x18\x43trlCmdVehicleTrajectory\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x1b\n\x06spline\x18\x02 \x02(\x0b\x32\x0b.prt.Spline\"H\n\x17\x43trlCmdVehicleItinerary\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x11\n\x05tsIDs\x18\x02 \x03(\x05\x42\x02\x10\x01\x12\r\n\x05\x63lear\x18\x03 \x01(\x08\"r\n\x17\x43trlCmdPassengersEmbark\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x04 \x02(\x05\x12\x18\n\x0cpassengerIDs\x18\x05 \x03(\x05\x42\x02\x10\x01\"u\n\x1a\x43trlCmdPassengersDisembark\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x04 \x02(\x05\x12\x18\n\x0cpassengerIDs\x18\x05 \x03(\x05\x42\x02\x10\x01\"r\n\x14\x43trlCmdPassengerWalk\x12\x13\n\x0bpassengerID\x18\x01 \x02(\x05\x12\x18\n\x10origin_stationID\x18\x02 \x02(\x05\x12\x16\n\x0e\x64\x65st_stationID\x18\x03 \x02(\x05\x12\x13\n\x0btravel_time\x18\x04 \x02(\x01\"-\n\rCtrlCmdSwitch\x12\x0c\n\x04tsID\x18\x01 \x02(\x05\x12\x0e\n\x06nextID\x18\x02 \x02(\x05\"\'\n\x18\x43trlRequestVehicleStatus\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"\'\n\x18\x43trlRequestStationStatus\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"(\n\x19\x43trlRequestStationSummary\x12\x0b\n\x03sID\x18\x02 \x02(\x05\")\n\x1a\x43trlRequestPassengerStatus\x12\x0b\n\x03pID\x18\x02 \x02(\x05\"\'\n\x17\x43trlRequestSwitchStatus\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"-\n\x1d\x43trlRequestTrackSegmentStatus\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"\x18\n\x16\x43trlRequestTotalStatus\"F\n\x1c\x43trlSetnotifyVehiclePosition\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04tsID\x18\x03 \x02(\x05\x12\x0b\n\x03pos\x18\x04 \x02(\x05\"!\n\x11\x43trlSetnotifyTime\x12\x0c\n\x04time\x18\x01 \x02(\x01\"$\n\nCtrlResume\x12\x16\n\x0elast_sim_msgID\x18\x01 \x02(\x05\"#\n\x0bSimGreeting\x12\x14\n\x0csim_end_time\x18\x01 \x02(\x01\"\n\n\x08SimStart\"\x08\n\x06SimEnd\"!\n\x10SimUnimplemented\x12\r\n\x05msgID\x18\x01 \x02(\x05\"%\n\x14SimAbortVehicleSpeed\x12\r\n\x05msgID\x18\x01 \x02(\x05\"W\n\x1bSimCompletePassengersEmbark\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12)\n\x03\x63md\x18\x02 \x01(\x0b\x32\x1c.prt.CtrlCmdPassengersEmbark\"]\n\x1eSimCompletePassengersDisembark\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12,\n\x03\x63md\x18\x02 \x01(\x0b\x32\x1f.prt.CtrlCmdPassengersDisembark\"Q\n\x18SimCompletePassengerWalk\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12&\n\x03\x63md\x18\x02 \x01(\x0b\x32\x19.prt.CtrlCmdPassengerWalk\"@\n\x11SimCompleteSwitch\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\x0e\n\x06nextID\x18\x03 \x02(\x05\"O\n\x18SimResponseVehicleStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\x08v_status\x18\x02 \x02(\x0b\x32\x12.prt.VehicleStatus\"O\n\x18SimResponseStationStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\x08s_status\x18\x02 \x02(\x0b\x32\x12.prt.StationStatus\"R\n\x19SimResponseStationSummary\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\ts_summary\x18\x02 \x02(\x0b\x32\x13.prt.StationSummary\"S\n\x1aSimResponsePassengerStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\x08p_status\x18\x02 \x02(\x0b\x32\x14.prt.PassengerStatus\"N\n\x17SimResponseSwitchStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12$\n\tsw_status\x18\x02 \x02(\x0b\x32\x11.prt.SwitchStatus\"Z\n\x1dSimResponseTrackSegmentStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12*\n\tts_status\x18\x02 \x02(\x0b\x32\x17.prt.TrackSegmentStatus\"\xf7\x01\n\x16SimResponseTotalStatus\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12&\n\nv_statuses\x18\x02 \x03(\x0b\x32\x12.prt.VehicleStatus\x12&\n\ns_statuses\x18\x03 \x03(\x0b\x32\x12.prt.StationStatus\x12(\n\np_statuses\x18\x04 \x03(\x0b\x32\x14.prt.PassengerStatus\x12&\n\x0bsw_statuses\x18\x05 \x03(\x0b\x32\x11.prt.SwitchStatus\x12,\n\x0bts_statuses\x18\x06 \x03(\x0b\x32\x17.prt.TrackSegmentStatus\"N\n\x13SimRequestSwitchCmd\x12\x0c\n\x04swID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\r\n\x05ts1ID\x18\x03 \x02(\x05\x12\r\n\x05ts2ID\x18\x04 \x02(\x05\"Q\n\x18SimNotifyVehiclePosition\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04tsID\x18\x03 \x02(\x05\x12\x0b\n\x03pos\x18\x04 \x02(\x05\",\n\rSimNotifyTime\x12\r\n\x05msgID\x18\x01 \x01(\x05\x12\x0c\n\x04time\x18\x02 \x02(\x01\">\n\x16SimNotifyVehicleArrive\x12$\n\x08v_status\x18\x01 \x02(\x0b\x32\x12.prt.VehicleStatus\"<\n\x14SimNotifyVehicleExit\x12$\n\x08v_status\x18\x01 \x02(\x0b\x32\x12.prt.VehicleStatus\"5\n\x19SimNotifyVehicleReadyLoad\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"\xad\x01\n\x19SimNotifyVehicleCollision\x12\x0c\n\x04v1ID\x18\x01 \x02(\x05\x12\x0c\n\x04v2ID\x18\x02 \x02(\x05\x12#\n\x08loc_type\x18\x03 \x02(\x0e\x32\x11.prt.LocationType\x12\r\n\x05locID\x18\x04 \x02(\x05\x12\x0b\n\x03pos\x18\x05 \x02(\x05\x12\x0f\n\x07\x64\x65lta_v\x18\x06 \x02(\x05\x12\x0f\n\x07rearend\x18\x07 \x01(\x08\x12\x11\n\tsideswipe\x18\x08 \x01(\x08\"k\n\x1dSimNotifyPassengerEmbarkStart\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\"i\n\x1bSimNotifyPassengerEmbarkEnd\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\"n\n SimNotifyPassengerDisembarkStart\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\"l\n\x1eSimNotifyPassengerDisembarkEnd\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0b\n\x03sID\x18\x02 \x02(\x05\x12\x12\n\nplatformID\x18\x03 \x02(\x05\x12\x0b\n\x03pID\x18\x04 \x02(\x05\x12\x0f\n\x07\x62\x65rthID\x18\x05 \x02(\x05\",\n\x1cSimEventTrackSegmentDisabled\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"-\n\x1dSimEventTrackSegmentReenabled\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\"&\n\x16SimEventSwitchDisabled\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"\'\n\x17SimEventSwitchReenabled\x12\x0c\n\x04swID\x18\x02 \x02(\x05\"&\n\x17SimEventStationDisabled\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"\'\n\x18SimEventStationReenabled\x12\x0b\n\x03sID\x18\x02 \x02(\x05\"&\n\x17SimEventVehicleDisabled\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"\'\n\x18SimEventVehicleReenabled\x12\x0b\n\x03vID\x18\x02 \x02(\x05\"B\n\x18SimEventPassengerCreated\x12&\n\x08p_status\x18\x01 \x02(\x0b\x32\x14.prt.PassengerStatus\"*\n\x1bSimEventPassengerChangedest\x12\x0b\n\x03pID\x18\x01 \x02(\x05\";\n\x19SimMsgHdrInvalidSeparator\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x0f\n\x07msg_sep\x18\x02 \x02(\x05\"7\n\x14SimMsgHdrInvalidType\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_type\x18\x02 \x02(\x05\"#\n\x12SimMsgHdrInvalidID\x12\r\n\x05msgID\x18\x01 \x02(\x05\"7\n\x14SimMsgHdrInvalidTime\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_time\x18\x02 \x02(\x05\"7\n\x14SimMsgHdrInvalidSize\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\x10\n\x08msg_size\x18\x02 \x02(\x05\"\"\n\x11SimMsgBodyInvalid\x12\r\n\x05msgID\x18\x01 \x02(\x05\"T\n\x13SimMsgBodyInvalidId\x12\r\n\x05msgID\x18\x01 \x02(\x05\x12\"\n\x07id_type\x18\x02 \x02(\x0e\x32\x11.prt.LocationType\x12\n\n\x02ID\x18\x03 \x02(\x05\"\xaf\x01\n\rVehicleStatus\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x12\n\nnose_locID\x18\x03 \x02(\x05\x12\x10\n\x08nose_pos\x18\x04 \x02(\x02\x12\x12\n\ntail_locID\x18\x06 \x02(\x05\x12\x10\n\x08tail_pos\x18\x07 \x02(\x02\x12\x0b\n\x03vel\x18\x08 \x02(\x02\x12\r\n\x05\x61\x63\x63\x65l\x18\t \x02(\x02\x12\x18\n\x0cpassengerIDs\x18\n \x03(\x05\x42\x02\x10\x01\x12\x0f\n\x07headway\x18\x0c \x01(\x05\"\xb4\x01\n\x0eStationSummary\x12\x0b\n\x03sID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12\x1f\n\x13loaded_ready_launch\x18\x03 \x03(\x05\x42\x02\x10\x01\x12!\n\x15unloaded_ready_launch\x18\x04 \x03(\x05\x42\x02\x10\x01\x12\x0f\n\x03pID\x18\x05 \x03(\x05\x42\x02\x10\x01\x12\x18\n\x10next_accept_time\x18\x06 \x02(\x05\x12\x17\n\x0fvehicles_needed\x18\x07 \x02(\x05\"\xa2\x01\n\rStationStatus\x12\x0b\n\x03sID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12,\n\x0fplatform_status\x18\x03 \x03(\x0b\x32\x13.prt.PlatformStatus\x12\x0f\n\x03pID\x18\x04 \x03(\x05\x42\x02\x10\x01\x12\x12\n\nv_adv_time\x18\x05 \x02(\x05\x12\"\n\x06policy\x18\x06 \x02(\x0e\x32\x12.prt.StationPolicy\"t\n\x0ePlatformStatus\x12\x0e\n\x06platID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\x11\n\tunloading\x18\x03 \x02(\x08\x12\x0f\n\x07loading\x18\x04 \x02(\x08\x12 \n\x06\x62\x65rths\x18\x05 \x03(\x0b\x32\x10.prt.BerthStatus\"5\n\x0b\x42\x65rthStatus\x12\x0b\n\x03\x62ID\x18\x01 \x02(\x05\x12\x0b\n\x03vID\x18\x02 \x02(\x05\x12\x0c\n\x04\x62usy\x18\x03 \x02(\x08\"\xbc\x01\n\x0fPassengerStatus\x12\x0b\n\x03pID\x18\x01 \x02(\x05\x12#\n\x08loc_type\x18\x03 \x02(\x0e\x32\x11.prt.LocationType\x12\r\n\x05locID\x18\x04 \x02(\x05\x12\x15\n\rsrc_stationID\x18\x05 \x02(\x05\x12\x16\n\x0e\x64\x65st_stationID\x18\x06 \x02(\x05\x12\x15\n\rcreation_time\x18\x07 \x02(\x01\x12\x0c\n\x04mass\x18\x0b \x02(\x05\x12\x14\n\x0ctrip_success\x18\r \x02(\x08\"8\n\x0cRoutingEntry\x12\x0b\n\x03vID\x18\x01 \x02(\x05\x12\x0c\n\x04tsID\x18\x02 \x02(\x05\x12\r\n\x05msgID\x18\x03 \x01(\x05\"M\n\x0cSwitchStatus\x12\x0c\n\x04swID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12 \n\x05\x65ntry\x18\x03 \x03(\x0b\x32\x11.prt.RoutingEntry\"s\n\x12TrackSegmentStatus\x12\x0c\n\x04tsID\x18\x01 \x02(\x05\x12\r\n\x05label\x18\x02 \x01(\t\x12\x11\n\tmax_speed\x18\x03 \x02(\x05\x12\x0e\n\x06length\x18\x04 \x02(\x05\x12\x0f\n\x03vID\x18\x05 \x03(\x05\x42\x02\x10\x01\x12\x0c\n\x04next\x18\x06 \x02(\x05*G\n\x04Misc\x12\x14\n\x07MSG_SEP\x10\x85\x85\xfe\xff\xff\xff\xff\xff\xff\x01\x12\x13\n\x0fMSG_HEADER_SIZE\x10\x0e\x12\x14\n\x07NONE_ID\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01*\xfe\x03\n\x0b\x43trlMsgType\x12\x1f\n\x1b\x43TRL_CMD_VEHICLE_TRAJECTORY\x10\x01\x12\x1e\n\x1a\x43TRL_CMD_VEHICLE_ITINERARY\x10\x02\x12\x13\n\x0f\x43TRL_CMD_SWITCH\x10\x03\x12\x1e\n\x1a\x43TRL_CMD_PASSENGERS_EMBARK\x10\x04\x12!\n\x1d\x43TRL_CMD_PASSENGERS_DISEMBARK\x10\x05\x12\x1b\n\x17\x43TRL_CMD_PASSENGER_WALK\x10\x06\x12\x1f\n\x1b\x43TRL_REQUEST_VEHICLE_STATUS\x10\n\x12\x1f\n\x1b\x43TRL_REQUEST_STATION_STATUS\x10\x0b\x12 \n\x1c\x43TRL_REQUEST_STATION_SUMMARY\x10\x0c\x12!\n\x1d\x43TRL_REQUEST_PASSENGER_STATUS\x10\r\x12\x1e\n\x1a\x43TRL_REQUEST_SWITCH_STATUS\x10\x0e\x12$\n CTRL_REQUEST_TRACKSEGMENT_STATUS\x10\x0f\x12\x1d\n\x19\x43TRL_REQUEST_TOTAL_STATUS\x10\x10\x12#\n\x1f\x43TRL_SETNOTIFY_VEHICLE_POSITION\x10\x14\x12\x17\n\x13\x43TRL_SETNOTIFY_TIME\x10\x32\x12\x0f\n\x0b\x43TRL_RESUME\x10[*\x86\x01\n\x0cLocationType\x12\x11\n\rTRACK_SEGMENT\x10\x00\x12\n\n\x06SWITCH\x10\n\x12\x0b\n\x07STATION\x10\x14\x12\x0c\n\x08PLATFORM\x10\x1e\x12\t\n\x05\x42\x45RTH\x10(\x12\x0b\n\x07VEHICLE\x10\x32\x12\r\n\tPASSENGER\x10<\x12\x0b\n\x07WALKING\x10\x46\x12\x08\n\x04NONE\x10P*%\n\rStationPolicy\x12\t\n\x05LOBBY\x10\x01\x12\t\n\x05QUEUE\x10\x02*\xbd\x0b\n\nSimMsgType\x12\x11\n\x0cSIM_GREETING\x10\xe8\x07\x12#\n\x1eSIM_COMPLETE_PASSENGERS_EMBARK\x10\xea\x07\x12&\n!SIM_COMPLETE_PASSENGERS_DISEMBARK\x10\xeb\x07\x12 \n\x1bSIM_COMPLETE_PASSENGER_WALK\x10\xec\x07\x12\x18\n\x13SIM_COMPLETE_SWITCH\x10\xed\x07\x12 \n\x1bSIM_RESPONSE_VEHICLE_STATUS\x10\xf2\x07\x12 \n\x1bSIM_RESPONSE_STATION_STATUS\x10\xf3\x07\x12!\n\x1cSIM_RESPONSE_STATION_SUMMARY\x10\xf4\x07\x12\"\n\x1dSIM_RESPONSE_PASSENGER_STATUS\x10\xf5\x07\x12\x1f\n\x1aSIM_RESPONSE_SWITCH_STATUS\x10\xf6\x07\x12%\n SIM_RESPONSE_TRACKSEGMENT_STATUS\x10\xf7\x07\x12\x1e\n\x19SIM_RESPONSE_TOTAL_STATUS\x10\xf8\x07\x12 \n\x1bSIM_NOTIFY_VEHICLE_POSITION\x10\xfc\x07\x12\x1e\n\x19SIM_NOTIFY_VEHICLE_ARRIVE\x10\xfd\x07\x12\x1c\n\x17SIM_NOTIFY_VEHICLE_EXIT\x10\xfe\x07\x12\"\n\x1dSIM_NOTIFY_VEHICLE_READY_LOAD\x10\xff\x07\x12!\n\x1cSIM_NOTIFY_VEHICLE_COLLISION\x10\x80\x08\x12&\n!SIM_NOTIFY_PASSENGER_EMBARK_START\x10\x87\x08\x12$\n\x1fSIM_NOTIFY_PASSENGER_EMBARK_END\x10\x88\x08\x12)\n$SIM_NOTIFY_PASSENGER_DISEMBARK_START\x10\x89\x08\x12\'\n\"SIM_NOTIFY_PASSENGER_DISEMBARK_END\x10\x8a\x08\x12\x14\n\x0fSIM_NOTIFY_TIME\x10\x9a\x08\x12\x1b\n\x16SIM_REQUEST_SWITCH_CMD\x10\xa4\x08\x12$\n\x1fSIM_EVENT_TRACKSEGMENT_DISABLED\x10\xcc\x08\x12%\n SIM_EVENT_TRACKSEGMENT_REENABLED\x10\xcd\x08\x12\x1e\n\x19SIM_EVENT_SWITCH_DISABLED\x10\xce\x08\x12\x1f\n\x1aSIM_EVENT_SWITCH_REENABLED\x10\xcf\x08\x12\x1f\n\x1aSIM_EVENT_STATION_DISABLED\x10\xd0\x08\x12 \n\x1bSIM_EVENT_STATION_REENABLED\x10\xd1\x08\x12\x1f\n\x1aSIM_EVENT_VEHICLE_DISABLED\x10\xd2\x08\x12 \n\x1bSIM_EVENT_VEHICLE_REENABLED\x10\xd3\x08\x12 \n\x1bSIM_EVENT_PASSENGER_CREATED\x10\xd4\x08\x12#\n\x1eSIM_EVENT_PASSENGER_CHANGEDEST\x10\xd5\x08\x12\x0e\n\tSIM_START\x10\xb0\t\x12\x0c\n\x07SIM_END\x10\xb1\t\x12\x16\n\x11SIM_UNIMPLEMENTED\x10\xb2\t\x12\"\n\x1dSIM_MSG_HDR_INVALID_SEPARATOR\x10\x94\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_TYPE\x10\x95\n\x12\x1b\n\x16SIM_MSG_HDR_INVALID_ID\x10\x96\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_TIME\x10\x97\n\x12\x1d\n\x18SIM_MSG_HDR_INVALID_SIZE\x10\x98\n\x12\x1e\n\x19SIM_MSG_HDR_INVALID_PBSTR\x10\x99\n\x12\x19\n\x14SIM_MSG_BODY_INVALID\x10\x9e\n\x12\x1c\n\x17SIM_MSG_BODY_INVALID_ID\x10\x9f\n\x12\x1c\n\x17SIM_ABORT_VEHICLE_SPEED\x10\xf9\n')
 
 _MISC = descriptor.EnumDescriptor(
   name='Misc',
@@ -33,8 +33,8 @@ _MISC = descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=5166,
-  serialized_end=5237,
+  serialized_start=5287,
+  serialized_end=5358,
 )
 
 
@@ -65,50 +65,54 @@ _CTRLMSGTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_VEHICLE_STATUS', index=5, number=10,
+      name='CTRL_CMD_PASSENGER_WALK', index=5, number=6,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_STATION_STATUS', index=6, number=11,
+      name='CTRL_REQUEST_VEHICLE_STATUS', index=6, number=10,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_STATION_SUMMARY', index=7, number=12,
+      name='CTRL_REQUEST_STATION_STATUS', index=7, number=11,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_PASSENGER_STATUS', index=8, number=13,
+      name='CTRL_REQUEST_STATION_SUMMARY', index=8, number=12,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_SWITCH_STATUS', index=9, number=14,
+      name='CTRL_REQUEST_PASSENGER_STATUS', index=9, number=13,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_TRACKSEGMENT_STATUS', index=10, number=15,
+      name='CTRL_REQUEST_SWITCH_STATUS', index=10, number=14,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_REQUEST_TOTAL_STATUS', index=11, number=16,
+      name='CTRL_REQUEST_TRACKSEGMENT_STATUS', index=11, number=15,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_SETNOTIFY_VEHICLE_POSITION', index=12, number=20,
+      name='CTRL_REQUEST_TOTAL_STATUS', index=12, number=16,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_SETNOTIFY_TIME', index=13, number=50,
+      name='CTRL_SETNOTIFY_VEHICLE_POSITION', index=13, number=20,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='CTRL_RESUME', index=14, number=91,
+      name='CTRL_SETNOTIFY_TIME', index=14, number=50,
+      options=None,
+      type=None),
+    descriptor.EnumValueDescriptor(
+      name='CTRL_RESUME', index=15, number=91,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=5240,
-  serialized_end=5721,
+  serialized_start=5361,
+  serialized_end=5871,
 )
 
 
@@ -147,14 +151,18 @@ _LOCATIONTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='NONE', index=7, number=70,
+      name='WALKING', index=7, number=70,
+      options=None,
+      type=None),
+    descriptor.EnumValueDescriptor(
+      name='NONE', index=8, number=80,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=5723,
-  serialized_end=5844,
+  serialized_start=5874,
+  serialized_end=6008,
 )
 
 
@@ -175,8 +183,8 @@ _STATIONPOLICY = descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=5846,
-  serialized_end=5883,
+  serialized_start=6010,
+  serialized_end=6047,
 )
 
 
@@ -191,182 +199,186 @@ _SIMMSGTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_COMPLETE_PASSENGER_EMBARK', index=1, number=1002,
+      name='SIM_COMPLETE_PASSENGERS_EMBARK', index=1, number=1002,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_COMPLETE_PASSENGER_DISEMBARK', index=2, number=1003,
+      name='SIM_COMPLETE_PASSENGERS_DISEMBARK', index=2, number=1003,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_COMPLETE_SWITCH', index=3, number=1004,
+      name='SIM_COMPLETE_PASSENGER_WALK', index=3, number=1004,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_VEHICLE_STATUS', index=4, number=1010,
+      name='SIM_COMPLETE_SWITCH', index=4, number=1005,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_STATION_STATUS', index=5, number=1011,
+      name='SIM_RESPONSE_VEHICLE_STATUS', index=5, number=1010,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_STATION_SUMMARY', index=6, number=1012,
+      name='SIM_RESPONSE_STATION_STATUS', index=6, number=1011,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_PASSENGER_STATUS', index=7, number=1013,
+      name='SIM_RESPONSE_STATION_SUMMARY', index=7, number=1012,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_SWITCH_STATUS', index=8, number=1014,
+      name='SIM_RESPONSE_PASSENGER_STATUS', index=8, number=1013,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_TRACKSEGMENT_STATUS', index=9, number=1015,
+      name='SIM_RESPONSE_SWITCH_STATUS', index=9, number=1014,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_RESPONSE_TOTAL_STATUS', index=10, number=1016,
+      name='SIM_RESPONSE_TRACKSEGMENT_STATUS', index=10, number=1015,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_POSITION', index=11, number=1020,
+      name='SIM_RESPONSE_TOTAL_STATUS', index=11, number=1016,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_ARRIVE', index=12, number=1021,
+      name='SIM_NOTIFY_VEHICLE_POSITION', index=12, number=1020,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_EXIT', index=13, number=1022,
+      name='SIM_NOTIFY_VEHICLE_ARRIVE', index=13, number=1021,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_READY_LOAD', index=14, number=1023,
+      name='SIM_NOTIFY_VEHICLE_EXIT', index=14, number=1022,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_VEHICLE_COLLISION', index=15, number=1024,
+      name='SIM_NOTIFY_VEHICLE_READY_LOAD', index=15, number=1023,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_EMBARK_START', index=16, number=1031,
+      name='SIM_NOTIFY_VEHICLE_COLLISION', index=16, number=1024,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_EMBARK_END', index=17, number=1032,
+      name='SIM_NOTIFY_PASSENGER_EMBARK_START', index=17, number=1031,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_DISEMBARK_START', index=18, number=1033,
+      name='SIM_NOTIFY_PASSENGER_EMBARK_END', index=18, number=1032,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_PASSENGER_DISEMBARK_END', index=19, number=1034,
+      name='SIM_NOTIFY_PASSENGER_DISEMBARK_START', index=19, number=1033,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_NOTIFY_TIME', index=20, number=1050,
+      name='SIM_NOTIFY_PASSENGER_DISEMBARK_END', index=20, number=1034,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_REQUEST_SWITCH_CMD', index=21, number=1060,
+      name='SIM_NOTIFY_TIME', index=21, number=1050,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_TRACKSEGMENT_DISABLED', index=22, number=1100,
+      name='SIM_REQUEST_SWITCH_CMD', index=22, number=1060,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_TRACKSEGMENT_REENABLED', index=23, number=1101,
+      name='SIM_EVENT_TRACKSEGMENT_DISABLED', index=23, number=1100,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_SWITCH_DISABLED', index=24, number=1102,
+      name='SIM_EVENT_TRACKSEGMENT_REENABLED', index=24, number=1101,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_SWITCH_REENABLED', index=25, number=1103,
+      name='SIM_EVENT_SWITCH_DISABLED', index=25, number=1102,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_STATION_DISABLED', index=26, number=1104,
+      name='SIM_EVENT_SWITCH_REENABLED', index=26, number=1103,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_STATION_REENABLED', index=27, number=1105,
+      name='SIM_EVENT_STATION_DISABLED', index=27, number=1104,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_VEHICLE_DISABLED', index=28, number=1106,
+      name='SIM_EVENT_STATION_REENABLED', index=28, number=1105,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_VEHICLE_REENABLED', index=29, number=1107,
+      name='SIM_EVENT_VEHICLE_DISABLED', index=29, number=1106,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_PASSENGER_CREATED', index=30, number=1108,
+      name='SIM_EVENT_VEHICLE_REENABLED', index=30, number=1107,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_EVENT_PASSENGER_CHANGEDEST', index=31, number=1109,
+      name='SIM_EVENT_PASSENGER_CREATED', index=31, number=1108,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_START', index=32, number=1200,
+      name='SIM_EVENT_PASSENGER_CHANGEDEST', index=32, number=1109,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_END', index=33, number=1201,
+      name='SIM_START', index=33, number=1200,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_UNIMPLEMENTED', index=34, number=1202,
+      name='SIM_END', index=34, number=1201,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_SEPARATOR', index=35, number=1300,
+      name='SIM_UNIMPLEMENTED', index=35, number=1202,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_TYPE', index=36, number=1301,
+      name='SIM_MSG_HDR_INVALID_SEPARATOR', index=36, number=1300,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_ID', index=37, number=1302,
+      name='SIM_MSG_HDR_INVALID_TYPE', index=37, number=1301,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_TIME', index=38, number=1303,
+      name='SIM_MSG_HDR_INVALID_ID', index=38, number=1302,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_SIZE', index=39, number=1304,
+      name='SIM_MSG_HDR_INVALID_TIME', index=39, number=1303,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_HDR_INVALID_PBSTR', index=40, number=1305,
+      name='SIM_MSG_HDR_INVALID_SIZE', index=40, number=1304,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_BODY_INVALID', index=41, number=1310,
+      name='SIM_MSG_HDR_INVALID_PBSTR', index=41, number=1305,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_MSG_BODY_INVALID_ID', index=42, number=1311,
+      name='SIM_MSG_BODY_INVALID', index=42, number=1310,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SIM_ABORT_VEHICLE_SPEED', index=43, number=1401,
+      name='SIM_MSG_BODY_INVALID_ID', index=43, number=1311,
+      options=None,
+      type=None),
+    descriptor.EnumValueDescriptor(
+      name='SIM_ABORT_VEHICLE_SPEED', index=44, number=1401,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=5886,
-  serialized_end=7319,
+  serialized_start=6050,
+  serialized_end=7519,
 )
 
 
@@ -378,6 +390,7 @@ CTRL_CMD_VEHICLE_ITINERARY = 2
 CTRL_CMD_SWITCH = 3
 CTRL_CMD_PASSENGERS_EMBARK = 4
 CTRL_CMD_PASSENGERS_DISEMBARK = 5
+CTRL_CMD_PASSENGER_WALK = 6
 CTRL_REQUEST_VEHICLE_STATUS = 10
 CTRL_REQUEST_STATION_STATUS = 11
 CTRL_REQUEST_STATION_SUMMARY = 12
@@ -395,13 +408,15 @@ PLATFORM = 30
 BERTH = 40
 VEHICLE = 50
 PASSENGER = 60
-NONE = 70
+WALKING = 70
+NONE = 80
 LOBBY = 1
 QUEUE = 2
 SIM_GREETING = 1000
-SIM_COMPLETE_PASSENGER_EMBARK = 1002
-SIM_COMPLETE_PASSENGER_DISEMBARK = 1003
-SIM_COMPLETE_SWITCH = 1004
+SIM_COMPLETE_PASSENGERS_EMBARK = 1002
+SIM_COMPLETE_PASSENGERS_DISEMBARK = 1003
+SIM_COMPLETE_PASSENGER_WALK = 1004
+SIM_COMPLETE_SWITCH = 1005
 SIM_RESPONSE_VEHICLE_STATUS = 1010
 SIM_RESPONSE_STATION_STATUS = 1011
 SIM_RESPONSE_STATION_SUMMARY = 1012
@@ -697,6 +712,55 @@ _CTRLCMDPASSENGERSDISEMBARK = descriptor.Descriptor(
 )
 
 
+_CTRLCMDPASSENGERWALK = descriptor.Descriptor(
+  name='CtrlCmdPassengerWalk',
+  full_name='prt.CtrlCmdPassengerWalk',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='passengerID', full_name='prt.CtrlCmdPassengerWalk.passengerID', index=0,
+      number=1, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='origin_stationID', full_name='prt.CtrlCmdPassengerWalk.origin_stationID', index=1,
+      number=2, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='dest_stationID', full_name='prt.CtrlCmdPassengerWalk.dest_stationID', index=2,
+      number=3, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='travel_time', full_name='prt.CtrlCmdPassengerWalk.travel_time', index=3,
+      number=4, type=1, cpp_type=5, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=492,
+  serialized_end=606,
+)
+
+
 _CTRLCMDSWITCH = descriptor.Descriptor(
   name='CtrlCmdSwitch',
   full_name='prt.CtrlCmdSwitch',
@@ -727,8 +791,8 @@ _CTRLCMDSWITCH = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=492,
-  serialized_end=537,
+  serialized_start=608,
+  serialized_end=653,
 )
 
 
@@ -755,8 +819,8 @@ _CTRLREQUESTVEHICLESTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=539,
-  serialized_end=578,
+  serialized_start=655,
+  serialized_end=694,
 )
 
 
@@ -783,8 +847,8 @@ _CTRLREQUESTSTATIONSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=580,
-  serialized_end=619,
+  serialized_start=696,
+  serialized_end=735,
 )
 
 
@@ -811,8 +875,8 @@ _CTRLREQUESTSTATIONSUMMARY = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=621,
-  serialized_end=661,
+  serialized_start=737,
+  serialized_end=777,
 )
 
 
@@ -839,8 +903,8 @@ _CTRLREQUESTPASSENGERSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=663,
-  serialized_end=704,
+  serialized_start=779,
+  serialized_end=820,
 )
 
 
@@ -867,8 +931,8 @@ _CTRLREQUESTSWITCHSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=706,
-  serialized_end=745,
+  serialized_start=822,
+  serialized_end=861,
 )
 
 
@@ -895,8 +959,8 @@ _CTRLREQUESTTRACKSEGMENTSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=747,
-  serialized_end=792,
+  serialized_start=863,
+  serialized_end=908,
 )
 
 
@@ -916,8 +980,8 @@ _CTRLREQUESTTOTALSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=794,
-  serialized_end=818,
+  serialized_start=910,
+  serialized_end=934,
 )
 
 
@@ -958,8 +1022,8 @@ _CTRLSETNOTIFYVEHICLEPOSITION = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=820,
-  serialized_end=890,
+  serialized_start=936,
+  serialized_end=1006,
 )
 
 
@@ -986,8 +1050,8 @@ _CTRLSETNOTIFYTIME = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=892,
-  serialized_end=925,
+  serialized_start=1008,
+  serialized_end=1041,
 )
 
 
@@ -1014,8 +1078,8 @@ _CTRLRESUME = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=927,
-  serialized_end=963,
+  serialized_start=1043,
+  serialized_end=1079,
 )
 
 
@@ -1042,8 +1106,8 @@ _SIMGREETING = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=965,
-  serialized_end=1000,
+  serialized_start=1081,
+  serialized_end=1116,
 )
 
 
@@ -1063,8 +1127,8 @@ _SIMSTART = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1002,
-  serialized_end=1012,
+  serialized_start=1118,
+  serialized_end=1128,
 )
 
 
@@ -1084,8 +1148,8 @@ _SIMEND = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1014,
-  serialized_end=1022,
+  serialized_start=1130,
+  serialized_end=1138,
 )
 
 
@@ -1112,8 +1176,8 @@ _SIMUNIMPLEMENTED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1024,
-  serialized_end=1057,
+  serialized_start=1140,
+  serialized_end=1173,
 )
 
 
@@ -1140,27 +1204,27 @@ _SIMABORTVEHICLESPEED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1059,
-  serialized_end=1096,
+  serialized_start=1175,
+  serialized_end=1212,
 )
 
 
-_SIMCOMPLETEPASSENGEREMBARK = descriptor.Descriptor(
-  name='SimCompletePassengerEmbark',
-  full_name='prt.SimCompletePassengerEmbark',
+_SIMCOMPLETEPASSENGERSEMBARK = descriptor.Descriptor(
+  name='SimCompletePassengersEmbark',
+  full_name='prt.SimCompletePassengersEmbark',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
-      name='msgID', full_name='prt.SimCompletePassengerEmbark.msgID', index=0,
+      name='msgID', full_name='prt.SimCompletePassengersEmbark.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='cmd', full_name='prt.SimCompletePassengerEmbark.cmd', index=1,
+      name='cmd', full_name='prt.SimCompletePassengersEmbark.cmd', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1175,27 +1239,27 @@ _SIMCOMPLETEPASSENGEREMBARK = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1098,
-  serialized_end=1184,
+  serialized_start=1214,
+  serialized_end=1301,
 )
 
 
-_SIMCOMPLETEPASSENGERDISEMBARK = descriptor.Descriptor(
-  name='SimCompletePassengerDisembark',
-  full_name='prt.SimCompletePassengerDisembark',
+_SIMCOMPLETEPASSENGERSDISEMBARK = descriptor.Descriptor(
+  name='SimCompletePassengersDisembark',
+  full_name='prt.SimCompletePassengersDisembark',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
-      name='msgID', full_name='prt.SimCompletePassengerDisembark.msgID', index=0,
+      name='msgID', full_name='prt.SimCompletePassengersDisembark.msgID', index=0,
       number=1, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='cmd', full_name='prt.SimCompletePassengerDisembark.cmd', index=1,
+      name='cmd', full_name='prt.SimCompletePassengersDisembark.cmd', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1210,8 +1274,43 @@ _SIMCOMPLETEPASSENGERDISEMBARK = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1186,
-  serialized_end=1278,
+  serialized_start=1303,
+  serialized_end=1396,
+)
+
+
+_SIMCOMPLETEPASSENGERWALK = descriptor.Descriptor(
+  name='SimCompletePassengerWalk',
+  full_name='prt.SimCompletePassengerWalk',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='msgID', full_name='prt.SimCompletePassengerWalk.msgID', index=0,
+      number=1, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='cmd', full_name='prt.SimCompletePassengerWalk.cmd', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1398,
+  serialized_end=1479,
 )
 
 
@@ -1252,8 +1351,8 @@ _SIMCOMPLETESWITCH = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1280,
-  serialized_end=1344,
+  serialized_start=1481,
+  serialized_end=1545,
 )
 
 
@@ -1287,8 +1386,8 @@ _SIMRESPONSEVEHICLESTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1346,
-  serialized_end=1425,
+  serialized_start=1547,
+  serialized_end=1626,
 )
 
 
@@ -1322,8 +1421,8 @@ _SIMRESPONSESTATIONSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1427,
-  serialized_end=1506,
+  serialized_start=1628,
+  serialized_end=1707,
 )
 
 
@@ -1357,8 +1456,8 @@ _SIMRESPONSESTATIONSUMMARY = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1508,
-  serialized_end=1590,
+  serialized_start=1709,
+  serialized_end=1791,
 )
 
 
@@ -1392,8 +1491,8 @@ _SIMRESPONSEPASSENGERSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1592,
-  serialized_end=1675,
+  serialized_start=1793,
+  serialized_end=1876,
 )
 
 
@@ -1427,8 +1526,8 @@ _SIMRESPONSESWITCHSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1677,
-  serialized_end=1755,
+  serialized_start=1878,
+  serialized_end=1956,
 )
 
 
@@ -1462,8 +1561,8 @@ _SIMRESPONSETRACKSEGMENTSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1757,
-  serialized_end=1847,
+  serialized_start=1958,
+  serialized_end=2048,
 )
 
 
@@ -1525,8 +1624,8 @@ _SIMRESPONSETOTALSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1850,
-  serialized_end=2097,
+  serialized_start=2051,
+  serialized_end=2298,
 )
 
 
@@ -1574,8 +1673,8 @@ _SIMREQUESTSWITCHCMD = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2099,
-  serialized_end=2177,
+  serialized_start=2300,
+  serialized_end=2378,
 )
 
 
@@ -1623,8 +1722,8 @@ _SIMNOTIFYVEHICLEPOSITION = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2179,
-  serialized_end=2260,
+  serialized_start=2380,
+  serialized_end=2461,
 )
 
 
@@ -1658,8 +1757,8 @@ _SIMNOTIFYTIME = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2262,
-  serialized_end=2306,
+  serialized_start=2463,
+  serialized_end=2507,
 )
 
 
@@ -1686,8 +1785,8 @@ _SIMNOTIFYVEHICLEARRIVE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2308,
-  serialized_end=2370,
+  serialized_start=2509,
+  serialized_end=2571,
 )
 
 
@@ -1714,8 +1813,8 @@ _SIMNOTIFYVEHICLEEXIT = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2372,
-  serialized_end=2432,
+  serialized_start=2573,
+  serialized_end=2633,
 )
 
 
@@ -1749,8 +1848,8 @@ _SIMNOTIFYVEHICLEREADYLOAD = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2434,
-  serialized_end=2487,
+  serialized_start=2635,
+  serialized_end=2688,
 )
 
 
@@ -1826,8 +1925,8 @@ _SIMNOTIFYVEHICLECOLLISION = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2490,
-  serialized_end=2663,
+  serialized_start=2691,
+  serialized_end=2864,
 )
 
 
@@ -1882,8 +1981,8 @@ _SIMNOTIFYPASSENGEREMBARKSTART = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2665,
-  serialized_end=2772,
+  serialized_start=2866,
+  serialized_end=2973,
 )
 
 
@@ -1938,8 +2037,8 @@ _SIMNOTIFYPASSENGEREMBARKEND = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2774,
-  serialized_end=2879,
+  serialized_start=2975,
+  serialized_end=3080,
 )
 
 
@@ -1994,8 +2093,8 @@ _SIMNOTIFYPASSENGERDISEMBARKSTART = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2881,
-  serialized_end=2991,
+  serialized_start=3082,
+  serialized_end=3192,
 )
 
 
@@ -2050,8 +2149,8 @@ _SIMNOTIFYPASSENGERDISEMBARKEND = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=2993,
-  serialized_end=3101,
+  serialized_start=3194,
+  serialized_end=3302,
 )
 
 
@@ -2078,8 +2177,8 @@ _SIMEVENTTRACKSEGMENTDISABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3103,
-  serialized_end=3147,
+  serialized_start=3304,
+  serialized_end=3348,
 )
 
 
@@ -2106,8 +2205,8 @@ _SIMEVENTTRACKSEGMENTREENABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3149,
-  serialized_end=3194,
+  serialized_start=3350,
+  serialized_end=3395,
 )
 
 
@@ -2134,8 +2233,8 @@ _SIMEVENTSWITCHDISABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3196,
-  serialized_end=3234,
+  serialized_start=3397,
+  serialized_end=3435,
 )
 
 
@@ -2162,8 +2261,8 @@ _SIMEVENTSWITCHREENABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3236,
-  serialized_end=3275,
+  serialized_start=3437,
+  serialized_end=3476,
 )
 
 
@@ -2190,8 +2289,8 @@ _SIMEVENTSTATIONDISABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3277,
-  serialized_end=3315,
+  serialized_start=3478,
+  serialized_end=3516,
 )
 
 
@@ -2218,8 +2317,8 @@ _SIMEVENTSTATIONREENABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3317,
-  serialized_end=3356,
+  serialized_start=3518,
+  serialized_end=3557,
 )
 
 
@@ -2246,8 +2345,8 @@ _SIMEVENTVEHICLEDISABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3358,
-  serialized_end=3396,
+  serialized_start=3559,
+  serialized_end=3597,
 )
 
 
@@ -2274,8 +2373,8 @@ _SIMEVENTVEHICLEREENABLED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3398,
-  serialized_end=3437,
+  serialized_start=3599,
+  serialized_end=3638,
 )
 
 
@@ -2302,8 +2401,8 @@ _SIMEVENTPASSENGERCREATED = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3439,
-  serialized_end=3505,
+  serialized_start=3640,
+  serialized_end=3706,
 )
 
 
@@ -2330,8 +2429,8 @@ _SIMEVENTPASSENGERCHANGEDEST = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3507,
-  serialized_end=3549,
+  serialized_start=3708,
+  serialized_end=3750,
 )
 
 
@@ -2365,8 +2464,8 @@ _SIMMSGHDRINVALIDSEPARATOR = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3551,
-  serialized_end=3610,
+  serialized_start=3752,
+  serialized_end=3811,
 )
 
 
@@ -2400,8 +2499,8 @@ _SIMMSGHDRINVALIDTYPE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3612,
-  serialized_end=3667,
+  serialized_start=3813,
+  serialized_end=3868,
 )
 
 
@@ -2428,8 +2527,8 @@ _SIMMSGHDRINVALIDID = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3669,
-  serialized_end=3704,
+  serialized_start=3870,
+  serialized_end=3905,
 )
 
 
@@ -2463,8 +2562,8 @@ _SIMMSGHDRINVALIDTIME = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3706,
-  serialized_end=3761,
+  serialized_start=3907,
+  serialized_end=3962,
 )
 
 
@@ -2498,8 +2597,8 @@ _SIMMSGHDRINVALIDSIZE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3763,
-  serialized_end=3818,
+  serialized_start=3964,
+  serialized_end=4019,
 )
 
 
@@ -2526,8 +2625,8 @@ _SIMMSGBODYINVALID = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3820,
-  serialized_end=3854,
+  serialized_start=4021,
+  serialized_end=4055,
 )
 
 
@@ -2568,8 +2667,8 @@ _SIMMSGBODYINVALIDID = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3856,
-  serialized_end=3940,
+  serialized_start=4057,
+  serialized_end=4141,
 )
 
 
@@ -2652,8 +2751,8 @@ _VEHICLESTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=3943,
-  serialized_end=4118,
+  serialized_start=4144,
+  serialized_end=4319,
 )
 
 
@@ -2722,8 +2821,8 @@ _STATIONSUMMARY = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=4121,
-  serialized_end=4301,
+  serialized_start=4322,
+  serialized_end=4502,
 )
 
 
@@ -2785,8 +2884,8 @@ _STATIONSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=4304,
-  serialized_end=4466,
+  serialized_start=4505,
+  serialized_end=4667,
 )
 
 
@@ -2841,8 +2940,8 @@ _PLATFORMSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=4468,
-  serialized_end=4584,
+  serialized_start=4669,
+  serialized_end=4785,
 )
 
 
@@ -2883,8 +2982,8 @@ _BERTHSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=4586,
-  serialized_end=4639,
+  serialized_start=4787,
+  serialized_end=4840,
 )
 
 
@@ -2903,78 +3002,50 @@ _PASSENGERSTATUS = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='label', full_name='prt.PassengerStatus.label', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='loc_type', full_name='prt.PassengerStatus.loc_type', index=2,
+      name='loc_type', full_name='prt.PassengerStatus.loc_type', index=1,
       number=3, type=14, cpp_type=8, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='locID', full_name='prt.PassengerStatus.locID', index=3,
+      name='locID', full_name='prt.PassengerStatus.locID', index=2,
       number=4, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='src_stationID', full_name='prt.PassengerStatus.src_stationID', index=4,
+      name='src_stationID', full_name='prt.PassengerStatus.src_stationID', index=3,
       number=5, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='dest_stationID', full_name='prt.PassengerStatus.dest_stationID', index=5,
+      name='dest_stationID', full_name='prt.PassengerStatus.dest_stationID', index=4,
       number=6, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='creation_time', full_name='prt.PassengerStatus.creation_time', index=6,
+      name='creation_time', full_name='prt.PassengerStatus.creation_time', index=5,
       number=7, type=1, cpp_type=5, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='wait_time', full_name='prt.PassengerStatus.wait_time', index=7,
-      number=8, type=2, cpp_type=6, label=1,
+      name='mass', full_name='prt.PassengerStatus.mass', index=6,
+      number=11, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='travel_time', full_name='prt.PassengerStatus.travel_time', index=8,
-      number=9, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='weight', full_name='prt.PassengerStatus.weight', index=9,
-      number=10, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='trip_complete', full_name='prt.PassengerStatus.trip_complete', index=10,
-      number=11, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='trip_success', full_name='prt.PassengerStatus.trip_success', index=11,
-      number=12, type=8, cpp_type=7, label=1,
+      name='trip_success', full_name='prt.PassengerStatus.trip_success', index=7,
+      number=13, type=8, cpp_type=7, label=2,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -2988,8 +3059,8 @@ _PASSENGERSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=4642,
-  serialized_end=4910,
+  serialized_start=4843,
+  serialized_end=5031,
 )
 
 
@@ -3030,8 +3101,8 @@ _ROUTINGENTRY = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=4912,
-  serialized_end=4968,
+  serialized_start=5033,
+  serialized_end=5089,
 )
 
 
@@ -3072,8 +3143,8 @@ _SWITCHSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=4970,
-  serialized_end=5047,
+  serialized_start=5091,
+  serialized_end=5168,
 )
 
 
@@ -3135,15 +3206,16 @@ _TRACKSEGMENTSTATUS = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=5049,
-  serialized_end=5164,
+  serialized_start=5170,
+  serialized_end=5285,
 )
 
 
 _SPLINE.fields_by_name['polys'].message_type = _POLYCOEFFS
 _CTRLCMDVEHICLETRAJECTORY.fields_by_name['spline'].message_type = _SPLINE
-_SIMCOMPLETEPASSENGEREMBARK.fields_by_name['cmd'].message_type = _CTRLCMDPASSENGERSEMBARK
-_SIMCOMPLETEPASSENGERDISEMBARK.fields_by_name['cmd'].message_type = _CTRLCMDPASSENGERSDISEMBARK
+_SIMCOMPLETEPASSENGERSEMBARK.fields_by_name['cmd'].message_type = _CTRLCMDPASSENGERSEMBARK
+_SIMCOMPLETEPASSENGERSDISEMBARK.fields_by_name['cmd'].message_type = _CTRLCMDPASSENGERSDISEMBARK
+_SIMCOMPLETEPASSENGERWALK.fields_by_name['cmd'].message_type = _CTRLCMDPASSENGERWALK
 _SIMRESPONSEVEHICLESTATUS.fields_by_name['v_status'].message_type = _VEHICLESTATUS
 _SIMRESPONSESTATIONSTATUS.fields_by_name['s_status'].message_type = _STATIONSTATUS
 _SIMRESPONSESTATIONSUMMARY.fields_by_name['s_summary'].message_type = _STATIONSUMMARY
@@ -3201,6 +3273,12 @@ class CtrlCmdPassengersDisembark(message.Message):
   DESCRIPTOR = _CTRLCMDPASSENGERSDISEMBARK
   
   # @@protoc_insertion_point(class_scope:prt.CtrlCmdPassengersDisembark)
+
+class CtrlCmdPassengerWalk(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _CTRLCMDPASSENGERWALK
+  
+  # @@protoc_insertion_point(class_scope:prt.CtrlCmdPassengerWalk)
 
 class CtrlCmdSwitch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
@@ -3298,17 +3376,23 @@ class SimAbortVehicleSpeed(message.Message):
   
   # @@protoc_insertion_point(class_scope:prt.SimAbortVehicleSpeed)
 
-class SimCompletePassengerEmbark(message.Message):
+class SimCompletePassengersEmbark(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _SIMCOMPLETEPASSENGEREMBARK
+  DESCRIPTOR = _SIMCOMPLETEPASSENGERSEMBARK
   
-  # @@protoc_insertion_point(class_scope:prt.SimCompletePassengerEmbark)
+  # @@protoc_insertion_point(class_scope:prt.SimCompletePassengersEmbark)
 
-class SimCompletePassengerDisembark(message.Message):
+class SimCompletePassengersDisembark(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _SIMCOMPLETEPASSENGERDISEMBARK
+  DESCRIPTOR = _SIMCOMPLETEPASSENGERSDISEMBARK
   
-  # @@protoc_insertion_point(class_scope:prt.SimCompletePassengerDisembark)
+  # @@protoc_insertion_point(class_scope:prt.SimCompletePassengersDisembark)
+
+class SimCompletePassengerWalk(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _SIMCOMPLETEPASSENGERWALK
+  
+  # @@protoc_insertion_point(class_scope:prt.SimCompletePassengerWalk)
 
 class SimCompleteSwitch(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType

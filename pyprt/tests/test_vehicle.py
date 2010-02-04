@@ -2,7 +2,7 @@ import unittest
 import SimPy.Simulation as Sim
 import sys
 
-import globals
+import common
 import layout
 from scipy import poly1d
 from vehicle import Segment
@@ -27,7 +27,7 @@ class MockInterface(object):
         self.msgs = []
     def send(self, msg_type, msg):
         self.msgs.append( (msg_type, msg) )
-    
+
 POS = 0
 VEL = 1
 ACCEL = 2
@@ -52,7 +52,7 @@ def trav_continuity_check(utest, trav):
     # first segment starts at pos 0 (unless it's the initial traversal).
     # utest is the unit test I'm calling from (i.e. `self`)
     if trav.idx > 1 and trav.segments:
-        utest.assertAlmostEqual( trav.segments[0].pos_eqn(0), 0, places=globals.DIST_RND)
+        utest.assertAlmostEqual( trav.segments[0].pos_eqn(0), 0, places=common.DIST_RND)
     if len(trav.segments) >= 2:
         for seg1, seg2 in zip(trav.segments[0:-1], trav.segments[1:]):
             seg_continuity_check(utest, seg1, seg2)
@@ -114,19 +114,19 @@ class SegmentTestBasic(unittest.TestCase):
     def test_get_start_pos(self):
         answers = (0.0, 8.33333333333, 14.2708333333, 78.0208333333)
         for s, a in zip(self.segs, answers):
-            self.assertAlmostEqual(s.get_start_pos(), a, places = globals.DIST_RND)
-    
+            self.assertAlmostEqual(s.get_start_pos(), a, places = common.DIST_RND)
+
     def test_get_end_pos(self):
         # Test inf duration case seperate, AssertAlmostEquals doesn't like it.
         answers = (8.33333333333, 14.2708333333, 78.0208333333)
         for s, a in zip(self.segs, answers):
-            self.assertAlmostEqual(s.get_end_pos(), a, places = globals.DIST_RND)
+            self.assertAlmostEqual(s.get_end_pos(), a, places = common.DIST_RND)
         self.assertEqual(self.segs[3].get_end_pos(), float('Inf'))
 
     def test_get_length(self):
         answers = (8.33333333333, 14.2708333333 - 8.33333333333, 78.0208333333 - 14.2708333333)
         for s, a in zip(self.segs, answers):
-            self.assertAlmostEqual(s.get_length(), a, places = globals.DIST_RND)
+            self.assertAlmostEqual(s.get_length(), a, places = common.DIST_RND)
 
     def test_is_stopped(self):
         answers = (False,False,False)
@@ -136,7 +136,7 @@ class SegmentTestBasic(unittest.TestCase):
         self.assertEqual(seg.is_stopped(), True)
 
     def test_get_times_from_pos(self):
-        pos = (0.0, 1.0 + 2.0/3.0, 8.33333333333)        
+        pos = (0.0, 1.0 + 2.0/3.0, 8.33333333333)
         answers = (10.0, 11.0, 12.0)
         for p, a in zip(pos, answers):
             t = self.segs[0].get_times_from_pos(p)
@@ -150,15 +150,15 @@ class SegmentTestBasic(unittest.TestCase):
         self.assertEquals( len(t.points), 0 )
         self.assertEquals(t.ranges[0][0], 10) # range start time
         self.assertEquals(t.ranges[0][1], 20) # range stop time
-    
+
     def test_get_pos_from_time(self):
         times = (10.0, 11.0, 12.0)
         pos = (0.0, 1.0 + 2.0/3.0, 8.33333333333)
         for t, p in zip(times, pos):
-            self.assertAlmostEqual(self.segs[0].get_pos_from_time(t), p, places = globals.DIST_RND)
+            self.assertAlmostEqual(self.segs[0].get_pos_from_time(t), p, places = common.DIST_RND)
         self.assertRaises(InvalidTimeError, self.segs[1].get_pos_from_time, 1.99)
         self.assertRaises(InvalidTimeError, self.segs[1].get_pos_from_time, 2.51)
-        self.assertAlmostEqual(self.segs[3].get_pos_from_time(20.0), 190.52099999999999, places = globals.DIST_RND)
+        self.assertAlmostEqual(self.segs[3].get_pos_from_time(20.0), 190.52099999999999, places = common.DIST_RND)
 
         # additional test
         seg = Segment(poly1d([0,0,10,0]), 10, 0) # constant speed
@@ -172,17 +172,17 @@ class SegmentTestBasic(unittest.TestCase):
 
     def test_split_at_pos(self):
         s1, s2 = self.segs[1].split_at_pos(10)
-        self.assertAlmostEqual(s1.get_length(), 1.0+2.0/3.0, places = globals.DIST_RND)
-        self.assertAlmostEqual(s1.get_end_pos(), 10, places = globals.DIST_RND)
-        self.assertAlmostEqual(s2.get_start_pos(), 0, places = globals.DIST_RND)
-        self.assertAlmostEqual(s2.get_length(), 14.2708333333 - 10, places = globals.DIST_RND)
+        self.assertAlmostEqual(s1.get_length(), 1.0+2.0/3.0, places = common.DIST_RND)
+        self.assertAlmostEqual(s1.get_end_pos(), 10, places = common.DIST_RND)
+        self.assertAlmostEqual(s2.get_start_pos(), 0, places = common.DIST_RND)
+        self.assertAlmostEqual(s2.get_length(), 14.2708333333 - 10, places = common.DIST_RND)
         seg_continuity_check(self, s1, s2, checks=(VEL, ACCEL))
-        
+
         s3, s4 = self.segs[3].split_at_pos(100.0208333333)
         seg_continuity_check(self, s3, s4, checks=(VEL, ACCEL))
-        self.assertAlmostEqual(s3.get_length(), 100.0208333333 - 78.0208333333, places = globals.DIST_RND)
-        self.assertAlmostEqual(s3.get_end_pos(), 100.0208333333, places = globals.DIST_RND)
-        self.assertAlmostEqual(s4.get_start_pos(), 0, places = globals.DIST_RND)
+        self.assertAlmostEqual(s3.get_length(), 100.0208333333 - 78.0208333333, places = common.DIST_RND)
+        self.assertAlmostEqual(s3.get_end_pos(), 100.0208333333, places = common.DIST_RND)
+        self.assertAlmostEqual(s4.get_start_pos(), 0, places = common.DIST_RND)
         self.assertTrue(s4.end_time == float('Inf') )
 
     def test_collision_check_no_overlap(self):
@@ -197,7 +197,7 @@ class SegmentTestBasic(unittest.TestCase):
         seg2 = Segment(poly1d([-1,1]), 1, 1)
         self.assertEqual(seg1.collision_check(seg2, 0), [])
         self.assertEqual(seg2.collision_check(seg1, 0), [])
-    
+
     def test_collision_check_simple(self):
         # Segments fully overlap. Collision at time 0.5
         seg1 = Segment(poly1d([1,0]), 1, 0)
@@ -210,20 +210,20 @@ class SegmentTestBasic(unittest.TestCase):
         seg2 = Segment(poly1d([-1,5]), 1, 0)
         self.assertEqual(seg1.collision_check(seg2, 0), [])
         self.assertEqual(seg2.collision_check(seg1, 0), [])
-    
+
     def test_collision_check_offset(self):
         # collision occurs inside valid range
         seg1 = Segment(poly1d([1,0]), 1, 0)
         seg2 = Segment(poly1d([-1,1]), 1, 0.6)
         self.assertEqual(seg1.collision_check(seg2, 0), [0.8])
         self.assertEqual(seg2.collision_check(seg1, 0), [0.8])
-        
+
         # collision occurs outside of valid range
         seg1 = Segment(poly1d([1,0]), 1, 0)
         seg2 = Segment(poly1d([-1,2]), 1, 0.6)
         self.assertEqual(seg1.collision_check(seg2, 0), [])
         self.assertEqual(seg2.collision_check(seg1, 0), [])
-        
+
     def test_collision_check_stopped(self):
         # doesn't blow up when two stopped vehicles compared
         seg1 = Segment(poly1d([5]), float('inf'), 0)
@@ -243,7 +243,7 @@ class SegmentTestBasic(unittest.TestCase):
         seg2 = Segment(poly1d([5, 10, 15, 25]), 100, 0)
         self.assertEqual(seg1.collision_check(seg2, -5), [0])
         self.assertEqual(seg2.collision_check(seg1, -5), [])
-        
+
         seg1 = Segment(poly1d([1,0]), 1, 0)
         seg2 = Segment(poly1d([-1,11]), 1, 0.6)
         self.assertEqual(seg1.collision_check(seg2, -10), [0.8])
@@ -263,14 +263,14 @@ class TraversalTestBasic(unittest.TestCase):
         trav = Traversal(loc, 0)
         trav.append_segment(self.segs[0])
         self.assertTrue(len(trav.segments) == 1)
-        self.assertTrue(trav.segments[0] is self.segs[0])        
-        
+        self.assertTrue(trav.segments[0] is self.segs[0])
+
         trav.append_segment(self.segs[1])
-        self.assertTrue(len(trav.segments) == 2)        
+        self.assertTrue(len(trav.segments) == 2)
         self.assertTrue(trav.segments[1] is self.segs[1])
 
         trav.append_segment(self.segs[2])
-        self.assertAlmostEquals(trav.segments[2].get_length(), 78.0208333333 - 14.2708333333, places = globals.DIST_RND)
+        self.assertAlmostEquals(trav.segments[2].get_length(), 78.0208333333 - 14.2708333333, places = common.DIST_RND)
         self.assertRaises(TraversalFullError, trav.append_segment, self.segs[3])
         trav_continuity_check(self, trav)
 
@@ -279,11 +279,11 @@ class TraversalTestBasic(unittest.TestCase):
         trav = Traversal(loc, 0)
         for seg in self.segs[:-2]:
             trav.append_segment(seg)
-        trav_continuity_check(self, trav)            
+        trav_continuity_check(self, trav)
         self.assertRaises(TraversalFullError, trav.append_segment, self.segs[2])
         # segment starts beyond location length
         self.assertRaises(InvalidPosError, trav.append_segment, self.segs[3])
-    
+
     def test_get_segment_from_time(self):
         loc = MockLoc(100)
         trav = Traversal(loc, 0)
@@ -292,14 +292,14 @@ class TraversalTestBasic(unittest.TestCase):
         # Segment starts at time 10
         self.assertRaises(InvalidTimeError, trav.get_segment_from_time, 5)
         self.assertTrue(trav.get_segment_from_time(10) is self.segs[0])
-        
+
         trav2 = Traversal(loc, 0)
         seg = Segment(poly1d([0]), 0, 0)
         trav2.append_segment(seg)
         for s in self.segs[0:-1]:
             trav2.append_segment(s)
         self.assertTrue(trav2.get_segment_from_time() is trav2.segments[0])
-    
+
     def test_get_times_from_pos(self):
         loc = MockLoc(100.0)
         trav = Traversal(loc, 0)
@@ -317,7 +317,7 @@ class TraversalTestBasic(unittest.TestCase):
         self.assertRaises(InvalidPosError, trav.get_times_from_pos, 100.01)
         # pos inside of location length, but beyond last segment
         self.assertEqual(len(trav.get_times_from_pos(78.03).points), 0)
-  
+
     def test_get_pos_from_time(self):
         loc = MockLoc(100)
         trav = Traversal(loc, 0)
@@ -336,12 +336,12 @@ class TraversalTestBasic(unittest.TestCase):
         trav = Traversal(loc, 0)
         for seg in self.segs[0:-1]:
             trav.append_segment(seg)
-        self.assertEqual(len(trav.segments), 3) 
+        self.assertEqual(len(trav.segments), 3)
         trav.clear(12.2)
         self.assertEqual(len(trav.segments), 2)
         self.assertEqual(trav.segments[-1].end_time, 12.2)
         trav_continuity_check(self, trav)
-        
+
     def test_collision_check(self):
         loc = MockLoc(8)
         trav1 = Traversal(loc, 0)
@@ -350,7 +350,7 @@ class TraversalTestBasic(unittest.TestCase):
         seg3_1 = Segment(poly1d([-1, 2, 7]), 1, 4 )
         for seg in (seg1_1, seg2_1, seg3_1):
             trav1.append_segment(seg)
-        
+
         trav2 = Traversal(loc, 0)
         seg1_2 = Segment(poly1d([1, 0, 3]), 0.5, 0 )
         seg2_2 = Segment(poly1d([0, 1, 3.25]), 3.75, 0.5 )
@@ -358,10 +358,10 @@ class TraversalTestBasic(unittest.TestCase):
         seg4_2 = Segment(poly1d([0, 0, 7.25]), float('inf'), 4.75)
         for seg in (seg1_2, seg2_2, seg3_2, seg4_2):
             trav2.append_segment(seg)
-        
+
         # lv length 0. Collide at pos 6.25 at time 3.75
         self.assertEqual(trav1.collision_check(trav2, 0), [3.75])
-        
+
         # lv length 1. Collide at pos 4.5 | 5.5 at time 2.75
         self.assertEqual(trav1.collision_check(trav2, 1), [2.75])
 
@@ -386,10 +386,10 @@ class PathTestBasic(unittest.TestCase):
         self.assertEqual(len(path.future.segments), 1)
         path_continuity_check(self, path)
         traversal_index_check(self, path)
-        
+
     def test_append_segment_small(self):
         # Doesn't fit whole trajectory in one traversal
-        start_loc = MockLoc(50) 
+        start_loc = MockLoc(50)
         path = Path(start_loc, self.segs[0])
         for s in self.segs[1:]:
             path.append_segment(s)
@@ -397,9 +397,9 @@ class PathTestBasic(unittest.TestCase):
         self.assertEqual(len(path.traversals), 1)
         path_continuity_check(self, path)
         traversal_index_check(self, path)
-        
+
     def test_append_segment_stopped(self):
-        start_loc = MockLoc(50) 
+        start_loc = MockLoc(50)
         seg = Segment(poly1d([0,0,0,0]), float('Inf'), 0.0)
         path = Path(start_loc, seg)
         self.assertEqual(len(path.traversals), 1)
@@ -420,10 +420,10 @@ class PathTestBasic(unittest.TestCase):
         self.assertEqual(len(path.future.segments), 1)
         path_continuity_check(self, path)
         traversal_index_check(self, path)
-        
+
     def test_append_loc_small(self):
         # Doesn't fit whole trajectory in one traversal
-        start_loc = MockLoc(50) 
+        start_loc = MockLoc(50)
         path = Path(start_loc, self.segs[0])
         for s in self.segs[1:]:
             path.append_segment(s)
@@ -447,7 +447,7 @@ class PathTestBasic(unittest.TestCase):
         self.assertEqual(len(path.traversals), 3)
         path_continuity_check(self, path)
         traversal_index_check(self, path)
-   
+
     def test_change_trajectory_a(self):
         # Starting at time 1.0, smoothly change to a trajectory that uses:
         # a_init 5.0, v_init 3.75, v_final 1.0, max_accel 5.0, max_decel -5.0,
@@ -474,11 +474,11 @@ class PathTestBasic(unittest.TestCase):
         path.append_loc(MockLoc(10))
         new0 = Segment(poly1d([2.5/6, 0, 10, 0]), 1.41421356237, 10)
         new1 = Segment(poly1d([ -2.5/6, 1.76776695,12.5,15.32064693]), 1.41421356237, 11.41421356237)
-        new2 = Segment(poly1d([ 15, 35.35533906]), float('inf'), 12.828427124739)                       
+        new2 = Segment(poly1d([ 15, 35.35533906]), float('inf'), 12.828427124739)
         path.change_trajectory( (new0, new1, new2) )
         path_continuity_check(self, path)
         traversal_index_check(self, path)
-        
+
     def test_change_trajectory_from_stop(self):
         start_loc = MockLoc(25)
         seg = Segment(poly1d([0,0,0,0]), float('Inf'), 0.0)
@@ -494,7 +494,7 @@ class PathTestBasic(unittest.TestCase):
         path_continuity_check(self, path)
         self.assertEqual(path.get_x_loc_from_time(VEL, 100)[0], 25)
         traversal_index_check(self, path)
-        
+
     def test_get_pos_loc_from_time(self):
         start_loc = MockLoc(50)
         seg = Segment(poly1d([0,0,10,0]), float('Inf'), 0) # constant speed
@@ -521,7 +521,7 @@ class PathTestBasic(unittest.TestCase):
         path.append_loc(MockLoc(30))
         self.assertAlmostEqual(path.get_eta_next_loc(), 2.5)
         traversal_index_check(self, path)
-        
+
     def test_get_eta_next_loc_b(self):
         seg = Segment(poly1d([0,0,10,0]), float('Inf'), 0) # constant speed
         path = Path(MockLoc(0), seg)
@@ -576,7 +576,7 @@ class PathTestBasic(unittest.TestCase):
 ##            path4.append_segment(seg)
 ##        self.assertEqual(path3.collision_check(path4, 0, 0, False), [3.75])
 ##        self.assertEqual(path3.collision_check(path4, 0, 1, False), [3.75])
-        
+
 
     def test_plot_path(self):
         start_loc = MockLoc(25)
@@ -594,7 +594,7 @@ class MiscTest(unittest.TestCase):
         p = poly1d([5])
         self.assertEqual(shift_poly(p, 10, 0), p) # delta_t, no effect
         self.assertEqual(shift_poly(p, 0, -5), poly1d([0]))
-        
+
     def test_shift_poly_1(self):
         # 1st order
         p = poly1d([-2, 10])
@@ -603,7 +603,7 @@ class MiscTest(unittest.TestCase):
         self.assertEqual(shift_poly(p, 0, -1), poly1d([-2, 9])) # shift down 1
         self.assertEqual(shift_poly(p, 0, 1), poly1d([-2, 11])) # shift up 1
         self.assertEqual(shift_poly(p, 1, 1), poly1d([-2, 13])) # shift up 1, right 1
-        
+
     def test_shift_poly_2(self):
         # 2nd order
         p = poly1d([2, 1, 10])
@@ -612,7 +612,7 @@ class MiscTest(unittest.TestCase):
         self.assertEqual(shift_poly(p, 0, -5), poly1d([2, 1, 5])) # shift down 5
         self.assertEqual(shift_poly(p, 0, 5), poly1d([2, 1, 15])) # shift up 5
         self.assertEqual(shift_poly(p, 1, 5), poly1d([2, -3, 16])) # shift up 5, right 1
-        
+
     def test_shift_poly_3(self):
         # 3rd order
         p = poly1d([3, 2, 1, 10])
@@ -624,24 +624,24 @@ class MiscTest(unittest.TestCase):
 class VehicleTestOneLoc(unittest.TestCase):
     def setUp(self):
         # Create a track consisting of a single long length location.
-        globals.track_segments[0] = layout.Edge(0, sys.maxint, sys.maxint, None, None)
-        globals.interface = MockInterface()
+        common.track_segments[0] = layout.Edge(0, sys.maxint, sys.maxint, None, None)
+        common.interface = MockInterface()
         Sim.initialize()
 
-    
+
     def add_vehicle(self, loc, pos, speed):
         """Create a default vehicle with starting position and speed."""
-        id = len(globals.vehicles) # 0 based
+        id = len(common.vehicles) # 0 based
         v = Vehicle(ID=id, loc=loc, length=100,
                             accel_max_norm=5.0, accel_min_norm=-5.0, jerk_max_norm=2.5,
                             accel_max_emerg=5.0, accel_min_emerg=-5.0, jerk_max_emerg=2.5,
                             v_mass=0, position=pos, speed=speed, payload=0)
-        globals.vehicles[id] = v
+        common.vehicles[id] = v
         Sim.activate(v, v.ctrl_loop())
         return v
 
     def test_simple_traversal(self):
-        v = self.add_vehicle(globals.track_segments[0], 0, 100)
+        v = self.add_vehicle(common.track_segments[0], 0, 100)
         Sim.simulate(until=100)
         self.assertEqual(Sim.now(), 100)
         self.assertEqual(v.pos, 10000)
@@ -652,6 +652,6 @@ if __name__ == '__main__':
     PathSuite = unittest.TestLoader().loadTestsFromTestCase(PathTestBasic)
     MiscSuite = unittest.TestLoader().loadTestsFromTestCase(MiscTest)
     VehicleSuite = unittest.TestLoader().loadTestsFromTestCase(VehicleTestOneLoc)
-    
+
     TestVehicleSuite = unittest.TestSuite([SegmentSuite, TraversalSuite, PathSuite, MiscSuite, VehicleSuite])
     unittest.TextTestRunner(verbosity=2).run(TestVehicleSuite)
