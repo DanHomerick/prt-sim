@@ -44,7 +44,6 @@ package edu.ucsc.track_builder.gtf_import
 		public var STATION_BERTH_LENGTH:Number = 15; // meters
 		public var STATION_BERTH_COUNT:uint = 4;
 		public var STATION_COVERAGE_RADIUS:Number = 150; // meters
-		public var VEHICLE_SPEED:Number = 15; // 15 meters/sec == 34 miles/hour
 		
 //		protected var progressBar:ProgressBar;
 		public var feedDirectory:File;
@@ -474,7 +473,7 @@ package edu.ucsc.track_builder.gtf_import
 									vehicle = new Vehicle(
 							                            IdGenerator.getVehicleId(),
 							                            distRemaining,
-							                            VEHICLE_SPEED,
+							                            0, // although some vehicle speed makes sense here, there's no value that can be chosen that would be 100% 'safe'.
 							                            0,
 							                            vehicleSeg,
 							                            vehicleSeg.getLatLng(distRemaining),

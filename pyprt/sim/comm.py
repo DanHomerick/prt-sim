@@ -254,7 +254,6 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     self.validate_spline(msg.spline)
                     v.process_spline(msg.spline )
-                    # TODO: Check that the spline is valid! Continuous, at least!
 
                 elif msg_type == api.CTRL_CMD_VEHICLE_ITINERARY:
                     msg = api.CtrlCmdVehicleItinerary()
@@ -263,15 +262,15 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     if msg.clear:
                         v.path.clear_planned_route()
-                    self.validate_itinerary(v, msg.tsIDs) # raises InvalidTrackSegmentID if not valid
-                    for id in msg.tsIDs:
+                    self.validate_itinerary(v, msg.trackIDs) # raises InvalidTrackSegmentID if not valid
+                    for id in msg.trackIDs:
                         v.path.append_loc(self.get_trackSeg(id))
 
                 elif msg_type == api.CTRL_CMD_SWITCH:
                     msg = api.CtrlCmdSwitch()
                     msg.ParseFromString(msg_str)
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-                    ts = self.get_trackSeg(msg.tsID)
+                    ts = self.get_trackSeg(msg.trackID)
                     next = self.get_trackSeg(msg.nextID)
 
                     # If not a valid track segment to switch to or it's already
@@ -310,7 +309,7 @@ class ControlInterface(Sim.Process):
                     dest = self.get_station(msg.dest_stationID)
                     travel_time = msg.travel_time
                     if travel_time < 0:
-                        raise common.MsgError
+                        raise common.InvalidTime, travel_time
                     pax.walk(origin, dest, travel_time, msg, msgID)
 
                 # REQUESTS
@@ -321,6 +320,7 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     resp = api.SimResponseVehicleStatus()
                     resp.msgID = msgID
+                    resp.time = Sim.now()
                     v.fill_VehicleStatus(resp.v_status)
                     self.send(api.SIM_RESPONSE_VEHICLE_STATUS, resp)
 
@@ -331,18 +331,9 @@ class ControlInterface(Sim.Process):
                     stat = self.get_station(msg.sID)
                     resp = api.SimResponseStationStatus()
                     resp.msgID = msgID
+                    resp.time = Sim.now()
                     stat.fill_StationStatus(resp.s_status)
                     self.send(api.SIM_RESPONSE_STATION_STATUS, resp)
-
-                elif msg_type == api.CTRL_REQUEST_STATION_SUMMARY:
-                    msg = api.CtrlRequestStationSummary()
-                    msg.ParseFromString(msg_str)
-                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-                    stat = self.get_station(msg.sID)
-                    resp = api.SimResponseStationSummary()
-                    resp.msgID = msgID
-                    stat.fill_StationSummary(resp.s_summary)
-                    self.send(api.SIM_RESPONSE_STATION_SUMMARY, resp)
 
                 elif msg_type == api.CTRL_REQUEST_PASSENGER_STATUS:
                     msg = api.CtrlRequestPassengerStatus()
@@ -351,6 +342,7 @@ class ControlInterface(Sim.Process):
                     p = self.get_passenger(msg.pID)
                     resp = api.SimResponsePassengerStatus()
                     resp.msgID = msgID
+                    resp.time = Sim.now()
                     p.fill_PassengerStatus(resp.p_status)
                     self.send(api.SIM_RESPONSE_PASSENGER_STATUS, resp)
 
@@ -361,6 +353,7 @@ class ControlInterface(Sim.Process):
                     sw = self.get_switch(msg.swID)
                     resp = api.SimResponseSwitchStatus()
                     resp.msgID = msgID
+                    resp.time = Sim.now()
                     sw.fill_SwitchStatus(resp.sw_status)
                     self.send(api.SIM_RESPONSE_SWITCH_STATUS, resp)
 
@@ -370,6 +363,7 @@ class ControlInterface(Sim.Process):
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
                     ts = self.get_trackSeg(msg.eID)
                     resp = api.SimResponseTrackSegmentStatus()
+                    resp.time = Sim.now()
                     resp.msgID = msgID
                     ts.fill_TrackSegmentStatus(resp.ts_status)
                     self.send(api.SIM_RESPONSE_TRACKSEGMENT_STATUS, resp)
@@ -381,8 +375,8 @@ class ControlInterface(Sim.Process):
                     msg.ParseFromString(msg_str)
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 
-                    if msg.time < Sim.now():
-                        raise common.InvalidTimeStamp
+                    if common.time_lt(msg.time, Sim.now()):
+                        raise common.InvalidTime, msg.time
                     resp = api.SimNotifyTime()
                     resp.msgID = msgID
                     resp.time = msg.time
@@ -474,6 +468,11 @@ class ControlInterface(Sim.Process):
                 err_msg.id_type = api.PASSENGER
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
+            except common.InvalidTime, e:
+                err_msg = api.SimMsgBodyInvalidTime()
+                err_msg.msgID = msgID
+                err_msg.time = e.args[0]
+                self.send(api.SIM_MSG_BODY_INVALID_TIME, err_msg)
             except common.MsgError:
                 err_msg = api.SimMsgBodyInvalid()
                 err_msg.msgID = msgID
@@ -484,6 +483,7 @@ class ControlInterface(Sim.Process):
         elif msg_time > ms_now():
             common.AlarmClock(msg_time/1000.0, AlarmClock.delayed_msg, (comm_idx, msg_type, msgID, msg_time, msg_str))
         else: # msg_time < ms_now()
+            # This check should clearly go away once latency is introduced.
             err = api.SimMsgHdrInvalidTime()
             err.msgID = msgID
             err.msg_time = msg_time
@@ -633,7 +633,7 @@ class ControlInterface(Sim.Process):
         for ts in common.track_segments.itervalues():
             ts_status = api.TrackSegmentStatus()
             ts.fill_TrackSegmentStatus(ts_status)
-            ts.ts_statuses.append(ts_status)
+            ts.t_statuses.append(ts_status)
         # send Switch status msgs
         for switch in common.switch_list:
             sw_status = api.SwitchStatus()

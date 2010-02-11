@@ -145,12 +145,21 @@ class CubicSpline(object):
         """Fills a api.Spline msg with data from a cubic spline.
         spline_msg: An api.Spline message instance.
         """
+        dead_zone = 0.0001
         for i in range(len(self.h)):
-            if self.h[i] != 0:
+            if self.h[i] > dead_zone: # ommit extreamly short phases
                 poly_msg = spline_msg.polys.add()
-                poly_msg.coeffs.append((self.a[i+1]-self.a[i])/(self.h[i]*6)) # jerk
-                poly_msg.coeffs.append(self.a[i]/2) # accel
-                poly_msg.coeffs.append(self.v[i]) # vel
-                poly_msg.coeffs.append(self.q[i]) # pos
+                c = [0,0,0,0]
+                c[0] = (self.a[i+1]-self.a[i])/(self.h[i]*6) # jerk
+                c[1] = self.a[i]/2                           # accel
+                c[2] = self.v[i]                             # vel
+                c[3] = self.q[i]                             # pos
+
+                # remove drift from accumulated rounding errors
+                for idx, x in enumerate(c):
+                    if abs(x) < dead_zone:
+                        c[idx] = 0
+
+                poly_msg.coeffs.extend(c)
                 spline_msg.times.append(self.t[i]) # time
         spline_msg.times.append(self.t[-1])

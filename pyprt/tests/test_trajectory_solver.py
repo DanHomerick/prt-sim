@@ -106,6 +106,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         # zero endpoints
         spline = solver.target_position_vmax(Knot(100, 0, 0, 0), Knot(250, 0, 0, 0))
 #        self.plot_it(spline, solver)
+        self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 250, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
         self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
@@ -135,6 +136,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         # endpoint at a_max
         spline = solver.target_position_vmax(Knot(0, 0, 0, 0), Knot(250, 5, 5, 0))
 #        self.plot_it(spline, solver)
+        self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 250, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], 5, self.PLACES)
         self.assertAlmostEqual(spline.a[-1], 5, self.PLACES)
@@ -147,6 +149,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         # zero endpoints
         spline = solver.target_position_vmax(Knot(250, 0, 0, 0), Knot(0, 0, 0, 0))
 #        self.plot_it(spline, solver)
+        self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 0, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
         self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
@@ -227,21 +230,21 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.assertAlmostEqual(spline.q[-1], 10, 5)
         self.assertAlmostEqual(spline.v[-1], 0, 5)
         self.assertAlmostEqual(spline.a[-1], 0, 5)
-        self.assertAlmostEqual(spline.t[-1], 5.03968417, 5)
+        self.assertTrue(spline.t[-1] < 6)
 
     def test_target_position_none_II(self):
         """Non-zero endpoints"""
         solver = trajectory_solver.TrajectorySolver(30, 5, 2.5)
         spline = solver.target_position_none(Knot(0,5,0,0), Knot(10,0,0,0))
 #        print "SPLINE:", spline
-#        self.plot_it(spline, solver)
+        self.plot_it(spline, solver, 'test_target_position_none_II')
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 10, 5)
         self.assertAlmostEqual(spline.v[-1], 0, 5)
         self.assertAlmostEqual(spline.a[-1], 0, 5)
-        self.assertAlmostEqual(spline.t[-1], 3.38223337, 5)
+        self.assertTrue(spline.t[-1] < 5)
 
-    
+
     def test_target_position_none_III(self):
         """Travelling in reverse."""
         solver = trajectory_solver.TrajectorySolver(30, 5, 2.5, -30, -5, -2.5)
@@ -251,7 +254,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.assertAlmostEqual(spline.q[-1], -10, 5)
         self.assertAlmostEqual(spline.v[-1], 0, 5)
         self.assertAlmostEqual(spline.a[-1], 0, 5)
-        self.assertAlmostEqual(spline.t[-1], 5.03968417, 5)
+        self.assertTrue(spline.t[-1] < 6)
 
 
     def test_target_position(self):
@@ -266,6 +269,14 @@ class  TestTrajectorySolver(unittest.TestCase):
         solver = trajectory_solver.TrajectorySolver(20, 5, 2.5, 0, -5, -2.5)
         self.assertRaises(trajectory_solver.FatalTrajectoryError,
                           solver.target_position, Knot(100, 0, 0, 0), Knot(90, 0, 0, 0) )
+
+    def test_target_position_III(self):
+        """Checks to make sure that it's using the right solver."""
+        solver = trajectory_solver.TrajectorySolver(32, 0.6, 2.5, 0, -5.0, -2.5)
+        spline = solver.target_position(Knot(0.0, 10.680000305175781, -4.8299999237060547, 27.727),
+                                        Knot(57.145143987525579, 0, 0, None))
+        self.plot_it(spline, solver)
+        self.validate_spline(spline, solver)
 
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
@@ -365,7 +376,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         # all the t points agree with the timespans
         for h, ti, tf in zip(spline.h, spline.t[:-1], spline.t[1:]):
             self.assertAlmostEqual(h, tf-ti, self.PLACES)
-            
+
         # all the knots are valid
         for i in range(len(spline.t)-1):
             # check that jerk is nearly one of: j_min, 0, or j_max

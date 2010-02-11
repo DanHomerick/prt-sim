@@ -978,6 +978,7 @@ def run_sim(end_time, callback, *args):
 
     # notify the controller(s) that the simulation is finished
     end_msg = api.SimEnd()
+    end_msg.sim_end_time = end_time
     common.interface.send(api.SIM_END, end_msg)
 
     # Disconnect from the controller(s)

@@ -128,13 +128,6 @@ class SegmentTestBasic(unittest.TestCase):
         for s, a in zip(self.segs, answers):
             self.assertAlmostEqual(s.get_length(), a, places = common.DIST_RND)
 
-    def test_is_stopped(self):
-        answers = (False,False,False)
-        for s, a in zip(self.segs, answers):
-            self.assertEqual(s.is_stopped(), a)
-        seg = Segment(poly1d([10]), 5, 2)
-        self.assertEqual(seg.is_stopped(), True)
-
     def test_get_times_from_pos(self):
         pos = (0.0, 1.0 + 2.0/3.0, 8.33333333333)
         answers = (10.0, 11.0, 12.0)

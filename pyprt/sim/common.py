@@ -100,7 +100,7 @@ class AlarmClock(Sim.Process):
             Sim.reactivate(interface, prior=False)
 
 # Divide resolution by two for rounding.
-DIST_RES = 0.01
+DIST_RES = 0.05   # 5 cm
 DIST_RND = 2
 TIME_RES = 0.001
 TIME_RND = 3
@@ -137,8 +137,8 @@ class MsgError(Exception):
 class InvalidDestID(MsgError):
     """The destination ID does not correspond to an object"""
 
-class InvalidTimestamp(MsgError):
-    """A timestamp that is dated before current time"""
+class InvalidTime(MsgError):
+    """A time that is dated before current time, or otherwise invalid."""
 
 class InvalidMsgType(MsgError):
     """Msg type is not found in the api."""

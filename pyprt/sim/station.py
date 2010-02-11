@@ -155,6 +155,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 dis_end_msg.platformID = self.platform.ID
                 dis_end_msg.pID = pax.ID
                 dis_end_msg.berthID = self.ID
+                dis_end_msg.time = Sim.now()
                 common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_END,
                                        dis_end_msg)
 
@@ -165,6 +166,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 dis_cmd_complete = api.SimCompletePassengersDisembark()
                 dis_cmd_complete.msgID = self._disembark_cmd_id
                 dis_cmd_complete.cmd.CopyFrom(self._disembark_cmd)
+                dis_cmd_complete.time = Sim.now()
                 common.interface.send(api.SIM_COMPLETE_PASSENGERS_DISEMBARK,
                                        dis_cmd_complete)
 
@@ -224,6 +226,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 em_start_msg.platformID = self.platform.ID
                 em_start_msg.pID = pax.ID
                 em_start_msg.berthID = self.ID
+                em_start_msg.time = Sim.now()
                 common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_START,
                                        em_start_msg)
 
@@ -253,6 +256,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 em_end_msg.platformID = self.platform.ID
                 em_end_msg.pID = pax.ID
                 em_end_msg.berthID = self.ID
+                em_end_msg.time = Sim.now()
                 common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_END,
                                        em_end_msg)
 
@@ -263,6 +267,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 em_cmd_complete = api.SimCompletePassengersEmbark()
                 em_cmd_complete.msgID = self._embark_cmd_id
                 em_cmd_complete.cmd.CopyFrom(self._embark_cmd)
+                em_cmd_complete.time = Sim.now()
                 common.interface.send(api.SIM_COMPLETE_PASSENGERS_EMBARK,
                                        em_cmd_complete)
 

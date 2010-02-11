@@ -32,43 +32,91 @@ class BaseController(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.next_msgID = 0
         self.last_sim_msgID = -1
-        self.sendQ = list()  #  list contains (msg_type,  msg_time, body) tuples
-        self.sim_time = 0
+        self.last_sim_timestamp = 0 # integer, in milliseconds
+        self.current_time = 0.0 # float, in seconds
         self.sim_complete = False
         self.sim_end_time = None
+
+        self.sendQ = list()  #  list contains (msg_type, body) tuples
 
         self.log = logging.getLogger('log')
         self.comm_log = logging.getLogger('comm_log')
         self.initialize_logging(log_path, commlog_path)
 
         # The following dictionary was generated using make_msg_handling_stubs.py
+        # Instantiates a protobuf message for each message type.
+        self.messages = {
+            api.SIM_GREETING : api.SimGreeting(),
+            api.SIM_START : api.SimStart(),
+            api.SIM_END : api.SimEnd(),
+            api.SIM_UNIMPLEMENTED : api.SimUnimplemented(),
+            api.SIM_COMPLETE_PASSENGERS_EMBARK : api.SimCompletePassengersEmbark(),
+            api.SIM_COMPLETE_PASSENGERS_DISEMBARK : api.SimCompletePassengersDisembark(),
+            api.SIM_COMPLETE_PASSENGER_WALK : api.SimCompletePassengerWalk(),
+            api.SIM_COMPLETE_SWITCH : api.SimCompleteSwitch(),
+            api.SIM_RESPONSE_VEHICLE_STATUS : api.SimResponseVehicleStatus(),
+            api.SIM_RESPONSE_STATION_STATUS : api.SimResponseStationStatus(),
+            api.SIM_RESPONSE_PASSENGER_STATUS : api.SimResponsePassengerStatus(),
+            api.SIM_RESPONSE_SWITCH_STATUS : api.SimResponseSwitchStatus(),
+            api.SIM_RESPONSE_TRACK_STATUS : api.SimResponseTrackStatus(),
+            api.SIM_RESPONSE_TOTAL_STATUS : api.SimResponseTotalStatus(),
+            api.SIM_NOTIFY_VEHICLE_POSITION : api.SimNotifyVehiclePosition(),
+            api.SIM_NOTIFY_VEHICLE_ARRIVE : api.SimNotifyVehicleArrive(),
+            api.SIM_NOTIFY_VEHICLE_EXIT : api.SimNotifyVehicleExit(),
+            api.SIM_NOTIFY_VEHICLE_COLLISION : api.SimNotifyVehicleCollision(),
+            api.SIM_NOTIFY_PASSENGER_EMBARK_START : api.SimNotifyPassengerEmbarkStart(),
+            api.SIM_NOTIFY_PASSENGER_EMBARK_END : api.SimNotifyPassengerEmbarkEnd(),
+            api.SIM_NOTIFY_PASSENGER_DISEMBARK_START : api.SimNotifyPassengerDisembarkStart(),
+            api.SIM_NOTIFY_PASSENGER_DISEMBARK_END : api.SimNotifyPassengerDisembarkEnd(),
+            api.SIM_NOTIFY_TIME : api.SimNotifyTime(),
+            api.SIM_EVENT_TRACK_DISABLED : api.SimEventTrackDisabled(),
+            api.SIM_EVENT_TRACK_REENABLED : api.SimEventTrackReenabled(),
+            api.SIM_EVENT_SWITCH_DISABLED : api.SimEventSwitchDisabled(),
+            api.SIM_EVENT_SWITCH_REENABLED : api.SimEventSwitchReenabled(),
+            api.SIM_EVENT_STATION_DISABLED : api.SimEventStationDisabled(),
+            api.SIM_EVENT_STATION_REENABLED : api.SimEventStationReenabled(),
+            api.SIM_EVENT_VEHICLE_DISABLED : api.SimEventVehicleDisabled(),
+            api.SIM_EVENT_VEHICLE_REENABLED : api.SimEventVehicleReenabled(),
+            api.SIM_EVENT_PASSENGER_CREATED : api.SimEventPassengerCreated(),
+            api.SIM_EVENT_PASSENGER_CHANGEDEST : api.SimEventPassengerChangedest(),
+            api.SIM_MSG_HDR_INVALID_SEPARATOR : api.SimMsgHdrInvalidSeparator(),
+            api.SIM_MSG_HDR_INVALID_TYPE : api.SimMsgHdrInvalidType(),
+            api.SIM_MSG_HDR_INVALID_ID : api.SimMsgHdrInvalidId(),
+            api.SIM_MSG_HDR_INVALID_TIME : api.SimMsgHdrInvalidTime(),
+            api.SIM_MSG_HDR_INVALID_SIZE : api.SimMsgHdrInvalidSize(),
+            api.SIM_MSG_BODY_INVALID : api.SimMsgBodyInvalid(),
+            api.SIM_MSG_BODY_INVALID_TIME : api.SimMsgBodyInvalidTime(),
+            api.SIM_MSG_BODY_INVALID_ID : api.SimMsgBodyInvalidId()
+        }
+
+        # The following dictionary was generated using make_msg_handling_stubs.py
         # Maps message types to message handling functions.
         self.msg_handlers = {
             api.SIM_GREETING : self.on_SIM_GREETING,
+            api.SIM_START : self.on_SIM_START,
+            api.SIM_END : self.on_SIM_END,
+            api.SIM_UNIMPLEMENTED : self.on_SIM_UNIMPLEMENTED,
             api.SIM_COMPLETE_PASSENGERS_EMBARK : self.on_SIM_COMPLETE_PASSENGERS_EMBARK,
             api.SIM_COMPLETE_PASSENGERS_DISEMBARK : self.on_SIM_COMPLETE_PASSENGERS_DISEMBARK,
             api.SIM_COMPLETE_PASSENGER_WALK : self.on_SIM_COMPLETE_PASSENGER_WALK,
             api.SIM_COMPLETE_SWITCH : self.on_SIM_COMPLETE_SWITCH,
             api.SIM_RESPONSE_VEHICLE_STATUS : self.on_SIM_RESPONSE_VEHICLE_STATUS,
             api.SIM_RESPONSE_STATION_STATUS : self.on_SIM_RESPONSE_STATION_STATUS,
-            api.SIM_RESPONSE_STATION_SUMMARY : self.on_SIM_RESPONSE_STATION_SUMMARY,
             api.SIM_RESPONSE_PASSENGER_STATUS : self.on_SIM_RESPONSE_PASSENGER_STATUS,
             api.SIM_RESPONSE_SWITCH_STATUS : self.on_SIM_RESPONSE_SWITCH_STATUS,
-            api.SIM_RESPONSE_TRACKSEGMENT_STATUS : self.on_SIM_RESPONSE_TRACKSEGMENT_STATUS,
+            api.SIM_RESPONSE_TRACK_STATUS : self.on_SIM_RESPONSE_TRACK_STATUS,
             api.SIM_RESPONSE_TOTAL_STATUS : self.on_SIM_RESPONSE_TOTAL_STATUS,
             api.SIM_NOTIFY_VEHICLE_POSITION : self.on_SIM_NOTIFY_VEHICLE_POSITION,
             api.SIM_NOTIFY_VEHICLE_ARRIVE : self.on_SIM_NOTIFY_VEHICLE_ARRIVE,
             api.SIM_NOTIFY_VEHICLE_EXIT : self.on_SIM_NOTIFY_VEHICLE_EXIT,
-            api.SIM_NOTIFY_VEHICLE_READY_LOAD : self.on_SIM_NOTIFY_VEHICLE_READY_LOAD,
             api.SIM_NOTIFY_VEHICLE_COLLISION : self.on_SIM_NOTIFY_VEHICLE_COLLISION,
             api.SIM_NOTIFY_PASSENGER_EMBARK_START : self.on_SIM_NOTIFY_PASSENGER_EMBARK_START,
             api.SIM_NOTIFY_PASSENGER_EMBARK_END : self.on_SIM_NOTIFY_PASSENGER_EMBARK_END,
             api.SIM_NOTIFY_PASSENGER_DISEMBARK_START : self.on_SIM_NOTIFY_PASSENGER_DISEMBARK_START,
             api.SIM_NOTIFY_PASSENGER_DISEMBARK_END : self.on_SIM_NOTIFY_PASSENGER_DISEMBARK_END,
             api.SIM_NOTIFY_TIME : self.on_SIM_NOTIFY_TIME,
-            api.SIM_REQUEST_SWITCH_CMD : self.on_SIM_REQUEST_SWITCH_CMD,
-            api.SIM_EVENT_TRACKSEGMENT_DISABLED : self.on_SIM_EVENT_TRACKSEGMENT_DISABLED,
-            api.SIM_EVENT_TRACKSEGMENT_REENABLED : self.on_SIM_EVENT_TRACKSEGMENT_REENABLED,
+            api.SIM_EVENT_TRACK_DISABLED : self.on_SIM_EVENT_TRACK_DISABLED,
+            api.SIM_EVENT_TRACK_REENABLED : self.on_SIM_EVENT_TRACK_REENABLED,
             api.SIM_EVENT_SWITCH_DISABLED : self.on_SIM_EVENT_SWITCH_DISABLED,
             api.SIM_EVENT_SWITCH_REENABLED : self.on_SIM_EVENT_SWITCH_REENABLED,
             api.SIM_EVENT_STATION_DISABLED : self.on_SIM_EVENT_STATION_DISABLED,
@@ -77,18 +125,14 @@ class BaseController(object):
             api.SIM_EVENT_VEHICLE_REENABLED : self.on_SIM_EVENT_VEHICLE_REENABLED,
             api.SIM_EVENT_PASSENGER_CREATED : self.on_SIM_EVENT_PASSENGER_CREATED,
             api.SIM_EVENT_PASSENGER_CHANGEDEST : self.on_SIM_EVENT_PASSENGER_CHANGEDEST,
-            api.SIM_START : self.on_SIM_START,
-            api.SIM_END : self.on_SIM_END,
-            api.SIM_UNIMPLEMENTED : self.on_SIM_UNIMPLEMENTED,
             api.SIM_MSG_HDR_INVALID_SEPARATOR : self.on_SIM_MSG_HDR_INVALID_SEPARATOR,
             api.SIM_MSG_HDR_INVALID_TYPE : self.on_SIM_MSG_HDR_INVALID_TYPE,
             api.SIM_MSG_HDR_INVALID_ID : self.on_SIM_MSG_HDR_INVALID_ID,
             api.SIM_MSG_HDR_INVALID_TIME : self.on_SIM_MSG_HDR_INVALID_TIME,
             api.SIM_MSG_HDR_INVALID_SIZE : self.on_SIM_MSG_HDR_INVALID_SIZE,
-            api.SIM_MSG_HDR_INVALID_PBSTR : self.on_SIM_MSG_HDR_INVALID_PBSTR,
             api.SIM_MSG_BODY_INVALID : self.on_SIM_MSG_BODY_INVALID,
-            api.SIM_MSG_BODY_INVALID_ID : self.on_SIM_MSG_BODY_INVALID_ID,
-            api.SIM_ABORT_VEHICLE_SPEED : self.on_SIM_ABORT_VEHICLE_SPEED,
+            api.SIM_MSG_BODY_INVALID_TIME : self.on_SIM_MSG_BODY_INVALID_TIME,
+            api.SIM_MSG_BODY_INVALID_ID : self.on_SIM_MSG_BODY_INVALID_ID
     }
 
     def initialize_logging(self, log_path, commlog_path):
@@ -156,8 +200,7 @@ class BaseController(object):
             body_parts.append(frag)
         body = ''.join(body_parts)
 
-        self.sim_time = max(msg_time, self.sim_time)
-        self.log.debug("new sim time T=%4.3f msg_time = %4.3f",self.sim_time/1000.0, msg_time/1000.0) # DEBUG
+        self.last_sim_timestamp = max(msg_time, self.last_sim_timestamp)
         self.last_sim_msgID = max(self.last_sim_msgID, msgID)
         return (msg_type, msgID, msg_time, body)
 
@@ -174,16 +217,16 @@ class BaseController(object):
         The msg size is the length (in bytes) of the serialized message.
         These values are transmitted in network byte order (Big Endian).
         """
-        for msg_type, msg_time, msg in self.sendQ:
+        for msg_type, msg in self.sendQ:
             msgID = self.next_msgID
             self.next_msgID += 1
             msg_str = msg.SerializeToString()
             msg_size = len(msg_str)
             header = struct.pack('>hhiih', api.MSG_SEP, msg_type, msgID,
-                                 msg_time, msg_size)
+                                 self.last_sim_timestamp, msg_size)
             self.sock.sendall(header + msg_str)
             self.comm_log.info("SENT, %s, %d, %d, %d\n" %\
-                 (msg.DESCRIPTOR.name, msg_type, msgID, msg_time) + \
+                 (msg.DESCRIPTOR.name, msg_type, msgID, self.last_sim_timestamp) + \
                  text_format.MessageToString(msg))
 
         self.sendQ = list()
@@ -201,21 +244,27 @@ class BaseController(object):
             self.handle_msg(msg_type, msgID, msg_time, msg_str)
             self.transmit()
 
-    def send(self, msg_type, msg_time, msg):
+    def send(self, msg_type, msg):
         """Buffers the outgoing message for later transmission.
         Takes a msg_type (one of the numeric values from CtrlMsgType
-        in api.proto), the time that the message should take effect
-        and a protobuffer message.
+        in api.proto) and a protobuffer message.
 
         A good place to do validity checking?
         """
-        self.sendQ.append( (msg_type, msg_time, msg) )
+        self.sendQ.append( (msg_type, msg) )
 
 
     def handle_msg(self, msg_type, msgID, msg_time, msg_str):
-        """To be overridden by a subclass. Using a dictionary containing
-        message handling functions is merely a suggested approach."""
-        self.msg_handlers[msg_type](msg_type, msgID, msg_time, msg_str)
+        """May be overridden by a subclass. Using a dictionary containing
+        message handling functions is merely a suggested approach.
+        Note that this implementation reuses the message objects, and is not
+        reentrant."""
+        msg = self.messages[msg_type]
+        msg.ParseFromString(msg_str) # clear old data, and deserialize string into msg
+        self.log_rcvd_msg(msg_type, msgID, msg_time, msg)
+        self.current_time = max(self.current_time, msg_time/1000.)
+        self.msg_handlers[msg_type](msg, msgID, msg_time) # call the msg handler
+        self.send_resume()
 
     def log_rcvd_msg(self, msg_type, msgID, msg_time, msg):
         self.comm_log.info("RCVD, %s, %d, %d, %d\n" %\
@@ -225,289 +274,135 @@ class BaseController(object):
     def send_resume(self):
         resume = api.CtrlResume()
         resume.last_sim_msgID = self.last_sim_msgID
-        self.send(api.CTRL_RESUME, self.sim_time, resume)
+        self.send(api.CTRL_RESUME, resume)
 
-    def on_SIM_GREETING(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimGreeting()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+    def on_SIM_GREETING(self, msg, msgID, msg_time):
         self.log.info("Sim Greeting message received.")
         self.sim_end_time = msg.sim_end_time
 
-    def on_SIM_START(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimStart()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+    def on_SIM_START(self, msg, msgID, msg_time):
         self.log.info("Sim Start message received.")
-        self.send_resume()
 
-    def on_SIM_END(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEnd()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg(msg_type, msgID, msg_time, msg)
+    def on_SIM_END(self, msg, msgID, msg_time):
+        self.log.info("Sim End message received.")
         self.sim_complete = True
 
-    ### The following message handler stubs were auto-generated by make_msg_handling_stubs.py
-    def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimCompletePassengersEmbark()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimCompletePassengersDisembark()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_COMPLETE_PASSENGER_WALK(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimCompletePassengerWalk()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_COMPLETE_SWITCH(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimCompleteSwitch()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimResponseVehicleStatus()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_RESPONSE_STATION_STATUS(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimResponseStationStatus()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_RESPONSE_STATION_SUMMARY(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimResponseStationSummary()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_RESPONSE_PASSENGER_STATUS(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimResponsePassengerStatus()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_RESPONSE_SWITCH_STATUS(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimResponseSwitchStatus()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_RESPONSE_TRACKSEGMENT_STATUS(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimResponseTracksegmentStatus()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_RESPONSE_TOTAL_STATUS(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimResponseTotalStatus()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_VEHICLE_POSITION(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyVehiclePosition()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyVehicleArrive()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyVehicleExit()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_VEHICLE_READY_LOAD(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyVehicleReadyLoad()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_VEHICLE_COLLISION(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyVehicleCollision()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_PASSENGER_EMBARK_START(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyPassengerEmbarkStart()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_PASSENGER_EMBARK_END(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyPassengerEmbarkEnd()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_PASSENGER_DISEMBARK_START(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyPassengerDisembarkStart()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_PASSENGER_DISEMBARK_END(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyPassengerDisembarkEnd()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_NOTIFY_TIME(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimNotifyTime()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_REQUEST_SWITCH_CMD(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimRequestSwitchCmd()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_TRACKSEGMENT_DISABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventTracksegmentDisabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_TRACKSEGMENT_REENABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventTracksegmentReenabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_SWITCH_DISABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventSwitchDisabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_SWITCH_REENABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventSwitchReenabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_STATION_DISABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventStationDisabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_STATION_REENABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventStationReenabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_VEHICLE_DISABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventVehicleDisabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_VEHICLE_REENABLED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventVehicleReenabled()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_PASSENGER_CREATED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventPassengerCreated()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_EVENT_PASSENGER_CHANGEDEST(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimEventPassengerChangedest()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_UNIMPLEMENTED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimUnimplemented()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
-    def on_SIM_MSG_HDR_INVALID_SEPARATOR(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgHdrInvalidSeparator()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_UNIMPLEMENTED(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_HDR_INVALID_TYPE(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgHdrInvalidType()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_COMPLETE_PASSENGER_WALK(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_COMPLETE_SWITCH(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_RESPONSE_STATION_STATUS(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_RESPONSE_PASSENGER_STATUS(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_RESPONSE_SWITCH_STATUS(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_RESPONSE_TRACK_STATUS(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_RESPONSE_TOTAL_STATUS(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_POSITION(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_READY_LOAD(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_COLLISION(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_PASSENGER_EMBARK_START(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_PASSENGER_EMBARK_END(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_PASSENGER_DISEMBARK_START(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_PASSENGER_DISEMBARK_END(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_TIME(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_TRACK_DISABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_TRACK_REENABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_SWITCH_DISABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_SWITCH_REENABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_STATION_DISABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_STATION_REENABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_VEHICLE_DISABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_VEHICLE_REENABLED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_PASSENGER_CREATED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_EVENT_PASSENGER_CHANGEDEST(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_MSG_HDR_INVALID_SEPARATOR(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_HDR_INVALID_ID(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgHdrInvalidId()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_MSG_HDR_INVALID_TYPE(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_HDR_INVALID_TIME(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgHdrInvalidTime()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_MSG_HDR_INVALID_ID(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_HDR_INVALID_SIZE(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgHdrInvalidSize()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_MSG_HDR_INVALID_TIME(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_HDR_INVALID_PBSTR(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgHdrInvalidPbstr()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_MSG_HDR_INVALID_SIZE(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_BODY_INVALID_ID(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgBodyInvalidId()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_MSG_BODY_INVALID(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_MSG_BODY_INVALID(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimMsgBodyInvalid()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
+    def on_SIM_MSG_BODY_INVALID_TIME(self, msg, msgID, msg_time):
         raise Exception("Message rejected by Sim")
 
-    def on_SIM_ABORT_VEHICLE_SPEED(self, msg_type, msgID, msg_time, msg_str):
-        msg = api.SimAbortVehicleSpeed()
-        msg.MergeFromString(msg_str)
-        self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-        self.send_resume()
-
+    def on_SIM_MSG_BODY_INVALID_ID(self, msg, msgID, msg_time):
+        raise Exception("Message rejected by Sim")
 
 if __name__ == '__main__':
     main()

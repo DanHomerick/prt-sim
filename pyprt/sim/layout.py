@@ -275,9 +275,14 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             # in rounding errors. Use points in the trajectory where the vehicle
             # has clearly come to a complete stop to zero out any accumulated
             # rounding errors in the velocity and acceleration.
-            if common.dist_eql(coeffs[VEL], 0) and common.dist_eql(coeffs[ACCEL], 0):
-                coeffs[VEL] = 0
-                coeffs[ACCEL] = 0
+            if len(poly_msg.coeffs) < 4 or poly_msg.coeffs[0] == 0: # if no jerk, or it's zero
+                stopped = True
+                for c in poly_msg.coeffs[:-1]: # exclude position
+                    if abs(c) > 0.1:
+                        stopped = False
+                        break
+                if stopped:
+                    coeffs = [0,0,0,coeffs[-1]]
 
             if __debug__:
                 errors = [received-true for (received, true) in zip(reversed(poly_msg.coeffs), reversed(coeffs))]
@@ -301,67 +306,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         # Interrupt this vehicle to allow it's current hold time to be changed.
         InterruptSetSpeed(self)
-
-
-    # DEPRECATED
-#    def set_speed(self, target_speed, max_accel=None, max_decel=None,
-#                  max_jerk=None, msgID=0):
-#        """Uses SpeedProfiler to generate a sequence of Segments.
-#
-#        If max_accel, max_decel, or max_jerk are ommitted, the norm values for
-#        this vehicle will be used.
-#
-#        msgID refers to the CtrlCmdVehicleSpeed message ID.
-#        """
-#        warnings.warn("deprecated", DeprecationWarning)
-#        self.target_speed = target_speed
-#        if max_accel is None:
-#            max_accel = self.accel_max_norm
-#        if max_decel is None:
-#            max_decel = self.accel_min_norm
-#        if max_jerk is None:
-#            max_jerk = self.jerk_max_norm
-#
-#        logging.info("T=%4.3f %s starting speed change. Loc: %s, pos: %s, vi: %s, vf: %s, ai: %s, max_accel: %s, max_decel: %s, max_jerk: %s",
-#                     Sim.now(), self, self.loc, self.pos, self.speed, target_speed, self.accel, max_accel, max_decel, max_jerk)
-#
-#        p_init, loc = self.path.get_x_loc_from_time(POS, Sim.now())
-#        v_init, loc = self.path.get_x_loc_from_time(VEL, Sim.now())
-#        a_init, loc = self.path.get_x_loc_from_time(ACCEL, Sim.now())
-#        sp = SpeedProfiler(v_init=v_init, v_final=target_speed,
-#                   max_accel=max_accel,
-#                   max_decel=max_decel,
-#                   max_jerk=max_jerk,
-#                   a_init=a_init,
-#                   p_init=p_init)
-#
-#        #  Notify controller that previous speed change was not completed.
-#        # FIXME!!!
-##        if not (self.get_speed() == self.target_speed and self.get_accel() == 0):
-##            msg = api.SimAbortVehicleSpeed()
-##            msg.msgID = self.co_speed.msgID
-##            common.interface.send(api.SIM_ABORT_VEHICLE_SPEED, msg)
-##            self.cancel(self.co_speed)
-#
-#        # add trajectory to self.path
-#        segs = []
-#        t = Sim.now()
-#        for eqn, dur in sp.get_profile():
-#            assert dur > 0
-#            segs.append( Segment(eqn, dur, t, self.total_mass) )
-#            t += dur
-#        self.path.change_trajectory(segs)
-#
-#        # Reconsider collisions
-#        self.check_for_collisions()
-#
-#        # Notify vehicle behind me that I changed speeds.
-#        follower = self.find_vehicle_behind()
-#        if follower:
-#            InterruptCollisionChk(self, follower)
-#
-#        # Interrupt this vehicle to allow it's current hold time to be changed.
-#        InterruptSetSpeed(self)
 
     speed = property(fget=get_speed)
 
@@ -461,6 +405,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                             assert common.dist_eql(self.pos, next_c.lv.get_tail()[0])
                 if next_c.sideswipe:
                     msg.sideswipe = True
+                msg.time = Sim.now()
                 common.interface.send(api.SIM_NOTIFY_VEHICLE_COLLISION, msg)
                 assert next_c.lv is self.find_vehicle_ahead()
                 next_c.occurred = True
@@ -488,6 +433,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 loc = self.tail_releases[0].trav.loc
                 msg = api.SimNotifyVehicleExit()
                 self.fill_VehicleStatus(msg.v_status)
+                msg.time = Sim.now()
                 common.interface.send(api.SIM_NOTIFY_VEHICLE_EXIT, msg)
                 del self.tail_releases[0]
                 if isinstance(loc, station.Station):
@@ -724,6 +670,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         # Send Arrival Msg
         notify_msg = api.SimNotifyVehicleArrive()
         self.fill_VehicleStatus(notify_msg.v_status)
+        notify_msg.time = Sim.now()
         common.interface.send(api.SIM_NOTIFY_VEHICLE_ARRIVE, notify_msg)
 
         # Now that we're effectively on the new_loc, do some collision checking.
@@ -1205,13 +1152,6 @@ class Segment(traits.HasTraits):
         else:
             return False
 
-    def is_stopped(self):
-        """Segment represents a stopped vehicle."""
-        if self.pos_eqn.order == 0:
-            return True
-        else:
-            return False
-
     def get_times_from_pos(self, pos, relative=False):
         """Returns a Times instance containing the absolute time(s) (in seconds)
         at which position is reached. Will only return times in the valid range
@@ -1256,11 +1196,11 @@ class Segment(traits.HasTraits):
 
         return ret
 
-    def get_pos_from_time(self, time, rnd=True, relative=False):
+    def get_pos_from_time(self, time, rnd=False, relative=False):
         """A wrapper for get_x_from_time."""
         return self.get_x_from_time(POS, time, rnd, relative)
 
-    def get_x_from_time(self, x, time, rnd=True, relative=False):
+    def get_x_from_time(self, x, time, rnd=False, relative=False):
         """Returns x at time (seconds, absolute), where x is:
           POS = 0
           VEL = 1
@@ -1284,31 +1224,34 @@ class Segment(traits.HasTraits):
             raise InvalidTimeError, (time, self.start_time, self.end_time)
 
         ret = None
-        if time == inf:
-            # vehicle shouldn't have anything more complex than constant
-            #   velocity with infinite duration
-            if self.pos_eqn.order > 1:
-                raise InvalidTimeError, time
+        if time != inf:
+            # Normal case. Get correct derivative and evaluate
+            ret = self.pos_eqn.deriv(x)(time - self.start_time)
 
-            stopped = self.is_stopped()
+        else: # time == inf
+            # vehicle shouldn't have anything more complex than constant
+            #   velocity with infinite duration. However, we can safely disregard
+            #   tiny deviations from zero.
+            poly = self.pos_eqn
+            if self.pos_eqn.order > 1: # some accel and/or jerk
+                for coeff in poly.coeffs[:-2]: # raise error if accel or jerk aren't just rounding errors
+                    if abs(coeff) > 0.0001:
+                        raise InvalidTimeError, time
+                # If no error raised, use a clipped version of the poly for calcs
+                poly = poly1d(poly.coeffs[-2:])
+
             # manually set values, since polynomial eval doesn't work on inf.
             if x == POS:
-                if stopped:
+                if poly.order == 0 or abs(poly.coeffs[-2]) < 0.0001:
                     # stopped, so all times have same pos
-                    ret =  self.pos_eqn(0)
+                    ret =  poly(0)
                 else:
-                    # sign of highest order coefficient will dominate
-                    ret =  (inf if self.pos_eqn.c[0] > 0 else -inf)
+                    # sign of velocity will dominate
+                    ret =  (inf if poly.coeffs[0] > 0 else -inf)
             elif x == VEL:
-                if stopped:
-                    ret = 0
-                else:
-                    ret = self.pos_eqn.c[0]
-            else:
+                ret = poly.c[0] # return velocity
+            else: # x == ACCEL or x == JERK
                 ret = 0
-        else:
-            # get correct derivative and evaluate
-            ret = self.pos_eqn.deriv(x)(time - self.start_time)
 
         if rnd:
             ret =  round(ret, common.DIST_RND)
@@ -1322,14 +1265,23 @@ class Segment(traits.HasTraits):
         split introduces a discontinuity in position between the two segments,
         but not in velocity, acceleration, or jerk."""
         times = self.get_times_from_pos(pos)
-        time = times.points[0] # Only concerned with the first time it exceeds a length.
+        try:
+            time = times.points[0] # Only concerned with the first time it exceeds a length.
+        except IndexError:
+            raise InvalidPosError
         dur1 = time - self.start_time
         s1 = Segment(self.pos_eqn, dur1, self.start_time, self.mass)
+        assert common.dist_eql(s1.get_end_pos(), pos)
 
         s2_eqn = shift_poly(self.pos_eqn, -dur1, -pos)
         dur2 = self.end_time - time
         s2 = Segment(s2_eqn, dur2, time, self.mass)
         assert common.dist_eql(s2.pos_eqn(0), 0)
+
+        print "SPLIT DEBUG!"
+        print "s1.get_end_pos(): %f, pos: %f, error: %f" % (s1.get_end_pos(), pos, s1.get_end_pos() - pos)
+        print "s2.get_end_pos(): %f, self.get_end_pos()-pos: %f, error: %f" % (s2.get_end_pos(), self.get_end_pos()-pos, s2.get_end_pos() - (self.get_end_pos()-pos))
+        print "---"
         return (s1, s2)
 
     def split_at_time(self, time):
@@ -1557,39 +1509,17 @@ class Traversal(traits.HasTraits):
         assert common.dist_ge(seg.get_start_pos(), 0)
 
         # Ensure that segment really starts in loc
-        if common.dist_gt(seg.get_start_pos(), self.length):
+        if common.dist_ge(seg.get_start_pos(), self.length):
             raise InvalidPosError, seg.get_start_pos()
 
         # Ensure that the segment doesn't go beyond the location length.
-        end_pos = seg.get_end_pos()
-        if common.dist_gt(end_pos, self.length):
+        if common.dist_gt(seg.get_end_pos(), self.length):
             raise TraversalFullError
 
         if self.segments:
             assert common.dist_eql(self.segments[-1].get_end_pos(), seg.get_start_pos())
 
         self.segments.append(seg)
-##        try:
-##            tail_seg = self.segments[-1]
-##        except IndexError:
-##            tail_seg = None
-##        if tail_seg:
-##            # If seg starts at same time as tail_seg starts, use change_trajectory instead
-##            if common.time_lt(seg.start_time, tail_seg.start_time):
-##                raise InvalidTimeError, (seg.start_time, tail_seg.start_time)
-##
-##            # clip duration of the old tail_seg
-##            tail_seg.duration = seg.start_time - tail_seg.start_time
-##
-##        self.segments.append(seg)
-##
-##        # clip the duration of the new tail_seg to proper distance
-##        # The self.length == inf is a test to see if I'm `path.future`.
-##        if not seg.is_stopped() and seg.duration == inf and \
-##                    not self.length == inf:
-##            end_times = seg.get_times_from_pos(self.length)
-##            if end_times.points:
-##                seg.duration = end_times.points[0] - seg.start_time
 
     def clear(self, time):
         """Clears the traversal from time onwards."""
@@ -2071,7 +2001,7 @@ class TrackSegment(Node):
         """Applicable for TrackSegments which have two or more downstream neighbors.
         Switches the default 'next' Tracksegment to new_next after a delay
         specifed in the sim configuration. If a vehicle is on
-        the switch (straddling tsID and nextID) or attempts
+        the switch (straddling trackID and nextID) or attempts
         to use it during the transition delay, a crash will result."""
         if self.next is not new_next: # if not already set to this track
             # Check if a vehicle is currently straddling the switch point
@@ -2094,13 +2024,14 @@ class TrackSegment(Node):
         self.next = new_next
         complete_msg = api.SimCompleteSwitch()
         complete_msg.msgID = msg_id
-        complete_msg.tsID = self.ID
+        complete_msg.trackID = self.ID
         complete_msg.nextID = self.next.ID
+        complete_msg.time = Sim.now()
         common.interface.send(api.SIM_COMPLETE_SWITCH, complete_msg)
 
     def fill_TrackSegmentStatus(self, ts):
         """Fills an api.TrackSegmentStatus instance with current information."""
-        ts.tsID = self.ID
+        ts.trackID = self.ID
         if self.label:
             ts.label = self.label
         ts.max_speed = int(self.max_speed*100) # m/s -> cm/s

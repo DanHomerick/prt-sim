@@ -50,6 +50,7 @@ class EventManager(Sim.Process):
                 evt.loc.add_passenger(evt)
                 msg = api.SimEventPassengerCreated()
                 evt.fill_PassengerStatus(msg.p_status)
+                msg.time = Sim.now()
                 common.interface.send(api.SIM_EVENT_PASSENGER_CREATED, msg)
 
     def clear_events(self):
@@ -246,6 +247,7 @@ class Passenger(PrtEvent):
         msg = api.SimCompletePassengerWalk()
         msg.msgID = cmd_id
         msg.cmd.CopyFrom(cmd_msg)
+        msg.time = Sim.now()
         common.interface.send(api.SIM_COMPLETE_PASSENGER_WALK, msg)
 
     def fill_PassengerStatus(self, ps):

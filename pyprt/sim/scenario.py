@@ -70,8 +70,8 @@ class ScenarioManager(object):
         # Create the TrackSegments
         all_tracks = {}
         for track_segment_xml in track_segments_xml.getElementsByTagName('TrackSegment'):
-            tsId = track_segment_xml.getAttribute('id')
-            intId = int(tsId.split("_")[0]) # get a unique, integer ID
+            trackID = track_segment_xml.getAttribute('id')
+            intId = int(trackID.split("_")[0]) # get a unique, integer ID
 
             start_xml = track_segment_xml.getElementsByTagName('Start')[0]
             start_lat = float(start_xml.getAttribute('lat'))
@@ -114,8 +114,8 @@ class ScenarioManager(object):
             graph.add_node(ts)
 
         for track_segment_xml in track_segments_xml.getElementsByTagName('TrackSegment'):
-            tsId = int(track_segment_xml.getAttribute('id').split("_")[0])
-            ts = track_segs[tsId]
+            trackID = int(track_segment_xml.getAttribute('id').split("_")[0])
+            ts = track_segs[trackID]
             connect_to_xml = track_segment_xml.getElementsByTagName('ConnectsTo')[0]
             for id_xml in connect_to_xml.getElementsByTagName('ID'):
                 id = self._to_numeric_id(id_xml)

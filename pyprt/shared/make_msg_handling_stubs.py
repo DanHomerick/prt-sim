@@ -6,42 +6,48 @@ locations."""
 
 import sys
 
-if len(sys.argv) != 3:    
+if len(sys.argv) != 3:
     print "usage: %prog PROTO OUTPUT"
     sys.exit(1)
 
 input = open(sys.argv[1], 'rU')
 output = open(sys.argv[2], 'w')
 
-faux_dict = '    self.msg_handlers = {\n'
+init_msgs = ['self.messages = {']
+handlers = ['self.msg_handlers = {']
+stubs = []
+
 for line in input:
     try:
         line, junk = line.split('=')
     except:
         continue
-    
+
     line = line.strip()
     if line[:3] != 'SIM':
         continue
-    
+
     Title_Case = line.title()
     TitleCase = Title_Case.replace('_', '')
 
-    faux_dict += '      api.%s : self.on_%s,\n' %(line, line)
+    init_msgs.append('    api.%s : api.%s(),' % (line, TitleCase))
 
-    stub = """        def on_%s(self, msg_type, msgID, msg_time, msg_str):
-            msg = api.%s()
-            msg.MergeFromString(msg_str)
-            self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-            self.send_resume()""" % (line, TitleCase)
+    handlers.append('    api.%s : self.on_%s,' % (line, line))
 
-    if TitleCase.find('Invalid') != -1:
-        stub += '\n            raise Exception("Message rejected by Sim")'
-
-    stub += '\n'
-
-    print >> output, stub
+    stubs.append("""def on_%s(self, msg, msgID, msg_time):""" % line)
+    if 'Invalid' in TitleCase or 'SIM_UNIMPLEMENTED' in line:
+        stubs.append('    raise Exception("Message rejected by Sim")')
+    else:
+        stubs.append('    pass')
+    stubs.append('')
 
 
-faux_dict += '}'
-print >> output, faux_dict
+init_msgs.append('}')
+handlers.append('}')
+
+
+print >> output, '\n'.join(stubs)
+print >> output, '\n'
+print >> output, '\n'.join(init_msgs)
+print >> output, '\n'
+print >> output, '\n'.join(handlers)

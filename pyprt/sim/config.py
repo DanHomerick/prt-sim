@@ -1,4 +1,4 @@
-import os.path
+import os
 import optparse
 import ConfigParser
 import logging

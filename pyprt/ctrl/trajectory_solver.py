@@ -35,6 +35,9 @@ class TrajectorySolver(object):
         towards the track segment's origin, then the vehicle is traveling in
         reverse for trajectory generation purposes.
     """
+    v_threshold = 0.0001   # == 0.0002 miles per hour
+    a_threshold = 0.0001
+
     def __init__(self, velocity_max, acceleration_max, jerk_max, velocity_min=None, acceleration_min=None, jerk_min=None):
         self.v_max = velocity_max
         self.a_max = acceleration_max
@@ -109,18 +112,18 @@ class TrajectorySolver(object):
         if knot_final.pos > knot_initial.pos:
             flip = True
             if __debug__:
-                if not (self.v_min <= knot_initial.vel <= self.v_max and
-                        self.v_min <= knot_final.vel <= self.v_max and
-                        self.a_min <= knot_initial.accel <= self.a_max and
-                        self.a_min <= knot_final.accel <= self.a_max):
+                if not (self.v_min - self.v_threshold <= knot_initial.vel <= self.v_max + self.v_threshold and
+                        self.v_min - self.v_threshold <= knot_final.vel <= self.v_max + self.v_threshold and
+                        self.a_min - self.a_threshold <= knot_initial.accel <= self.a_max + self.a_threshold and
+                        self.a_min - self.a_threshold <= knot_final.accel <= self.a_max + self.a_threshold):
                     raise FatalTrajectoryError("Endpoint outside of solver's limit")
         elif knot_final.pos < knot_initial.pos: # travelling in reverse
             flip = False
             if __debug__:
-                if not (self.v_min <= -knot_initial.vel <= self.v_max and
-                        self.v_min <= -knot_final.vel <= self.v_max and
-                        self.a_min <= -knot_initial.accel <= self.a_max and
-                        self.a_min <= -knot_final.accel <= self.a_max):
+                if not (self.v_min - self.v_threshold <= -knot_initial.vel <= self.v_max + self.v_threshold and
+                        self.v_min - self.v_threshold <= -knot_final.vel <= self.v_max + self.v_threshold and
+                        self.a_min - self.a_threshold <= -knot_initial.accel <= self.a_max + self.a_threshold and
+                        self.a_min - self.a_threshold <= -knot_final.accel <= self.a_max + self.a_threshold):
                     raise FatalTrajectoryError("Endpoint outside of solver's limit")
         else:
             # Could return a spline, but in what form? 0 knots, 1 knot, 2 knots?
@@ -136,16 +139,32 @@ class TrajectorySolver(object):
 
         if __debug__:
             if not flip:
-                if spline.get_max_velocity() > self.v_max:
+                if spline.get_max_velocity() > self.v_max + self.v_threshold:
+##                    self._plot(spline)
                     raise FatalTrajectoryError("Unable to comply with max velocity limit.")
-                if spline.get_min_velocity() < self.v_min:
+                if spline.get_min_velocity() < self.v_min - self.v_threshold:
+                    ##                    self._plot(spline)
                     raise FatalTrajectoryError("Unable to comply with min velocity limit.")
-            else:
-                if -spline.get_max_velocity() > self.v_max:
-                    raise FatalTrajectoryError("Unable to comply with max velocity limit.")
-                if -spline.get_min_velocity() < self.v_min:
-                    raise FatalTrajectoryError("Unable to comply with min velocity limit.")
+                if spline.get_max_acceleration() > self.a_max + self.a_threshold:
+##                    self._plot(spline)
+                    raise FatalTrajectoryError("Unable to comply with max acceleration limit.")
+                if spline.get_min_acceleration() < self.a_min - self.a_threshold:
+##                    self._plot(spline)
+                    raise FatalTrajectoryError("Unable to comply with min acceleration limit.")
 
+            else:
+                if -spline.get_max_velocity() > self.v_max + self.v_threshold:
+##                    self._plot(spline)
+                    raise FatalTrajectoryError("Unable to comply with max velocity limit.")
+                if -spline.get_min_velocity() < self.v_min - self.v_threshold:
+                    self._plot(spline)
+                    raise FatalTrajectoryError("Unable to comply with min velocity limit.")
+                if -spline.get_max_acceleration() > self.a_max + self.a_threshold:
+##                    self._plot(spline)
+                    raise FatalTrajectoryError("Unable to comply with max acceleration limit.")
+                if -spline.get_min_acceleration() < self.a_min - self.a_threshold:
+##                    self._plot(spline)
+                    raise FatalTrajectoryError("Unable to comply with min acceleration limit.")
         return spline
 
     def target_position_vmax(self, initial, final):
@@ -250,7 +269,7 @@ class TrajectorySolver(object):
         else:
             a_top = min(self.nonpositive_roots(_a, _b, _c))
             a_top = max(ax, a_top)
-        
+
 
         # Similarly for a_bot, the minimum acceleration that is reached. (i.e. a_bottom)
         #       0 1  2
@@ -388,11 +407,15 @@ class TrajectorySolver(object):
 
         try:
             h3 = min(self.nonnegative_roots(A, B, C))
-        except ValueError: # No nonnegative, real solutions. Could be caused by
-                            # targetting behind the vehicle when v_min=0, for example.
-            assert len(self.nonnegative_roots(A, B, C)) == 0
-            raise TrajectoryError('No nonnegative, real solutions') # TODO: Should this be Fatal?
+        except ValueError: # No nonnegative, real solutions. a_min is not reached.
+##            h3 = 0
+##            root = max(self.nonpositive_roots(A, B, C))
+##            h2 = (jx*(ax-an)/jn - jx*root + an - ax)/(jn-jx)
+##            an = jn*h2 + ax
+##            alpha = (k4.vel-k1.vel)/ax + ax/(2*jn) - an**2/(2*ax*jn)
 
+            assert len(self.nonnegative_roots(A, B, C)) == 0
+            raise TrajectoryError('No nonnegative, real solutions')
 
         h1 = alpha - an/ax*h3
 
@@ -411,18 +434,19 @@ class TrajectorySolver(object):
         """Trajectory does not reach v_max or a_max.
         Assumed that the spline should have an acceleration profile of:
 
-          h0   h2  h3
+          h0   h1    h2  h3  h4
+             _____
+            /     \
+           /       \
+          /         \
+                     \         /
+                      \       /
+                       \_____/
 
-            /\
-           /  \
-          /    \
-                \    /
-                 \  /
-                  \/
-
-         t0 t1    t2 t3
+         t0 t1   t2    t3   t4 t5
 
         where h's are the timespans of each polynomial, and t's are the knot times.
+        In this case, h1 and/or h3 may be zero.
         """
         if knot_final.pos > knot_initial.pos:
             jx = self.j_max
@@ -448,7 +472,7 @@ class TrajectorySolver(object):
             error = self.target_position_error_fnc(self._soln_spline, knot_final)
             return error
 
-        stats = scipy.optimize.fmin(update_and_error,
+        stats = scipy.optimize.fmin_powell(update_and_error,
                                     initial_spline.h,
                                     maxiter=1E6,
                                     maxfun=1E6,
@@ -457,6 +481,7 @@ class TrajectorySolver(object):
                                     full_output=True)
 
         if min(self._soln_spline.h) < -0.00001:
+            self._plot(self._soln_spline)
             raise FatalTrajectoryError("Trajectory failed.")
 
         return self._soln_spline
@@ -467,10 +492,11 @@ class TrajectorySolver(object):
          jmax == -jmin
          a_initial == a_final == 0
          v_initial == v_final == 0
-         """     
+         h1 and h3 are 0.
+         """
 
         ### Reasoning:
-        # Break the accel profile into 4 segments of equal time. h = h0 = h1 = h2 = h3
+        # Break the accel profile into 4 segments of equal time. h0, h2/2, h2/2, h4
         # q01 = jx*h**3/6
         # a1 = jx*h
         # v1 = jx*h**2/2
@@ -478,27 +504,36 @@ class TrajectorySolver(object):
         # q_total = 2*q01 + 2*q12   due to assumed symmetry
         # q_total = 2*jx*h**3       simplified
         h = math.pow((knot_final.pos - knot_initial.pos)/(2*jx), 1/3)
-        return self._update_estimate([h, 2*h, h], knot_initial, jx, jn)
+        return self._update_estimate([h, 0, 2*h, 0, h], knot_initial, jx, jn)
 
 
     def _update_estimate(self, hs, knot_initial, jx, jn):
         """Create a new spline using the 3 timespans"""
         k1 = self.create_knot_after(knot_initial, hs[0], jx*hs[0] + knot_initial.accel)
-        k2 = self.create_knot_after(k1, hs[1], jn*hs[1] + k1.accel)
-        k3 = self.create_knot_after(k2, hs[2], jx*hs[2] + k2.accel)
+        k2 = self.create_knot_after(k1, hs[1], k1.accel)
+        k3 = self.create_knot_after(k2, hs[2], jn*hs[2] + k2.accel)
+        k4 = self.create_knot_after(k3, hs[3], k3.accel)
+        k5 = self.create_knot_after(k4, hs[4], jx*hs[4] + k4.accel)
         spline = CubicSpline([], [], [], [])
-        for k in [knot_initial, k1, k2, k3]:
+        for k in [knot_initial, k1, k2, k3, k4, k5]:
             spline.append(k)
         return spline
 
     def target_position_error_fnc(self, spline, knot_final):
         neg_h_penalty = sum(abs(h) if h < 0 else 0 for h in spline.h)
+        assert neg_h_penalty >= 0
 
-       # squared error
+        # enforce a_max and a_min constraints
+        a_max_penalty = sum(max(0, accel - self.a_max) for accel in spline.a)
+        a_min_penalty = sum(max(0, self.a_min - accel) for accel in spline.a)
+        assert a_max_penalty >= 0
+        assert a_min_penalty >= 0
+
+        # squared error
         error = (knot_final.pos - spline.q[-1])**2 + \
                 (knot_final.vel - spline.v[-1])**2 + \
                 (knot_final.accel - spline.a[-1])**2 + \
-                neg_h_penalty
+                neg_h_penalty + a_max_penalty + a_min_penalty
 
         return error
 
@@ -536,9 +571,9 @@ class TrajectorySolver(object):
         final.time = inf
 
         if __debug__:
-            if not (self.v_min <= initial.vel <= self.v_max):
+            if not (self.v_min - self.v_threshold <= initial.vel <= self.v_max + self.v_threshold):
                 raise FatalTrajectoryError("Endpoint velocity outside of solver's limit")
-            if not (self.a_min <= initial.accel <= self.a_max):
+            if not (self.a_min - self.a_threshold <= initial.accel <= self.a_max + self.a_threshold):
                 raise FatalTrajectoryError("Endpoint acceleration outside of solver's limit")
 
         if final.vel > initial.vel:
@@ -613,7 +648,7 @@ if __name__ == '__main__':
     solver = TrajectorySolver(25, 5, 2.5)  # v_max, a_max, j_max
 
     spline = solver.target_position(knot_initial, knot_final)
-    
+
     from pyprt.shared.cspline_plotter import CSplinePlotter
     plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)
     plotter.display_plot()
