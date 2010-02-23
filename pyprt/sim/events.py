@@ -8,6 +8,7 @@ import enthought.traits.ui.table_column as ui_tc
 
 import common
 import pyprt.shared.api_pb2 as api
+import pyprt.shared.utility as utility
 import SimPy.SimulationRT as Sim
 
 class EventManager(Sim.Process):
@@ -35,23 +36,29 @@ class EventManager(Sim.Process):
             Sim.reactivate(self, prior = True)
 
     def spawn_events(self):
-        while self.list:
-            assert common.time_ge(self.list[0].time, Sim.now())
-            if self.list[0].time > Sim.now():
-                yield Sim.hold, self, self.list[0].time - Sim.now()
-                continue
+        while True:
+            try:
+                while self.list[0].time <= Sim.now():
+                    evt = heapq.heappop(self.list)
+                    if isinstance(evt, Passenger):
+                        assert not common.passengers.get(evt.ID)
+                        common.passengers[evt.ID] = evt # add to common dict
 
-            evt = heapq.heappop(self.list)
-            if isinstance(evt, Passenger):
-                assert not common.passengers.get(evt.ID)
-                common.passengers[evt.ID] = evt # add to common dict
+                        evt.loc = evt.src_station # set pax loc
+                        evt.loc.add_passenger(evt)
+                        msg = api.SimEventPassengerCreated()
+                        evt.fill_PassengerStatus(msg.p_status)
+                        msg.time = Sim.now()
+                        common.interface.send(api.SIM_EVENT_PASSENGER_CREATED, msg)
+                    else:
+                        raise NotImplementedError
 
-                evt.loc = evt.src_station # set pax loc
-                evt.loc.add_passenger(evt)
-                msg = api.SimEventPassengerCreated()
-                evt.fill_PassengerStatus(msg.p_status)
-                msg.time = Sim.now()
-                common.interface.send(api.SIM_EVENT_PASSENGER_CREATED, msg)
+                if self.list[0].time > Sim.now():
+                    yield Sim.hold, self, self.list[0].time - Sim.now()
+
+            except IndexError:
+                yield Sim.passivate, self # will be reactivated if new items added
+
 
     def clear_events(self):
         self.list = list()
@@ -100,7 +107,7 @@ class Passenger(PrtEvent):
     """A passenger."""
     mass = traits.Int()
     _loc = traits.Either(traits.Instance('station.Station'),
-                         traits.Instance('layout.BaseVehicle'), None)
+                         traits.Instance('vehicle.BaseVehicle'), None)
 
     traits_view = ui.View(ui.Item(name='label'),
                           ui.Item(name='ID'),

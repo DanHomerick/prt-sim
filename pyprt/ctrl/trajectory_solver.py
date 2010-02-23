@@ -1,10 +1,14 @@
 from __future__ import division # use floating point division unless explicitly otherwise
 
-import scipy.optimize
+import random
 import math
+
+import scipy.optimize
 from scipy import inf
+
 from pyprt.shared.cubic_spline import CubicSpline
 from pyprt.shared.cubic_spline import Knot
+from pyprt.shared.utility import pairwise
 
 class TrajectoryError(Exception):
     """Raised when a generated trajectory is known to be flawed."""
@@ -13,6 +17,15 @@ class FatalTrajectoryError(Exception):
     """Raised when the specified trajectory cannot be met, such as when an
     initial or final value is outside of the specified acceleration or velocity
     limits."""
+
+class OptimizationError(Exception):
+    """Raised when a optimizer is used, and fails to converge to correct solution."""
+    def __init__(self, residual_error=None, durations=None):
+        self.residual_error = residual_error
+        self.durations = durations
+    def __str__(self):
+        return "residual_error: %f, spline durations: %f" % (self.residual_error,
+                                                             self.durations)
 
 class TrajectorySolver(object):
     """Generates C2 cubic splines that are a time-optimal 1D trajectory.
@@ -99,16 +112,23 @@ class TrajectorySolver(object):
 
         return Knot(qi, vi, accel, knot.time - h)
 
-    def target_position(self, knot_initial, knot_final):
-        """Targets the position and velocity values in knot_final.
+    def target_position(self, knot_initial, knot_final, fnc_info=False, max_attempts=5):
+        """Targets the position and velocity values in knot_final. The time
+        supplied by knot_final is ignored, and may be set to None.
 
         Raises FatalTrajectoryError if it is unable to generate a valid spline.
+        Raises OptimizationError if a optimization routine was used and
+           the residual error is greater than 'error_threshold'. Exception
+           contains the residual error value and the final h array.
 
-        Returns a cubic_spline.CSpline.
+        Returns a cubic_spline.CSpline. If fnc_info is True, then returns the
+        function used to find the solution in addition to the spline: (spline, fnc)
         """
         knot_final = knot_final.copy() # don't alter the original
         knot_final.time = inf
 
+        # Basic error checking. Bail if the initial or final conditions lie
+        # outside of the velocity and/or acceleration constaints.
         if knot_final.pos > knot_initial.pos:
             flip = True
             if __debug__:
@@ -125,19 +145,40 @@ class TrajectorySolver(object):
                         self.a_min - self.a_threshold <= -knot_initial.accel <= self.a_max + self.a_threshold and
                         self.a_min - self.a_threshold <= -knot_final.accel <= self.a_max + self.a_threshold):
                     raise FatalTrajectoryError("Endpoint outside of solver's limit")
-        else:
+        else: # knot_final.pos == knot_initial.pos
             # Could return a spline, but in what form? 0 knots, 1 knot, 2 knots?
             raise FatalTrajectoryError("You didn't bloody well want to move then, did ya?")
 
+        # Generate the spline
         try:
+            fnc = self.target_position_vmax
             spline = self.target_position_vmax(knot_initial, knot_final)
         except TrajectoryError:
             try:
+                fnc = self.target_position_amax
                 spline = self.target_position_amax(knot_initial, knot_final)
             except TrajectoryError:
-                spline = self.target_position_none(knot_initial, knot_final)
+                attempts=1
+                durations = None
+                while True:
+                    try:
+                        fnc = self.target_position_none
+                        spline = self.target_position_none(knot_initial, knot_final, durations)
+                    except OptimizationError as err:
+                        if attempts > max_attempts:
+                            raise
+                        else:
+                            durations = [random.random() for h in err.durations]
+                            attempts += 1
+                    else:
+                        break
 
+        # Additional error checking on the generated trajectory, ensuring that
+        # the constraints were actually respected.
         if __debug__:
+            if min(spline.h) < 0:
+                raise FatalTrajectoryError("Generated a trajectory with a negative duration poly.")
+
             if not flip:
                 if spline.get_max_velocity() > self.v_max + self.v_threshold:
 ##                    self._plot(spline)
@@ -165,7 +206,10 @@ class TrajectorySolver(object):
                 if -spline.get_min_acceleration() < self.a_min - self.a_threshold:
 ##                    self._plot(spline)
                     raise FatalTrajectoryError("Unable to comply with min acceleration limit.")
-        return spline
+        if fnc_info:
+            return spline, fnc
+        else:
+            return spline
 
     def target_position_vmax(self, initial, final):
         """Assumes that max velocity is reached. So long as v_max is reached,
@@ -338,9 +382,19 @@ class TrajectorySolver(object):
         k6.time = k5.time + h5
         final.time = k6.time + h6
 
-        spline = CubicSpline([qi], [vi], [ai], [ti])
-        for k in [k1, k2, k3, k4, k5, k6, final]:
-            spline.append(k)
+        # Create a spline, while checking that durations are positive
+        q, v, a, t = [qi], [vi], [ai], [ti]
+        for k1, k2 in pairwise([initial, k1, k2, k3, k4, k5, k6, final]):
+            if k2.time > k1.time: # Normal case
+                q.append(k2.pos)
+                v.append(k2.vel)
+                a.append(k2.accel)
+                t.append(k2.time)
+            elif (k2.time - k1.time) >= -0.0001: # Negative or zero duration, but only by rounding errors
+                pass # Skip the knot
+            else: # large negative duration
+                raise TrajectoryError("Large negative duration: %f seconds" % (k2.t - k1.t))
+        spline = CubicSpline(q, v, a, t)
 
         return spline
 
@@ -408,12 +462,6 @@ class TrajectorySolver(object):
         try:
             h3 = min(self.nonnegative_roots(A, B, C))
         except ValueError: # No nonnegative, real solutions. a_min is not reached.
-##            h3 = 0
-##            root = max(self.nonpositive_roots(A, B, C))
-##            h2 = (jx*(ax-an)/jn - jx*root + an - ax)/(jn-jx)
-##            an = jn*h2 + ax
-##            alpha = (k4.vel-k1.vel)/ax + ax/(2*jn) - an**2/(2*ax*jn)
-
             assert len(self.nonnegative_roots(A, B, C)) == 0
             raise TrajectoryError('No nonnegative, real solutions')
 
@@ -424,14 +472,28 @@ class TrajectorySolver(object):
         k4 = self.create_knot_after(k3, h3, an)
         final.time = k4.time + h4
 
-        spline = CubicSpline([q0], [v0], [a0], [initial.time])
-        for k in [k1, k2, k3, k4, final]:
-            spline.append(k)
+        # Create a spline, while checking that durations are positive
+        q, v, a, t = [q0], [v0], [a0], [initial.time]
+        for k1, k2 in pairwise([initial, k1, k2, k3, k4, final]):
+            if k2.time > k1.time: # Normal case
+                q.append(k2.pos)
+                v.append(k2.vel)
+                a.append(k2.accel)
+                t.append(k2.time)
+            elif (k2.time - k1.time) >= -0.0001: # Negative or zero duration, but only by rounding errors
+                pass # Skip the knot
+            else: # large negative duration
+                raise TrajectoryError("Large negative duration: %f seconds" % (k2.time - k1.time))
+        spline = CubicSpline(q, v, a, t)
 
         return spline
 
-    def target_position_none(self, knot_initial, knot_final):
-        """Trajectory does not reach v_max or a_max.
+    def target_position_none(self, knot_initial, knot_final, initial_hs=None, error_threshold=1E-4):
+        """Trajectory does not reach v_max or a_max. Solve using a library's
+        optimization routine. Note that a *guarantee* of time-optimality does
+        not apply with this function, but is typically satisfied regardless due
+        to the nature of the initial guess.
+
         Assumed that the spline should have an acceleration profile of:
 
           h0   h1    h2  h3  h4
@@ -446,7 +508,16 @@ class TrajectorySolver(object):
          t0 t1   t2    t3   t4 t5
 
         where h's are the timespans of each polynomial, and t's are the knot times.
-        In this case, h1 and/or h3 may be zero.
+        Note that while the shape is the same as for target_position_amax, in
+        this case, h1 and/or h3 may be zero. If neither h1 or h3 is zero, then
+        the target_position_amax is sufficient and faster.
+
+        If the residual error is greater than 'error_threshold' then a
+        OptimizationError is raised, containing the error and the final h array.
+
+        See: http://docs.scipy.org/doc/scipy-0.7.x/reference/optimize.html
+             for more info on the optimization routines available
+             (fmin_powell currently used).
         """
         if knot_final.pos > knot_initial.pos:
             jx = self.j_max
@@ -457,32 +528,56 @@ class TrajectorySolver(object):
         else:
             raise FatalTrajectoryError("No change in position.")
 
-        initial_spline = self._initial_estimate(knot_initial, knot_final, jx, jn)
+        if initial_hs is None:
+            initial_spline = self._initial_estimate(knot_initial, knot_final, jx, jn)
+            # If all the assumptions were met, then the initial_spline is correct.
+            if knot_initial.vel == 0 and knot_final.vel == 0 and \
+                    knot_initial.accel == 0 and knot_final.accel == 0 and \
+                    jx == -jn:
+                return initial_spline
+        else: # use the provided durations
+            initial_spline = self._update_estimate(initial_hs, knot_initial, jx, jn)
 
-        # If all the assumptions were met, then the initial_spline is correct.
-        if knot_initial.vel == 0 and knot_final.vel == 0 and \
-                knot_initial.accel == 0 and knot_final.accel == 0 and \
-                jx == -jn:
-            return initial_spline
-
-        # Otherwise do non-linear optimization to get the correct solution.
         def update_and_error(hs):
-            """Uses closures to keep track of the current state."""
+            """Uses closures for knot_initial, jx, jn."""
             self._soln_spline = self._update_estimate(hs, knot_initial, jx, jn)
-            error = self.target_position_error_fnc(self._soln_spline, knot_final)
+            error = self._target_position_error_fnc(self._soln_spline, knot_final)
             return error
 
-        stats = scipy.optimize.fmin_powell(update_and_error,
+        xopt, fopt, direc, iter_, funcalls, warnflag = scipy.optimize.fmin_powell(update_and_error,
                                     initial_spline.h,
                                     maxiter=1E6,
                                     maxfun=1E6,
                                     xtol=1E-6,
                                     ftol=1E-6,
-                                    full_output=True)
+                                    full_output=True) # returns xopt, fopt, direc, iter_, funcalls, warnflag if True else xopt
 
-        if min(self._soln_spline.h) < -0.00001:
-            self._plot(self._soln_spline)
-            raise FatalTrajectoryError("Trajectory failed.")
+##        hs = scipy.optimize.fmin_cobyla(func=update_and_error,
+##                                        x0=[10,10,10,10,10],
+##                                        cons=(self._nonneg_h_constraint_fnc,
+##                                              self._amax_constraint_fnc,
+##                                              self._amin_constraint_fnc),
+##                                        rhobeg = 0.01,
+##                                        iprint = 3,
+##                                        maxfun = 1E7
+##                                        )
+
+        if fopt > error_threshold:
+            from pyprt.shared.cspline_plotter import CSplinePlotter
+            plotter = CSplinePlotter(self._soln_spline, self.v_max, self.a_max, self.j_max, self.v_min, self.a_min, self.j_min)
+            plotter.display_plot()
+            raise OptimizationError(fopt, self._soln_spline.h)
+
+        # Remove any (tiny) negative duration polys.
+        if -0.0001 <= min(self._soln_spline.h) < 0:
+            q, v, a, t = [], [], [], []
+            for idx, h in enumerate(self._soln_spline.h):
+                if h > 0:
+                    q.append(self._soln_spline.q[idx])
+                    v.append(self._soln_spline.v[idx])
+                    a.append(self._soln_spline.a[idx])
+                    t.append(self._soln_spline.t[idx])
+            self._soln_spline = CubicSpline(q, v, a, t)
 
         return self._soln_spline
 
@@ -519,7 +614,22 @@ class TrajectorySolver(object):
             spline.append(k)
         return spline
 
-    def target_position_error_fnc(self, spline, knot_final):
+##    def _nonneg_h_constraint_fnc(self, h_array):
+##        """Constraint function for cobyla. Must return >= 0 for solution to be accepted."""
+##        print "_nonneg_h_constraint_fnc:", min(h_array)
+##        return min(h_array)
+##
+##    def _amax_constraint_fnc(self, h_array):
+##        """Constraint function for cobyla. Must return >= 0 for solution to be accepted."""
+##        result = min(self.a_max - accel for accel in self._soln_spline.a) # neg if accel > self.a_max
+##        print "_amax_constraint_fnc:", result
+##        return result
+##
+##    def _amin_constraint_fnc(self, h_array):
+##        """Constraint function for cobyla. Must return >= 0 for solution to be accepted."""
+##        return min(accel - self.a_min for accel in self._soln_spline.a) # neg if accel < self.a_min
+
+    def _target_position_error_fnc(self, spline, knot_final):
         neg_h_penalty = sum(abs(h) if h < 0 else 0 for h in spline.h)
         assert neg_h_penalty >= 0
 
@@ -566,7 +676,8 @@ class TrajectorySolver(object):
         return filter(is_negative, roots)
 
     def target_velocity(self, initial, final):
-        """Similar to target_position, but the final position is ignored."""
+        """Similar to target_position, but the final position is ignored in
+        addition to the final time. 'inital' and 'final' are Knot instances."""
         final = final.copy() # don't alter the original
         final.time = inf
 
@@ -623,9 +734,20 @@ class TrajectorySolver(object):
         knots[2] = self.create_knot_after(knots[1], h1, a_top) # recreate k2 with the correct position and time
         knots[3] = self.create_knot_after(knots[2], h2, final.accel) # recreate final with the correct position and time
 
-        spline = CubicSpline([], [], [], [])
-        for knot in knots:
-            spline.append(knot)
+
+        # Create a spline, while checking that durations are positive
+        q, v, a, t = [initial.pos], [initial.vel], [initial.accel], [initial.time]
+        for k1, k2 in pairwise(knots):
+            if k2.time > k1.time: # Normal case
+                q.append(k2.pos)
+                v.append(k2.vel)
+                a.append(k2.accel)
+                t.append(k2.time)
+            elif (k2.time - k1.time) >= -0.0001: # Negative or zero duration, but only by rounding errors
+                pass # Skip the knot
+            else: # large negative duration
+                raise TrajectoryError("Large negative duration: %f seconds" % (k2.t - k1.t))
+        spline = CubicSpline(q, v, a, t)
 
         return spline
 
@@ -643,12 +765,14 @@ class TrajectorySolver(object):
 
 
 if __name__ == '__main__':
-    knot_initial = Knot(0,0,0,0)
-    knot_final = Knot(250,0,0,None)
+    initial = Knot(2,5,0,11)
+    final = Knot(50,0,0,None)
     solver = TrajectorySolver(25, 5, 2.5)  # v_max, a_max, j_max
 
-    spline = solver.target_position(knot_initial, knot_final)
+    spline = solver.target_position(initial, final)
 
     from pyprt.shared.cspline_plotter import CSplinePlotter
     plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)
     plotter.display_plot()
+
+    print spline

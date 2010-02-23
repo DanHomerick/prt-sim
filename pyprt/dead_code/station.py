@@ -16,7 +16,7 @@ class Berth(Sim.Process, traits.HasTraits):
     label = traits.Str
     platform_index = traits.Int
     station_id = traits.Int
-    vehicle = traits.Instance('layout.BaseVehicle', None)
+    vehicle = traits.Instance('vehicle.BaseVehicle', None)
 
     _busy = traits.Bool
     _unload = traits.Bool
@@ -183,7 +183,7 @@ class Platform(traits.HasTraits):
         return empty
 
 class Station(traits.HasTraits):
-    """TODO: Check documentation and update if necessary.
+    """TODO: Check documentation and update if necessary. OUT OF DATE!!!
 
     First pass implementation will use a simple interface. Rather than
     explicitly handling passengers queuing for vehicles, the controller may

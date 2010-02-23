@@ -286,7 +286,6 @@ package edu.ucsc.track_builder
 		// Handler for "New" file menuitem.
 		public function onNew(event:Event):void {
 			rescueDirty(Globals.reinitialize);
-			GtfImporter.gtfXml = null
 		}
 		
 		// Handler for "Open" file menuitem.

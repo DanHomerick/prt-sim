@@ -44,7 +44,6 @@ class DebugController(base_controller.BaseController):
         v_request = api.CtrlRequestVehicleStatus()
         v_request.vID = 0
         self.send(api.CTRL_REQUEST_VEHICLE_STATUS, v_request)
-        self.send_resume()
 
     def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):
         initial_knot = cubic_spline.Knot(msg.v_status.nose_pos,
@@ -54,12 +53,11 @@ class DebugController(base_controller.BaseController):
         final_knot = cubic_spline.Knot(msg.v_status.nose_pos + 200, 0, 0, None)
         spline = self.traj_solver.target_position(initial_knot, final_knot)
 
-        inf = 1E10000
-        spline.append(cubic_spline.Knot(msg.v_status.nose_pos + 200, 0, 0, inf)) # stay stopped here
+        spline.append(cubic_spline.Knot(msg.v_status.nose_pos + 200, 0, 0, self.sim_end_time)) # stay stopped here
 
         traj_cmd = api.CtrlCmdVehicleTrajectory()
         traj_cmd.vID = msg.v_status.vID
-        self.fill_spline_msg(spline, traj_cmd.spline)
+        spline.fill_spline_msg(spline, traj_cmd.spline)
         self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_cmd)
 
         # Control the vehicle's path using a vehicle-based switching model
@@ -73,8 +71,6 @@ class DebugController(base_controller.BaseController):
         sw_cmd.trackID = msg.v_status.nose_locID # current ts
         sw_cmd.nextID = 9 # station entrance
         self.send(api.CTRL_CMD_SWITCH, sw_cmd)
-
-        self.send_resume()
 
 if __name__ == '__main__':
     main()

@@ -31,8 +31,8 @@ package edu.ucsc.track_builder
 			xml.appendChild(makeSwitchesXml(sortedSegs)); // ignored when loading a saved file
 			xml.appendChild(makeMergesXml(sortedSegs));   // ignored when loading a saved file
 			
-			if (GtfImporter.gtfXml != null) {
-				xml.appendChild(GtfImporter.gtfXml);
+			if (Globals.gtfXML != null) {
+				xml.appendChild(Globals.gtfXML);
 			}			
 			return xml;
 		}
@@ -163,9 +163,7 @@ package edu.ucsc.track_builder
 			Globals.tracks.fromDataXML(xml.TrackSegments.TrackSegment);
 			Globals.stations.fromDataXML(xml.Stations.Station);
 			Globals.vehicles.fromDataXML(xml.Vehicles.Vehicle);
-			if (xml.GoogleTransitFeed.length > 0) {
-				GtfImporter.gtfXml = xml.GoogleTransitFeed;
-			}
+			Globals.gtfXML = xml.GoogleTransitFeed;
 		}
 		
 		public static function parsePrefsXML(data:String):void
@@ -181,9 +179,7 @@ package edu.ucsc.track_builder
 		}
 		
 		/** Load XML from a file. */
-		public static function loadDataXML(event:Event):void {
-			Globals.reinitialize(); // clear any old data
-					
+		public static function loadDataXML(event:Event):void {					
 			var file:File = event.target as File;
 			file.removeEventListener(Event.SELECT, loadDataXML); // remove the event listener that got me here
 			if (file != null) {

@@ -94,6 +94,11 @@ message Spline {
 // each TrackSegment has its own coordinate frame for position. That is, the
 // spline should be continuous in position, rather than having discontinuities
 // caused by the change in coordinate frames at TrackSegment boundaries.
+//
+// The spline should generally extend all the way to the end of the simulation,
+// or even well past it, even if it is known that the spline will be changed in
+// the near future. This prevents the sim from ever failing to find a valid
+// part of the spline when needed.
 message CtrlCmdVehicleTrajectory {
     required int32          vID = 1;
     required Spline         spline = 2;
@@ -225,12 +230,14 @@ enum SimMsgType {
     SIM_NOTIFY_VEHICLE_POSITION = 1030;
     SIM_NOTIFY_VEHICLE_ARRIVE = 1031;
     SIM_NOTIFY_VEHICLE_EXIT = 1032;
-    SIM_NOTIFY_VEHICLE_COLLISION = 1033;
-    SIM_NOTIFY_PASSENGER_EMBARK_START = 1034;
-    SIM_NOTIFY_PASSENGER_EMBARK_END = 1035;
-    SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1036;
-    SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1037;
-    SIM_NOTIFY_TIME = 1038;
+    SIM_NOTIFY_VEHICLE_STOPPED = 1033;
+    SIM_NOTIFY_VEHICLE_COLLISION = 1034;
+    SIM_NOTIFY_VEHICLE_CRASH = 1035;
+    SIM_NOTIFY_PASSENGER_EMBARK_START = 1036;
+    SIM_NOTIFY_PASSENGER_EMBARK_END = 1037;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1038;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1039;
+    SIM_NOTIFY_TIME = 1040;
 
     SIM_EVENT_TRACK_DISABLED = 1050;
     SIM_EVENT_TRACK_REENABLED = 1051;
@@ -349,26 +356,36 @@ message SimNotifyTime {
 }
 
 message SimNotifyVehicleArrive {
-    required VehicleStatus     v_status = 1;
-    required double            time     = 2; // time of status
+    required int32             trackID  = 1;
+    required VehicleStatus     v_status = 2;
+    required double            time     = 3; // time of status
 }
 
 message SimNotifyVehicleExit {
-    required VehicleStatus     v_status = 1;
-    required double            time     = 2; // time of status
+    required int32             trackID  = 1;
+    required VehicleStatus     v_status = 2;
+    required double            time     = 3; // time of status
 }
 
+// NOT IMPLEMENTED BY SIMULATOR
+message SimNotifyVehicleStopped {
+    required int32             v_status = 1;
+    required double            time     = 2;
+}
+
+// Used for collisions between two vehicles.
 message SimNotifyVehicleCollision {
-    required int32              v1ID = 1; // frontmost
-    required int32              v2ID = 2; // rearmost
-    required LocationType       loc_type = 3;
-    required int32              locID = 4;
-    required int32              pos = 5;
-    required int32              delta_v = 6; // v2 - v1
-    // One of the following will be true
-    required bool               rearend = 7;
-    required bool               sideswipe = 8;
-    required double             time     = 9;
+    required VehicleStatus      v1_status = 1; // frontmost
+    required VehicleStatus      v2_status = 2; // rearmost
+    required double             time      = 3;
+}
+
+// Used for a single vehicle crash. Used if a vehicle attempts to use a switch
+// while it is being thrown, or if a switch is thrown while the vehicle is on it.
+// Also used if the vehicle comes to the end of a dead-end TrackSegment.
+message SimNotifyVehicleCrash {
+    required int32              v_status  = 1;
+    required double             time      = 2;
 }
 
 message SimNotifyPassengerEmbarkStart {
@@ -511,12 +528,15 @@ message VehicleStatus {
     required float         accel = 9;
     repeated int32         passengerIDs = 10  [packed=true];
 
-    // milliseconds until nose reaches the current pos of the lead vehicle's
-    // tail. Calc'd using instantaneous speed (disregarding accel).
-    // i.e. headway = dist / my_speed
-    // Ommitted if no lead vehicle exists, or if one can't be identified due
-    // to a switch.
-    optional int32         headway = 12;
+    // Meters between this vehicle's nose and the lead vehicle's tail.
+    // 'Lead vehicle' is defined as the vehicle ahead of this one, on this
+    // vehicle's future path. 'lv_distance' does NOT take into account a vehicle
+    // that is merging in front of this vehicle, until the merging vehicle is
+    // obstructing this vehicle's path. Vehicles greater than 500 meters ahead
+    // are not reported in most cases.
+    // Ommitted if no lead vehicle is found.
+    optional int32         lvID        = 11;
+    optional float         lv_distance = 12;
 
     // TODO:
     // enum MalfunctionCode { ... }

@@ -21,12 +21,12 @@ class Berth(Sim.Process, traits.HasTraits):
     _busy = traits.Bool
 
     _embark_pax = traits.List(traits.Instance('events.Passenger'))
-    _embark_vehicle = traits.Instance('layout.BaseVehicle')
+    _embark_vehicle = traits.Instance('vehicle.BaseVehicle')
     _embark_cmd = traits.Instance(api.CtrlCmdPassengersEmbark)
     _embark_cmd_id = traits.Int(api.NONE_ID)
 
     _disembark_pax = traits.List(traits.Instance('events.Passenger'))
-    _disembark_vehicle = traits.Instance('layout.BaseVehicle')
+    _disembark_vehicle = traits.Instance('vehicle.BaseVehicle')
     _disembark_cmd = traits.Instance(api.CtrlCmdPassengersDisembark)
     _disembark_cmd_id = traits.Int(api.NONE_ID)
 
@@ -85,10 +85,9 @@ class Berth(Sim.Process, traits.HasTraits):
 
                 # Error if vehicle not parked in berth
                 if not self._disembark_vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-                    nose_pos, nose_loc = self._disembark_vehicle.nose
-                    tail_pos, tail_loc = self._disembark_vehicle.tail
+                    nose_pos, tail_pos = self._disembark_vehicle.get_positions()
                     logging.info("T=%4.3f Vehicle not in berth upon attempted disembark. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, DisembarkCmdId: %s, vNosePos: %s, vNoseLoc %s, vTailPos: %s, vTailLoc: %s, berth.start_pos: %s, berth.end_pos: %s",
-                                 Sim.now(), self._disembark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._disembark_cmd_id, nose_pos, nose_loc, tail_pos, tail_loc, self.start_pos, self.end_pos)
+                                 Sim.now(), self._disembark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._disembark_cmd_id, nose_pos, self._disembark_vehicle.loc, tail_pos, self._disembark_vehicle.tail_loc, self.start_pos, self.end_pos)
                     error_msg = api.SimMsgBodyInvalidId()
                     error_msg.msgID = self._disembark_cmd_id
                     error_msg.id_type = api.VEHICLE
@@ -118,6 +117,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 dis_start_msg.platformID = self.platform.ID
                 dis_start_msg.pID = pax.ID
                 dis_start_msg.berthID = self.ID
+                dis_start_msg.time = Sim.now()
                 common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_START,
                                        dis_start_msg)
 
@@ -182,8 +182,9 @@ class Berth(Sim.Process, traits.HasTraits):
 
                 # Error if vehicle not parked in berth
                 if not self._embark_vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-                    nose_pos, nose_loc = self._embark_vehicle.nose
-                    tail_pos, tail_loc = self._embark_vehicle.tail
+                    nose_pos, tail_pos = self._embark_vehicle.get_positions()
+                    nose_loc = self._embark_vehicle.loc
+                    tail_loc = self._embark_vehicle.tail_loc
                     logging.info("T=%4.3f Vehicle not in berth upon attempted embark. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, vNosePos: %s, vNoseLoc %s, vTailPos: %s, vTailLoc: %s, berth.start_pos: %s, berth.end_pos: %s",
                                  Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, nose_pos, nose_loc, tail_pos, tail_loc, self.start_pos, self.end_pos)
                     error_msg = api.SimMsgBodyInvalidId()

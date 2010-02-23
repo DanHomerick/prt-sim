@@ -122,6 +122,9 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* SimNotifyVehicleCollision_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   SimNotifyVehicleCollision_reflection_ = NULL;
+const ::google::protobuf::Descriptor* SimNotifyVehicleCrash_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  SimNotifyVehicleCrash_reflection_ = NULL;
 const ::google::protobuf::Descriptor* SimNotifyPassengerEmbarkStart_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   SimNotifyPassengerEmbarkStart_reflection_ = NULL;
@@ -769,7 +772,8 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyTime));
   SimNotifyVehicleArrive_descriptor_ = file->message_type(33);
-  static const int SimNotifyVehicleArrive_offsets_[2] = {
+  static const int SimNotifyVehicleArrive_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleArrive, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleArrive, v_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleArrive, time_),
   };
@@ -785,7 +789,8 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleArrive));
   SimNotifyVehicleExit_descriptor_ = file->message_type(34);
-  static const int SimNotifyVehicleExit_offsets_[2] = {
+  static const int SimNotifyVehicleExit_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleExit, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleExit, v_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleExit, time_),
   };
@@ -801,15 +806,9 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleExit));
   SimNotifyVehicleCollision_descriptor_ = file->message_type(35);
-  static const int SimNotifyVehicleCollision_offsets_[9] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, v1id_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, v2id_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, loc_type_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, locid_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, pos_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, delta_v_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, rearend_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, sideswipe_),
+  static const int SimNotifyVehicleCollision_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, v1_status_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, v2_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, time_),
   };
   SimNotifyVehicleCollision_reflection_ =
@@ -823,7 +822,23 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleCollision));
-  SimNotifyPassengerEmbarkStart_descriptor_ = file->message_type(36);
+  SimNotifyVehicleCrash_descriptor_ = file->message_type(36);
+  static const int SimNotifyVehicleCrash_offsets_[2] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCrash, v_status_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCrash, time_),
+  };
+  SimNotifyVehicleCrash_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      SimNotifyVehicleCrash_descriptor_,
+      SimNotifyVehicleCrash::default_instance_,
+      SimNotifyVehicleCrash_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCrash, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCrash, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(SimNotifyVehicleCrash));
+  SimNotifyPassengerEmbarkStart_descriptor_ = file->message_type(37);
   static const int SimNotifyPassengerEmbarkStart_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkStart, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkStart, sid_),
@@ -843,7 +858,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerEmbarkStart));
-  SimNotifyPassengerEmbarkEnd_descriptor_ = file->message_type(37);
+  SimNotifyPassengerEmbarkEnd_descriptor_ = file->message_type(38);
   static const int SimNotifyPassengerEmbarkEnd_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkEnd, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkEnd, sid_),
@@ -863,7 +878,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerEmbarkEnd));
-  SimNotifyPassengerDisembarkStart_descriptor_ = file->message_type(38);
+  SimNotifyPassengerDisembarkStart_descriptor_ = file->message_type(39);
   static const int SimNotifyPassengerDisembarkStart_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkStart, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkStart, sid_),
@@ -883,7 +898,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerDisembarkStart));
-  SimNotifyPassengerDisembarkEnd_descriptor_ = file->message_type(39);
+  SimNotifyPassengerDisembarkEnd_descriptor_ = file->message_type(40);
   static const int SimNotifyPassengerDisembarkEnd_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkEnd, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkEnd, sid_),
@@ -903,7 +918,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerDisembarkEnd));
-  SimEventTrackDisabled_descriptor_ = file->message_type(40);
+  SimEventTrackDisabled_descriptor_ = file->message_type(41);
   static const int SimEventTrackDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackDisabled, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackDisabled, time_),
@@ -919,7 +934,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventTrackDisabled));
-  SimEventTrackReenabled_descriptor_ = file->message_type(41);
+  SimEventTrackReenabled_descriptor_ = file->message_type(42);
   static const int SimEventTrackReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackReenabled, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackReenabled, time_),
@@ -935,7 +950,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventTrackReenabled));
-  SimEventSwitchDisabled_descriptor_ = file->message_type(42);
+  SimEventSwitchDisabled_descriptor_ = file->message_type(43);
   static const int SimEventSwitchDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchDisabled, swid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchDisabled, time_),
@@ -951,7 +966,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventSwitchDisabled));
-  SimEventSwitchReenabled_descriptor_ = file->message_type(43);
+  SimEventSwitchReenabled_descriptor_ = file->message_type(44);
   static const int SimEventSwitchReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchReenabled, swid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchReenabled, time_),
@@ -967,7 +982,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventSwitchReenabled));
-  SimEventStationDisabled_descriptor_ = file->message_type(44);
+  SimEventStationDisabled_descriptor_ = file->message_type(45);
   static const int SimEventStationDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationDisabled, sid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationDisabled, time_),
@@ -983,7 +998,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventStationDisabled));
-  SimEventStationReenabled_descriptor_ = file->message_type(45);
+  SimEventStationReenabled_descriptor_ = file->message_type(46);
   static const int SimEventStationReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationReenabled, sid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationReenabled, time_),
@@ -999,7 +1014,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventStationReenabled));
-  SimEventVehicleDisabled_descriptor_ = file->message_type(46);
+  SimEventVehicleDisabled_descriptor_ = file->message_type(47);
   static const int SimEventVehicleDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleDisabled, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleDisabled, time_),
@@ -1015,7 +1030,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventVehicleDisabled));
-  SimEventVehicleReenabled_descriptor_ = file->message_type(47);
+  SimEventVehicleReenabled_descriptor_ = file->message_type(48);
   static const int SimEventVehicleReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleReenabled, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleReenabled, time_),
@@ -1031,7 +1046,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventVehicleReenabled));
-  SimEventPassengerCreated_descriptor_ = file->message_type(48);
+  SimEventPassengerCreated_descriptor_ = file->message_type(49);
   static const int SimEventPassengerCreated_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerCreated, p_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerCreated, time_),
@@ -1047,7 +1062,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventPassengerCreated));
-  SimEventPassengerChangedest_descriptor_ = file->message_type(49);
+  SimEventPassengerChangedest_descriptor_ = file->message_type(50);
   static const int SimEventPassengerChangedest_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerChangedest, pid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerChangedest, time_),
@@ -1063,7 +1078,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventPassengerChangedest));
-  SimMsgHdrInvalidSeparator_descriptor_ = file->message_type(50);
+  SimMsgHdrInvalidSeparator_descriptor_ = file->message_type(51);
   static const int SimMsgHdrInvalidSeparator_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSeparator, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSeparator, msg_sep_),
@@ -1079,7 +1094,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidSeparator));
-  SimMsgHdrInvalidType_descriptor_ = file->message_type(51);
+  SimMsgHdrInvalidType_descriptor_ = file->message_type(52);
   static const int SimMsgHdrInvalidType_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidType, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidType, msg_type_),
@@ -1095,7 +1110,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidType));
-  SimMsgHdrInvalidId_descriptor_ = file->message_type(52);
+  SimMsgHdrInvalidId_descriptor_ = file->message_type(53);
   static const int SimMsgHdrInvalidId_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidId, msgid_),
   };
@@ -1110,7 +1125,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidId));
-  SimMsgHdrInvalidTime_descriptor_ = file->message_type(53);
+  SimMsgHdrInvalidTime_descriptor_ = file->message_type(54);
   static const int SimMsgHdrInvalidTime_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidTime, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidTime, msg_time_),
@@ -1126,7 +1141,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidTime));
-  SimMsgHdrInvalidSize_descriptor_ = file->message_type(54);
+  SimMsgHdrInvalidSize_descriptor_ = file->message_type(55);
   static const int SimMsgHdrInvalidSize_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSize, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSize, msg_size_),
@@ -1142,7 +1157,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidSize));
-  SimMsgBodyInvalid_descriptor_ = file->message_type(55);
+  SimMsgBodyInvalid_descriptor_ = file->message_type(56);
   static const int SimMsgBodyInvalid_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalid, msgid_),
   };
@@ -1157,7 +1172,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgBodyInvalid));
-  SimMsgBodyInvalidTime_descriptor_ = file->message_type(56);
+  SimMsgBodyInvalidTime_descriptor_ = file->message_type(57);
   static const int SimMsgBodyInvalidTime_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidTime, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidTime, time_),
@@ -1173,7 +1188,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgBodyInvalidTime));
-  SimMsgBodyInvalidId_descriptor_ = file->message_type(57);
+  SimMsgBodyInvalidId_descriptor_ = file->message_type(58);
   static const int SimMsgBodyInvalidId_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidId, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidId, id_type_),
@@ -1190,8 +1205,8 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgBodyInvalidId));
-  VehicleStatus_descriptor_ = file->message_type(58);
-  static const int VehicleStatus_offsets_[9] = {
+  VehicleStatus_descriptor_ = file->message_type(59);
+  static const int VehicleStatus_offsets_[10] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, nose_locid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, nose_pos_),
@@ -1200,7 +1215,8 @@ void protobuf_AssignDesc_api_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, vel_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, accel_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, passengerids_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, headway_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, lvid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, lv_distance_),
   };
   VehicleStatus_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -1213,7 +1229,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(VehicleStatus));
-  StationStatus_descriptor_ = file->message_type(59);
+  StationStatus_descriptor_ = file->message_type(60);
   static const int StationStatus_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StationStatus, sid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StationStatus, label_),
@@ -1233,7 +1249,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(StationStatus));
-  PlatformStatus_descriptor_ = file->message_type(60);
+  PlatformStatus_descriptor_ = file->message_type(61);
   static const int PlatformStatus_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PlatformStatus, platid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PlatformStatus, trackid_),
@@ -1252,7 +1268,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(PlatformStatus));
-  BerthStatus_descriptor_ = file->message_type(61);
+  BerthStatus_descriptor_ = file->message_type(62);
   static const int BerthStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BerthStatus, bid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BerthStatus, vid_),
@@ -1269,7 +1285,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BerthStatus));
-  PassengerStatus_descriptor_ = file->message_type(62);
+  PassengerStatus_descriptor_ = file->message_type(63);
   static const int PassengerStatus_offsets_[8] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PassengerStatus, pid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PassengerStatus, loc_type_),
@@ -1291,7 +1307,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(PassengerStatus));
-  RoutingEntry_descriptor_ = file->message_type(63);
+  RoutingEntry_descriptor_ = file->message_type(64);
   static const int RoutingEntry_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RoutingEntry, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RoutingEntry, trackid_),
@@ -1308,7 +1324,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(RoutingEntry));
-  SwitchStatus_descriptor_ = file->message_type(64);
+  SwitchStatus_descriptor_ = file->message_type(65);
   static const int SwitchStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwitchStatus, swid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwitchStatus, label_),
@@ -1325,7 +1341,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SwitchStatus));
-  TrackStatus_descriptor_ = file->message_type(65);
+  TrackStatus_descriptor_ = file->message_type(66);
   static const int TrackStatus_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackStatus, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackStatus, label_),
@@ -1434,6 +1450,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
     SimNotifyVehicleExit_descriptor_, &SimNotifyVehicleExit::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     SimNotifyVehicleCollision_descriptor_, &SimNotifyVehicleCollision::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    SimNotifyVehicleCrash_descriptor_, &SimNotifyVehicleCrash::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     SimNotifyPassengerEmbarkStart_descriptor_, &SimNotifyPassengerEmbarkStart::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
@@ -1571,6 +1589,8 @@ void protobuf_ShutdownFile_api_2eproto() {
   delete SimNotifyVehicleExit_reflection_;
   delete SimNotifyVehicleCollision::default_instance_;
   delete SimNotifyVehicleCollision_reflection_;
+  delete SimNotifyVehicleCrash::default_instance_;
+  delete SimNotifyVehicleCrash_reflection_;
   delete SimNotifyPassengerEmbarkStart::default_instance_;
   delete SimNotifyPassengerEmbarkStart_reflection_;
   delete SimNotifyPassengerEmbarkEnd::default_instance_;
@@ -1700,58 +1720,59 @@ void protobuf_AddDesc_api_2eproto() {
     "TrackStatus\"b\n\030SimNotifyVehiclePosition\022"
     "\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030\002 \002(\001\022\013\n\003vID\030\003 \002("
     "\005\022\017\n\007trackID\030\004 \002(\005\022\013\n\003pos\030\005 \002(\005\",\n\rSimNo"
-    "tifyTime\022\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030\002 \002(\001\"L\n"
-    "\026SimNotifyVehicleArrive\022$\n\010v_status\030\001 \002("
-    "\0132\022.prt.VehicleStatus\022\014\n\004time\030\002 \002(\001\"J\n\024S"
-    "imNotifyVehicleExit\022$\n\010v_status\030\001 \002(\0132\022."
-    "prt.VehicleStatus\022\014\n\004time\030\002 \002(\001\"\273\001\n\031SimN"
-    "otifyVehicleCollision\022\014\n\004v1ID\030\001 \002(\005\022\014\n\004v"
-    "2ID\030\002 \002(\005\022#\n\010loc_type\030\003 \002(\0162\021.prt.Locati"
-    "onType\022\r\n\005locID\030\004 \002(\005\022\013\n\003pos\030\005 \002(\005\022\017\n\007de"
-    "lta_v\030\006 \002(\005\022\017\n\007rearend\030\007 \002(\010\022\021\n\tsideswip"
-    "e\030\010 \002(\010\022\014\n\004time\030\t \002(\001\"y\n\035SimNotifyPassen"
-    "gerEmbarkStart\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005"
-    "\022\022\n\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007ber"
-    "thID\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"w\n\033SimNotifyPas"
-    "sengerEmbarkEnd\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002("
-    "\005\022\022\n\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007be"
-    "rthID\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"|\n SimNotifyPa"
-    "ssengerDisembarkStart\022\013\n\003vID\030\001 \002(\005\022\013\n\003sI"
-    "D\030\002 \002(\005\022\022\n\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005"
-    "\022\017\n\007berthID\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"z\n\036SimNo"
-    "tifyPassengerDisembarkEnd\022\013\n\003vID\030\001 \002(\005\022\013"
-    "\n\003sID\030\002 \002(\005\022\022\n\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004"
-    " \002(\005\022\017\n\007berthID\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"6\n\025S"
-    "imEventTrackDisabled\022\017\n\007trackID\030\001 \002(\005\022\014\n"
-    "\004time\030\002 \002(\001\"7\n\026SimEventTrackReenabled\022\017\n"
-    "\007trackID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"4\n\026SimEvent"
-    "SwitchDisabled\022\014\n\004swID\030\001 \002(\005\022\014\n\004time\030\002 \002"
-    "(\001\"5\n\027SimEventSwitchReenabled\022\014\n\004swID\030\001 "
-    "\002(\005\022\014\n\004time\030\002 \002(\001\"4\n\027SimEventStationDisa"
-    "bled\022\013\n\003sID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"5\n\030SimEv"
-    "entStationReenabled\022\013\n\003sID\030\001 \002(\005\022\014\n\004time"
-    "\030\002 \002(\001\"4\n\027SimEventVehicleDisabled\022\013\n\003vID"
-    "\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"5\n\030SimEventVehicleR"
-    "eenabled\022\013\n\003vID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"P\n\030S"
-    "imEventPassengerCreated\022&\n\010p_status\030\001 \002("
-    "\0132\024.prt.PassengerStatus\022\014\n\004time\030\002 \002(\001\"8\n"
-    "\033SimEventPassengerChangedest\022\013\n\003pID\030\001 \002("
-    "\005\022\014\n\004time\030\002 \002(\001\";\n\031SimMsgHdrInvalidSepar"
-    "ator\022\r\n\005msgID\030\001 \002(\005\022\017\n\007msg_sep\030\002 \002(\005\"7\n\024"
-    "SimMsgHdrInvalidType\022\r\n\005msgID\030\001 \002(\005\022\020\n\010m"
-    "sg_type\030\002 \002(\005\"#\n\022SimMsgHdrInvalidId\022\r\n\005m"
-    "sgID\030\001 \002(\005\"7\n\024SimMsgHdrInvalidTime\022\r\n\005ms"
-    "gID\030\001 \002(\005\022\020\n\010msg_time\030\002 \002(\005\"7\n\024SimMsgHdr"
-    "InvalidSize\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_size\030\002"
-    " \002(\005\"\"\n\021SimMsgBodyInvalid\022\r\n\005msgID\030\001 \002(\005"
-    "\"4\n\025SimMsgBodyInvalidTime\022\r\n\005msgID\030\001 \002(\005"
-    "\022\014\n\004time\030\002 \002(\001\"T\n\023SimMsgBodyInvalidId\022\r\n"
-    "\005msgID\030\001 \002(\005\022\"\n\007id_type\030\002 \002(\0162\021.prt.Loca"
-    "tionType\022\n\n\002ID\030\003 \002(\005\"\257\001\n\rVehicleStatus\022\013"
-    "\n\003vID\030\001 \002(\005\022\022\n\nnose_locID\030\003 \002(\005\022\020\n\010nose_"
-    "pos\030\004 \002(\002\022\022\n\ntail_locID\030\006 \002(\005\022\020\n\010tail_po"
-    "s\030\007 \002(\002\022\013\n\003vel\030\010 \002(\002\022\r\n\005accel\030\t \002(\002\022\030\n\014p"
-    "assengerIDs\030\n \003(\005B\002\020\001\022\017\n\007headway\030\014 \001(\005\"\242"
+    "tifyTime\022\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030\002 \002(\001\"]\n"
+    "\026SimNotifyVehicleArrive\022\017\n\007trackID\030\001 \002(\005"
+    "\022$\n\010v_status\030\002 \002(\0132\022.prt.VehicleStatus\022\014"
+    "\n\004time\030\003 \002(\001\"[\n\024SimNotifyVehicleExit\022\017\n\007"
+    "trackID\030\001 \002(\005\022$\n\010v_status\030\002 \002(\0132\022.prt.Ve"
+    "hicleStatus\022\014\n\004time\030\003 \002(\001\"w\n\031SimNotifyVe"
+    "hicleCollision\022%\n\tv1_status\030\001 \002(\0132\022.prt."
+    "VehicleStatus\022%\n\tv2_status\030\002 \002(\0132\022.prt.V"
+    "ehicleStatus\022\014\n\004time\030\003 \002(\001\"7\n\025SimNotifyV"
+    "ehicleCrash\022\020\n\010v_status\030\001 \002(\005\022\014\n\004time\030\002 "
+    "\002(\001\"y\n\035SimNotifyPassengerEmbarkStart\022\013\n\003"
+    "vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatformID\030\003 \002"
+    "(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 \002(\005\022\014\n\004time"
+    "\030\006 \002(\001\"w\n\033SimNotifyPassengerEmbarkEnd\022\013\n"
+    "\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatformID\030\003 "
+    "\002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 \002(\005\022\014\n\004tim"
+    "e\030\006 \002(\001\"|\n SimNotifyPassengerDisembarkSt"
+    "art\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatfor"
+    "mID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 \002(\005\022"
+    "\014\n\004time\030\006 \002(\001\"z\n\036SimNotifyPassengerDisem"
+    "barkEnd\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\npla"
+    "tformID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 "
+    "\002(\005\022\014\n\004time\030\006 \002(\001\"6\n\025SimEventTrackDisabl"
+    "ed\022\017\n\007trackID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"7\n\026Sim"
+    "EventTrackReenabled\022\017\n\007trackID\030\001 \002(\005\022\014\n\004"
+    "time\030\002 \002(\001\"4\n\026SimEventSwitchDisabled\022\014\n\004"
+    "swID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"5\n\027SimEventSwit"
+    "chReenabled\022\014\n\004swID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\""
+    "4\n\027SimEventStationDisabled\022\013\n\003sID\030\001 \002(\005\022"
+    "\014\n\004time\030\002 \002(\001\"5\n\030SimEventStationReenable"
+    "d\022\013\n\003sID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"4\n\027SimEvent"
+    "VehicleDisabled\022\013\n\003vID\030\001 \002(\005\022\014\n\004time\030\002 \002"
+    "(\001\"5\n\030SimEventVehicleReenabled\022\013\n\003vID\030\001 "
+    "\002(\005\022\014\n\004time\030\002 \002(\001\"P\n\030SimEventPassengerCr"
+    "eated\022&\n\010p_status\030\001 \002(\0132\024.prt.PassengerS"
+    "tatus\022\014\n\004time\030\002 \002(\001\"8\n\033SimEventPassenger"
+    "Changedest\022\013\n\003pID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\";\n"
+    "\031SimMsgHdrInvalidSeparator\022\r\n\005msgID\030\001 \002("
+    "\005\022\017\n\007msg_sep\030\002 \002(\005\"7\n\024SimMsgHdrInvalidTy"
+    "pe\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_type\030\002 \002(\005\"#\n\022S"
+    "imMsgHdrInvalidId\022\r\n\005msgID\030\001 \002(\005\"7\n\024SimM"
+    "sgHdrInvalidTime\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_t"
+    "ime\030\002 \002(\005\"7\n\024SimMsgHdrInvalidSize\022\r\n\005msg"
+    "ID\030\001 \002(\005\022\020\n\010msg_size\030\002 \002(\005\"\"\n\021SimMsgBody"
+    "Invalid\022\r\n\005msgID\030\001 \002(\005\"4\n\025SimMsgBodyInva"
+    "lidTime\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"T\n\023"
+    "SimMsgBodyInvalidId\022\r\n\005msgID\030\001 \002(\005\022\"\n\007id"
+    "_type\030\002 \002(\0162\021.prt.LocationType\022\n\n\002ID\030\003 \002"
+    "(\005\"\301\001\n\rVehicleStatus\022\013\n\003vID\030\001 \002(\005\022\022\n\nnos"
+    "e_locID\030\003 \002(\005\022\020\n\010nose_pos\030\004 \002(\002\022\022\n\ntail_"
+    "locID\030\006 \002(\005\022\020\n\010tail_pos\030\007 \002(\002\022\013\n\003vel\030\010 \002"
+    "(\002\022\r\n\005accel\030\t \002(\002\022\030\n\014passengerIDs\030\n \003(\005B"
+    "\002\020\001\022\014\n\004lvID\030\013 \001(\005\022\023\n\013lv_distance\030\014 \001(\002\"\242"
     "\001\n\rStationStatus\022\013\n\003sID\030\001 \002(\005\022\r\n\005label\030\002"
     " \001(\t\022,\n\017platform_status\030\003 \003(\0132\023.prt.Plat"
     "formStatus\022\017\n\003pID\030\004 \003(\005B\002\020\001\022\022\n\nv_adv_tim"
@@ -1789,7 +1810,7 @@ void protobuf_AddDesc_api_2eproto() {
     "K_SEGMENT\020\000\022\n\n\006SWITCH\020\n\022\013\n\007STATION\020\024\022\014\n\010"
     "PLATFORM\020\036\022\t\n\005BERTH\020(\022\013\n\007VEHICLE\0202\022\r\n\tPA"
     "SSENGER\020<\022\013\n\007WALKING\020F\022\010\n\004NONE\020P*%\n\rStat"
-    "ionPolicy\022\t\n\005LOBBY\020\001\022\t\n\005QUEUE\020\002*\312\n\n\nSimM"
+    "ionPolicy\022\t\n\005LOBBY\020\001\022\t\n\005QUEUE\020\002*\305\n\n\nSimM"
     "sgType\022\021\n\014SIM_GREETING\020\350\007\022\016\n\tSIM_START\020\351"
     "\007\022\014\n\007SIM_END\020\352\007\022\026\n\021SIM_UNIMPLEMENTED\020\353\007\022"
     "#\n\036SIM_COMPLETE_PASSENGERS_EMBARK\020\362\007\022&\n!"
@@ -1802,28 +1823,28 @@ void protobuf_AddDesc_api_2eproto() {
     "_RESPONSE_TRACK_STATUS\020\200\010\022\036\n\031SIM_RESPONS"
     "E_TOTAL_STATUS\020\201\010\022 \n\033SIM_NOTIFY_VEHICLE_"
     "POSITION\020\206\010\022\036\n\031SIM_NOTIFY_VEHICLE_ARRIVE"
-    "\020\207\010\022\034\n\027SIM_NOTIFY_VEHICLE_EXIT\020\210\010\022\"\n\035SIM"
-    "_NOTIFY_VEHICLE_READY_LOAD\020\211\010\022!\n\034SIM_NOT"
-    "IFY_VEHICLE_COLLISION\020\212\010\022&\n!SIM_NOTIFY_P"
-    "ASSENGER_EMBARK_START\020\213\010\022$\n\037SIM_NOTIFY_P"
-    "ASSENGER_EMBARK_END\020\214\010\022)\n$SIM_NOTIFY_PAS"
-    "SENGER_DISEMBARK_START\020\215\010\022\'\n\"SIM_NOTIFY_"
-    "PASSENGER_DISEMBARK_END\020\216\010\022\024\n\017SIM_NOTIFY"
-    "_TIME\020\217\010\022\035\n\030SIM_EVENT_TRACK_DISABLED\020\232\010\022"
-    "\036\n\031SIM_EVENT_TRACK_REENABLED\020\233\010\022\036\n\031SIM_E"
-    "VENT_SWITCH_DISABLED\020\234\010\022\037\n\032SIM_EVENT_SWI"
-    "TCH_REENABLED\020\235\010\022\037\n\032SIM_EVENT_STATION_DI"
-    "SABLED\020\236\010\022 \n\033SIM_EVENT_STATION_REENABLED"
-    "\020\237\010\022\037\n\032SIM_EVENT_VEHICLE_DISABLED\020\240\010\022 \n\033"
-    "SIM_EVENT_VEHICLE_REENABLED\020\241\010\022 \n\033SIM_EV"
-    "ENT_PASSENGER_CREATED\020\242\010\022#\n\036SIM_EVENT_PA"
-    "SSENGER_CHANGEDEST\020\243\010\022\"\n\035SIM_MSG_HDR_INV"
-    "ALID_SEPARATOR\020\256\010\022\035\n\030SIM_MSG_HDR_INVALID"
-    "_TYPE\020\257\010\022\033\n\026SIM_MSG_HDR_INVALID_ID\020\260\010\022\035\n"
-    "\030SIM_MSG_HDR_INVALID_TIME\020\261\010\022\035\n\030SIM_MSG_"
-    "HDR_INVALID_SIZE\020\262\010\022\031\n\024SIM_MSG_BODY_INVA"
-    "LID\020\263\010\022\036\n\031SIM_MSG_BODY_INVALID_TIME\020\264\010\022\034"
-    "\n\027SIM_MSG_BODY_INVALID_ID\020\265\010", 7348);
+    "\020\207\010\022\034\n\027SIM_NOTIFY_VEHICLE_EXIT\020\210\010\022!\n\034SIM"
+    "_NOTIFY_VEHICLE_COLLISION\020\211\010\022\035\n\030SIM_NOTI"
+    "FY_VEHICLE_CRASH\020\212\010\022&\n!SIM_NOTIFY_PASSEN"
+    "GER_EMBARK_START\020\213\010\022$\n\037SIM_NOTIFY_PASSEN"
+    "GER_EMBARK_END\020\214\010\022)\n$SIM_NOTIFY_PASSENGE"
+    "R_DISEMBARK_START\020\215\010\022\'\n\"SIM_NOTIFY_PASSE"
+    "NGER_DISEMBARK_END\020\216\010\022\024\n\017SIM_NOTIFY_TIME"
+    "\020\217\010\022\035\n\030SIM_EVENT_TRACK_DISABLED\020\232\010\022\036\n\031SI"
+    "M_EVENT_TRACK_REENABLED\020\233\010\022\036\n\031SIM_EVENT_"
+    "SWITCH_DISABLED\020\234\010\022\037\n\032SIM_EVENT_SWITCH_R"
+    "EENABLED\020\235\010\022\037\n\032SIM_EVENT_STATION_DISABLE"
+    "D\020\236\010\022 \n\033SIM_EVENT_STATION_REENABLED\020\237\010\022\037"
+    "\n\032SIM_EVENT_VEHICLE_DISABLED\020\240\010\022 \n\033SIM_E"
+    "VENT_VEHICLE_REENABLED\020\241\010\022 \n\033SIM_EVENT_P"
+    "ASSENGER_CREATED\020\242\010\022#\n\036SIM_EVENT_PASSENG"
+    "ER_CHANGEDEST\020\243\010\022\"\n\035SIM_MSG_HDR_INVALID_"
+    "SEPARATOR\020\256\010\022\035\n\030SIM_MSG_HDR_INVALID_TYPE"
+    "\020\257\010\022\033\n\026SIM_MSG_HDR_INVALID_ID\020\260\010\022\035\n\030SIM_"
+    "MSG_HDR_INVALID_TIME\020\261\010\022\035\n\030SIM_MSG_HDR_I"
+    "NVALID_SIZE\020\262\010\022\031\n\024SIM_MSG_BODY_INVALID\020\263"
+    "\010\022\036\n\031SIM_MSG_BODY_INVALID_TIME\020\264\010\022\034\n\027SIM"
+    "_MSG_BODY_INVALID_ID\020\265\010", 7383);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "api.proto", &protobuf_RegisterTypes);
   PolyCoeffs::default_instance_ = new PolyCoeffs();
@@ -1862,6 +1883,7 @@ void protobuf_AddDesc_api_2eproto() {
   SimNotifyVehicleArrive::default_instance_ = new SimNotifyVehicleArrive();
   SimNotifyVehicleExit::default_instance_ = new SimNotifyVehicleExit();
   SimNotifyVehicleCollision::default_instance_ = new SimNotifyVehicleCollision();
+  SimNotifyVehicleCrash::default_instance_ = new SimNotifyVehicleCrash();
   SimNotifyPassengerEmbarkStart::default_instance_ = new SimNotifyPassengerEmbarkStart();
   SimNotifyPassengerEmbarkEnd::default_instance_ = new SimNotifyPassengerEmbarkEnd();
   SimNotifyPassengerDisembarkStart::default_instance_ = new SimNotifyPassengerDisembarkStart();
@@ -1928,6 +1950,7 @@ void protobuf_AddDesc_api_2eproto() {
   SimNotifyVehicleArrive::default_instance_->InitAsDefaultInstance();
   SimNotifyVehicleExit::default_instance_->InitAsDefaultInstance();
   SimNotifyVehicleCollision::default_instance_->InitAsDefaultInstance();
+  SimNotifyVehicleCrash::default_instance_->InitAsDefaultInstance();
   SimNotifyPassengerEmbarkStart::default_instance_->InitAsDefaultInstance();
   SimNotifyPassengerEmbarkEnd::default_instance_->InitAsDefaultInstance();
   SimNotifyPassengerDisembarkStart::default_instance_->InitAsDefaultInstance();
@@ -10932,6 +10955,7 @@ void SimNotifyTime::Swap(SimNotifyTime* other) {
 // ===================================================================
 
 #ifndef _MSC_VER
+const int SimNotifyVehicleArrive::kTrackIDFieldNumber;
 const int SimNotifyVehicleArrive::kVStatusFieldNumber;
 const int SimNotifyVehicleArrive::kTimeFieldNumber;
 #endif  // !_MSC_VER
@@ -10953,6 +10977,7 @@ SimNotifyVehicleArrive::SimNotifyVehicleArrive(const SimNotifyVehicleArrive& fro
 
 void SimNotifyVehicleArrive::SharedCtor() {
   _cached_size_ = 0;
+  trackid_ = 0;
   v_status_ = NULL;
   time_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -10990,7 +11015,8 @@ SimNotifyVehicleArrive* SimNotifyVehicleArrive::New() const {
 
 void SimNotifyVehicleArrive::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
+    trackid_ = 0;
+    if (_has_bit(1)) {
       if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
     }
     time_ = 0;
@@ -11005,28 +11031,44 @@ bool SimNotifyVehicleArrive::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // required .prt.VehicleStatus v_status = 1;
+      // required int32 trackID = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &trackid_)));
+          _set_bit(0);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_v_status;
+        break;
+      }
+      
+      // required .prt.VehicleStatus v_status = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_v_status:
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
                input, mutable_v_status()));
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(17)) goto parse_time;
+        if (input->ExpectTag(25)) goto parse_time;
         break;
       }
       
-      // required double time = 2;
-      case 2: {
+      // required double time = 3;
+      case 3: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED64) {
          parse_time:
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
                  input, &time_)));
-          _set_bit(1);
+          _set_bit(2);
         } else {
           goto handle_uninterpreted;
         }
@@ -11052,15 +11094,20 @@ bool SimNotifyVehicleArrive::MergePartialFromCodedStream(
 
 void SimNotifyVehicleArrive::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // required .prt.VehicleStatus v_status = 1;
+  // required int32 trackID = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, this->v_status(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->trackid(), output);
   }
   
-  // required double time = 2;
+  // required .prt.VehicleStatus v_status = 2;
   if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormatLite::WriteDouble(2, this->time(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      2, this->v_status(), output);
+  }
+  
+  // required double time = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(3, this->time(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -11071,16 +11118,21 @@ void SimNotifyVehicleArrive::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* SimNotifyVehicleArrive::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required .prt.VehicleStatus v_status = 1;
+  // required int32 trackID = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormatLite::
-      WriteMessageNoVirtualToArray(
-        1, this->v_status(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->trackid(), target);
   }
   
-  // required double time = 2;
+  // required .prt.VehicleStatus v_status = 2;
   if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(2, this->time(), target);
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        2, this->v_status(), target);
+  }
+  
+  // required double time = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(3, this->time(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -11094,14 +11146,21 @@ int SimNotifyVehicleArrive::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required .prt.VehicleStatus v_status = 1;
+    // required int32 trackID = 1;
+    if (has_trackid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->trackid());
+    }
+    
+    // required .prt.VehicleStatus v_status = 2;
     if (has_v_status()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
           this->v_status());
     }
     
-    // required double time = 2;
+    // required double time = 3;
     if (has_time()) {
       total_size += 1 + 8;
     }
@@ -11134,9 +11193,12 @@ void SimNotifyVehicleArrive::MergeFrom(const SimNotifyVehicleArrive& from) {
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
-      mutable_v_status()->::prt::VehicleStatus::MergeFrom(from.v_status());
+      set_trackid(from.trackid());
     }
     if (from._has_bit(1)) {
+      mutable_v_status()->::prt::VehicleStatus::MergeFrom(from.v_status());
+    }
+    if (from._has_bit(2)) {
       set_time(from.time());
     }
   }
@@ -11156,7 +11218,7 @@ void SimNotifyVehicleArrive::CopyFrom(const SimNotifyVehicleArrive& from) {
 }
 
 bool SimNotifyVehicleArrive::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
   
   if (has_v_status()) {
     if (!this->v_status().IsInitialized()) return false;
@@ -11166,6 +11228,7 @@ bool SimNotifyVehicleArrive::IsInitialized() const {
 
 void SimNotifyVehicleArrive::Swap(SimNotifyVehicleArrive* other) {
   if (other != this) {
+    std::swap(trackid_, other->trackid_);
     std::swap(v_status_, other->v_status_);
     std::swap(time_, other->time_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
@@ -11186,6 +11249,7 @@ void SimNotifyVehicleArrive::Swap(SimNotifyVehicleArrive* other) {
 // ===================================================================
 
 #ifndef _MSC_VER
+const int SimNotifyVehicleExit::kTrackIDFieldNumber;
 const int SimNotifyVehicleExit::kVStatusFieldNumber;
 const int SimNotifyVehicleExit::kTimeFieldNumber;
 #endif  // !_MSC_VER
@@ -11207,6 +11271,7 @@ SimNotifyVehicleExit::SimNotifyVehicleExit(const SimNotifyVehicleExit& from)
 
 void SimNotifyVehicleExit::SharedCtor() {
   _cached_size_ = 0;
+  trackid_ = 0;
   v_status_ = NULL;
   time_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -11244,7 +11309,8 @@ SimNotifyVehicleExit* SimNotifyVehicleExit::New() const {
 
 void SimNotifyVehicleExit::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
+    trackid_ = 0;
+    if (_has_bit(1)) {
       if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
     }
     time_ = 0;
@@ -11259,12 +11325,603 @@ bool SimNotifyVehicleExit::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // required .prt.VehicleStatus v_status = 1;
+      // required int32 trackID = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &trackid_)));
+          _set_bit(0);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_v_status;
+        break;
+      }
+      
+      // required .prt.VehicleStatus v_status = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_v_status:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_v_status()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(25)) goto parse_time;
+        break;
+      }
+      
+      // required double time = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED64) {
+         parse_time:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &time_)));
+          _set_bit(2);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void SimNotifyVehicleExit::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 trackID = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->trackid(), output);
+  }
+  
+  // required .prt.VehicleStatus v_status = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      2, this->v_status(), output);
+  }
+  
+  // required double time = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(3, this->time(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* SimNotifyVehicleExit::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 trackID = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->trackid(), target);
+  }
+  
+  // required .prt.VehicleStatus v_status = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        2, this->v_status(), target);
+  }
+  
+  // required double time = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(3, this->time(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int SimNotifyVehicleExit::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 trackID = 1;
+    if (has_trackid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->trackid());
+    }
+    
+    // required .prt.VehicleStatus v_status = 2;
+    if (has_v_status()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->v_status());
+    }
+    
+    // required double time = 3;
+    if (has_time()) {
+      total_size += 1 + 8;
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void SimNotifyVehicleExit::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const SimNotifyVehicleExit* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const SimNotifyVehicleExit*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void SimNotifyVehicleExit::MergeFrom(const SimNotifyVehicleExit& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_trackid(from.trackid());
+    }
+    if (from._has_bit(1)) {
+      mutable_v_status()->::prt::VehicleStatus::MergeFrom(from.v_status());
+    }
+    if (from._has_bit(2)) {
+      set_time(from.time());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void SimNotifyVehicleExit::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void SimNotifyVehicleExit::CopyFrom(const SimNotifyVehicleExit& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SimNotifyVehicleExit::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
+  
+  if (has_v_status()) {
+    if (!this->v_status().IsInitialized()) return false;
+  }
+  return true;
+}
+
+void SimNotifyVehicleExit::Swap(SimNotifyVehicleExit* other) {
+  if (other != this) {
+    std::swap(trackid_, other->trackid_);
+    std::swap(v_status_, other->v_status_);
+    std::swap(time_, other->time_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata SimNotifyVehicleExit::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = SimNotifyVehicleExit_descriptor_;
+  metadata.reflection = SimNotifyVehicleExit_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int SimNotifyVehicleCollision::kV1StatusFieldNumber;
+const int SimNotifyVehicleCollision::kV2StatusFieldNumber;
+const int SimNotifyVehicleCollision::kTimeFieldNumber;
+#endif  // !_MSC_VER
+
+SimNotifyVehicleCollision::SimNotifyVehicleCollision()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void SimNotifyVehicleCollision::InitAsDefaultInstance() {
+  v1_status_ = const_cast< ::prt::VehicleStatus*>(&::prt::VehicleStatus::default_instance());
+  v2_status_ = const_cast< ::prt::VehicleStatus*>(&::prt::VehicleStatus::default_instance());
+}
+
+SimNotifyVehicleCollision::SimNotifyVehicleCollision(const SimNotifyVehicleCollision& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void SimNotifyVehicleCollision::SharedCtor() {
+  _cached_size_ = 0;
+  v1_status_ = NULL;
+  v2_status_ = NULL;
+  time_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+SimNotifyVehicleCollision::~SimNotifyVehicleCollision() {
+  SharedDtor();
+}
+
+void SimNotifyVehicleCollision::SharedDtor() {
+  if (this != default_instance_) {
+    delete v1_status_;
+    delete v2_status_;
+  }
+}
+
+void SimNotifyVehicleCollision::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* SimNotifyVehicleCollision::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return SimNotifyVehicleCollision_descriptor_;
+}
+
+const SimNotifyVehicleCollision& SimNotifyVehicleCollision::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_api_2eproto();  return *default_instance_;
+}
+
+SimNotifyVehicleCollision* SimNotifyVehicleCollision::default_instance_ = NULL;
+
+SimNotifyVehicleCollision* SimNotifyVehicleCollision::New() const {
+  return new SimNotifyVehicleCollision;
+}
+
+void SimNotifyVehicleCollision::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (v1_status_ != NULL) v1_status_->::prt::VehicleStatus::Clear();
+    }
+    if (_has_bit(1)) {
+      if (v2_status_ != NULL) v2_status_->::prt::VehicleStatus::Clear();
+    }
+    time_ = 0;
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool SimNotifyVehicleCollision::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required .prt.VehicleStatus v1_status = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
-               input, mutable_v_status()));
+               input, mutable_v1_status()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_v2_status;
+        break;
+      }
+      
+      // required .prt.VehicleStatus v2_status = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_v2_status:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_v2_status()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(25)) goto parse_time;
+        break;
+      }
+      
+      // required double time = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED64) {
+         parse_time:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &time_)));
+          _set_bit(2);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void SimNotifyVehicleCollision::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required .prt.VehicleStatus v1_status = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      1, this->v1_status(), output);
+  }
+  
+  // required .prt.VehicleStatus v2_status = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      2, this->v2_status(), output);
+  }
+  
+  // required double time = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(3, this->time(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* SimNotifyVehicleCollision::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required .prt.VehicleStatus v1_status = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        1, this->v1_status(), target);
+  }
+  
+  // required .prt.VehicleStatus v2_status = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        2, this->v2_status(), target);
+  }
+  
+  // required double time = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(3, this->time(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int SimNotifyVehicleCollision::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required .prt.VehicleStatus v1_status = 1;
+    if (has_v1_status()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->v1_status());
+    }
+    
+    // required .prt.VehicleStatus v2_status = 2;
+    if (has_v2_status()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->v2_status());
+    }
+    
+    // required double time = 3;
+    if (has_time()) {
+      total_size += 1 + 8;
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void SimNotifyVehicleCollision::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const SimNotifyVehicleCollision* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const SimNotifyVehicleCollision*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void SimNotifyVehicleCollision::MergeFrom(const SimNotifyVehicleCollision& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      mutable_v1_status()->::prt::VehicleStatus::MergeFrom(from.v1_status());
+    }
+    if (from._has_bit(1)) {
+      mutable_v2_status()->::prt::VehicleStatus::MergeFrom(from.v2_status());
+    }
+    if (from._has_bit(2)) {
+      set_time(from.time());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void SimNotifyVehicleCollision::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void SimNotifyVehicleCollision::CopyFrom(const SimNotifyVehicleCollision& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SimNotifyVehicleCollision::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
+  
+  if (has_v1_status()) {
+    if (!this->v1_status().IsInitialized()) return false;
+  }
+  if (has_v2_status()) {
+    if (!this->v2_status().IsInitialized()) return false;
+  }
+  return true;
+}
+
+void SimNotifyVehicleCollision::Swap(SimNotifyVehicleCollision* other) {
+  if (other != this) {
+    std::swap(v1_status_, other->v1_status_);
+    std::swap(v2_status_, other->v2_status_);
+    std::swap(time_, other->time_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata SimNotifyVehicleCollision::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = SimNotifyVehicleCollision_descriptor_;
+  metadata.reflection = SimNotifyVehicleCollision_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int SimNotifyVehicleCrash::kVStatusFieldNumber;
+const int SimNotifyVehicleCrash::kTimeFieldNumber;
+#endif  // !_MSC_VER
+
+SimNotifyVehicleCrash::SimNotifyVehicleCrash()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void SimNotifyVehicleCrash::InitAsDefaultInstance() {
+}
+
+SimNotifyVehicleCrash::SimNotifyVehicleCrash(const SimNotifyVehicleCrash& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void SimNotifyVehicleCrash::SharedCtor() {
+  _cached_size_ = 0;
+  v_status_ = 0;
+  time_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+SimNotifyVehicleCrash::~SimNotifyVehicleCrash() {
+  SharedDtor();
+}
+
+void SimNotifyVehicleCrash::SharedDtor() {
+  if (this != default_instance_) {
+  }
+}
+
+void SimNotifyVehicleCrash::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* SimNotifyVehicleCrash::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return SimNotifyVehicleCrash_descriptor_;
+}
+
+const SimNotifyVehicleCrash& SimNotifyVehicleCrash::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_api_2eproto();  return *default_instance_;
+}
+
+SimNotifyVehicleCrash* SimNotifyVehicleCrash::default_instance_ = NULL;
+
+SimNotifyVehicleCrash* SimNotifyVehicleCrash::New() const {
+  return new SimNotifyVehicleCrash;
+}
+
+void SimNotifyVehicleCrash::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    v_status_ = 0;
+    time_ = 0;
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool SimNotifyVehicleCrash::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 v_status = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &v_status_)));
+          _set_bit(0);
         } else {
           goto handle_uninterpreted;
         }
@@ -11304,12 +11961,11 @@ bool SimNotifyVehicleExit::MergePartialFromCodedStream(
 #undef DO_
 }
 
-void SimNotifyVehicleExit::SerializeWithCachedSizes(
+void SimNotifyVehicleCrash::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // required .prt.VehicleStatus v_status = 1;
+  // required int32 v_status = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, this->v_status(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->v_status(), output);
   }
   
   // required double time = 2;
@@ -11323,13 +11979,11 @@ void SimNotifyVehicleExit::SerializeWithCachedSizes(
   }
 }
 
-::google::protobuf::uint8* SimNotifyVehicleExit::SerializeWithCachedSizesToArray(
+::google::protobuf::uint8* SimNotifyVehicleCrash::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required .prt.VehicleStatus v_status = 1;
+  // required int32 v_status = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormatLite::
-      WriteMessageNoVirtualToArray(
-        1, this->v_status(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->v_status(), target);
   }
   
   // required double time = 2;
@@ -11344,14 +11998,14 @@ void SimNotifyVehicleExit::SerializeWithCachedSizes(
   return target;
 }
 
-int SimNotifyVehicleExit::ByteSize() const {
+int SimNotifyVehicleCrash::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required .prt.VehicleStatus v_status = 1;
+    // required int32 v_status = 1;
     if (has_v_status()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
           this->v_status());
     }
     
@@ -11372,10 +12026,10 @@ int SimNotifyVehicleExit::ByteSize() const {
   return total_size;
 }
 
-void SimNotifyVehicleExit::MergeFrom(const ::google::protobuf::Message& from) {
+void SimNotifyVehicleCrash::MergeFrom(const ::google::protobuf::Message& from) {
   GOOGLE_CHECK_NE(&from, this);
-  const SimNotifyVehicleExit* source =
-    ::google::protobuf::internal::dynamic_cast_if_available<const SimNotifyVehicleExit*>(
+  const SimNotifyVehicleCrash* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const SimNotifyVehicleCrash*>(
       &from);
   if (source == NULL) {
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
@@ -11384,11 +12038,11 @@ void SimNotifyVehicleExit::MergeFrom(const ::google::protobuf::Message& from) {
   }
 }
 
-void SimNotifyVehicleExit::MergeFrom(const SimNotifyVehicleExit& from) {
+void SimNotifyVehicleCrash::MergeFrom(const SimNotifyVehicleCrash& from) {
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
-      mutable_v_status()->::prt::VehicleStatus::MergeFrom(from.v_status());
+      set_v_status(from.v_status());
     }
     if (from._has_bit(1)) {
       set_time(from.time());
@@ -11397,28 +12051,25 @@ void SimNotifyVehicleExit::MergeFrom(const SimNotifyVehicleExit& from) {
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
-void SimNotifyVehicleExit::CopyFrom(const ::google::protobuf::Message& from) {
+void SimNotifyVehicleCrash::CopyFrom(const ::google::protobuf::Message& from) {
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void SimNotifyVehicleExit::CopyFrom(const SimNotifyVehicleExit& from) {
+void SimNotifyVehicleCrash::CopyFrom(const SimNotifyVehicleCrash& from) {
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool SimNotifyVehicleExit::IsInitialized() const {
+bool SimNotifyVehicleCrash::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
   
-  if (has_v_status()) {
-    if (!this->v_status().IsInitialized()) return false;
-  }
   return true;
 }
 
-void SimNotifyVehicleExit::Swap(SimNotifyVehicleExit* other) {
+void SimNotifyVehicleCrash::Swap(SimNotifyVehicleCrash* other) {
   if (other != this) {
     std::swap(v_status_, other->v_status_);
     std::swap(time_, other->time_);
@@ -11428,545 +12079,11 @@ void SimNotifyVehicleExit::Swap(SimNotifyVehicleExit* other) {
   }
 }
 
-::google::protobuf::Metadata SimNotifyVehicleExit::GetMetadata() const {
+::google::protobuf::Metadata SimNotifyVehicleCrash::GetMetadata() const {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::Metadata metadata;
-  metadata.descriptor = SimNotifyVehicleExit_descriptor_;
-  metadata.reflection = SimNotifyVehicleExit_reflection_;
-  return metadata;
-}
-
-
-// ===================================================================
-
-#ifndef _MSC_VER
-const int SimNotifyVehicleCollision::kV1IDFieldNumber;
-const int SimNotifyVehicleCollision::kV2IDFieldNumber;
-const int SimNotifyVehicleCollision::kLocTypeFieldNumber;
-const int SimNotifyVehicleCollision::kLocIDFieldNumber;
-const int SimNotifyVehicleCollision::kPosFieldNumber;
-const int SimNotifyVehicleCollision::kDeltaVFieldNumber;
-const int SimNotifyVehicleCollision::kRearendFieldNumber;
-const int SimNotifyVehicleCollision::kSideswipeFieldNumber;
-const int SimNotifyVehicleCollision::kTimeFieldNumber;
-#endif  // !_MSC_VER
-
-SimNotifyVehicleCollision::SimNotifyVehicleCollision()
-  : ::google::protobuf::Message() {
-  SharedCtor();
-}
-
-void SimNotifyVehicleCollision::InitAsDefaultInstance() {
-}
-
-SimNotifyVehicleCollision::SimNotifyVehicleCollision(const SimNotifyVehicleCollision& from)
-  : ::google::protobuf::Message() {
-  SharedCtor();
-  MergeFrom(from);
-}
-
-void SimNotifyVehicleCollision::SharedCtor() {
-  _cached_size_ = 0;
-  v1id_ = 0;
-  v2id_ = 0;
-  loc_type_ = 0;
-  locid_ = 0;
-  pos_ = 0;
-  delta_v_ = 0;
-  rearend_ = false;
-  sideswipe_ = false;
-  time_ = 0;
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-}
-
-SimNotifyVehicleCollision::~SimNotifyVehicleCollision() {
-  SharedDtor();
-}
-
-void SimNotifyVehicleCollision::SharedDtor() {
-  if (this != default_instance_) {
-  }
-}
-
-void SimNotifyVehicleCollision::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
-}
-const ::google::protobuf::Descriptor* SimNotifyVehicleCollision::descriptor() {
-  protobuf_AssignDescriptorsOnce();
-  return SimNotifyVehicleCollision_descriptor_;
-}
-
-const SimNotifyVehicleCollision& SimNotifyVehicleCollision::default_instance() {
-  if (default_instance_ == NULL) protobuf_AddDesc_api_2eproto();  return *default_instance_;
-}
-
-SimNotifyVehicleCollision* SimNotifyVehicleCollision::default_instance_ = NULL;
-
-SimNotifyVehicleCollision* SimNotifyVehicleCollision::New() const {
-  return new SimNotifyVehicleCollision;
-}
-
-void SimNotifyVehicleCollision::Clear() {
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    v1id_ = 0;
-    v2id_ = 0;
-    loc_type_ = 0;
-    locid_ = 0;
-    pos_ = 0;
-    delta_v_ = 0;
-    rearend_ = false;
-    sideswipe_ = false;
-  }
-  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    time_ = 0;
-  }
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->Clear();
-}
-
-bool SimNotifyVehicleCollision::MergePartialFromCodedStream(
-    ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
-  ::google::protobuf::uint32 tag;
-  while ((tag = input->ReadTag()) != 0) {
-    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // required int32 v1ID = 1;
-      case 1: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &v1id_)));
-          _set_bit(0);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(16)) goto parse_v2ID;
-        break;
-      }
-      
-      // required int32 v2ID = 2;
-      case 2: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_v2ID:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &v2id_)));
-          _set_bit(1);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(24)) goto parse_loc_type;
-        break;
-      }
-      
-      // required .prt.LocationType loc_type = 3;
-      case 3: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_loc_type:
-          int value;
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   int, ::google::protobuf::internal::WireFormatLite::TYPE_ENUM>(
-                 input, &value)));
-          if (prt::LocationType_IsValid(value)) {
-            set_loc_type(static_cast< prt::LocationType >(value));
-          } else {
-            mutable_unknown_fields()->AddVarint(3, value);
-          }
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(32)) goto parse_locID;
-        break;
-      }
-      
-      // required int32 locID = 4;
-      case 4: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_locID:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &locid_)));
-          _set_bit(3);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(40)) goto parse_pos;
-        break;
-      }
-      
-      // required int32 pos = 5;
-      case 5: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_pos:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &pos_)));
-          _set_bit(4);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(48)) goto parse_delta_v;
-        break;
-      }
-      
-      // required int32 delta_v = 6;
-      case 6: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_delta_v:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &delta_v_)));
-          _set_bit(5);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(56)) goto parse_rearend;
-        break;
-      }
-      
-      // required bool rearend = 7;
-      case 7: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_rearend:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
-                 input, &rearend_)));
-          _set_bit(6);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(64)) goto parse_sideswipe;
-        break;
-      }
-      
-      // required bool sideswipe = 8;
-      case 8: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_sideswipe:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
-                 input, &sideswipe_)));
-          _set_bit(7);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectTag(73)) goto parse_time;
-        break;
-      }
-      
-      // required double time = 9;
-      case 9: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED64) {
-         parse_time:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
-                 input, &time_)));
-          _set_bit(8);
-        } else {
-          goto handle_uninterpreted;
-        }
-        if (input->ExpectAtEnd()) return true;
-        break;
-      }
-      
-      default: {
-      handle_uninterpreted:
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
-          return true;
-        }
-        DO_(::google::protobuf::internal::WireFormat::SkipField(
-              input, tag, mutable_unknown_fields()));
-        break;
-      }
-    }
-  }
-  return true;
-#undef DO_
-}
-
-void SimNotifyVehicleCollision::SerializeWithCachedSizes(
-    ::google::protobuf::io::CodedOutputStream* output) const {
-  // required int32 v1ID = 1;
-  if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->v1id(), output);
-  }
-  
-  // required int32 v2ID = 2;
-  if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->v2id(), output);
-  }
-  
-  // required .prt.LocationType loc_type = 3;
-  if (_has_bit(2)) {
-    ::google::protobuf::internal::WireFormatLite::WriteEnum(
-      3, this->loc_type(), output);
-  }
-  
-  // required int32 locID = 4;
-  if (_has_bit(3)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->locid(), output);
-  }
-  
-  // required int32 pos = 5;
-  if (_has_bit(4)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(5, this->pos(), output);
-  }
-  
-  // required int32 delta_v = 6;
-  if (_has_bit(5)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(6, this->delta_v(), output);
-  }
-  
-  // required bool rearend = 7;
-  if (_has_bit(6)) {
-    ::google::protobuf::internal::WireFormatLite::WriteBool(7, this->rearend(), output);
-  }
-  
-  // required bool sideswipe = 8;
-  if (_has_bit(7)) {
-    ::google::protobuf::internal::WireFormatLite::WriteBool(8, this->sideswipe(), output);
-  }
-  
-  // required double time = 9;
-  if (_has_bit(8)) {
-    ::google::protobuf::internal::WireFormatLite::WriteDouble(9, this->time(), output);
-  }
-  
-  if (!unknown_fields().empty()) {
-    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
-        unknown_fields(), output);
-  }
-}
-
-::google::protobuf::uint8* SimNotifyVehicleCollision::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
-  // required int32 v1ID = 1;
-  if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->v1id(), target);
-  }
-  
-  // required int32 v2ID = 2;
-  if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->v2id(), target);
-  }
-  
-  // required .prt.LocationType loc_type = 3;
-  if (_has_bit(2)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteEnumToArray(
-      3, this->loc_type(), target);
-  }
-  
-  // required int32 locID = 4;
-  if (_has_bit(3)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->locid(), target);
-  }
-  
-  // required int32 pos = 5;
-  if (_has_bit(4)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(5, this->pos(), target);
-  }
-  
-  // required int32 delta_v = 6;
-  if (_has_bit(5)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(6, this->delta_v(), target);
-  }
-  
-  // required bool rearend = 7;
-  if (_has_bit(6)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(7, this->rearend(), target);
-  }
-  
-  // required bool sideswipe = 8;
-  if (_has_bit(7)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(8, this->sideswipe(), target);
-  }
-  
-  // required double time = 9;
-  if (_has_bit(8)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(9, this->time(), target);
-  }
-  
-  if (!unknown_fields().empty()) {
-    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
-        unknown_fields(), target);
-  }
-  return target;
-}
-
-int SimNotifyVehicleCollision::ByteSize() const {
-  int total_size = 0;
-  
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required int32 v1ID = 1;
-    if (has_v1id()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->v1id());
-    }
-    
-    // required int32 v2ID = 2;
-    if (has_v2id()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->v2id());
-    }
-    
-    // required .prt.LocationType loc_type = 3;
-    if (has_loc_type()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::EnumSize(this->loc_type());
-    }
-    
-    // required int32 locID = 4;
-    if (has_locid()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->locid());
-    }
-    
-    // required int32 pos = 5;
-    if (has_pos()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->pos());
-    }
-    
-    // required int32 delta_v = 6;
-    if (has_delta_v()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->delta_v());
-    }
-    
-    // required bool rearend = 7;
-    if (has_rearend()) {
-      total_size += 1 + 1;
-    }
-    
-    // required bool sideswipe = 8;
-    if (has_sideswipe()) {
-      total_size += 1 + 1;
-    }
-    
-  }
-  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    // required double time = 9;
-    if (has_time()) {
-      total_size += 1 + 8;
-    }
-    
-  }
-  if (!unknown_fields().empty()) {
-    total_size +=
-      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
-        unknown_fields());
-  }
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = total_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
-  return total_size;
-}
-
-void SimNotifyVehicleCollision::MergeFrom(const ::google::protobuf::Message& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  const SimNotifyVehicleCollision* source =
-    ::google::protobuf::internal::dynamic_cast_if_available<const SimNotifyVehicleCollision*>(
-      &from);
-  if (source == NULL) {
-    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
-  } else {
-    MergeFrom(*source);
-  }
-}
-
-void SimNotifyVehicleCollision::MergeFrom(const SimNotifyVehicleCollision& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (from._has_bit(0)) {
-      set_v1id(from.v1id());
-    }
-    if (from._has_bit(1)) {
-      set_v2id(from.v2id());
-    }
-    if (from._has_bit(2)) {
-      set_loc_type(from.loc_type());
-    }
-    if (from._has_bit(3)) {
-      set_locid(from.locid());
-    }
-    if (from._has_bit(4)) {
-      set_pos(from.pos());
-    }
-    if (from._has_bit(5)) {
-      set_delta_v(from.delta_v());
-    }
-    if (from._has_bit(6)) {
-      set_rearend(from.rearend());
-    }
-    if (from._has_bit(7)) {
-      set_sideswipe(from.sideswipe());
-    }
-  }
-  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    if (from._has_bit(8)) {
-      set_time(from.time());
-    }
-  }
-  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
-}
-
-void SimNotifyVehicleCollision::CopyFrom(const ::google::protobuf::Message& from) {
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void SimNotifyVehicleCollision::CopyFrom(const SimNotifyVehicleCollision& from) {
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool SimNotifyVehicleCollision::IsInitialized() const {
-  if ((_has_bits_[0] & 0x000001ff) != 0x000001ff) return false;
-  
-  return true;
-}
-
-void SimNotifyVehicleCollision::Swap(SimNotifyVehicleCollision* other) {
-  if (other != this) {
-    std::swap(v1id_, other->v1id_);
-    std::swap(v2id_, other->v2id_);
-    std::swap(loc_type_, other->loc_type_);
-    std::swap(locid_, other->locid_);
-    std::swap(pos_, other->pos_);
-    std::swap(delta_v_, other->delta_v_);
-    std::swap(rearend_, other->rearend_);
-    std::swap(sideswipe_, other->sideswipe_);
-    std::swap(time_, other->time_);
-    std::swap(_has_bits_[0], other->_has_bits_[0]);
-    _unknown_fields_.Swap(&other->_unknown_fields_);
-    std::swap(_cached_size_, other->_cached_size_);
-  }
-}
-
-::google::protobuf::Metadata SimNotifyVehicleCollision::GetMetadata() const {
-  protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::Metadata metadata;
-  metadata.descriptor = SimNotifyVehicleCollision_descriptor_;
-  metadata.reflection = SimNotifyVehicleCollision_reflection_;
+  metadata.descriptor = SimNotifyVehicleCrash_descriptor_;
+  metadata.reflection = SimNotifyVehicleCrash_reflection_;
   return metadata;
 }
 
@@ -18022,7 +18139,8 @@ const int VehicleStatus::kTailPosFieldNumber;
 const int VehicleStatus::kVelFieldNumber;
 const int VehicleStatus::kAccelFieldNumber;
 const int VehicleStatus::kPassengerIDsFieldNumber;
-const int VehicleStatus::kHeadwayFieldNumber;
+const int VehicleStatus::kLvIDFieldNumber;
+const int VehicleStatus::kLvDistanceFieldNumber;
 #endif  // !_MSC_VER
 
 VehicleStatus::VehicleStatus()
@@ -18048,7 +18166,8 @@ void VehicleStatus::SharedCtor() {
   tail_pos_ = 0;
   vel_ = 0;
   accel_ = 0;
-  headway_ = 0;
+  lvid_ = 0;
+  lv_distance_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -18092,7 +18211,8 @@ void VehicleStatus::Clear() {
     accel_ = 0;
   }
   if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    headway_ = 0;
+    lvid_ = 0;
+    lv_distance_ = 0;
   }
   passengerids_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -18233,19 +18353,35 @@ bool VehicleStatus::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(96)) goto parse_headway;
+        if (input->ExpectTag(88)) goto parse_lvID;
         break;
       }
       
-      // optional int32 headway = 12;
-      case 12: {
+      // optional int32 lvID = 11;
+      case 11: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_headway:
+         parse_lvID:
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &headway_)));
+                 input, &lvid_)));
           _set_bit(8);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(101)) goto parse_lv_distance;
+        break;
+      }
+      
+      // optional float lv_distance = 12;
+      case 12: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED32) {
+         parse_lv_distance:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &lv_distance_)));
+          _set_bit(9);
         } else {
           goto handle_uninterpreted;
         }
@@ -18316,9 +18452,14 @@ void VehicleStatus::SerializeWithCachedSizes(
       this->passengerids(i), output);
   }
   
-  // optional int32 headway = 12;
+  // optional int32 lvID = 11;
   if (_has_bit(8)) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(12, this->headway(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(11, this->lvid(), output);
+  }
+  
+  // optional float lv_distance = 12;
+  if (_has_bit(9)) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(12, this->lv_distance(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -18378,9 +18519,14 @@ void VehicleStatus::SerializeWithCachedSizes(
       WriteInt32NoTagToArray(this->passengerids(i), target);
   }
   
-  // optional int32 headway = 12;
+  // optional int32 lvID = 11;
   if (_has_bit(8)) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(12, this->headway(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(11, this->lvid(), target);
+  }
+  
+  // optional float lv_distance = 12;
+  if (_has_bit(9)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(12, this->lv_distance(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -18437,11 +18583,16 @@ int VehicleStatus::ByteSize() const {
     
   }
   if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    // optional int32 headway = 12;
-    if (has_headway()) {
+    // optional int32 lvID = 11;
+    if (has_lvid()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->headway());
+          this->lvid());
+    }
+    
+    // optional float lv_distance = 12;
+    if (has_lv_distance()) {
+      total_size += 1 + 4;
     }
     
   }
@@ -18511,7 +18662,10 @@ void VehicleStatus::MergeFrom(const VehicleStatus& from) {
   }
   if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
     if (from._has_bit(8)) {
-      set_headway(from.headway());
+      set_lvid(from.lvid());
+    }
+    if (from._has_bit(9)) {
+      set_lv_distance(from.lv_distance());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -18545,7 +18699,8 @@ void VehicleStatus::Swap(VehicleStatus* other) {
     std::swap(vel_, other->vel_);
     std::swap(accel_, other->accel_);
     passengerids_.Swap(&other->passengerids_);
-    std::swap(headway_, other->headway_);
+    std::swap(lvid_, other->lvid_);
+    std::swap(lv_distance_, other->lv_distance_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

@@ -7,6 +7,7 @@ import common
 import layout
 import station
 import events
+import vehicle
 
 class ScenarioManager(object):
     def __init__(self):
@@ -33,8 +34,8 @@ class ScenarioManager(object):
         for n in graph.nodes_iter():
             neighbors = graph.neighbors(n)
             if neighbors:
-                n.next = neighbors[0]
-            # else n.next is left as None
+                n.next_loc = neighbors[0]
+            # else n.next_loc is left as None
 
         # Vehicles
         common.vehicle_models = self.make_vehicle_classes(doc.getElementsByTagName('VehicleModels')[0])
@@ -191,7 +192,7 @@ class ScenarioManager(object):
     #                                 emerg_max_jerk=emerg_max_jerk,
     #                                 v_mass=v_mass,
                                      position=position,
-                                     speed=float(vehicle_xml.getAttribute('velocity'))
+                                     vel=float(vehicle_xml.getAttribute('velocity'))
                                      )
             all_vehicles[vehicle.ID] = vehicle
         return all_vehicles
@@ -365,7 +366,7 @@ class ScenarioManager(object):
                          'vel_min_emerg':traits.Float(float(vel_xml.getAttribute('emergency_min')))
             }
 
-            all_models[model_name] = type(str(model_name), (layout.BaseVehicle,), type_dict)
+            all_models[model_name] = type(str(model_name), (vehicle.BaseVehicle,), type_dict)
             max_pax = max(max_pax, max_pax_capacity)
 
         common.max_vehicle_pax_capacity = max_pax

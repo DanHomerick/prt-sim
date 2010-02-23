@@ -8,9 +8,9 @@ from __future__ import division
 import optparse
 from collections import defaultdict
 from operator import attrgetter
+import warnings
 
 import networkx
-from scipy import inf # for python 2.5 and below
 
 import pyprt.shared.api_pb2 as api
 from base_controller import BaseController
@@ -42,6 +42,18 @@ def to_seconds(time_str):
     return sec + minute*60 + hour*3600
 
 class GtfController(BaseController):
+
+    # States (for state-machine)
+    RUNNING_LEG = "RUNNING_LEG"             # Travelling from one station to the next.
+    PARKING = "PARKING"                     # Station berth is reserved. Moving to the berth. Not necessarily on station tracksegment.
+    ARRIVED = "ARRIVED"                     # Parked in berth. May have passengers to unload.
+    DISEMBARKING = "DISEMBARKING"           # Parked in berth, unloading passengers
+    WAITING = "WAITING"                     # Parked in berth. No passengers, no current activity.
+    FIRST_CALL = "FIRST_CALL"               # Parked in berth, loading first round of passengers.
+    WAITING_WITH_PAX = "WAITING_WITH_PAX"   # Parked in berth, waiting for departure time, may have passengers, need to make a last call before departing.
+    LAST_CALL = "LAST_CALL"                 # Parked in berth, loading last round of passengers.
+    READY_TO_DEPART = "READY_TO_DEPART"     # Parked in berth, waiting for departure time, ready to go immediately
+
     def __init__(self, log_path, commlog_path, scenario_path):
         super(GtfController, self).__init__(log_path, commlog_path)
         self.scenario_path = scenario_path
@@ -52,157 +64,68 @@ class GtfController(BaseController):
         self.v_manager = None   # VehicleManager
         self.p_manager = None   # PassengerManager
 
-    def run_leg(self, leg):
-        """Plans an itinerary and trajectory for the vehicle to do the next leg
-        of its schedule, then sends the appropriate commands to the simulator.
-        The trajectory does not take the vehicle all the way to the berth,
-        instead it stops at the beginning of the station's platform TrackSegment.
-        'current_time' is in seconds
-        See also: on_SIM_NOTIFY_VEHICLE_ARRIVE
-        """
-        assert isinstance(leg, Leg)
-        vehicle = self.v_manager.vehicles[leg.vehicle]
-        assert isinstance(vehicle, Vehicle)
-
-        # Note that path_length does not take into account the vehicle's position along the path.
-        path_length, path = self.v_manager.get_path(vehicle.ts_id, leg.dest_ts)
-        vehicle.path = path
-
-        itinerary_msg = api.CtrlCmdVehicleItinerary()
-        itinerary_msg.vID = vehicle.id
-        itinerary_msg.trackIDs.extend(path[1:]) # don't include the segment vehicle is currently on
-        itinerary_msg.clear = False
-        self.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
-
-        departure_time = max(leg.depart, self.current_time) # in seconds
-        assert path_length - vehicle.pos >= 0
-        spline = vehicle.make_trajectory(path_length-vehicle.pos, departure_time, leg.arrive)
-
-        traj_msg = api.CtrlCmdVehicleTrajectory()
-        traj_msg.vID = vehicle.id
-        spline.fill_spline_msg(traj_msg.spline)
-        self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
-
-    def park_vehicle(self, vehicle):
-        """Reserves a berth for the vehicle, and brings the vehicle into it.
-        Assumes that the vehicle's state information is up to date."""
-        assert isinstance(vehicle, Vehicle)
-        leg = self.v_manager.get_next_leg(vehicle.id)
-        station = self.v_manager.stations[leg.dest_station]
-        berth_pos, berth_id = station.reserve_berth(vehicle.id)
-        vehicle.berth_id = berth_id
-
-        # calculate how far the vehicle needs to travel to end in the berth
-        dist = berth_pos - vehicle.pos
-        for b, a in pairwise(reversed(vehicle.path)): # b is closer to the end of the path
-            if vehicle.ts_id == b:
-                break
-            dist += self.v_manager.graph[a][b]['weight']
-        assert dist >= 0
-
-        # make the trajectory
-        spline = vehicle.make_trajectory(dist, self.current_time, leg.arrive)
-        spline.append(Knot(spline.q[-1], 0, 0, inf)) # stay stopped here
-
-        # send the trajectory
-        traj_msg = api.CtrlCmdVehicleTrajectory()
-        traj_msg.vID = vehicle.id
-        spline.fill_spline_msg(traj_msg.spline)
-        self.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
-
-        # use time-based notification of vehicle stopping in berth
-        # TODO: Add a SIM_NOTIFY_VEHICLE_STOPPED event message.
-        self.set_notification(vehicle.id, spline.t[-2]+1) # 1 second after arrival
-
-
-    def disembark_passengers(self, leg):
-        """leg is a the Leg instance that ends at the station where the passengers
-        are to be disembarked."""
-        assert isinstance(leg, Leg)
-        disembarking = self.p_manager.get_disembarking_pax(leg.vehicle, leg.dest_station, leg.arrive)
-        vehicle = self.v_manager.vehicles[leg.vehicle]
-        station = self.v_manager.stations[leg.dest_station]
-        assert isinstance(station, Station)
-
-        disembark_msg = api.CtrlCmdPassengersDisembark()
-        disembark_msg.vID = leg.vehicle
-        disembark_msg.sID = leg.dest_station
-        disembark_msg.platformID = 0 # assumed that there is only one platform
-        disembark_msg.berthID = vehicle.berth_id
-        disembark_msg.passengerIDs.extend(disembarking)
-        self.send(api.CTRL_CMD_PASSENGERS_DISEMBARK, disembark_msg)
-
-    def embark_passengers(self, leg):
-        """leg is a the Leg instance that begins at the station where the passengers
-        are to be embarked."""
-        assert isinstance(leg, Leg)
-        embarking = self.p_manager.get_embarking_pax(leg.vehicle, leg.origin_station, leg.depart)
-        station = self.v_manager.stations[leg.dest_station]
-        vehicle = self.v_manager.vehicles[leg.vehicle]
-        assert isinstance(station, Station)
-        assert isinstance(vehicle, Vehicle)
-
-        fill_line = vehicle.capacity - len(vehicle.pax)
-
-        embark_msg = api.CtrlCmdPassengersEmbark()
-        embark_msg.vID = leg.vehicle
-        embark_msg.sID = leg.origin_station
-        embark_msg.platformID = 0  # assumed that there is only one platform
-        embark_msg.berthID = vehicle.berth_id
-        embark_msg.passengerIDs.extend(embarking[:fill_line])
-        self.send(api.CTRL_CMD_PASSENGERS_EMBARK, embark_msg)
-
-        # Reschedule those passengers which didn't fit.
-        for pax_id in embarking[fill_line:]:
-            # Reschedule as though the passenger was just created. Or was created
-            # just after the vehicle is scheduled to leave for the case where
-            # the vehicle is full before it's due to leave.
-            origin_time = max(self.current_time, leg.depart+1)
-            self.p_manager.reschedule_pax(pax_id, leg.origin_station, origin_time)
-
-        # Subsequent calls to this function should not re-embark passengers.
-        self.p_manager.clear_embarking_pax(leg.vehicle, leg.origin_station, leg.depart)
-
-        if self.current_time >= leg.depart:
-            leg.last_call = True
-
     def set_notification(self, vehicle_id, time):
         notify = api.CtrlSetnotifyTime()
         notify.time = time
         self.send(api.CTRL_SETNOTIFY_TIME, notify)
         self.t_reminders[int(notify.time*1000)].append(vehicle_id)
 
+    def do_embark(self, vehicle):
+        """Loads passengers in vehicle, handles overflow passengers. 'vehicle'
+        is a Vehicle instance, not an id."""
+        leg = vehicle.leg
+        passengers = self.p_manager.fetch_embarking_pax(vehicle.id, leg.origin_station, leg.depart)
+        overflow_passengers = vehicle.embark(passengers)
+
+        for pax in overflow_passengers:
+            origin_time = max(self.current_time, leg.depart+1)
+            self.p_manager.reschedule_pax(pax, leg.origin_station, origin_time)
+
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
-        self.log.info("Sim Greeting message received.")
+        self.sim_end_time = msg.sim_end_time
+        self.log.info("Sim Greeting message received. Sim end at: %f" % msg.sim_end_time)
 
         self.v_manager = VehicleManager(self.scenario_path, msg.sim_end_time)
+        Vehicle.manager = self.v_manager
+        Vehicle.controller = self
+
         self.p_manager = PassengerManager(self.scenario_path, msg.sim_end_time)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         self.log.info("Sim Start message received.")
 
         for vehicle in self.v_manager.vehicles.values():
-            leg = self.v_manager.get_next_leg(vehicle.id)
+            leg = self.v_manager.pop_leg(vehicle.id)
+            vehicle.leg = leg
+            assert isinstance(leg, Leg)
+
             if leg is None:
+                vehicle.state = self.WAITING
                 continue # vehicle never does nothin'
 
             # parked at station. Either departing immediately, or later.
             elif leg.depart >= 0.0:
-                self.embark_passengers(leg) # If departing later, will do a 'last call' before leaving
+                vehicle.state = self.FIRST_CALL
+                self.do_embark(vehicle)
 
             # nearly at dest station, past the point where we normally reserve a berth and park
             elif leg.depart < 0 and \
                  (vehicle.ts_id == leg.dest_ts or vehicle.ts_id in self.v_manager.graph.predecessors(leg.dest_ts)):
-                self.park_vehicle(vehicle)
+                vehicle.state = self.PARKING
+                t_arrival = vehicle.park()
+
+                # use time-based notification of vehicle stopping in berth
+                # TODO: Add a SIM_NOTIFY_VEHICLE_STOPPED event message.
+                self.set_notification(vehicle.id, t_arrival+1)
 
             # not at dest station or it's offramp
             elif leg.depart < 0:
-                self.run_leg(leg)
+                vehicle.state = self.RUNNING_LEG
+                vehicle.run_leg()
 
             else:
                 raise Exception("Unexpected case.")
-
 
     def on_SIM_EVENT_PASSENGER_CREATED(self, msg, msgID, msg_time):
         p_status = msg.p_status
@@ -215,50 +138,85 @@ class GtfController(BaseController):
         v_ids = self.t_reminders[ms_msg_time]
 
         for v_id in v_ids:
-            req_v_status = api.CtrlRequestVehicleStatus()
-            req_v_status.vID = v_id
-            self.send(api.CTRL_REQUEST_VEHICLE_STATUS, req_v_status)
+            vehicle = self.v_manager.vehicles[v_id]
+            if vehicle.state is self.PARKING:
+                # vehicle should be done parking. Get a status update to make sure.
+                req_v_status = api.CtrlRequestVehicleStatus()
+                req_v_status.vID = v_id
+                self.send(api.CTRL_REQUEST_VEHICLE_STATUS, req_v_status)
+
+            elif vehicle.state is self.WAITING_WITH_PAX:
+                # Do last call
+                vehicle.state = self.LAST_CALL
+                self.do_embark(vehicle)
+
+            else:
+                raise Exception("Huh? What was this reminder for again? Current State: %s" % vehicle.state)
 
     def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):
         vehicle = self.v_manager.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status)
-        leg = self.v_manager.get_next_leg(vehicle.id)
 
-        # Just arrived at destination station.
-        if leg.dest_ts == vehicle.ts_id:
-            self.disembark_passengers(leg)
-        # Vehicle starting it's trip, after the simulation has started
-        elif leg.origin_ts == vehicle.ts_id:
-            self.embark_passengers(leg)
-        # Error
+        if vehicle.state is self.PARKING:
+            # TODO: Move to on_NOTIFY_VEHICLE_STOPPED when message is implemented
+            if abs(vehicle.vel) < 0.001 and vehicle.leg.dest_ts == vehicle.ts_id:
+                vehicle.state = self.DISEMBARKING
+                pax = self.p_manager.fetch_disembarking_pax(vehicle.id,
+                                                          vehicle.leg.dest_station,
+                                                          vehicle.leg.arrive)
+                vehicle.disembark(pax)
+            else:
+                raise Exception("TODO: Parking trajectory was incorrect, and vehicle did not come to a full stop. vID: %d, vel: %f" % (vehicle.id, vehicle.vel))
         else:
-            raise Exception("Bad mojo")
+            warnings.warn("Received vehicle status. Not sure why... vID: %d, v.state: %s" % (vehicle.id, vehicle.state))
 
     def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg, msgID, msg_time):
-        # Discard the previous leg
-        self.v_manager.pop_leg(msg.cmd.vID)
+        vehicle = self.v_manager.vehicles[msg.cmd.vID]
+        assert isinstance(vehicle, Vehicle)
+        assert vehicle.state is self.DISEMBARKING
+        vehicle.state = self.WAITING
 
-        leg = self.v_manager.get_next_leg(msg.cmd.vID)
+        # Disembarking completes the old leg. Get a new leg.
+        leg = self.v_manager.pop_leg(msg.cmd.vID)
+        vehicle.leg = leg
+
         if leg:
-            # Start loading the vehicle, even before the departure time.
-            self.embark_passengers(leg)
+            if self.current_time < leg.depart:
+                vehicle.state = self.FIRST_CALL
+            else:
+                vehicle.state = self.LAST_CALL
+
+            self.do_embark(vehicle)
 
     def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg, msgID, msg_time):
-        leg = self.v_manager.get_next_leg(msg.cmd.vID)
+        vehicle = self.v_manager.vehicles[msg.cmd.vID]
+        assert isinstance(vehicle, Vehicle)
+        assert vehicle.state in (self.FIRST_CALL, self.LAST_CALL)
+        leg = vehicle.leg
+
         # Embarking may occur twice for a given vehicle and leg. The first (optional)
         # phase loads any passengers who are waiting at the station. The second
         # phase (the 'last call') occurs right before the vehicle leaves,
         # and it loads the passengers who have shown up in the intervening time.
         # The first phase may occur before the departure time. The last call
         # phase always occurs >= the departure time.
-        if not leg.last_call:
-            if self.current_time >= leg.depart:
-                self.embark_passengers(leg) # give the last call
+        if vehicle.state is self.FIRST_CALL:
+            vehicle.state = self.WAITING_WITH_PAX
+
+            if self.current_time >= leg.depart: # Do last call
+                vehicle.state = self.LAST_CALL
+                self.do_embark(vehicle)
+
             else:
-                self.set_notification(leg.vehicle, leg.depart)
-        else: # Last call has been given, run the leg
-            self.run_leg(leg)
+                self.set_notification(vehicle.id, leg.depart)
+
+        elif vehicle.state is self.LAST_CALL:
+            vehicle.state = self.RUNNING_LEG
+            vehicle.run_leg()
+
+        else:
+            raise NotImplementedError
 
     def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg, msgID, msg_time):
         vehicle = self.v_manager.vehicles[msg.v_status.vID]
@@ -267,15 +225,23 @@ class GtfController(BaseController):
 
         # When the vehicle reaches the offramp for it's destination station,
         # reserve a berth, and update the trajectory.
-        if vehicle.ts_id == vehicle.path[-2]: # assumes that the offramp to the station is a single TrackSegment.
-            self.park_vehicle(vehicle)
+        if vehicle.state is self.RUNNING_LEG and vehicle.ts_id == vehicle.path[-2]:
+            vehicle.state = self.PARKING
+            t_arrival = vehicle.park()
+            self.set_notification(vehicle.id, t_arrival+1)
 
-        if vehicle.ts_id == vehicle.path[1]: # assumes that the onramp to the mainline is a single TrackSegment.
+    def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
+        vehicle = self.v_manager.vehicles[msg.v_status.vID]
+        assert isinstance(vehicle, Vehicle)
+        vehicle.update_vehicle(msg.v_status)
+
+        if vehicle.state is self.RUNNING_LEG and msg.trackID == vehicle.leg.origin_ts:
             if vehicle.berth_id != None:
-                station_id = self.v_manager.track2station[vehicle.path[0]]
+                station_id = self.v_manager.track2station[vehicle.leg.origin_ts]
                 station = self.v_manager.stations[station_id]
                 station.release_berth(vehicle.berth_id)
                 vehicle.berth_id = None
+                vehicle.berth_pos = None
 
 class VehicleManager(object):
     """Reads schedule information from the gtf information in the scenario.
@@ -469,7 +435,10 @@ class VehicleManager(object):
             return None
 
     def pop_leg(self, vehicle_id):
-        return self.legs[vehicle_id].pop()
+        try:
+            return self.legs[vehicle_id].pop()
+        except IndexError:
+            return None
 
 class Station(object):
     def __init__(self, s_id, ts_ids, platform_ts_id, berth_positions):
@@ -506,6 +475,9 @@ class Station(object):
 class Vehicle(object):
     SPEED_INCREMENT = 2.77777  # 10 km/hr
 
+    controller = None # interfaces with the sim
+    manager = None # high level planner
+
     def __init__(self, v_id, model, capacity, ts_id, pos, vel, accel, j_max, j_min, a_max, a_min, v_max):
         self.id = v_id
         self.model = model
@@ -522,9 +494,13 @@ class Vehicle(object):
 
         self.pax = []
         self.path = []
+        self.leg = None
+        self.spline = None
         self.traj_solver = TrajectorySolver(self.v_max, self.a_max, self.j_max,
-                                           0, self.a_min, self.j_min)
+                                           -5, self.a_min, self.j_min)
+        self.berth_pos = None
         self.berth_id = None
+        self.state = None
 
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
@@ -533,6 +509,9 @@ class Vehicle(object):
         self.vel = v_status.vel
         self.accel = v_status.accel
         self.pax = v_status.passengerIDs[:] # copy
+
+        if self.vel != 0:
+            assert self.state in (self.controller.RUNNING_LEG, self.controller.PARKING)
 
     def make_trajectory(self, dist, start_time, end_time):
         """Returns a cubic_spline.CubicSpline containing a trajectory that moves
@@ -562,7 +541,7 @@ class Vehicle(object):
         else:
             # SEE: trajectory_calcs.py, prob4. Assuming symmetry of jerk, accel!
             # FIXME: Assumption is generally bad, since more braking power than
-            #        accel. Results in too low of a v_max, which is acceptable.
+            #        accel. Results in too low of a v_max, which is acceptable, but wastes CPU time
             A = (1/(2*self.a_max) - 1/(2*self.a_min))  # (1/(2*an) - 1/(2*ax))
             B = (total_time)                           # (t_total)
             C = -(dist)                         # -(q_total)
@@ -574,10 +553,17 @@ class Vehicle(object):
         # Keep bumping up the target v_max until we arrive on time, or reach
         # the vehicle's max speed. If the initial guess at v_max is good, the
         # trajectory is only calculated once. (Yes, this is linear search.)
+        initial_knot = Knot(self.pos, self.vel, self.accel, start_time)
+        final_knot = Knot(final_pos, 0, 0, None)
         while True:
-            cspline = self.traj_solver.target_position(Knot(self.pos, self.vel, self.accel, start_time),
-                                                       Knot(final_pos, 0, 0, None))
-            if cspline.t[-1] - cspline.t[0] <= total_time: # stay on or ahead of schedule
+            cspline, fnc = self.traj_solver.target_position(initial_knot,
+                                                            final_knot,
+                                                            fnc_info=True)
+
+            # target_position_none ignores v_max, so raising v_max doesn't help
+            if fnc == self.traj_solver.target_position_none:
+                break
+            if cspline.t[-1] - cspline.t[0] <= total_time: # staying on or ahead of schedule
                 break
             elif v_max >= self.v_max:
                 break # vehicle will fall behind schedule, but oh well.
@@ -585,13 +571,108 @@ class Vehicle(object):
                 # bump up the top speed, but not above vehicle's max
                 v_max = min(self.v_max, v_max + self.SPEED_INCREMENT)
 
-##        # DEBUG: Show each planned trajectory before sending it.
-##        from pyprt.shared.cspline_plotter import CSplinePlotter
-##        plotter = CSplinePlotter(cspline, self.v_max, self.a_max, self.j_max, 0, self.a_min, self.j_min)
-##        plotter.display_plot()
-
         assert abs((cspline.q[-1] - cspline.q[0]) -(final_pos - self.pos)) < 0.01
+
+        # Append a last knot which extends the spline until well past the end of the simulation.
+        cspline.append(Knot(final_pos, 0, 0, 1E10))
+
         return cspline
+
+    def run_leg(self):
+        """Plans an itinerary and trajectory for the vehicle to do the next leg
+        of its schedule, then sends the appropriate commands to the simulator.
+        The trajectory does not take the vehicle all the way to the berth,
+        instead it aims to stop at the beginning of the station platform.
+        See also: on_SIM_NOTIFY_VEHICLE_ARRIVE
+        """
+        leg = self.leg
+
+        # Note that path_length does not take into account the self's position along the path.
+        path_length, path = self.manager.get_path(self.ts_id, leg.dest_ts)
+        self.path = path
+
+        itinerary_msg = api.CtrlCmdVehicleItinerary()
+        itinerary_msg.vID = self.id
+        itinerary_msg.trackIDs.extend(path[1:]) # don't include the segment self is currently on
+        itinerary_msg.clear = False
+        self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
+
+        departure_time = max(leg.depart, self.controller.current_time) # in seconds
+        trip_dist = path_length - self.pos
+        assert trip_dist >= 0
+        spline = self.make_trajectory(trip_dist, departure_time, leg.arrive)
+
+        traj_msg = api.CtrlCmdVehicleTrajectory()
+        traj_msg.vID = self.id
+        spline.fill_spline_msg(traj_msg.spline)
+        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
+
+    def park(self):
+        """Reserves a berth for the vehicle, and changes the trajectory to
+        bring the vehicle into it. Assumes that the vehicle's status
+        information is up to date. Returns the time at which the vehicle will
+        be parked, according to the new trajectory."""
+        station = self.manager.stations[self.leg.dest_station]
+
+        # reserve station berth
+        self.berth_pos, self.berth_id = station.reserve_berth(self.id)
+
+        # calculate how far the vehicle needs to travel to end in the berth
+        path_length, self.path = self.manager.get_path(self.ts_id, self.leg.dest_ts)
+        dist = self.berth_pos + path_length - self.pos
+##        for b, a in pairwise(reversed(vehicle.path)): # b is closer to the end of the path
+##            if vehicle.ts_id == b:
+##                break
+##            dist += self.v_manager.graph[a][b]['weight']
+        assert dist >= 0
+
+        # make the trajectory
+        self.spline = self.make_trajectory(dist, self.controller.current_time, self.leg.arrive)
+
+        # send the trajectory
+        traj_msg = api.CtrlCmdVehicleTrajectory()
+        traj_msg.vID = self.id
+        self.spline.fill_spline_msg(traj_msg.spline)
+        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
+
+        return self.spline.t[-2]
+
+    def is_full(self):
+        assert len(self.pax) <= self.capacity
+        return len(self.pax) == self.capacity
+
+    def disembark(self, passengers):
+        """Disembark passengers"""
+        for pax in passengers:
+            assert pax in self.pax
+            self.pax.remove(pax)
+
+        # send disembark command
+        disembark_msg = api.CtrlCmdPassengersDisembark()
+        disembark_msg.vID = self.id
+        disembark_msg.sID = self.leg.dest_station
+        disembark_msg.platformID = 0 # assumed that there is only one platform
+        disembark_msg.berthID = self.berth_id
+        disembark_msg.passengerIDs.extend(passengers)
+        self.controller.send(api.CTRL_CMD_PASSENGERS_DISEMBARK, disembark_msg)
+
+    def embark(self, passengers):
+        """Embark passengers"""
+        fill_line = self.capacity - len(self.pax)
+
+        self.pax.extend(passengers[:fill_line])
+
+        # send embark command
+        embark_msg = api.CtrlCmdPassengersEmbark()
+        embark_msg.vID = self.id
+        embark_msg.sID = self.leg.origin_station
+        embark_msg.platformID = 0  # assumed that there is only one platform
+        embark_msg.berthID = self.berth_id
+        embark_msg.passengerIDs.extend(passengers[:fill_line])
+        self.controller.send(api.CTRL_CMD_PASSENGERS_EMBARK, embark_msg)
+
+        # Return overflow passengers
+        return passengers[fill_line:]
 
 class Leg(object):
     """Legs of a trip. Each leg travels from one station to the next."""
@@ -612,9 +693,6 @@ class Leg(object):
         self.dest_ts = dest_ts
         self.depart = depart_time
         self.arrive = arrive_time
-
-        # Whether the last call has been given.
-        self.last_call = False
 
     def __cmp__(self, other):
         return cmp(self.depart, other.arrive)
@@ -799,9 +877,9 @@ class PassengerManager(object):
 
         self.add_passenger(pax)
 
-    def get_disembarking_pax(self, vehicle_id, station_id, time):
-        """Returns a list of passenger ids. The list is owned by the
-        PassengerManager, and any changes to it are permanent.
+    def fetch_disembarking_pax(self, vehicle_id, station_id, time):
+        """Returns a list of passenger ids. The passengers are removed from the
+        disembarking queue.
 
         Note that time is the vehicle's "official" arrival or departure time
         not its actual time. Time is measured in seconds, with the
@@ -813,11 +891,14 @@ class PassengerManager(object):
                 node = n
                 break
         assert isinstance(node, Node)
-        return node.disembark_pax[vehicle_id]
+        passengers = node.disembark_pax[vehicle_id] # ownership of the list is handed over to caller
+        node.disembark_pax[vehicle_id] = []
+        return passengers
 
-    def get_embarking_pax(self, vehicle_id, station_id, time):
-        """Returns a list of passenger ids. The list is owned by the
-        PassengerManager, and any changes to it are permanent.
+    def fetch_embarking_pax(self, vehicle_id, station_id, time):
+        """Returns a list of passenger ids. The passengers are removed from the
+        embarking queue. If they do not fit on the vehicle, it is the caller's
+        responsibility to make sure they are rescheduled.
 
         Note that time is the vehicle's "official" arrival or departure time
         not its actual time. Time is measured in seconds, with the
@@ -829,17 +910,9 @@ class PassengerManager(object):
                 node = n
                 break
         assert isinstance(node, Node)
-        return node.embark_pax[vehicle_id]
-
-    def clear_embarking_pax(self, vehicle_id, station_id, time):
-        nodes = self.node_dict[station_id]
-        node = None
-        for n in nodes:
-            if n.time == time:
-                node = n
-                break
-        assert isinstance(node, Node)
+        passengers = node.embark_pax[vehicle_id] # ownership of the list is handed over to caller
         node.embark_pax[vehicle_id] = []
+        return passengers
 
     def _build_graph(self, gtf_xml, sim_end_time, walk_speed):
         """Returns a networkx.DiGraph suitable for routing passengers over and

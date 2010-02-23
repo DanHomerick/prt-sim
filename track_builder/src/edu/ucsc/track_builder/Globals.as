@@ -13,7 +13,6 @@ package edu.ucsc.track_builder
 	import flash.geom.Rectangle;
 	
 	import mx.controls.ToggleButtonBar;
-	import mx.core.windowClasses.StatusBar;
 	
 	public class Globals
 	{
@@ -46,6 +45,7 @@ package edu.ucsc.track_builder
 				
 		public static var dataXMLFile:File; // The XML file currently being worked with.
 		public static var prefsXMLFile:File = File.applicationStorageDirectory.resolvePath("preferences.xml"); // The prefs file
+		public static var gtfXML:XMLList = null
 		
 		public static var dirty:Boolean; // has been changed since last save. 
 						
@@ -141,6 +141,7 @@ package edu.ucsc.track_builder
 			tracks.reinitialize();
 			stations.reinitialize();
 			vehicles.reinitialize();	
+			gtfXML = null;
 			
 			map.clearOverlays();
 			Globals.map.addOverlay(Globals.originMarker);

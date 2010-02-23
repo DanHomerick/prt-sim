@@ -15,7 +15,7 @@ class CSplinePlotter(traits.HasTraits):
         ui.Item('container',editor=ComponentEditor(), show_label=False),
         width=500, height=500, resizable=True, title='CubicSpline Plot')
 
-    def __init__(self, cubic_spline, velocity_max, acceleration_max, jerk_max, velocity_min=None, acceleration_min=None, jerk_min=None, title=""):
+    def __init__(self, cubic_spline, velocity_max=0, acceleration_max=0, jerk_max=0, velocity_min=None, acceleration_min=None, jerk_min=None, title=""):
 
         super(CSplinePlotter, self).__init__()
         self.cspline = cubic_spline

@@ -10,3 +10,34 @@ def pairwise(iterable):
     for elem in b:
         break
     return itertools.izip(a, b)
+
+# Divide resolution by two for rounding.
+DIST_RES = 0.05   # 5 cm
+DIST_RND = 2
+TIME_RES = 0.001
+TIME_RND = 3
+
+def dist_eql(a, b):
+    """Include == test to capture float('inf') == float('inf')"""
+    return (True if a == b or round(abs(a-b), DIST_RND) < DIST_RES else False)
+def dist_ge(a, b):
+    return (True if a > b or dist_eql(a,b) else False)
+def dist_le(a, b):
+    return (True if a < b or dist_eql(a,b) else False)
+def dist_gt(a, b):
+    return (True if a > b and not dist_eql(a,b) else False)
+def dist_lt(a, b):
+    return (True if a < b and not dist_eql(a,b) else False)
+
+
+def time_eql(a, b):
+    """Include == test to capture float('inf') == float('inf')"""
+    return (True if a == b or round(abs(a-b), TIME_RND) < TIME_RES else False)
+def time_ge(a, b):
+    return (True if a > b or time_eql(a,b) else False)
+def time_le(a, b):
+    return (True if a < b or time_eql(a,b) else False)
+def time_gt(a, b):
+    return (True if a > b and not time_eql(a,b) else False)
+def time_lt(a, b):
+    return (True if a < b and not time_eql(a,b) else False)

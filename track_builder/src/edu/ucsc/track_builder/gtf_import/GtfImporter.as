@@ -35,9 +35,7 @@ package edu.ucsc.track_builder.gtf_import
 	import mx.collections.XMLListCollection;
 	
 	public class GtfImporter
-	{
-		public static var gtfXml:XML;
-		
+	{		
 		/** How many places after the decimal to record coordinates in. Reducing precision can be used as a
 		 * simple way of merging nodes that are in close proximity to each other. */ 
 		public var PRECISION:uint = 5;
@@ -695,11 +693,11 @@ package edu.ucsc.track_builder.gtf_import
 			graph = null; // allow the graph to be garbage collected
 
 			/* Make and store the GTF save data */
-			gtfXml = <GoogleTransitFeed start_time={time.toString()}/>;
+			Globals.gtfXML = new XMLList(<GoogleTransitFeed start_time={time.toString()}/>);
 			for each (var routeXml:XML in makeRoutesXml(vehicles, stations, rBundles)) { 
-				gtfXml.appendChild(routeXml);
+				Globals.gtfXML.appendChild(routeXml);
 			}
-			gtfXml.appendChild(makeNeighborsXml(stopTree, allStops, stations, 500));
+			Globals.gtfXML.appendChild(makeNeighborsXml(stopTree, allStops, stations, 500));
 
 			// Change the location and zoom to show the entire track.
 			var bounds:LatLngBounds = Globals.tracks.getLatLngBounds();

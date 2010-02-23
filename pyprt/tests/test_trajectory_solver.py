@@ -32,7 +32,7 @@ class  TestTrajectorySolver(unittest.TestCase):
 
         ### Position and velocity are non-zero at endpoints
         spline = solver.target_position_vmax(Knot(100, 2, 0, 0), Knot(300, -2, 0, 0))
-#        self.plot_it(spline, solver)
+##        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 300, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], -2, self.PLACES)
@@ -41,7 +41,7 @@ class  TestTrajectorySolver(unittest.TestCase):
 
         ### Position, velocity and accel are non-zero at endpoints
         spline = solver.target_position_vmax(Knot(100, 2, -2, 0), Knot(300, -2, 2, 0))
-#        self.plot_it(spline, solver)
+##        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 300, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], -2, self.PLACES)
@@ -84,7 +84,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         """Asymetrical jerk limits."""
         solver = trajectory_solver.TrajectorySolver(20, 5, 2.5, 0, -5, -5)
         spline = solver.target_position_vmax(Knot(100, 0, 0, 0), Knot(300, 0, 0, 0))
-#        self.plot_it(spline, solver)
+##        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 300, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
@@ -166,9 +166,10 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.assertAlmostEqual(spline.t[-1], 14.9259812097, self.PLACES)
 
         # non-zeo endpoints, asymetrical limits
+        # FIXME: Exceeding accel limit?
         solver = trajectory_solver.TrajectorySolver(20, 5, 2.5, -20, -10, -2.5)
         spline = solver.target_position_vmax(Knot(300, 5, 2, 0), Knot(100, 6, -2, 0))
-#        self.plot_it(spline, solver)
+##        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 100, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], 6, self.PLACES)
@@ -181,7 +182,7 @@ class  TestTrajectorySolver(unittest.TestCase):
 
         # zero endpoints
         spline = solver.target_position_amax(Knot(0,0,0,0), Knot(200,0,0,0))
-#        self.plot_it(spline, solver)
+##        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 200, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
@@ -203,7 +204,7 @@ class  TestTrajectorySolver(unittest.TestCase):
 
         # zero endpoints
         spline = solver.target_position_amax(Knot(200,0,0,0), Knot(0,0,0,0))
-#        self.plot_it(spline, solver)
+##        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], 0, self.PLACES)
         self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
@@ -249,7 +250,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         """Travelling in reverse."""
         solver = trajectory_solver.TrajectorySolver(30, 5, 2.5, -30, -5, -2.5)
         spline = solver.target_position_none(Knot(0,0,0,0), Knot(-10,0,0,0))
-#        self.plot_it(spline, solver)
+##        self.plot_it(spline, solver, "test_target_position_none_III")
         self.validate_spline(spline, solver)
         self.assertAlmostEqual(spline.q[-1], -10, 5)
         self.assertAlmostEqual(spline.v[-1], 0, 5)
@@ -272,11 +273,85 @@ class  TestTrajectorySolver(unittest.TestCase):
 
     def test_target_position_III(self):
         """Checks to make sure that it's using the right solver."""
-        solver = trajectory_solver.TrajectorySolver(32, 0.6, 2.5, 0, -5.0, -2.5)
+        solver = trajectory_solver.TrajectorySolver(32, 1.0, 2.5, 0, -5.0, -2.5)
         spline = solver.target_position(Knot(0.0, 10.680000305175781, -4.8299999237060547, 27.727),
                                         Knot(57.145143987525579, 0, 0, None))
-        self.plot_it(spline, solver)
+        self.plot_it(spline, solver, "test_target_position_III")
         self.validate_spline(spline, solver)
+        self.assertAlmostEqual(spline.q[-1], 57.145143987525579, 5)
+        self.assertAlmostEqual(spline.v[-1], 0, 5)
+        self.assertAlmostEqual(spline.a[-1], 0, 5)
+        self.assertTrue(spline.t[-1] - spline.t[0] <25)
+
+    def test_target_position_IV(self):
+        """Test from a real-world solver failure."""
+        solver = trajectory_solver.TrajectorySolver(32, 1.0, 2.5, -5.0, -5.0, -2.5)
+        try:
+            spline = solver.target_position(Knot(0, 10.573277473449707, -5.0, 303.644),
+                                            Knot(68.925505241605777, 0, 0, None))
+            self.plot_it(spline, solver, "test_target_position_IV")
+            self.validate_spline(spline, solver)
+            self.assertAlmostEqual(spline.q[-1], 68.925505241605777, 5)
+            self.assertAlmostEqual(spline.v[-1], 0, 5)
+            self.assertAlmostEqual(spline.a[-1], 0, 5)
+            self.assertTrue(spline.t[-1] - spline.t[0] < 30)
+
+        except trajectory_solver.OptimizationError:
+            spline = solver._soln_spline
+            self.plot_it(spline, solver, "test_target_position_IV")
+            self.assertTrue(False)
+
+    def test_target_position_V(self):
+        """Yet another real-world problem case."""
+        solver = trajectory_solver.TrajectorySolver(32, 1., 2.5, -5.0, -5.0, -2.5)
+        try:
+            spline = solver.target_position(Knot(0.0, 12.135705947875977, -5.0, 220.824),
+                                            Knot(76.021737702490753, 0, 0, None))
+            self.plot_it(spline, solver, "test_target_position_V")
+            self.validate_spline(spline, solver)
+            self.assertAlmostEqual(spline.q[-1], 76.021737702490753, 5)
+            self.assertAlmostEqual(spline.v[-1], 0, 5)
+            self.assertAlmostEqual(spline.a[-1], 0, 5)
+            self.assertTrue(spline.t[-1] - spline.t[0] < 30)
+        except trajectory_solver.OptimizationError:
+            spline = solver._soln_spline
+            self.plot_it(spline, solver, "test_target_position_V")
+            self.assertTrue(False)
+
+    def test_target_position_VI(self):
+        """Yet another real-world problem case."""
+        solver = trajectory_solver.TrajectorySolver(32, 1., 2.5, -5.0, -5.0, -2.5)
+        try:
+            spline = solver.target_position(Knot(0.0, 10.160758018493652, -5.0, 28.024999999999999),
+                                            Knot(67.214868918397073, 0, 0, None))
+            self.plot_it(spline, solver, "test_target_position_VI")
+            self.validate_spline(spline, solver)
+            self.assertAlmostEqual(spline.q[-1], 67.214868918397073, 5)
+            self.assertAlmostEqual(spline.v[-1], 0, 5)
+            self.assertAlmostEqual(spline.a[-1], 0, 5)
+            self.assertTrue(spline.t[-1] - spline.t[0] < 60)
+        except trajectory_solver.OptimizationError as err:
+            import random
+            while True:
+                try:
+                    new_durations = [random.random() for h in err.durations]
+                    print "initial hs:", new_durations
+                    solver.target_position_none(Knot(0.0, 10.160758018493652, -5.0, 28.024999999999999),
+                                                Knot(67.214868918397073, 0, 0, None),
+                                                new_durations)
+                except trajectory_solver.OptimizationError as err:
+                    print "Soln hs:", solver._soln_spline.h
+                    self.plot_it(solver._soln_spline, solver, "test_remix...")
+                else:
+                    print "Soln hs:", solver._soln_spline.h
+                    self.plot_it(solver._soln_spline, solver, "test_remix...")
+                    break
+
+
+
+##                spline = solver._soln_spline
+##                self.plot_it(spline, solver, "test_target_position_VI")
+##                self.assertTrue(False)
 
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""

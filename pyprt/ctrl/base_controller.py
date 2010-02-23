@@ -64,6 +64,7 @@ class BaseController(object):
             api.SIM_NOTIFY_VEHICLE_ARRIVE : api.SimNotifyVehicleArrive(),
             api.SIM_NOTIFY_VEHICLE_EXIT : api.SimNotifyVehicleExit(),
             api.SIM_NOTIFY_VEHICLE_COLLISION : api.SimNotifyVehicleCollision(),
+            api.SIM_NOTIFY_VEHICLE_CRASH : api.SimNotifyVehicleCrash(),
             api.SIM_NOTIFY_PASSENGER_EMBARK_START : api.SimNotifyPassengerEmbarkStart(),
             api.SIM_NOTIFY_PASSENGER_EMBARK_END : api.SimNotifyPassengerEmbarkEnd(),
             api.SIM_NOTIFY_PASSENGER_DISEMBARK_START : api.SimNotifyPassengerDisembarkStart(),
@@ -110,6 +111,7 @@ class BaseController(object):
             api.SIM_NOTIFY_VEHICLE_ARRIVE : self.on_SIM_NOTIFY_VEHICLE_ARRIVE,
             api.SIM_NOTIFY_VEHICLE_EXIT : self.on_SIM_NOTIFY_VEHICLE_EXIT,
             api.SIM_NOTIFY_VEHICLE_COLLISION : self.on_SIM_NOTIFY_VEHICLE_COLLISION,
+            api.SIM_NOTIFY_VEHICLE_CRASH : self.on_SIM_NOTIFY_VEHICLE_CRASH,
             api.SIM_NOTIFY_PASSENGER_EMBARK_START : self.on_SIM_NOTIFY_PASSENGER_EMBARK_START,
             api.SIM_NOTIFY_PASSENGER_EMBARK_END : self.on_SIM_NOTIFY_PASSENGER_EMBARK_END,
             api.SIM_NOTIFY_PASSENGER_DISEMBARK_START : self.on_SIM_NOTIFY_PASSENGER_DISEMBARK_START,
@@ -262,7 +264,11 @@ class BaseController(object):
         msg = self.messages[msg_type]
         msg.ParseFromString(msg_str) # clear old data, and deserialize string into msg
         self.log_rcvd_msg(msg_type, msgID, msg_time, msg)
-        self.current_time = max(self.current_time, msg_time/1000.)
+        try:
+            if msg.HasField('time'):
+                self.current_time = msg.time
+        except ValueError:
+            pass
         self.msg_handlers[msg_type](msg, msgID, msg_time) # call the msg handler
         self.send_resume()
 
@@ -333,6 +339,9 @@ class BaseController(object):
         pass
 
     def on_SIM_NOTIFY_VEHICLE_COLLISION(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_CRASH(self, msg, msgID, msg_time):
         pass
 
     def on_SIM_NOTIFY_PASSENGER_EMBARK_START(self, msg, msgID, msg_time):

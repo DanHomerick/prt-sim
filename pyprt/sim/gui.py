@@ -585,7 +585,7 @@ class Visualizer(object):
                                               orientation=plot.orientation,
                                               origin=plot.origin,
                                               fill_alpha=0.8,
-                                              marker_size=8,
+                                              marker_size=6,
                                               hide_grids=True,
                                               bgcolor='transparent')
         plot.add(v_plot)
@@ -917,26 +917,23 @@ def run_sim(end_time, callback, *args):
     # initialize SimPy
     SimPy.initialize()
 
-    # Reorder the vehicles so that the queue will have proper FIFO ordering
-    # on the TrackSegment.
-    vehicle_list = common.vehicles.values()  # the Vehicle instances
-    def sort_by_vehicle_pos(a, b):
-        if a.loc is b.loc: # if a and b are both at the same location
-            return cmp(b.pos, a.pos) # sort by position, descending order
-        else:
-            return cmp(a.loc, b.loc) # else sort by place
-    vehicle_list.sort(cmp=sort_by_vehicle_pos)
+##    # Reorder the vehicles so that the queue will have proper FIFO ordering
+##    # on the TrackSegment.
+##    vehicle_list = common.vehicles.values()  # the Vehicle instances
+##    def sort_by_vehicle_pos(a, b):
+##        if a.loc is b.loc: # if a and b are both at the same location
+##            return cmp(b.pos, a.pos) # sort by position, descending order
+##        else:
+##            return cmp(a.loc, b.loc) # else sort by place
+##    vehicle_list.sort(cmp=sort_by_vehicle_pos)
 
     # activate the vehicles
-    for v in vehicle_list:
+    for v in common.vehicles.values():
         SimPy.activate(v, v.ctrl_loop())
 
     # activate the stations
     for s in common.stations.itervalues():
         s.startup()
-
-    # activate the event manager
-    SimPy.activate(common.event_manager, common.event_manager.spawn_events())
 
     # create queues for communication between the plot and the sim
     common.vehicle_data_queue = Queue.Queue()
@@ -965,6 +962,9 @@ def run_sim(end_time, callback, *args):
 
     # start the communication control
     SimPy.activate(common.interface, common.interface.talk())
+
+    # activate the event manager
+    SimPy.activate(common.event_manager, common.event_manager.spawn_events())
 
     # Tell the controller that the sim is starting.
     start_msg = api.SimStart()
@@ -1031,9 +1031,8 @@ class VisDataCollector(SimPy.Process):
             y_coords = []
             pax_cnt = []
             for v in common.vehicle_list:
-                pos, loc = v.nose
-                position = array([pos, 1])
-                x, y = numpy.dot(pos2img[loc], position) # matrix mult
+                position = array([v.pos, 1])
+                x, y = numpy.dot(pos2img[v.loc], position) # matrix mult
                 x_coords.append(x)
                 y_coords.append(y)
                 pax_cnt.append(len(v.passengers))
@@ -1131,46 +1130,49 @@ def postsim_summary():
     summary = []
     end_time = common.config_manager.get_sim_end_time()
     summary.append("\nPost Sim Vehicle Status")
-    summary.append("%4s%15s%15s%15s%15s" \
-        % ('vID', 'vPos', 'vSpeed', 'location', 'distTrav'))
+    summary.append("%4s%15s%15s%25s%15s" \
+        % ('vID', 'vPos', 'vVel', 'location', 'distTrav'))
     for v in common.vehicle_list:
-        summary.append("%4d%15s%15s%15s%15d" \
-                % (v.ID, v.pos, v.speed, v.loc, v.path.get_dist_travelled()))
+        summary.append("%4d%15.3f%15.3f%25s%15.3f" \
+                % (v.ID, v.pos, v.vel, v.loc, v.get_dist_travelled()))
 
-    summary.append("\n Post Sim Vehicle Crash Report (Multiple crashes may be reported for the same incident)")
-    summary.append(("%4s"+"%12s"+"%15s%15s"+"%15s"+"%10s%10s%10s") \
-           % ('vID', 'time', 'loc', 'pos', 'leadVehicle', 'rearend',
-              'sideswipe', 'occurred'))
-    for v in common.vehicle_list:
-        for crash in v.collisions:
-            summary.append(("%4d"+"%12.3f"+"%15s%15s"+"%15d"+"%10s%10s%10s") \
-                % (v.ID, crash.time, crash.trav.loc,
-                   crash.trav.get_pos_from_time(crash.time),
-                   crash.lv.ID, crash.rearend, crash.sideswipe, crash.occurred))
+##    summary.append("\n Post Sim Vehicle Crash Report (Multiple crashes may be reported for the same incident)")
+##    summary.append(("%4s"+"%12s"+"%15s%15s"+"%15s"+"%10s%10s%10s") \
+##           % ('vID', 'time', 'loc', 'pos', 'leadVehicle', 'rearend',
+##              'sideswipe', 'occurred'))
+##    for v in common.vehicle_list:
+##        for crash in v.collisions:
+##            summary.append(("%4d"+"%12.3f"+"%15s%15s"+"%15d"+"%10s%10s%10s") \
+##                % (v.ID, crash.time, crash.trav.loc,
+##                   crash.trav.get_pos_from_time(crash.time),
+##                   crash.lv.ID, crash.rearend, crash.sideswipe, crash.occurred))
 
-    summary.append("\nPost Sim Passenger Report")
-    pax_display_limit = 20 # Limit the report to include a manageble number of records
-    pax_list = common.passengers.values()
-    pax_list.sort()
-    summary.append(("%4s" + "%15s"*8) \
-            % ('pID','srcStat','destStat','curLoc','waitT','walkT','rideT','totalT','Success'))
-    for p in pax_list[:pax_display_limit]:
-        summary.append(("%4d" + "%15s"*3 + "%15.3f"*4 + "%15s") \
-                % (p.ID, p.src_station, p.dest_station, p.loc, p.wait_time,
-                   p.walk_time, p.ride_time, p.total_time, p.trip_success))
-    if len(pax_list) > pax_display_limit:
-        summary.append('An additional %d passenger records not shown...' % (len(pax_list) - pax_display_limit) )
+    if common.passengers: # some passengers were simulated
+        summary.append("\nPost Sim Passenger Report")
+        pax_display_limit = 20 # Limit the report to include a manageble number of records
+        pax_list = common.passengers.values()
+        pax_list.sort()
+        summary.append(("%4s" + "%15s"*8) \
+                % ('pID','srcStat','destStat','curLoc','waitT','walkT','rideT','totalT','Success'))
+        for p in pax_list[:pax_display_limit]:
+            summary.append(("%4d" + "%15s"*3 + "%15.3f"*4 + "%15s") \
+                    % (p.ID, p.src_station, p.dest_station, p.loc, p.wait_time,
+                       p.walk_time, p.ride_time, p.total_time, p.trip_success))
+        if len(pax_list) > pax_display_limit:
+            summary.append('An additional %d passenger records not shown...' % (len(pax_list) - pax_display_limit) )
 
-    summary.append("\nPost Sim Passenger Summary Statistics")
-    summary.append(("%7s" + "%15s"*4 + "%15s") \
-            % ('numPax','aveWait','aveWalk','aveRide','aveTotal','%Success'))
-    ave_wait = sum(p.wait_time for p in pax_list)/len(pax_list)
-    ave_walk = sum(p.walk_time for p in pax_list)/len(pax_list)
-    ave_ride = sum(p.ride_time for p in pax_list)/len(pax_list)
-    ave_total = sum(p.total_time for p in pax_list)/len(pax_list)
-    success_rate = sum(1 for p in pax_list if p.trip_success)/len(pax_list) * 100
-    summary.append(("%7d" + "%15.3f"*5) \
-            % (len(pax_list), ave_wait, ave_walk, ave_ride, ave_total, success_rate))
+        summary.append("\nPost Sim Passenger Summary Statistics")
+        summary.append(("%7s" + "%15s"*4 + "%15s") \
+                % ('numPax','aveWait','aveWalk','aveRide','aveTotal','%Success'))
+        ave_wait = sum(p.wait_time for p in pax_list)/len(pax_list)
+        ave_walk = sum(p.walk_time for p in pax_list)/len(pax_list)
+        ave_ride = sum(p.ride_time for p in pax_list)/len(pax_list)
+        ave_total = sum(p.total_time for p in pax_list)/len(pax_list)
+        success_rate = sum(1 for p in pax_list if p.trip_success)/len(pax_list) * 100
+        summary.append(("%7d" + "%15.3f"*5) \
+                % (len(pax_list), ave_wait, ave_walk, ave_ride, ave_total, success_rate))
+    else:
+        summary.append("\nNo passengers simulated.")
 
 ##    summary.append("\nPost Sim Switch Report")
 ##    summary.append("%4s%15s%10s" % ('ID', 'Name', 'Errors'))

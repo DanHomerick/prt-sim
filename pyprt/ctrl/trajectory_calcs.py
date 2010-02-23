@@ -32,7 +32,7 @@ def prob1():
     #                      \______/
     #
     #         t0 t1  t2    t3    t4 t5
-    #                  
+    #
     #
     #        where h's are the timespans of each polynomial, and t's are the knot times.
     #        Note that the enpoints are not assumed to be 0 in either acceleration
@@ -121,7 +121,7 @@ def prob2():
     h0 = (at-a0)/jx
     h1 = (ab-at)/jn
     h2 = (a3-at)/jx
-    
+
     v01 = (at**2 - a0**2)/(2*jx)
     v12 = (jn*h1**2)/2 + at*h1
     v23 = (a3**2 - ab**2)/(2*jx)
@@ -233,5 +233,31 @@ def prob4():
     # From here, use the fact that ans is vx and the quadratic equation to solve for vx:
     # 0 = vx**2*(1/(2*an) - 1/(2*ax)) + vx*(t3-t0) - (q3-q0)
 
+def prob5():
+    """Finding the coefficients of a cubic polynomial from the accel, vel, and
+    pos at two timepoints, as well as the jerk (constant)"""
+    t, c, j, t1, t2, a1, a2, v1, v2, q1, q2 = symbols(['t','c','j','t1','t2','a1','a2','v1','v2','q1','q2'], real=True)
+    ca = (t1*a2 - t2*a1)/(t1 - t2)
+    a = j*t + ca
+
+    v = integrate(a, t)
+    cv = (t1**2*t2**2/(t1**2*t2**2 - t2**4))*(v2 - ca*t2) - (t1**2*t2**2/(t1**4 - t1**2*t2**2))*(v1 - ca*t1)
+    v += cv
+
+    q = integrate(v, t)
+    cq = (t1**3*t2**3/(t1**3*t2**3 - t2**6))*(-ca*t2**2/2 - cv*t2 + q2) - (t1**3*t2**3/(t1**6 - t1**3*t2**3))*(-ca*t1**2/2 - cv*t1 + q1)
+    q += cq
+
+    ans = collect(powsimp(together(powsimp(q, deep=True), deep=True), deep=True), t, t**2, t**3)
+
+    pprint(ans)
+    print ""
+    print ans
+#    ans = collect(powsimp(ans, deep=True), t, t**2, t**3)
+#    pprint(ans)
+#    print ans
+
+
+
 if __name__ == '__main__':
-    prob4()
+    prob5()

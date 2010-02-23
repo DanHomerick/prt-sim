@@ -68,6 +68,7 @@ class SimNotifyTime;
 class SimNotifyVehicleArrive;
 class SimNotifyVehicleExit;
 class SimNotifyVehicleCollision;
+class SimNotifyVehicleCrash;
 class SimNotifyPassengerEmbarkStart;
 class SimNotifyPassengerEmbarkEnd;
 class SimNotifyPassengerDisembarkStart;
@@ -214,8 +215,8 @@ enum SimMsgType {
   SIM_NOTIFY_VEHICLE_POSITION = 1030,
   SIM_NOTIFY_VEHICLE_ARRIVE = 1031,
   SIM_NOTIFY_VEHICLE_EXIT = 1032,
-  SIM_NOTIFY_VEHICLE_READY_LOAD = 1033,
-  SIM_NOTIFY_VEHICLE_COLLISION = 1034,
+  SIM_NOTIFY_VEHICLE_COLLISION = 1033,
+  SIM_NOTIFY_VEHICLE_CRASH = 1034,
   SIM_NOTIFY_PASSENGER_EMBARK_START = 1035,
   SIM_NOTIFY_PASSENGER_EMBARK_END = 1036,
   SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1037,
@@ -3676,17 +3677,24 @@ class SimNotifyVehicleArrive : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required .prt.VehicleStatus v_status = 1;
+  // required int32 trackID = 1;
+  inline bool has_trackid() const;
+  inline void clear_trackid();
+  static const int kTrackIDFieldNumber = 1;
+  inline ::google::protobuf::int32 trackid() const;
+  inline void set_trackid(::google::protobuf::int32 value);
+  
+  // required .prt.VehicleStatus v_status = 2;
   inline bool has_v_status() const;
   inline void clear_v_status();
-  static const int kVStatusFieldNumber = 1;
+  static const int kVStatusFieldNumber = 2;
   inline const ::prt::VehicleStatus& v_status() const;
   inline ::prt::VehicleStatus* mutable_v_status();
   
-  // required double time = 2;
+  // required double time = 3;
   inline bool has_time() const;
   inline void clear_time();
-  static const int kTimeFieldNumber = 2;
+  static const int kTimeFieldNumber = 3;
   inline double time() const;
   inline void set_time(double value);
   
@@ -3695,13 +3703,14 @@ class SimNotifyVehicleArrive : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
+  ::google::protobuf::int32 trackid_;
   ::prt::VehicleStatus* v_status_;
   double time_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3773,17 +3782,24 @@ class SimNotifyVehicleExit : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required .prt.VehicleStatus v_status = 1;
+  // required int32 trackID = 1;
+  inline bool has_trackid() const;
+  inline void clear_trackid();
+  static const int kTrackIDFieldNumber = 1;
+  inline ::google::protobuf::int32 trackid() const;
+  inline void set_trackid(::google::protobuf::int32 value);
+  
+  // required .prt.VehicleStatus v_status = 2;
   inline bool has_v_status() const;
   inline void clear_v_status();
-  static const int kVStatusFieldNumber = 1;
+  static const int kVStatusFieldNumber = 2;
   inline const ::prt::VehicleStatus& v_status() const;
   inline ::prt::VehicleStatus* mutable_v_status();
   
-  // required double time = 2;
+  // required double time = 3;
   inline bool has_time() const;
   inline void clear_time();
-  static const int kTimeFieldNumber = 2;
+  static const int kTimeFieldNumber = 3;
   inline double time() const;
   inline void set_time(double value);
   
@@ -3792,13 +3808,14 @@ class SimNotifyVehicleExit : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
+  ::google::protobuf::int32 trackid_;
   ::prt::VehicleStatus* v_status_;
   double time_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3870,66 +3887,24 @@ class SimNotifyVehicleCollision : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required int32 v1ID = 1;
-  inline bool has_v1id() const;
-  inline void clear_v1id();
-  static const int kV1IDFieldNumber = 1;
-  inline ::google::protobuf::int32 v1id() const;
-  inline void set_v1id(::google::protobuf::int32 value);
+  // required .prt.VehicleStatus v1_status = 1;
+  inline bool has_v1_status() const;
+  inline void clear_v1_status();
+  static const int kV1StatusFieldNumber = 1;
+  inline const ::prt::VehicleStatus& v1_status() const;
+  inline ::prt::VehicleStatus* mutable_v1_status();
   
-  // required int32 v2ID = 2;
-  inline bool has_v2id() const;
-  inline void clear_v2id();
-  static const int kV2IDFieldNumber = 2;
-  inline ::google::protobuf::int32 v2id() const;
-  inline void set_v2id(::google::protobuf::int32 value);
+  // required .prt.VehicleStatus v2_status = 2;
+  inline bool has_v2_status() const;
+  inline void clear_v2_status();
+  static const int kV2StatusFieldNumber = 2;
+  inline const ::prt::VehicleStatus& v2_status() const;
+  inline ::prt::VehicleStatus* mutable_v2_status();
   
-  // required .prt.LocationType loc_type = 3;
-  inline bool has_loc_type() const;
-  inline void clear_loc_type();
-  static const int kLocTypeFieldNumber = 3;
-  inline prt::LocationType loc_type() const;
-  inline void set_loc_type(prt::LocationType value);
-  
-  // required int32 locID = 4;
-  inline bool has_locid() const;
-  inline void clear_locid();
-  static const int kLocIDFieldNumber = 4;
-  inline ::google::protobuf::int32 locid() const;
-  inline void set_locid(::google::protobuf::int32 value);
-  
-  // required int32 pos = 5;
-  inline bool has_pos() const;
-  inline void clear_pos();
-  static const int kPosFieldNumber = 5;
-  inline ::google::protobuf::int32 pos() const;
-  inline void set_pos(::google::protobuf::int32 value);
-  
-  // required int32 delta_v = 6;
-  inline bool has_delta_v() const;
-  inline void clear_delta_v();
-  static const int kDeltaVFieldNumber = 6;
-  inline ::google::protobuf::int32 delta_v() const;
-  inline void set_delta_v(::google::protobuf::int32 value);
-  
-  // required bool rearend = 7;
-  inline bool has_rearend() const;
-  inline void clear_rearend();
-  static const int kRearendFieldNumber = 7;
-  inline bool rearend() const;
-  inline void set_rearend(bool value);
-  
-  // required bool sideswipe = 8;
-  inline bool has_sideswipe() const;
-  inline void clear_sideswipe();
-  static const int kSideswipeFieldNumber = 8;
-  inline bool sideswipe() const;
-  inline void set_sideswipe(bool value);
-  
-  // required double time = 9;
+  // required double time = 3;
   inline bool has_time() const;
   inline void clear_time();
-  static const int kTimeFieldNumber = 9;
+  static const int kTimeFieldNumber = 3;
   inline double time() const;
   inline void set_time(double value);
   
@@ -3938,20 +3913,14 @@ class SimNotifyVehicleCollision : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::google::protobuf::int32 v1id_;
-  ::google::protobuf::int32 v2id_;
-  int loc_type_;
-  ::google::protobuf::int32 locid_;
-  ::google::protobuf::int32 pos_;
-  ::google::protobuf::int32 delta_v_;
-  bool rearend_;
-  bool sideswipe_;
+  ::prt::VehicleStatus* v1_status_;
+  ::prt::VehicleStatus* v2_status_;
   double time_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(9 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3966,6 +3935,103 @@ class SimNotifyVehicleCollision : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static SimNotifyVehicleCollision* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class SimNotifyVehicleCrash : public ::google::protobuf::Message {
+ public:
+  SimNotifyVehicleCrash();
+  virtual ~SimNotifyVehicleCrash();
+  
+  SimNotifyVehicleCrash(const SimNotifyVehicleCrash& from);
+  
+  inline SimNotifyVehicleCrash& operator=(const SimNotifyVehicleCrash& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SimNotifyVehicleCrash& default_instance();
+  
+  void Swap(SimNotifyVehicleCrash* other);
+  
+  // implements Message ----------------------------------------------
+  
+  SimNotifyVehicleCrash* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const SimNotifyVehicleCrash& from);
+  void MergeFrom(const SimNotifyVehicleCrash& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 v_status = 1;
+  inline bool has_v_status() const;
+  inline void clear_v_status();
+  static const int kVStatusFieldNumber = 1;
+  inline ::google::protobuf::int32 v_status() const;
+  inline void set_v_status(::google::protobuf::int32 value);
+  
+  // required double time = 2;
+  inline bool has_time() const;
+  inline void clear_time();
+  static const int kTimeFieldNumber = 2;
+  inline double time() const;
+  inline void set_time(double value);
+  
+  // @@protoc_insertion_point(class_scope:prt.SimNotifyVehicleCrash)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 v_status_;
+  double time_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static SimNotifyVehicleCrash* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -6338,12 +6404,19 @@ class VehicleStatus : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
       mutable_passengerids();
   
-  // optional int32 headway = 12;
-  inline bool has_headway() const;
-  inline void clear_headway();
-  static const int kHeadwayFieldNumber = 12;
-  inline ::google::protobuf::int32 headway() const;
-  inline void set_headway(::google::protobuf::int32 value);
+  // optional int32 lvID = 11;
+  inline bool has_lvid() const;
+  inline void clear_lvid();
+  static const int kLvIDFieldNumber = 11;
+  inline ::google::protobuf::int32 lvid() const;
+  inline void set_lvid(::google::protobuf::int32 value);
+  
+  // optional float lv_distance = 12;
+  inline bool has_lv_distance() const;
+  inline void clear_lv_distance();
+  static const int kLvDistanceFieldNumber = 12;
+  inline float lv_distance() const;
+  inline void set_lv_distance(float value);
   
   // @@protoc_insertion_point(class_scope:prt.VehicleStatus)
  private:
@@ -6359,12 +6432,13 @@ class VehicleStatus : public ::google::protobuf::Message {
   float accel_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > passengerids_;
   mutable int _passengerids_cached_byte_size_;
-  ::google::protobuf::int32 headway_;
+  ::google::protobuf::int32 lvid_;
+  float lv_distance_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
   friend void protobuf_ShutdownFile_api_2eproto();
   
-  ::google::protobuf::uint32 _has_bits_[(9 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(10 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -8769,36 +8843,52 @@ inline void SimNotifyTime::set_time(double value) {
 
 // SimNotifyVehicleArrive
 
-// required .prt.VehicleStatus v_status = 1;
-inline bool SimNotifyVehicleArrive::has_v_status() const {
+// required int32 trackID = 1;
+inline bool SimNotifyVehicleArrive::has_trackid() const {
   return _has_bit(0);
+}
+inline void SimNotifyVehicleArrive::clear_trackid() {
+  trackid_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 SimNotifyVehicleArrive::trackid() const {
+  return trackid_;
+}
+inline void SimNotifyVehicleArrive::set_trackid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  trackid_ = value;
+}
+
+// required .prt.VehicleStatus v_status = 2;
+inline bool SimNotifyVehicleArrive::has_v_status() const {
+  return _has_bit(1);
 }
 inline void SimNotifyVehicleArrive::clear_v_status() {
   if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
-  _clear_bit(0);
+  _clear_bit(1);
 }
 inline const ::prt::VehicleStatus& SimNotifyVehicleArrive::v_status() const {
   return v_status_ != NULL ? *v_status_ : *default_instance_->v_status_;
 }
 inline ::prt::VehicleStatus* SimNotifyVehicleArrive::mutable_v_status() {
-  _set_bit(0);
+  _set_bit(1);
   if (v_status_ == NULL) v_status_ = new ::prt::VehicleStatus;
   return v_status_;
 }
 
-// required double time = 2;
+// required double time = 3;
 inline bool SimNotifyVehicleArrive::has_time() const {
-  return _has_bit(1);
+  return _has_bit(2);
 }
 inline void SimNotifyVehicleArrive::clear_time() {
   time_ = 0;
-  _clear_bit(1);
+  _clear_bit(2);
 }
 inline double SimNotifyVehicleArrive::time() const {
   return time_;
 }
 inline void SimNotifyVehicleArrive::set_time(double value) {
-  _set_bit(1);
+  _set_bit(2);
   time_ = value;
 }
 
@@ -8806,36 +8896,52 @@ inline void SimNotifyVehicleArrive::set_time(double value) {
 
 // SimNotifyVehicleExit
 
-// required .prt.VehicleStatus v_status = 1;
-inline bool SimNotifyVehicleExit::has_v_status() const {
+// required int32 trackID = 1;
+inline bool SimNotifyVehicleExit::has_trackid() const {
   return _has_bit(0);
+}
+inline void SimNotifyVehicleExit::clear_trackid() {
+  trackid_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 SimNotifyVehicleExit::trackid() const {
+  return trackid_;
+}
+inline void SimNotifyVehicleExit::set_trackid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  trackid_ = value;
+}
+
+// required .prt.VehicleStatus v_status = 2;
+inline bool SimNotifyVehicleExit::has_v_status() const {
+  return _has_bit(1);
 }
 inline void SimNotifyVehicleExit::clear_v_status() {
   if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
-  _clear_bit(0);
+  _clear_bit(1);
 }
 inline const ::prt::VehicleStatus& SimNotifyVehicleExit::v_status() const {
   return v_status_ != NULL ? *v_status_ : *default_instance_->v_status_;
 }
 inline ::prt::VehicleStatus* SimNotifyVehicleExit::mutable_v_status() {
-  _set_bit(0);
+  _set_bit(1);
   if (v_status_ == NULL) v_status_ = new ::prt::VehicleStatus;
   return v_status_;
 }
 
-// required double time = 2;
+// required double time = 3;
 inline bool SimNotifyVehicleExit::has_time() const {
-  return _has_bit(1);
+  return _has_bit(2);
 }
 inline void SimNotifyVehicleExit::clear_time() {
   time_ = 0;
-  _clear_bit(1);
+  _clear_bit(2);
 }
 inline double SimNotifyVehicleExit::time() const {
   return time_;
 }
 inline void SimNotifyVehicleExit::set_time(double value) {
-  _set_bit(1);
+  _set_bit(2);
   time_ = value;
 }
 
@@ -8843,148 +8949,89 @@ inline void SimNotifyVehicleExit::set_time(double value) {
 
 // SimNotifyVehicleCollision
 
-// required int32 v1ID = 1;
-inline bool SimNotifyVehicleCollision::has_v1id() const {
+// required .prt.VehicleStatus v1_status = 1;
+inline bool SimNotifyVehicleCollision::has_v1_status() const {
   return _has_bit(0);
 }
-inline void SimNotifyVehicleCollision::clear_v1id() {
-  v1id_ = 0;
+inline void SimNotifyVehicleCollision::clear_v1_status() {
+  if (v1_status_ != NULL) v1_status_->::prt::VehicleStatus::Clear();
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimNotifyVehicleCollision::v1id() const {
-  return v1id_;
+inline const ::prt::VehicleStatus& SimNotifyVehicleCollision::v1_status() const {
+  return v1_status_ != NULL ? *v1_status_ : *default_instance_->v1_status_;
 }
-inline void SimNotifyVehicleCollision::set_v1id(::google::protobuf::int32 value) {
+inline ::prt::VehicleStatus* SimNotifyVehicleCollision::mutable_v1_status() {
   _set_bit(0);
-  v1id_ = value;
+  if (v1_status_ == NULL) v1_status_ = new ::prt::VehicleStatus;
+  return v1_status_;
 }
 
-// required int32 v2ID = 2;
-inline bool SimNotifyVehicleCollision::has_v2id() const {
+// required .prt.VehicleStatus v2_status = 2;
+inline bool SimNotifyVehicleCollision::has_v2_status() const {
   return _has_bit(1);
 }
-inline void SimNotifyVehicleCollision::clear_v2id() {
-  v2id_ = 0;
+inline void SimNotifyVehicleCollision::clear_v2_status() {
+  if (v2_status_ != NULL) v2_status_->::prt::VehicleStatus::Clear();
   _clear_bit(1);
 }
-inline ::google::protobuf::int32 SimNotifyVehicleCollision::v2id() const {
-  return v2id_;
+inline const ::prt::VehicleStatus& SimNotifyVehicleCollision::v2_status() const {
+  return v2_status_ != NULL ? *v2_status_ : *default_instance_->v2_status_;
 }
-inline void SimNotifyVehicleCollision::set_v2id(::google::protobuf::int32 value) {
+inline ::prt::VehicleStatus* SimNotifyVehicleCollision::mutable_v2_status() {
   _set_bit(1);
-  v2id_ = value;
+  if (v2_status_ == NULL) v2_status_ = new ::prt::VehicleStatus;
+  return v2_status_;
 }
 
-// required .prt.LocationType loc_type = 3;
-inline bool SimNotifyVehicleCollision::has_loc_type() const {
-  return _has_bit(2);
-}
-inline void SimNotifyVehicleCollision::clear_loc_type() {
-  loc_type_ = 0;
-  _clear_bit(2);
-}
-inline prt::LocationType SimNotifyVehicleCollision::loc_type() const {
-  return static_cast< prt::LocationType >(loc_type_);
-}
-inline void SimNotifyVehicleCollision::set_loc_type(prt::LocationType value) {
-  GOOGLE_DCHECK(prt::LocationType_IsValid(value));
-  _set_bit(2);
-  loc_type_ = value;
-}
-
-// required int32 locID = 4;
-inline bool SimNotifyVehicleCollision::has_locid() const {
-  return _has_bit(3);
-}
-inline void SimNotifyVehicleCollision::clear_locid() {
-  locid_ = 0;
-  _clear_bit(3);
-}
-inline ::google::protobuf::int32 SimNotifyVehicleCollision::locid() const {
-  return locid_;
-}
-inline void SimNotifyVehicleCollision::set_locid(::google::protobuf::int32 value) {
-  _set_bit(3);
-  locid_ = value;
-}
-
-// required int32 pos = 5;
-inline bool SimNotifyVehicleCollision::has_pos() const {
-  return _has_bit(4);
-}
-inline void SimNotifyVehicleCollision::clear_pos() {
-  pos_ = 0;
-  _clear_bit(4);
-}
-inline ::google::protobuf::int32 SimNotifyVehicleCollision::pos() const {
-  return pos_;
-}
-inline void SimNotifyVehicleCollision::set_pos(::google::protobuf::int32 value) {
-  _set_bit(4);
-  pos_ = value;
-}
-
-// required int32 delta_v = 6;
-inline bool SimNotifyVehicleCollision::has_delta_v() const {
-  return _has_bit(5);
-}
-inline void SimNotifyVehicleCollision::clear_delta_v() {
-  delta_v_ = 0;
-  _clear_bit(5);
-}
-inline ::google::protobuf::int32 SimNotifyVehicleCollision::delta_v() const {
-  return delta_v_;
-}
-inline void SimNotifyVehicleCollision::set_delta_v(::google::protobuf::int32 value) {
-  _set_bit(5);
-  delta_v_ = value;
-}
-
-// required bool rearend = 7;
-inline bool SimNotifyVehicleCollision::has_rearend() const {
-  return _has_bit(6);
-}
-inline void SimNotifyVehicleCollision::clear_rearend() {
-  rearend_ = false;
-  _clear_bit(6);
-}
-inline bool SimNotifyVehicleCollision::rearend() const {
-  return rearend_;
-}
-inline void SimNotifyVehicleCollision::set_rearend(bool value) {
-  _set_bit(6);
-  rearend_ = value;
-}
-
-// required bool sideswipe = 8;
-inline bool SimNotifyVehicleCollision::has_sideswipe() const {
-  return _has_bit(7);
-}
-inline void SimNotifyVehicleCollision::clear_sideswipe() {
-  sideswipe_ = false;
-  _clear_bit(7);
-}
-inline bool SimNotifyVehicleCollision::sideswipe() const {
-  return sideswipe_;
-}
-inline void SimNotifyVehicleCollision::set_sideswipe(bool value) {
-  _set_bit(7);
-  sideswipe_ = value;
-}
-
-// required double time = 9;
+// required double time = 3;
 inline bool SimNotifyVehicleCollision::has_time() const {
-  return _has_bit(8);
+  return _has_bit(2);
 }
 inline void SimNotifyVehicleCollision::clear_time() {
   time_ = 0;
-  _clear_bit(8);
+  _clear_bit(2);
 }
 inline double SimNotifyVehicleCollision::time() const {
   return time_;
 }
 inline void SimNotifyVehicleCollision::set_time(double value) {
-  _set_bit(8);
+  _set_bit(2);
+  time_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// SimNotifyVehicleCrash
+
+// required int32 v_status = 1;
+inline bool SimNotifyVehicleCrash::has_v_status() const {
+  return _has_bit(0);
+}
+inline void SimNotifyVehicleCrash::clear_v_status() {
+  v_status_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 SimNotifyVehicleCrash::v_status() const {
+  return v_status_;
+}
+inline void SimNotifyVehicleCrash::set_v_status(::google::protobuf::int32 value) {
+  _set_bit(0);
+  v_status_ = value;
+}
+
+// required double time = 2;
+inline bool SimNotifyVehicleCrash::has_time() const {
+  return _has_bit(1);
+}
+inline void SimNotifyVehicleCrash::clear_time() {
+  time_ = 0;
+  _clear_bit(1);
+}
+inline double SimNotifyVehicleCrash::time() const {
+  return time_;
+}
+inline void SimNotifyVehicleCrash::set_time(double value) {
+  _set_bit(1);
   time_ = value;
 }
 
@@ -10163,20 +10210,36 @@ VehicleStatus::mutable_passengerids() {
   return &passengerids_;
 }
 
-// optional int32 headway = 12;
-inline bool VehicleStatus::has_headway() const {
+// optional int32 lvID = 11;
+inline bool VehicleStatus::has_lvid() const {
   return _has_bit(8);
 }
-inline void VehicleStatus::clear_headway() {
-  headway_ = 0;
+inline void VehicleStatus::clear_lvid() {
+  lvid_ = 0;
   _clear_bit(8);
 }
-inline ::google::protobuf::int32 VehicleStatus::headway() const {
-  return headway_;
+inline ::google::protobuf::int32 VehicleStatus::lvid() const {
+  return lvid_;
 }
-inline void VehicleStatus::set_headway(::google::protobuf::int32 value) {
+inline void VehicleStatus::set_lvid(::google::protobuf::int32 value) {
   _set_bit(8);
-  headway_ = value;
+  lvid_ = value;
+}
+
+// optional float lv_distance = 12;
+inline bool VehicleStatus::has_lv_distance() const {
+  return _has_bit(9);
+}
+inline void VehicleStatus::clear_lv_distance() {
+  lv_distance_ = 0;
+  _clear_bit(9);
+}
+inline float VehicleStatus::lv_distance() const {
+  return lv_distance_;
+}
+inline void VehicleStatus::set_lv_distance(float value) {
+  _set_bit(9);
+  lv_distance_ = value;
 }
 
 // -------------------------------------------------------------------

@@ -782,7 +782,7 @@ package edu.ucsc.track_builder
 							max_speed="15"
 							offset="3"
 							bidirectional="false"
-							radius="50"
+							radius="20"
 							minOffset="1"
 							maxOffset="9"
 						  />

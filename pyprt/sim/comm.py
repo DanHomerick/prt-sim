@@ -5,11 +5,12 @@ from __future__ import division # always use floating point division
 
 import sys, socket, logging, heapq, struct, threading, time, Queue
 
-from pyprt.shared.utility import pairwise
-import pyprt.shared.api_pb2 as api
-import google.protobuf.text_format as text_format
 import SimPy.SimulationRT as Sim
+import google.protobuf.text_format as text_format
 
+from pyprt.shared.utility import pairwise
+import pyprt.shared.utility as utility
+import pyprt.shared.api_pb2 as api
 import common
 
 #import pdb  # python debugger
@@ -253,7 +254,7 @@ class ControlInterface(Sim.Process):
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
                     v = self.get_vehicle(msg.vID)
                     self.validate_spline(msg.spline)
-                    v.process_spline(msg.spline )
+                    v.process_spline_msg(msg.spline )
 
                 elif msg_type == api.CTRL_CMD_VEHICLE_ITINERARY:
                     msg = api.CtrlCmdVehicleItinerary()
@@ -261,24 +262,24 @@ class ControlInterface(Sim.Process):
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
                     v = self.get_vehicle(msg.vID)
                     if msg.clear:
-                        v.path.clear_planned_route()
+                        v.clear_path()
                     self.validate_itinerary(v, msg.trackIDs) # raises InvalidTrackSegmentID if not valid
-                    for id in msg.trackIDs:
-                        v.path.append_loc(self.get_trackSeg(id))
+                    locs = [self.get_trackSeg(id) for id in msg.trackIDs]
+                    v.extend_path(locs)
 
                 elif msg_type == api.CTRL_CMD_SWITCH:
                     msg = api.CtrlCmdSwitch()
                     msg.ParseFromString(msg_str)
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
                     ts = self.get_trackSeg(msg.trackID)
-                    next = self.get_trackSeg(msg.nextID)
+                    next_ts = self.get_trackSeg(msg.nextID)
 
                     # If not a valid track segment to switch to or it's already
                     # switching, then complain.
-                    if next not in common.digraph.neighbors(ts) or ts.next is None:
+                    if next_ts not in common.digraph.neighbors(ts) or ts.next_loc is None:
                         raise common.InvalidTrackSegID, msg.nextID
 
-                    ts.switch(next, msgID)
+                    ts.switch(next_ts, msgID)
 
                 elif msg_type == api.CTRL_CMD_PASSENGERS_EMBARK:
                     msg = api.CtrlCmdPassengersEmbark()
@@ -375,7 +376,7 @@ class ControlInterface(Sim.Process):
                     msg.ParseFromString(msg_str)
                     self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 
-                    if common.time_lt(msg.time, Sim.now()):
+                    if utility.time_lt(msg.time, Sim.now()):
                         raise common.InvalidTime, msg.time
                     resp = api.SimNotifyTime()
                     resp.msgID = msgID
@@ -391,7 +392,7 @@ class ControlInterface(Sim.Process):
 #                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
 #                    v = self.get_vehicle(msg.vID)
 #                    loc = self.get_trackSeg(msg.eID)
-#                    if v.loc is loc and common.dist_eql(v.pos, msg.pos/100): # convert from cm to meters
+#                    if v.loc is loc and utility.dist_eql(v.pos, msg.pos/100): # convert from cm to meters
 #                        resp = api.SimNotifyVehiclePosition()
 #                        resp.msgID = msgID
 #                        resp.vID = self.ID
@@ -597,7 +598,7 @@ class ControlInterface(Sim.Process):
         if len(spline.times) == 0:
             raise common.MsgError
 
-        if common.time_lt(spline.times[0], Sim.now()):
+        if utility.time_lt(spline.times[0], Sim.now()):
             logging.info("T=%4.3f First spline time %s is in the past.",
                          Sim.now(), spline.times[0])
             raise common.MsgError
@@ -610,7 +611,7 @@ class ControlInterface(Sim.Process):
     def validate_itinerary(self, vehicle, ids):
         if len(ids) == 0:
             return
-        latest_loc = vehicle.path.traversals[-1].loc
+        latest_loc = vehicle.loc
         for id in ids:
             loc = self.get_trackSeg(id)
             neighbors = common.digraph.neighbors(latest_loc)
