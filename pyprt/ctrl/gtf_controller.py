@@ -576,7 +576,8 @@ class Vehicle(object):
         assert abs((cspline.q[-1] - cspline.q[0]) -(final_pos - self.pos)) < 0.01
 
         # Append a last knot which extends the spline until past the end of the simulation.
-        cspline.append(Knot(final_pos, 0, 0, self.controller.sim_end_time+1))
+        if cspline.t[-1] <= self.controller.sim_end_time:
+            cspline.append(Knot(final_pos, 0, 0, self.controller.sim_end_time+1))
 
         return cspline
 
