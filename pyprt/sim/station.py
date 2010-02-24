@@ -143,8 +143,8 @@ class Berth(Sim.Process, traits.HasTraits):
                     pax.trip_end = Sim.now()
                     pax.trip_success = True
                     common.delivered_pax.add(pax)
-                    logging.info("T=%4.3f %s delivered to platform %s in %s by %s. disembarked in berth %s",
-                                 Sim.now(), pax, self.platform.ID, self.station.ID, self._disembark_vehicle.ID, self.ID)
+                    logging.info("T=%4.3f %s delivered to platform %s in %s by %s (%d out of %d), disembarked in berth %s",
+                                 Sim.now(), pax, self.platform.ID, self.station.ID, self._disembark_vehicle.ID, self._disembark_vehicle.passenger_count(), self._disembark_vehicle.max_pax_capacity,  self.ID)
                 else:
                     self.station.passengers.append(pax)
 
@@ -247,8 +247,8 @@ class Berth(Sim.Process, traits.HasTraits):
                 pax.loc = self._embark_vehicle
                 self.station.passengers.remove(pax)
                 pax.trip_boarded = Sim.now()
-                logging.info("T=%4.3f %s loaded into %s at station %s, platform %s, berth %s",
-                             Sim.now(), pax, self._embark_vehicle.ID, self.station.ID, self.platform.ID, self.ID)
+                logging.info("T=%4.3f %s loaded into %s (%d out of %d) at station %s, platform %s, berth %s ",
+                             Sim.now(), pax, self._embark_vehicle.ID, self._embark_vehicle.passenger_count(), self._embark_vehicle.max_pax_capacity,  self.station.ID, self.platform.ID, self.ID )
 
                 # Notify that embark of this passenger is complete
                 em_end_msg = api.SimNotifyPassengerEmbarkEnd()

@@ -556,3 +556,10 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def calc_energy_used(self):
         """Return the amount of energy used, in Joules"""
         pass
+
+    def passenger_count(self):
+	"""Return the count of the passengers"""
+	count = 0
+	for pax in self.passengers:
+		count = count + 1
+	return count
