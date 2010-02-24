@@ -112,7 +112,7 @@ class TrajectorySolver(object):
 
         return Knot(qi, vi, accel, knot.time - h)
 
-    def target_position(self, knot_initial, knot_final, fnc_info=False, max_attempts=5):
+    def target_position(self, knot_initial, knot_final, fnc_info=False, max_attempts=10):
         """Targets the position and velocity values in knot_final. The time
         supplied by knot_final is ignored, and may be set to None.
 
@@ -562,11 +562,11 @@ class TrajectorySolver(object):
 ##                                        maxfun = 1E7
 ##                                        )
 
-##        if fopt > error_threshold:
+        if fopt > error_threshold:
 ##            from pyprt.shared.cspline_plotter import CSplinePlotter
 ##            plotter = CSplinePlotter(self._soln_spline, self.v_max, self.a_max, self.j_max, self.v_min, self.a_min, self.j_min)
 ##            plotter.display_plot()
-##            raise OptimizationError(fopt, self._soln_spline.h)
+            raise OptimizationError(fopt, self._soln_spline.h)
 
         # Remove any (tiny) negative duration polys.
         if -0.0001 <= min(self._soln_spline.h) < 0:

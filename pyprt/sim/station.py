@@ -201,7 +201,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     logging.info("T=%4.3f Embarking passenger not at station. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
                                  Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
                     error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._disembark_cmd_id
+                    error_msg.msgID = self._embark_cmd_id
                     error_msg.id_type = api.PASSENGER
                     error_msg.ID = pax.ID
                     common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
@@ -212,7 +212,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     logging.info("T=%4.3f Embarking passenger failed since vehicle is at max capacity. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
                                  Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
                     error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._disembark_cmd_id
+                    error_msg.msgID = self._embark_cmd_id
                     error_msg.id_type = api.PASSENGER
                     error_msg.ID = pax.ID
                     common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)

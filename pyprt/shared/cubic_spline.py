@@ -314,9 +314,9 @@ class CubicSpline(object):
         assert isinstance(other, CubicSpline)
         try:
             self_idx_start = self._get_idx_from_time(start_time)
-            self_idx_end = self._get_idx_from_time(end_time)
+            self_idx_end = self._get_idx_from_time(end_time)+1 # returns left index, want right
             other_idx_start = other._get_idx_from_time(start_time)
-            other_idx_end = other._get_idx_from_time(end_time)
+            other_idx_end = other._get_idx_from_time(end_time)+1 # returns left index, want right
         except OutOfBoundsError:
             return None
 

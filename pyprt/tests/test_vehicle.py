@@ -290,6 +290,19 @@ class TestBaseVehicle(unittest.TestCase):
         self.assertTrue(len(self.ts1.vehicles) == 0)
         self.assertTrue(len(self.ts2.vehicles) == 1)
 
+    def test_collision(self): # TODO: Test post collision state, once decided what to do upon collisions...
+        """Simple collision test. Two vehicles on the same track segment,
+        the rear one with an initial velocity, the lead one stopped. Simulation
+        halts before the 'rear' vehicle leaves the segment."""
+        v0 = vehicle.BaseVehicle(0, self.ts0, 10, 5) # fixed speed, 5 m/s
+        v1 = vehicle.BaseVehicle(1, self.ts0, 50, 0)
+
+        Sim.activate(v0, v0.ctrl_loop())
+        Sim.activate(v1, v1.ctrl_loop())
+        Sim.simulate(until=16)
+
+        self.assertAlmostEqual(v0.pos, 90, self.PLACES)
+
 
 if __name__ == '__main__':
     unittest.main()

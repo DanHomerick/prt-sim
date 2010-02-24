@@ -405,8 +405,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """
         assert utility.dist_eql(self.tail_pos, self.tail_loc.length)
         old_loc = self.tail_loc
-        v = old_loc.vehicles.pop(0) # remove myself from old TrackSegment's vehicle list
-        assert v is self
+        old_loc.vehicles.remove(self) # remove myself from old TrackSegment's vehicle list
         self._pos_offset_tail += old_loc.length
         self._path_idx_tail += 1
 
@@ -425,14 +424,14 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         # Single-vehicle crash.
         if other_vehicle is None:
             # log and notify controller
-            logging.info("T=%4.3f %s crashed in a single vehicle accident.", self.ID)
+            logging.info("T=%4.3f %s crashed in a single vehicle accident.", Sim.now(), self.ID)
             msg = api.SimNotifyVehicleCrash()
             self.fill_VehicleStatus(msg.v_status)
             common.interface.send(api.SIM_NOTIFY_VEHICLE_CRASH, msg)
 
         else:
             assert isinstance(other_vehicle, BaseVehicle)
-            logging.info("T=%4.3f Vehicle %s collided with vehicle %s.", self.ID, other_vehicle.ID)
+            logging.info("T=%4.3f Vehicle %s collided with vehicle %s.", Sim.now(), self.ID, other_vehicle.ID)
             msg = api.SimNotifyVehicleCollision()
             other_vehicle.fill_VehicleStatus(msg.v1_status)
             self.fill_VehicleStatus(msg.v2_status)
@@ -456,7 +455,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
             t = self._spline.find_intersection(lv._spline, Sim.now(), boundary_time, dist)
             if t is not None:
-                heapq.heappush( (t, self.COLLISION, lv) )
+                heapq.heappush( self._actions_queue, (t, self.COLLISION, lv) )
 
     def _add_tail_release(self):
         # Add next tail release to queue.
