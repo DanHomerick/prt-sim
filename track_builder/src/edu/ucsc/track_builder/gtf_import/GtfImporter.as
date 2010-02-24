@@ -310,8 +310,8 @@ package edu.ucsc.track_builder.gtf_import
 				
 				var platforms:Vector.<Platform> = new Vector.<Platform>();
 				var platform:Platform = new Platform(boardingSeg.id, 0);
-				// The true boardingSeg.length varies a bit, and we want to guarantee the berths remain fully on this seg
-				var berthLength:Number = Math.min(boardingSeg.length/STATION_BERTH_COUNT, STATION_BERTH_LENGTH) 
+				// The true boardingSeg.h_length varies a bit, and we want to guarantee the berths remain fully on this seg
+				var berthLength:Number = Math.min(boardingSeg.h_length/STATION_BERTH_COUNT, STATION_BERTH_LENGTH) 
 				for (var i:uint=0; i < STATION_BERTH_COUNT; ++i) {
 					platform.berths.push(new Berth(i, i*berthLength, (i+1)*berthLength, true, true))
 				}
@@ -676,9 +676,8 @@ package edu.ucsc.track_builder.gtf_import
 			connectOverlays(graph, trackOverlays);
 
 			/* Make Station and StationOverlay instances */
-			var stations:Object = makeStations(stationEdges, trackOverlays);
+			var stations:Object = makeStations(stationEdges, trackOverlays);		
 
-			
 			/* Make a near tree containing just the locations of the stops */
 			var stopLatLngs:Vector.<LatLng> = new Vector.<LatLng>();
 			var stopInstances:Array = new Array();

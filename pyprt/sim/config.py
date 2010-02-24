@@ -20,15 +20,16 @@ class ConfigManager(object):
         # Config file
         self.config_path = None
         if len(positional_args) == 1:
-            self.config_path = positional_args[0]
+            self.config_path = os.path.abspath(positional_args[0])
         elif self.options.config_path != None:
-            self.config_path = self.options.config_path
+            self.config_path = os.path.abspath(self.options.config_path)
         else: # Fallback to a default.
             from pyprt.sim import __path__ as sim_path
             self.config_path = sim_path[0] + '/default.cfg'
 
-        self.config_parser = ConfigParser.SafeConfigParser()
-        self.config_dir = os.path.abspath(os.path.dirname(self.config_path)) + os.path.sep
+        from pyprt import __path__ as pyprt_path
+        self.config_parser = ConfigParser.SafeConfigParser({'pyprt':pyprt_path[0]})
+        self.config_dir = os.path.dirname(os.path.abspath(self.config_path)) + os.path.sep
         # Parse the config file
         if not self.config_parser.read(self.config_path): # returned an empty list
             raise common.ConfigError("Unable to read config file: " + self.config_path)
@@ -92,8 +93,8 @@ class ConfigManager(object):
                 logging.warn('No "disable_gui" setting found. Defaulting to False.')
                 return False
 
-    def get_config_path(self):
-        return self.config_path
+    def get_config_dir(self):
+        return self.config_dir
 
     def get_scenario_path(self):
         if self.options.scenario_path != None:
@@ -174,7 +175,8 @@ class ConfigManager(object):
         """Returns a list of strings that, when executed on the command line,
         will execute the controller programs."""
         items = self.config_parser.items('Controllers')
-        return [value for (name, value) in items]
+        # the pyprt path expansion gets included in the returned items. :(
+        return [value for (name, value) in items if name != 'pyprt']
 
     def get_start_controllers(self):
         return self.options.start_controllers

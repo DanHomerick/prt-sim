@@ -196,7 +196,7 @@ class MainWindow(wx.Frame):
                 cmd = cmd.split()
                 try:
                     ctrl_proc = subprocess.Popen(cmd,
-                                                cwd=pyprt.__path__[0])
+                                                cwd=common.config_manager.get_config_dir())
                 except OSError:
                     dialog = wx.MessageDialog(self,
                         message='Failed to open controller using command: %s' % cmd,
