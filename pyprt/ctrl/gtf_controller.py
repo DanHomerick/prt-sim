@@ -152,6 +152,7 @@ class GtfController(BaseController):
 
             else:
                 raise Exception("Huh? What was this reminder for again? Current State: %s" % vehicle.state)
+        self.t_reminders[ms_msg_time] = []
 
     def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):
         vehicle = self.v_manager.vehicles[msg.v_status.vID]
@@ -280,6 +281,7 @@ class VehicleManager(object):
                         break
 
         self.legs = self.load_legs(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time)
+        doc.unlink()
 
     def build_graph(self, track_segments_xml):
         """Returns a networkx.DiGraph suitable for routing vehicles over."""
@@ -573,8 +575,8 @@ class Vehicle(object):
 
         assert abs((cspline.q[-1] - cspline.q[0]) -(final_pos - self.pos)) < 0.01
 
-        # Append a last knot which extends the spline until well past the end of the simulation.
-        cspline.append(Knot(final_pos, 0, 0, 1E10))
+        # Append a last knot which extends the spline until past the end of the simulation.
+        cspline.append(Knot(final_pos, 0, 0, self.controller.sim_end_time+1))
 
         return cspline
 
@@ -719,7 +721,7 @@ class PassengerManager(object):
         self.graph, self.node_dict = self._build_graph(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time, walk_speed=1.33)
         self.paths = self._make_paths(self.graph, self.node_dict)
         self.passengers = {} # keyed by integer pax_id, values are Passenger instances.
-
+        doc.unlink()
         assert isinstance(self.graph, networkx.classes.DiGraph)
 
     def add_passenger(self, pax):

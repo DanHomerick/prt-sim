@@ -66,6 +66,7 @@ class ScenarioManager(object):
         common.vehicle_list = sorted(v for v in common.vehicles.itervalues())
 
         self.scenario_loaded = True
+        doc.unlink() # facilitates garbage collection on the XML data
 
     def load_track_segments(self, track_segments_xml):
         # Create the TrackSegments

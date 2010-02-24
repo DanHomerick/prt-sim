@@ -234,9 +234,9 @@ class CubicSpline(object):
         coeffs = (j/6, ca/2, cv, cq)
 
 ##        # Check for inconsistancies between the polynomial and the knots. (SLOW!)
-##        if __debug__:
+##        if __debug__ and self.h[left_idx] > 0.0001: # ignore tiny h's.
 ##            from scipy import poly1d
-##            epsilon = 0.1
+##            epsilon = 0.01
 ##            poly = poly1d(coeffs)
 ##            assert abs(poly(self.t[left_idx]) - self.q[left_idx]) < epsilon
 ##            assert abs(poly(self.t[right_idx]) - self.q[right_idx]) < epsilon

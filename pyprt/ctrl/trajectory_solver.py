@@ -488,7 +488,7 @@ class TrajectorySolver(object):
 
         return spline
 
-    def target_position_none(self, knot_initial, knot_final, initial_hs=None, error_threshold=1E-4):
+    def target_position_none(self, knot_initial, knot_final, initial_hs=None, error_threshold=1E-5):
         """Trajectory does not reach v_max or a_max. Solve using a library's
         optimization routine. Note that a *guarantee* of time-optimality does
         not apply with this function, but is typically satisfied regardless due
@@ -562,21 +562,26 @@ class TrajectorySolver(object):
 ##                                        maxfun = 1E7
 ##                                        )
 
-        if fopt > error_threshold:
-            from pyprt.shared.cspline_plotter import CSplinePlotter
-            plotter = CSplinePlotter(self._soln_spline, self.v_max, self.a_max, self.j_max, self.v_min, self.a_min, self.j_min)
-            plotter.display_plot()
-            raise OptimizationError(fopt, self._soln_spline.h)
+##        if fopt > error_threshold:
+##            from pyprt.shared.cspline_plotter import CSplinePlotter
+##            plotter = CSplinePlotter(self._soln_spline, self.v_max, self.a_max, self.j_max, self.v_min, self.a_min, self.j_min)
+##            plotter.display_plot()
+##            raise OptimizationError(fopt, self._soln_spline.h)
 
         # Remove any (tiny) negative duration polys.
         if -0.0001 <= min(self._soln_spline.h) < 0:
             q, v, a, t = [], [], [], []
             for idx, h in enumerate(self._soln_spline.h):
-                if h > 0:
+                if h > 0.00001:
                     q.append(self._soln_spline.q[idx])
                     v.append(self._soln_spline.v[idx])
                     a.append(self._soln_spline.a[idx])
                     t.append(self._soln_spline.t[idx])
+            q.append(self._soln_spline.q[-1])
+            v.append(self._soln_spline.v[-1])
+            a.append(self._soln_spline.a[-1])
+            t.append(self._soln_spline.t[-1])
+
             self._soln_spline = CubicSpline(q, v, a, t)
 
         return self._soln_spline

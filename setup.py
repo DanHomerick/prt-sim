@@ -25,23 +25,24 @@ from distutils.core import setup
 
 # distutils format:
 requires = [
+    'Python (>= 2.6)',
     'SimPy (>=2.0.1)',
     'protobuf (>=2.3.0)',
     'networkx (>=1.0.1)',
-    'numpy (>=1.4.0)',
+    'numpy (>=1.3.0)',
     'scipy (>=0.7.1)',
     'traits (>=3.2.0)',
     'chaco (>=3.2.0)',
-    'wx (>=2.8.10.1)'
+    'wx (>=2.8.10)'
     ]
 
 setup(name="pyprt",
-      version="0.1.0",
+      version="0.1.1",
       description="A Personal Rapid Transit simulator",
       author="Dan Homerick",
       author_email="danhomerick@gmail.com",
       url="http://code.google.com/p/prt-sim/",
-      packages=['pyprt', 'pyprt.sim', 'pyprt.ctrl', 'pyprt.tests'],
+      packages=['pyprt', 'pyprt.sim', 'pyprt.ctrl', 'pyprt.tests', 'pyprt.shared'],
       requires=requires, # distutils style
 ##      install_requires = install_requires, # setuptools style
 
