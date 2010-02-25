@@ -9,7 +9,8 @@
 				                        initialize="feedLabel_pg1.text = 'Feed Directory: ' + feedDir.nativePath;"/>
 			
 			<mx:Label text="Choose Routes" fontWeight="bold" fontStyle="italic"/>	
-		    <mx:DataGrid id="routeChooser" width="100%" height="70%" rowCount="5" horizontalScrollPolicy="auto" allowMultipleSelection="true" allowDragSelection="true" initialize="initRoutesGrid()">
+		    <mx:DataGrid id="routeChooser" width="100%" height="70%" rowCount="5" horizontalScrollPolicy="auto" selectedIndex="0" 
+		    	                           allowMultipleSelection="true" allowDragSelection="true" initialize="initRoutesGrid()">
 		        <mx:columns>
 		            <mx:DataGridColumn dataField="typeStr" headerText="Type" width="100"/>
 		            <mx:DataGridColumn dataField="short" headerText="ShortID" width="60"/>
@@ -49,7 +50,7 @@
 				
 				<mx:GridRow>
 					<mx:GridItem>
-						<mx:NumericStepper id="hourChooser" minimum="0" maximum="36" stepSize="1" value="12" />
+						<mx:NumericStepper id="hourChooser" minimum="0" maximum="36" stepSize="1" value="7" />
 					</mx:GridItem>
 					<mx:GridItem>
 						<mx:NumericStepper id="minuteChooser" minimum="0" maximum="59" stepSize="1" value="0" />
@@ -108,6 +109,9 @@
 					routeChooser.dataProvider = routesArray;
 				} catch (gtfErr:GtfImportError) {
 					Alert.show(gtfErr.message);
+					this.close();
+				} catch (e:Error) {
+					Alert.show(e.message);
 					this.close();
 				}
 			}

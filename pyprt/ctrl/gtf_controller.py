@@ -79,20 +79,23 @@ class GtfController(BaseController):
         passengers = self.p_manager.fetch_embarking_pax(vehicle.id, leg.origin_station, leg.depart)
         overflow_passengers = vehicle.embark(passengers)
 
+        origin_time = max(self.current_time, leg.depart+1)
         for pax in overflow_passengers:
-            origin_time = max(self.current_time, leg.depart+1)
             self.p_manager.reschedule_pax(pax, leg.origin_station, origin_time)
+        if overflow_passengers:
+            self.log.info("t:%5.3f Overflow passengers at station %d recreated at time %5.3f : %s",
+                          self.current_time, leg.origin_station, origin_time, overflow_passengers)
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
         self.sim_end_time = msg.sim_end_time
         self.log.info("Sim Greeting message received. Sim end at: %f" % msg.sim_end_time)
 
-        self.v_manager = VehicleManager(self.scenario_path, msg.sim_end_time)
+        self.v_manager = VehicleManager(self.scenario_path, msg.sim_end_time, self)
         Vehicle.manager = self.v_manager
         Vehicle.controller = self
 
-        self.p_manager = PassengerManager(self.scenario_path, msg.sim_end_time, self._walk_speed)
+        self.p_manager = PassengerManager(self.scenario_path, msg.sim_end_time, self._walk_speed, self)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         self.log.info("Sim Start message received.")
@@ -128,6 +131,9 @@ class GtfController(BaseController):
 
             else:
                 raise Exception("Unexpected case.")
+
+            self.log.debug("t:%5.3f Vehicle %d starts sim at pos: %7.3f, ts_id: %d in %s state",
+                           self.current_time, vehicle.id, vehicle.pos, vehicle.ts_id, vehicle.state)
 
     def on_SIM_EVENT_PASSENGER_CREATED(self, msg, msgID, msg_time):
         p_status = msg.p_status
@@ -251,13 +257,15 @@ class VehicleManager(object):
     """Reads schedule information from the gtf information in the scenario.
     Provides pathing information for the vehicles."""
 
-    def __init__(self, xml_path, sim_end_time):
+    def __init__(self, xml_path, sim_end_time, controller):
         """xml_path: the path (including filename) to the xml scenario file
         created by TrackBuilder.
 
         The scenario file is expected to have a GoogleTransitFeed section which
         provides vehicle scheduling and trip data, in addition to the typical
         TrackSegment, Station, and Vehicle data."""
+        self.controller = controller
+
         import xml.dom.minidom
         doc = xml.dom.minidom.parse(xml_path)
 
@@ -665,6 +673,9 @@ class Vehicle(object):
         disembark_msg.passengerIDs.extend(passengers)
         self.controller.send(api.CTRL_CMD_PASSENGERS_DISEMBARK, disembark_msg)
 
+        self.controller.log.info("t:%5.3f Vehicle %d at station %d disembarking %s",
+                                 self.controller.current_time, self.id, self.leg.dest_station, passengers)
+
     def embark(self, passengers):
         """Embark passengers"""
         fill_line = self.capacity - len(self.pax)
@@ -679,6 +690,10 @@ class Vehicle(object):
         embark_msg.berthID = self.berth_id
         embark_msg.passengerIDs.extend(passengers[:fill_line])
         self.controller.send(api.CTRL_CMD_PASSENGERS_EMBARK, embark_msg)
+
+        self.controller.log.info("t:%5.3f Vehicle %d at station %d embarking %s. Overflow: %s",
+                                 self.controller.current_time, self.id, self.leg.origin_station,
+                                 passengers[:fill_line], passengers[fill_line:])
 
         # Return overflow passengers
         return passengers[fill_line:]
@@ -734,10 +749,12 @@ class PassengerManager(object):
 
     WALK_ID = -100
 
-    def __init__(self, xml_path, sim_end_time, walk_speed):
+    def __init__(self, xml_path, sim_end_time, walk_speed, controller):
         """xml_path: the path (including filename) to the xml scenario file
         created by TrackBuilder."""
         self._walk_speed = walk_speed
+        self.controller = controller
+
         import xml.dom.minidom
         doc = xml.dom.minidom.parse(xml_path)
 
@@ -753,13 +770,15 @@ class PassengerManager(object):
         the vehicle unless they need to transfer or they have arrived at their
         final destination."""
 
-##        To reduce the time required for the controller to startup,
-##        the controller only builds a graph for routing passengers to
-##        locations that are reached by vehicles before the simulation
-##        ends. For short simulations, this means that there aren't paths
-##        to every destination station.
+#        To reduce the time required for the controller to startup,
+#        the controller only builds a graph for routing passengers to
+#        locations that are reached by vehicles before the simulation
+#        ends. For short simulations, this means that there aren't paths
+#        to every destination station.
         assert isinstance(pax, Passenger)
         assert not pax.path # pax.path is empty
+        self.controller.log.info("t:%5.3f Pax %d created. Travelling from %d to %d.",
+                      pax.origin_time, pax.id, pax.origin_id, pax.dest_id)
 
         # Passenger can be created at any time. Find the earliest Node at the
         # passenger's origin station.
@@ -770,6 +789,8 @@ class PassengerManager(object):
                 origin_node = n
                 break
         if origin_node is None:
+            self.controller.log.warn("t:%5.3f Pax %d created too late. No more vehicles are scheduled to arrive or depart from station %d.",
+                                     pax.origin_time, pax.id, pax.origin_id)
             return # Passenger created too late. No more vehicles are scheduled to arrive or depart from this station.
 
         # Get the passenger's path to dest from the cached paths.
@@ -777,9 +798,13 @@ class PassengerManager(object):
         try:
             path = self.paths[origin_node][dest_node]
         except KeyError:
+            self.controller.log.warn("t:%5.3f Pax %d cannot get from %d to %d on the remaining trips scheduled in the simulation time.",
+                                self.controller.current_time, pax.id, pax.origin_id, pax.dest_id)
             return  # This passenger is stranded.
 
         if not path: # guard against case where passenger is created at its destination.
+            self.controller.log.warn("t: %5.3f Pax %d was created at it's destination. origin: %d, dest: %d",
+                                self.controller.current_time, pax.id, pax.origin_id, pax.dest_id)
             return
 
         ### Annotate the Node instances, providing a timeline for all passenger actions.
@@ -871,6 +896,8 @@ class PassengerManager(object):
 
         pax.path.reverse()
         self.passengers[pax.id] = pax
+        self.controller.log.debug("t:%5.3f Pax %d path: %s",
+                                  pax.origin_time, pax.id, pax.get_path_str())
 
     def remove_pax(self, pax):
         """Removes the passenger from the scheduled embark/disembark commands."""
@@ -1118,6 +1145,20 @@ class Passenger(object):
         assert isinstance(disembark, bool)
         assert isinstance(walk, bool)
         self.path.append((node, vehicle, embark, disembark, walk))
+
+    def get_path_str(self):
+        """Returns the passengers path info in string form."""
+        parts = []
+        for node, v, emb, dis, walk in self.path:
+            if emb:
+                parts.append("Embark %d@station %d" % (v, node.station))
+            elif dis:
+                parts.append("Disemb %d@station %d" % (v, node.station))
+            elif walk:
+                parts.append("Walk from station %d" % (node.station))
+            else:
+                raise Exception
+        return '-->'.join(parts)
 
 if __name__ == '__main__':
     main()

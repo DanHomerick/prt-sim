@@ -144,7 +144,7 @@ class BaseController(object):
         else:
             handler = logging.FileHandler(log_path, 'w')
         formatter = logging.Formatter('%(filename)10s %(funcName)20s line:%(lineno)d' \
-                            '%(levelname)8s %(relativeCreated)dms: %(message)s')
+                            ' walltime:%(relativeCreated)dms %(levelname)8s %(message)s')
         handler.setFormatter(formatter)
         handler.setLevel(logging.DEBUG)
         self.log.setLevel(logging.DEBUG)
@@ -155,7 +155,7 @@ class BaseController(object):
             handler = logging.StreamHandler()
         else:
             handler = logging.FileHandler(commlog_path, 'w')
-        formatter = logging.Formatter('%(message)s---- %(relativeCreated)dms')
+        formatter = logging.Formatter('%(message)s---- walltime: %(relativeCreated)dms')
         handler.setFormatter(formatter)
         handler.setLevel(logging.DEBUG)
         self.comm_log.setLevel(logging.DEBUG)
