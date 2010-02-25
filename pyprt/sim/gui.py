@@ -389,7 +389,7 @@ class MainWindow(wx.Frame):
             pax_waiting = 0
             total_wait = 0
             max_wait = 0
-            for stat in common.stations.itervalues(): # collected in 'seconds'
+            for stat in common.station_list: # collected in 'seconds'
                 for pax in stat.passengers:
                     pax_waiting += 1
                     pax_wait = pax.wait_time # don't force it to calc the wait time twice

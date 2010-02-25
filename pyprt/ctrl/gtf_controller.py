@@ -28,12 +28,14 @@ def main():
                 help="The IP address of the server (simulator). Default is %default")
     options_parser.add_option("-p", "--port", type="int", dest="port", default=64444,
                 help="TCP Port to connect to. Default is: %default")
+    options_parser.add_option("--walk_speed", type="float", dest="walk_speed", default=1.33,
+                help="Speed, in meters/sec, at which passengers will walk to a neighboring station. A value of 0 will disable passenger walking entirely.")
     options, args = options_parser.parse_args()
 
     if len(args) != 1:
         options_parser.error("Expected one argument. Received: %s" % ' '.join(args))
 
-    ctrl = GtfController(options.logfile, options.comm_logfile, args[0])
+    ctrl = GtfController(options.logfile, options.comm_logfile, options.walk_speed, args[0])
     ctrl.connect(options.server, options.port)
 
 def to_seconds(time_str):
@@ -42,7 +44,6 @@ def to_seconds(time_str):
     return sec + minute*60 + hour*3600
 
 class GtfController(BaseController):
-
     # States (for state-machine)
     RUNNING_LEG = "RUNNING_LEG"             # Travelling from one station to the next.
     PARKING = "PARKING"                     # Station berth is reserved. Moving to the berth. Not necessarily on station tracksegment.
@@ -54,10 +55,11 @@ class GtfController(BaseController):
     LAST_CALL = "LAST_CALL"                 # Parked in berth, loading last round of passengers.
     READY_TO_DEPART = "READY_TO_DEPART"     # Parked in berth, waiting for departure time, ready to go immediately
 
-    def __init__(self, log_path, commlog_path, scenario_path):
+    def __init__(self, log_path, commlog_path, walk_speed, scenario_path):
         super(GtfController, self).__init__(log_path, commlog_path)
         self.scenario_path = scenario_path
         self.t_reminders = defaultdict(list) # keyed by time, values are lists of vehicle ids
+        self._walk_speed = walk_speed
 
         # self.v_manager and self.p_manager are instantiated upon
         # receipt of a SIM_GREETING msg.
@@ -90,7 +92,7 @@ class GtfController(BaseController):
         Vehicle.manager = self.v_manager
         Vehicle.controller = self
 
-        self.p_manager = PassengerManager(self.scenario_path, msg.sim_end_time)
+        self.p_manager = PassengerManager(self.scenario_path, msg.sim_end_time, self._walk_speed)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         self.log.info("Sim Start message received.")
@@ -240,7 +242,8 @@ class GtfController(BaseController):
             if vehicle.berth_id != None:
                 station_id = self.v_manager.track2station[vehicle.leg.origin_ts]
                 station = self.v_manager.stations[station_id]
-                station.release_berth(vehicle.berth_id)
+                station.release_berth(vehicle.berth_id, vehicle.platform_id)
+                vehicle.platform_id = None
                 vehicle.berth_id = None
                 vehicle.berth_pos = None
 
@@ -459,18 +462,18 @@ class Station(object):
 
         self.berth_reservations = [None]*len(berth_positions)
 
-    def reserve_berth(self, vehicle_id):
-        """Sets aside a berth for use by vehicle. Returns a pair:
-            (berth_position, berth_id)
+    def reserve_berth(self, vehicle_id, platform_id):
+        """Sets aside a berth for use by vehicle. Returns a triple:
+            (berth_position, berth_id, ts_id)
         Returns None if no berths are available.
         Always reserves the berth closest to the station exit.
         """
         for idx in range(len(self.berth_positions)-1, -1, -1): # iterate over whole list in reverse
             if self.berth_reservations[idx] is None:
                 self.berth_reservations[idx] = vehicle_id
-                return (self.berth_positions[idx], idx)
+                return (self.berth_positions[idx], idx, self.platform_ts_id)
 
-    def release_berth(self, berth_id):
+    def release_berth(self, berth_id, platform_id):
         """Frees the berth for use. Returns None."""
         self.berth_reservations[berth_id] = None
 
@@ -500,6 +503,8 @@ class Vehicle(object):
         self.spline = None
         self.traj_solver = TrajectorySolver(self.v_max, self.a_max, self.j_max,
                                            -5, self.a_min, self.j_min)
+
+        self.platform_id = None
         self.berth_pos = None
         self.berth_id = None
         self.state = None
@@ -618,10 +623,11 @@ class Vehicle(object):
         station = self.manager.stations[self.leg.dest_station]
 
         # reserve station berth
-        self.berth_pos, self.berth_id = station.reserve_berth(self.id)
+        self.platform_id = 0
+        self.berth_pos, self.berth_id, dest_ts = station.reserve_berth(self.id, 0)
 
         # calculate how far the vehicle needs to travel to end in the berth
-        path_length, self.path = self.manager.get_path(self.ts_id, self.leg.dest_ts)
+        path_length, self.path = self.manager.get_path(self.ts_id, dest_ts)
         dist = self.berth_pos + path_length - self.pos
 ##        for b, a in pairwise(reversed(vehicle.path)): # b is closer to the end of the path
 ##            if vehicle.ts_id == b:
@@ -709,17 +715,33 @@ class PassengerManager(object):
     """Handles passenger movement through the transit network, routing them
     from their origin station to their destination. To accomodate the need
     for passengers to transfer between vehicles, a time-expanded graph is used.
+
+    Each station is reperesented by a set of nodes. Each node in that set
+    represents a vehicle arrival or departure time (with one special node that is
+    time-independent).
+
+    When a passenger is created, the PassengerManager finds the shortest path
+    through the time-expanded graph, and sets up a itenerary for the pax to
+    folllow in order to get to its destination.
+
+    The itenerary for the passenger is stored in two places. It's stored on
+    the station-time nodes, so that there's one centralized place for a
+    vehicle to ask, "Who do I pick up, drop off?" It's also stored in the
+    Passenger objects, so that I can more easily erase an old itenerary and
+    reschedule the pax, for the case where she can't take her scheduled vehicle
+    because it's full.
     """
 
     WALK_ID = -100
 
-    def __init__(self, xml_path, sim_end_time):
+    def __init__(self, xml_path, sim_end_time, walk_speed):
         """xml_path: the path (including filename) to the xml scenario file
         created by TrackBuilder."""
+        self._walk_speed = walk_speed
         import xml.dom.minidom
         doc = xml.dom.minidom.parse(xml_path)
 
-        self.graph, self.node_dict = self._build_graph(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time, walk_speed=1.33)
+        self.graph, self.node_dict = self._build_graph(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time)
         self.paths = self._make_paths(self.graph, self.node_dict)
         self.passengers = {} # keyed by integer pax_id, values are Passenger instances.
         doc.unlink()
@@ -917,7 +939,7 @@ class PassengerManager(object):
         node.embark_pax[vehicle_id] = []
         return passengers
 
-    def _build_graph(self, gtf_xml, sim_end_time, walk_speed):
+    def _build_graph(self, gtf_xml, sim_end_time):
         """Returns a networkx.DiGraph suitable for routing passengers over and
         a dictionary whose keys are station_ids and whose values are lists
         containing all Node instances for that station_id.
@@ -982,31 +1004,32 @@ class PassengerManager(object):
                 graph.add_edge(a, b, weight=b.time-a.time, vehicle=api.NONE_ID)
 
         ### Create edges that represent walking between nearby stations. ###
-        neighbors_xml = gtf_xml.getElementsByTagName('Neighbors')[0]
-        for station_xml in neighbors_xml.getElementsByTagName('Station'):
-            s_id = int(station_xml.getAttribute('id').split('_')[0])
+        if self._walk_speed: # disable walking if walk speed is 0 or None
+            neighbors_xml = gtf_xml.getElementsByTagName('Neighbors')[0]
+            for station_xml in neighbors_xml.getElementsByTagName('Station'):
+                s_id = int(station_xml.getAttribute('id').split('_')[0])
 
-            # make a list of neighbors, sorted by distance, where each neighbor
-            # is a 2-tuple: (time, neighbor_id)
-            neighbor_list = []
-            for neighbor_xml in station_xml.getElementsByTagName('Neighbor'):
-                neighbor_id = int(neighbor_xml.getAttribute('station_id').split('_')[0])
-                neighbor_dist = int(neighbor_xml.getAttribute('distance'))
-                neighbor_list.append( (neighbor_dist/walk_speed, neighbor_id) )
-            neighbor_list.sort() # sorts by first element of tuples, then by second.
+                # make a list of neighbors, sorted by distance, where each neighbor
+                # is a 2-tuple: (time, neighbor_id)
+                neighbor_list = []
+                for neighbor_xml in station_xml.getElementsByTagName('Neighbor'):
+                    neighbor_id = int(neighbor_xml.getAttribute('station_id').split('_')[0])
+                    neighbor_dist = int(neighbor_xml.getAttribute('distance'))
+                    neighbor_list.append( (neighbor_dist/self._walk_speed, neighbor_id) )
+                neighbor_list.sort() # sorts by first element of tuples, then by second.
 
-            # add new outbound 'walk' edges for each station timepoint that
-            # has a vehicle arrival.
-            for station_node in node_dict[s_id]:
-                edges = graph.in_edges(station_node, data=True)
-                if any([True for e in edges if e[2]['vehicle'] != api.NONE_ID]):
-                    for pair in neighbor_list:
-                        neighbor_node = Node(pair[1], station_node.time + pair[0])
-                        # Will add neighbor_node to graph if it doesn't already,
-                        # exist, otherwise the existing node is used.
-                        # Relies on Node's __eq__ only checking station_id and time.
-                        graph.add_edge(station_node, neighbor_node,
-                                       weight=pair[0], vehicle=self.WALK_ID)
+                # add new outbound 'walk' edges for each station timepoint that
+                # has a vehicle arrival.
+                for station_node in node_dict[s_id]:
+                    edges = graph.in_edges(station_node, data=True)
+                    if any([True for e in edges if e[2]['vehicle'] != api.NONE_ID]):
+                        for pair in neighbor_list:
+                            neighbor_node = Node(pair[1], station_node.time + pair[0])
+                            # Will add neighbor_node to graph if it doesn't already,
+                            # exist, otherwise the existing node is used.
+                            # Relies on Node's __eq__ only checking station_id and time.
+                            graph.add_edge(station_node, neighbor_node,
+                                           weight=pair[0], vehicle=self.WALK_ID)
 
         ### Add a 'destination' node that does not have a time. This gives a target to route
         ### to without requiring the time of arrival to be known. Every Node
