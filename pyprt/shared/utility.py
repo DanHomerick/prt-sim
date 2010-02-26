@@ -12,7 +12,7 @@ def pairwise(iterable):
     return itertools.izip(a, b)
 
 # Divide resolution by two for rounding.
-DIST_RES = 0.05   # 5 cm
+DIST_RES = 0.1   # 10 cm
 DIST_RND = 2
 TIME_RES = 0.001
 TIME_RND = 3
@@ -41,3 +41,14 @@ def time_gt(a, b):
     return (True if a > b and not time_eql(a,b) else False)
 def time_lt(a, b):
     return (True if a < b and not time_eql(a,b) else False)
+
+def sec_to_hms(seconds):
+    """Takes a numeric seconds value and returns a string in the format: HH:MM:SS"""
+    hours = seconds//3600
+    remain = seconds % 3600
+    minutes = remain//60
+    sec = remain % 60
+    if hours:
+        return "%02d:%02d:%02d" % (hours, minutes, sec)
+    else:
+        return "%02d:%02d" % (minutes, sec)

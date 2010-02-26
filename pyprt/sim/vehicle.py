@@ -51,7 +51,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     # A default view for vehicles.
     traits_view =  ui.View('ID', 'length',
-                           ui.Item(name='pos', label='Position'),
+                           ui.Item(name='pos', label='Position', ),
                            ui.Item(name='vel'),
                            ui.Item(name='v_mass'),
                            ui.Item(name='passenger_mass'),
@@ -62,9 +62,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                                                            deletable    = False,
                                                            export       = 'DockShellWindow',
                                                            page_name    = '.label' )),
-                           ui.Item(name='path', style='custom'), # multiline
-
-                           kind='live'
+                           kind='nonmodal',
+                           style='readonly'
                            )
 
     def __init__(self, ID, loc, position, vel, **tr):
@@ -485,7 +484,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             if lv.tail_loc is loc: # normal case - lv's tail is on self's loc
                 dist = lv.tail_pos - self.pos
             else: # bad case - this vehicle is somehow in the middle of lv. If not a bug, then a sideswipe.
-                assert utility.dist_eql(self.pos, 0.0) # sideswipe should be caught as soon as this vehicle enters a new tracksegment.
+##                assert utility.dist_eql(self.pos, 0.0) # sideswipe should be caught as soon as this vehicle enters a new tracksegment.
                 dist = 0
         else:
             lv = None

@@ -36,6 +36,7 @@ import pyprt.shared.api_pb2 as api
 import layout
 import segment_plot
 import station
+from pyprt.shared.utility import sec_to_hms
 
 class GUI_App(wx.App):
     def OnInit(self):
@@ -680,7 +681,6 @@ class Visualizer(object):
         if "hover" in metadata:
 #            print "Hover:", metadata["hover"][0]
             select = metadata['hover'][0]
-            print select
             point = (self.v_x_datasource.get_data()[select], self.v_y_datasource.get_data()[select])
 ##            point = (self.plot_data.get_data('vehicle_x')[select],
 ##                     self.plot_data.get_data('vehicle_y')[select])
@@ -696,18 +696,20 @@ class Visualizer(object):
                               )
             self.plot.overlays.append(self._v_label)
         else:
-            try:
-                self.plot.overlays.remove(self._v_label)
-            except ValueError:
-                pass
-
+            # see note in station_selection_handler
+            to_delete = []
+            for idx, overlay in enumerate(self.plot.overlays):
+                if isinstance(overlay, chaco.DataLabel):
+                    to_delete.append(idx)
+            for x in reversed(to_delete):
+                del self.plot.overlays[x]
 
         if "selections" in metadata:
 #            print metadata["selections"]
             try:
                 for select in metadata["selections"]:
                     v = common.vehicle_list[select]
-                    v.configure_traits()
+                    v.edit_traits()
                 del metadata["selections"] # clear the selection list
             except IndexError:
                 pass
@@ -748,7 +750,7 @@ class Visualizer(object):
                 max_wait = 0.0
                 avg_wait = 0.0
 #            print "stuff", stat_name, num_pax, max_wait, avg_wait
-            stat_label = chaco.DataLabel(
+            self._stat_label = chaco.DataLabel(
                               component=self.plot,
                               data_point = point,
                               lines = ['%s' % stat_name,
@@ -757,7 +759,7 @@ class Visualizer(object):
                                        'max wait: %.1f' % max_wait,
                                        'avg wait: %.1f' % avg_wait]
                               )
-            self.plot.overlays.append(stat_label)
+            self.plot.overlays.append(self._stat_label)
 
         # Ahh, the hackery work of a hack. Suck.
         # An explanation: It seems like the metadata is being updated twice,
@@ -779,7 +781,7 @@ class Visualizer(object):
             try:
                 for select in metadata["selections"]:
                     stat = common.station_list[select]
-                    stat.configure_traits() # old params: view=stat.view
+                    stat.edit_traits() # old params: view=stat.view
                 del metadata["selections"] # clear the selection list
             except IndexError:
                 pass
@@ -1173,27 +1175,29 @@ def postsim_summary():
 
     if common.passengers: # some passengers were simulated
         summary.append("\nPost Sim Passenger Report")
-        pax_display_limit = 20 # Limit the report to include a manageble number of records
+        pax_display_limit = 10 # Limit the report to include a manageble number of records
         pax_list = common.passengers.values()
         pax_list.sort()
-        summary.append(("%4s" + "%15s"*8) \
+        summary.append(("%4s" + "%13s"*8) \
                 % ('pID','srcStat','destStat','curLoc','waitT','walkT','rideT','totalT','Success'))
         for p in pax_list[:pax_display_limit]:
-            summary.append(("%4d" + "%15s"*3 + "%15.3f"*4 + "%15s") \
-                    % (p.ID, p.src_station, p.dest_station, p.loc, p.wait_time,
-                       p.walk_time, p.ride_time, p.total_time, p.trip_success))
+            summary.append(("%4d" + "%13s"*8) \
+                    % (p.ID, p.src_station, p.dest_station, p.loc,
+                       sec_to_hms(p.wait_time), sec_to_hms(p.walk_time),
+                       sec_to_hms(p.ride_time), sec_to_hms(p.total_time),
+                       p.trip_success))
         if len(pax_list) > pax_display_limit:
             summary.append('An additional %d passenger records not shown...' % (len(pax_list) - pax_display_limit) )
 
         summary.append("\nPost Sim Passenger Summary Statistics")
-        summary.append(("%7s" + "%15s"*4 + "%15s") \
+        summary.append(("%7s" + "%13s"*4 + "%13s") \
                 % ('numPax','aveWait','aveWalk','aveRide','aveTotal','%Success'))
-        ave_wait = sum(p.wait_time for p in pax_list)/len(pax_list)
-        ave_walk = sum(p.walk_time for p in pax_list)/len(pax_list)
-        ave_ride = sum(p.ride_time for p in pax_list)/len(pax_list)
-        ave_total = sum(p.total_time for p in pax_list)/len(pax_list)
+        ave_wait = sec_to_hms(sum(p.wait_time for p in pax_list)/len(pax_list))
+        ave_walk = sec_to_hms(sum(p.walk_time for p in pax_list)/len(pax_list))
+        ave_ride = sec_to_hms(sum(p.ride_time for p in pax_list)/len(pax_list))
+        ave_total = sec_to_hms(sum(p.total_time for p in pax_list)/len(pax_list))
         success_rate = sum(1 for p in pax_list if p.trip_success)/len(pax_list) * 100
-        summary.append(("%7d" + "%15.3f"*5) \
+        summary.append(("%7d" + "%13s"*4 + "%15.3f") \
                 % (len(pax_list), ave_wait, ave_walk, ave_ride, ave_total, success_rate))
     else:
         summary.append("\nNo passengers simulated.")

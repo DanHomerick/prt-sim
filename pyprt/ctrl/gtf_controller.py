@@ -11,6 +11,7 @@ from operator import attrgetter
 import warnings
 
 import networkx
+from numpy import zeros
 
 import pyprt.shared.api_pb2 as api
 from base_controller import BaseController
@@ -281,6 +282,9 @@ class VehicleManager(object):
         self.station2track = dict((s.id, s.platform_ts_id) for s in self.stations.values())
         self.track2station = dict((s.platform_ts_id, s.id) for s in self.stations.values())
 
+        self.legs = self.load_legs(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time)
+        doc.unlink()
+
         # For vehicles that are currently parked in berths, reserve those berths for them.
         for vehicle in self.vehicles.itervalues():
             station_id = self.track2station.get(vehicle.ts_id)
@@ -292,8 +296,9 @@ class VehicleManager(object):
                         vehicle.berth_id = idx
                         break
 
-        self.legs = self.load_legs(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time)
-        doc.unlink()
+        # build a table of distances between stations
+        self._station_dists, self._station_paths = self._build_station_tables()
+
 
     def build_graph(self, track_segments_xml):
         """Returns a networkx.DiGraph suitable for routing vehicles over."""
@@ -430,6 +435,28 @@ class VehicleManager(object):
             legs[idx] = new_leg_list # replace the old list with the augmented one
         return legs
 
+    def _build_station_tables(self):
+        """Returns a pair of 2D tables, where each table is indexed by
+        station id: distances, paths"""
+        n = len(self.stations)
+        distances = zeros( (n, n) )
+        indices = range(n)
+
+        # create a 2D array, containing empty python lists
+        # (not using an numpy array, because they can't hold references?)
+        paths = [[None for i in indices] for j in indices]
+
+        start_idx = 0
+        for i in indices:
+            for j in indices[i+1:]:
+                length, path = networkx.bidirectional_dijkstra(self.graph, i, j)
+                distances[i,j] = length
+                paths[i][j] = path
+                paths[j][i] = path
+
+        distances += distances.transpose()
+        return distances, paths
+
     def _to_numeric_id(self, element):
         """For elements similar to:
             <ID>x_trackSegment_forward</ID>
@@ -520,6 +547,7 @@ class Vehicle(object):
 
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
+        assert v_status.vID == self.id
         self.ts_id = v_status.nose_locID
         self.pos = v_status.nose_pos
         self.vel = v_status.vel
@@ -662,11 +690,9 @@ class Vehicle(object):
     def disembark(self, passengers):
         """Disembark passengers"""
         for pax in passengers:
-	    if pax not in self.pax:
-		    self.controller.log.error("t:%5.3f Disembark failed: vehicle %d at station %d disembarking %s not in %s",
-                                 self.controller.current_time, self.id, self.leg.dest_station, pax, self.pax)
-
-            assert pax in self.pax
+			# if asserts are turned off, this will still be caught by the sim, logged, and an error msg sent to the controller.
+            assert pax in self.pax, "t:%5.3f Disembark failed: vehicle %d at station %d disembarking %s not in %s" % \
+                                 (self.controller.current_time, self.id, self.leg.dest_station, pax, self.pax)
             self.pax.remove(pax)
 
         # send disembark command
@@ -781,7 +807,7 @@ class PassengerManager(object):
 #        ends. For short simulations, this means that there aren't paths
 #        to every destination station.
         assert isinstance(pax, Passenger)
-        assert not pax.path # pax.path is empty
+        assert not pax.actions # pax.actions is empty
         self.controller.log.info("t:%5.3f Pax %d created. Travelling from %d to %d.",
                       pax.origin_time, pax.id, pax.origin_id, pax.dest_id)
 
@@ -812,116 +838,75 @@ class PassengerManager(object):
                                 self.controller.current_time, pax.id, pax.origin_id, pax.dest_id)
             return
 
-        ### Annotate the Node instances, providing a timeline for all passenger actions.
-        ### Work in reverse, from the destination to the origin.
-
-        # Prime the pump and handle the last leg.
-        next_v = self.graph[path[-2]][path[-1]]['vehicle']
-        if next_v == self.WALK_ID:
-            path[-2].walk_pax[pax.id] = (path[-2].station,
-                                         self.graph[path[-2]][path[-1]]['weight'])
-            pax.add_to_path(path[-2], next_v, walk=True)
-
-        # Disembark if the pax made it to her final destination.
-        elif path[-1].station == pax.dest_id:
-            path[-1].disembark_pax[next_v].append(pax.id)
-            pax.add_to_path(path[-1], next_v, disembark=True)
-
-        # Iterate the path in reverse, noting when to embark/disembark on the nodes.
+        # Iterate the path, noting when to embark/disembark on the nodes.
         # Consider the following table of cases:
-        # case,    v, next_v, action
-        # --------------------
-        #    1, None,   None,  pass
-        #    2, None,   Walk,  pass
-        #    3, None,     v1,  embark v1@b
-        #    4, Walk,   None,  walk a->b
-        #    5, Walk,   Walk,  walk a->b
-        #    6, Walk,     v1,  embark v1@b then walk a->b (working in reverse order)
-        #    7,   v1,   None,  disembark v1@b
-        #    8,   v1,   Walk,  disembark v1@b
-        #    9,   v1,     v1,  pass
-        #   10,   v1,     v2,  embark v2@b then disembark v1@b (working in reverse order)
-        for b, a in pairwise(reversed(path)): # a is closer to beginning of path; b is closer to the end
-            v = self.graph[a][b]['vehicle']
+        #        a       b
+        # prev_v curr_v,        action
+        # ----------------------
+        #  None,   None,           pass
+        #  Walk,   None,           pass
+        #    v1,   None,           disembark v1@a
+        #  None,   Walk,           walk a->b
+        #  Walk,   Walk,           walk a->b
+        #    v1,   Walk,           disembark v1@a, walk a->b
+        #  None,     v1,           embark v1@a
+        #  Walk,     v1,           embark v1@a
+        #    v1,     v1,           pass
+        #    v1,     v2,           disembark v1@a, embark v2@a
 
-            # cases: 3, 6p, 10p (p indicates case partially handled)
-            if next_v != api.NONE_ID and next_v != self.WALK_ID:
-                if v != next_v:
-                    b.embark_pax[next_v].append(pax.id)
-                    pax.add_to_path(b, next_v, embark=True)
+        prev_v = api.NONE_ID # Prime the pump
 
-            # cases: 7, 8, 10p
-            if v != api.NONE_ID and v != self.WALK_ID:
-                if v != next_v:
-                    b.disembark_pax[v].append(pax.id)
-                    pax.add_to_path(b, next_v, disembark=True)
+        for (a, b) in pairwise(path):
+            curr_v = self.graph[a][b]['vehicle']
+            if prev_v != self.WALK_ID and prev_v != api.NONE_ID: # prev_v is a vehicle
+                if prev_v != curr_v:
+                    pax.add_action(PaxAction(a, prev_v, disembark=True))
 
-            # cases: 4, 5, 6p
-            if v == self.WALK_ID:
-                a.walk_pax[pax.id] = (b.station, self.graph[a][b]['weight'])
-                pax.add_to_path(a, v, walk=True)
+            if curr_v != self.WALK_ID and curr_v != api.NONE_ID: # curr_v is a vehicle
+                if prev_v != curr_v: # and I'm not already on it
+                    pax.add_action(PaxAction(a, curr_v, embark=True))
 
-            # other cases require no passenger actions.
+            if curr_v == self.WALK_ID:
+                pax.add_action(PaxAction(b, self.WALK_ID, walk=True,
+                                          walk_dest=b.station,
+                                          walk_dist=self.graph[a][b]['weight']))
+            prev_v = curr_v
 
-            next_v = v
+        # Can ignore the last node, since it's the 'destination' node.
 
-            # TO DELETE after testing.
-##            if v == next_v: # stay on current vehicle, keep waiting, or keep walking
-##                pass
-##            elif v == api.NONE_ID or v == self.WALK_ID:
-##                # if next_v arrives at b, get on it
-##                if next_v in [edge[2]['vehicle'] for edge in self.graph.in_edges(b, data=True)]:
-##                    b.embark_pax[next_v].append(pax.id)
-##                    embarked = True
-##                    pax.add_to_path(b, next_v, embark=True)
-##            else: # v != next_v and v != api.NONE_ID and v != api.WALK_ID
-##                # get off current vehicle, board new vehicle.
-##                b.disembark_pax[v].append(pax.id)
-##                pax.add_to_path(b, v, disembark=True)
-##
-##                b.embark_pax[next_v].append(pax.id)
-##                pax.add_to_path(b, next_v, embark=True)
-##                embarked = True
-##
-##            if v == self.WALK_ID: # walking from a to b
-##                a.walk_pax[pax.id] = (b.station, self.graph[a][b]['weight'])
-##                path.add_to_path(a, v, walk=True)
-##
-##            next_v = v
+        # Store the pax's actions on the station/time nodes to group all
+        # pax actions at a given time & place together.
+        for action in pax.actions:
+            if action.disembark:
+                action.node.disembark_pax[action.vehicle].append(pax.id)
+            elif action.embark:
+                action.node.embark_pax[action.vehicle].append(pax.id)
+            elif action.walk:
+                action.node.walk_pax[pax.id] = ( action.walk_dest, action.walk_dist )
 
-        # Handle the case where the pax is created at a station after its
-        # vehicle has already arrived (but before the vehicle departed, obviously)
-        if v != api.NONE_ID:
-            if v == self.WALK_ID:
-                a.walk_pax[pax.id] = (b.station, self.graph[a][b]['weight'])
-                pax.add_to_path(a, v, walk=True)
-            else:
-                a.embark_pax[v].append(pax.id)
-                pax.add_to_path(a, v, embark=True)
-
-        pax.path.reverse()
         self.passengers[pax.id] = pax
-        self.controller.log.debug("t:%5.3f Pax %d path: %s",
-                                  pax.origin_time, pax.id, pax.get_path_str())
+        self.controller.log.debug("t:%5.3f Pax %d actions: %s",
+                                  pax.origin_time, pax.id, pax.get_actions_str())
 
     def remove_pax(self, pax):
-        """Removes the passenger from the scheduled embark/disembark commands."""
-        for node, vehicle, embark, disembark, walk in pax.path:
-            assert isinstance(node, Node)
-            if embark:
+        """Removes the passenger from the scheduled commands."""
+        for action in pax.actions:
+            assert isinstance(action, PaxAction)
+            if action.embark:
                 try:
-                    node.embark_pax[vehicle].remove(pax.id)
+                    action.node.embark_pax[action.vehicle].remove(pax.id)
                 except ValueError:
                     pass
-            if disembark:
+            elif action.disembark:
                 try:
-                    node.disembark_pax[vehicle].remove(pax.id)
+                    action.node.disembark_pax[action.vehicle].remove(pax.id)
                 except ValueError:
                     pass
-            if walk:
-                del node.walk_pax[pax.id]
-		self.log.info("T=%4.3f pax %d walking, removed from queue vehicle %d" % (self.current_time,pax.id, vehicle))
-        pax.path = []
+            elif action.walk:
+                del action.node.walk_pax[pax.id]
+            else:
+                raise Exception
+        pax.actions = []
 
     def reschedule_pax(self, pax_id, origin_id, origin_time):
         """Reschedules the passenger. For origin_id and origin_time, provide
@@ -1087,13 +1072,10 @@ class PassengerManager(object):
                     # I only need paths to destination nodes (with time=None). Using
                     # single_source_dijkstra is the fastest, most scalable algo
                     # even though it finds more results than needed. Delete the
-                    # unnecessary paths to save memory. For the paths we do keep,
-                    # remove the destination node from the end of the path.
+                    # unnecessary paths to save memory.
                     for n in path_dict.keys():
                         if n.time is not None: # sink isn't a 'destination node'
                             del path_dict[n]
-                        else:
-                            path_dict[n].pop() # remove the last node from path
 
                     paths[node] = path_dict # use a dict of dicts structure
 
@@ -1137,34 +1119,58 @@ class Passenger(object):
         self.origin_time = origin_time
 
         # This information is held for the purposes of rescheduling the
-        # passenger if a vehicle is too full. See add_to_path.
-        self.path = []
+        # passenger if a vehicle is too full. See add_action.
+        self.actions = []
 
     def __str__(self):
-        return "id: %d, origin_id: %d, dest_id: %d, origin_time: %f, path: %s" % \
-               (self.id, self.origin_id, self.dest_id, self.origin_time, ', '.join([str(n) for n in self.path]))
+        return "id: %d, origin_id: %d, dest_id: %d, origin_time: %f, actions: %s" % \
+               (self.id, self.origin_id, self.dest_id, self.origin_time, self.get_actions_str())
 
-    def add_to_path(self, node, vehicle, embark=False, disembark=False, walk=False):
+    def add_action(self, action):
+        assert isinstance(action, PaxAction)
+        if self.actions:
+            last = self.actions[-1]
+            # If we just got off the vehicle, rather than adding the embark, delete the disembark
+            if last.disembark is True and action.embark is True and last.vehicle == action.vehicle:
+                self.actions.pop()
+            else:
+                self.actions.append(action)
+        else:
+            self.actions.append(action)
+
+    def get_actions_str(self):
+        """Returns the passengers actions info in string form."""
+        return ' --> '.join(str(action) for action in self.actions)
+
+class PaxAction(object):
+    """One, and only one, of embark, disembark, or walk will be True.
+    If walk is true, include walk_dest, the station_id of the destination."""
+    def __init__(self, node, vehicle, embark=False, disembark=False, walk=False,
+                 walk_dest=api.NONE_ID, walk_dist=0):
+        assert embark or disembark or walk
         assert isinstance(node, Node)
         assert isinstance(vehicle, int)
         assert isinstance(embark, bool)
         assert isinstance(disembark, bool)
         assert isinstance(walk, bool)
-        self.path.append((node, vehicle, embark, disembark, walk))
+        assert isinstance(walk_dest, int)
+        self.node = node
+        self.vehicle = vehicle
+        self.embark = embark
+        self.disembark = disembark
+        self.walk = walk
+        self.walk_dest = walk_dest
+        self.walk_dist = walk_dist
 
-    def get_path_str(self):
-        """Returns the passengers path info in string form."""
-        parts = []
-        for node, v, emb, dis, walk in self.path:
-            if emb:
-                parts.append("Embark %d@station %d" % (v, node.station))
-            elif dis:
-                parts.append("Disemb %d@station %d" % (v, node.station))
-            elif walk:
-                parts.append("Walk from station %d" % (node.station))
-            else:
-                raise Exception
-        return ' --> '.join(parts)
+    def __str__(self):
+        if self.embark:
+            return "Embark %d@station %d@t %d" % (self.vehicle, self.node.station, self.node.time)
+        elif self.disembark:
+            return "Disemb %d@station %d@t %d" % (self.vehicle, self.node.station, self.node.time)
+        elif self.walk:
+            return"Walk %.1fmeters from %d to station %d@t %d" % (self.walk_dist, self.node.station, self.walk_dest, self.node.time)
+        else:
+            raise Exception
 
 if __name__ == '__main__':
     main()
