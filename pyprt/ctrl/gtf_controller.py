@@ -78,6 +78,7 @@ class GtfController(BaseController):
         leg = vehicle.leg
         passengers = self.p_manager.fetch_embarking_pax(vehicle.id, leg.origin_station, leg.depart)
         overflow_passengers = vehicle.embark(passengers)
+        self.log.info("T=%4.3f from %d embarked %s Overflow passengers %s " % (self.current_time,leg.origin_station, passengers, overflow_passengers))
 
         origin_time = max(self.current_time, leg.depart+1)
         for pax in overflow_passengers:
@@ -661,6 +662,10 @@ class Vehicle(object):
     def disembark(self, passengers):
         """Disembark passengers"""
         for pax in passengers:
+	    if pax not in self.pax:
+		    self.controller.log.error("t:%5.3f Disembark failed: vehicle %d at station %d disembarking %s not in %s",
+                                 self.controller.current_time, self.id, self.leg.dest_station, pax, self.pax)
+
             assert pax in self.pax
             self.pax.remove(pax)
 
@@ -915,6 +920,7 @@ class PassengerManager(object):
                     pass
             if walk:
                 del node.walk_pax[pax.id]
+		self.log.info("T=%4.3f pax %d walking, removed from queue vehicle %d" % (self.current_time,pax.id, vehicle))
         pax.path = []
 
     def reschedule_pax(self, pax_id, origin_id, origin_time):
