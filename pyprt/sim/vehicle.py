@@ -51,21 +51,21 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     # A default view for vehicles.
     traits_view =  ui.View('ID', 'length',
-                        ui.Item(name='pos', label='Position'),
-                        ui.Item(name='vel'),
-                        ui.Item(name='v_mass'),
-                        ui.Item(name='passenger_mass'),
-                        ui.Item(name='total_mass'),
-                        ui.Item(name='max_pax_capacity', label='Max. Passenger Capacity'),
-                        ui.Item('passengers@',
-                                editor = ui.ListEditor( use_notebook = True,
-                                        deletable    = False,
-                                        export       = 'DockShellWindow',
-                                        page_name    = '.label' )),
-                        ui.Item(name='path', style='custom'), # multiline
+                           ui.Item(name='pos', label='Position'),
+                           ui.Item(name='vel'),
+                           ui.Item(name='v_mass'),
+                           ui.Item(name='passenger_mass'),
+                           ui.Item(name='total_mass'),
+                           ui.Item(name='max_pax_capacity', label='Max. Passenger Capacity'),
+                           ui.Item('passengers@',
+                                   editor = ui.ListEditor( use_notebook = True,
+                                                           deletable    = False,
+                                                           export       = 'DockShellWindow',
+                                                           page_name    = '.label' )),
+                           ui.Item(name='path', style='custom'), # multiline
 
-                        kind='live'
-                    )
+                           kind='live'
+                           )
 
     def __init__(self, ID, loc, position, vel, **tr):
         assert not isinstance(position, basestring)
@@ -444,7 +444,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def _collision_check(self):
         lv, dist = self.find_leading_vehicle(current_loc_only=True)
         if dist <= 0: # just crashed.
-            heapq.heappush( (Sim.now(), self.COLLISION, lv) )
+            heapq.heappush( self._actions_queue, (Sim.now(), self.COLLISION, lv) )
 
         if lv:
             boundary_time = common.config_manager.get_sim_end_time()
@@ -558,8 +558,5 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         pass
 
     def passenger_count(self):
-	"""Return the count of the passengers"""
-	count = 0
-	for pax in self.passengers:
-		count = count + 1
-	return count
+        """Return the number of the passengers"""
+        return len(self.passengers)

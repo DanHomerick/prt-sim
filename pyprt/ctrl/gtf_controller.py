@@ -1158,7 +1158,7 @@ class Passenger(object):
                 parts.append("Walk from station %d" % (node.station))
             else:
                 raise Exception
-        return '-->'.join(parts)
+        return ' --> '.join(parts)
 
 if __name__ == '__main__':
     main()

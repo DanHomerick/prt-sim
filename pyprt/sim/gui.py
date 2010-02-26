@@ -458,7 +458,7 @@ class Visualizer(object):
 
     def make_ArrayPlotData(self, graph):
         """Returns a chaco.ArrayPlotData object containing data for the track.
-        `graph` is a networkx XDiGraph describing the track layout.
+        `graph` is a networkx DiGraph describing the track layout.
         """
         # Collect the x and y coordinates for all nodes, grouped by type
         stat_x = []
@@ -573,14 +573,14 @@ class Visualizer(object):
                                 stretch_data=plot.index_mapper.stretch_data)
         vmap = chaco.LinearMapper(range=plot.value_range,
                                 stretch_data=plot.value_mapper.stretch_data)
-        v_x_datasource = plot._get_or_create_datasource('vehicle_x')
-        v_y_datasource = plot._get_or_create_datasource('vehicle_y')
-        v_color_datasource = plot._get_or_create_datasource('v_pax_cnt')
-        v_plot = chaco.ColormappedScatterPlot(index=v_x_datasource,
+        self.v_x_datasource = plot._get_or_create_datasource('vehicle_x')
+        self.v_y_datasource = plot._get_or_create_datasource('vehicle_y')
+        self.v_color_datasource = plot._get_or_create_datasource('v_pax_cnt')
+        v_plot = chaco.ColormappedScatterPlot(index=self.v_x_datasource,
                                               index_mapper=imap,
-                                              value=v_y_datasource,
+                                              value=self.v_y_datasource,
                                               value_mapper=vmap,
-                                              color_data=v_color_datasource,
+                                              color_data=self.v_color_datasource,
                                               color_mapper=vehicle_colormap,
                                               orientation=plot.orientation,
                                               origin=plot.origin,
@@ -649,9 +649,12 @@ class Visualizer(object):
         """
         try:
             x, y, pax_cnt = common.vehicle_data_queue.get_nowait() # non-blocking
-            self.plot.datasources['vehicle_x'].set_data(x)
-            self.plot.datasources['vehicle_y'].set_data(y)
-            self.plot.datasources['v_pax_cnt'].set_data(pax_cnt)
+            self.v_x_datasource.set_data(x)
+            self.v_y_datasource.set_data(y)
+            self.v_color_datasource.set_data(pax_cnt)
+##            self.plot.datasources['vehicle_x'].set_data(x)
+##            self.plot.datasources['vehicle_y'].set_data(y)
+##            self.plot.datasources['v_pax_cnt'].set_data(pax_cnt)
             common.vehicle_data_queue.task_done()
         except Queue.Empty:
             pass
@@ -675,8 +678,29 @@ class Visualizer(object):
         metadata = object.metadata
         selected = []
         if "hover" in metadata:
-            pass
-#            print "Hover:", metadata["hover"]
+#            print "Hover:", metadata["hover"][0]
+            select = metadata['hover'][0]
+            print select
+            point = (self.v_x_datasource.get_data()[select], self.v_y_datasource.get_data()[select])
+##            point = (self.plot_data.get_data('vehicle_x')[select],
+##                     self.plot_data.get_data('vehicle_y')[select])
+            v = common.vehicle_list[select]
+            num_pax = v.passenger_count()
+            pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
+            self._v_label = chaco.DataLabel(
+                              component=self.plot,
+                              data_point = point,
+                              lines = ['ID: %d' % v.ID,
+                                       'numPax: %d' % num_pax,
+                                       'paxIDs: ' + pax_ids]
+                              )
+            self.plot.overlays.append(self._v_label)
+        else:
+            try:
+                self.plot.overlays.remove(self._v_label)
+            except ValueError:
+                pass
+
 
         if "selections" in metadata:
 #            print metadata["selections"]
