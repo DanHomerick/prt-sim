@@ -14,7 +14,7 @@ class ConfigManager(object):
         # Command line options
         self.options, positional_args = self.read_args()
 
-        if len(positional_args) > 1 or (len(positional_args) == 1 and self.options.config_path != None):
+        if len(positional_args) > 1 or (len(positional_args) == 1 and self.options.config_path is not None):
             raise Exception("Unrecognized command line arguments: %s" % positional_args)
 
         # Config file

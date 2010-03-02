@@ -265,7 +265,8 @@ class ControlInterface(Sim.Process):
                         v.clear_path()
                     self.validate_itinerary(v, msg.trackIDs) # raises InvalidTrackSegmentID if not valid
                     locs = [self.get_trackSeg(id) for id in msg.trackIDs]
-                    v.extend_path(locs)
+                    if locs:
+                        v.extend_path(locs)
 
                 elif msg_type == api.CTRL_CMD_SWITCH:
                     msg = api.CtrlCmdSwitch()

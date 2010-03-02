@@ -20,7 +20,7 @@ def main():
     ###    Start GUI, unless otherwise specified    ###
     disable_gui = common.config_manager.get_disable_gui()
     if disable_gui:
-        if scenario_path == None:
+        if scenario_path is None:
             print "A scenario file must be specified in either the configuration " \
                   "file or as an argument in order to run without a GUI."
             import sys

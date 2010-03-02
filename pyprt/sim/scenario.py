@@ -46,7 +46,7 @@ class ScenarioManager(object):
 
         # Passengers
         passengers_path = common.config_manager.get_passengers_path()
-        if passengers_path == None:
+        if passengers_path is None:
             logging.warning("No passenger file found. Running simulation with no passengers.")
         else:
             default_load_time = common.config_manager.get_pax_load_time()

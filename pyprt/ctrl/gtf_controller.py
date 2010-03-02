@@ -22,15 +22,15 @@ from pyprt.shared.utility import pairwise
 def main():
     options_parser = optparse.OptionParser(usage="usage: %prog [options] FILE\nFILE is a path to to the scenario file.")
     options_parser.add_option("--logfile", dest="logfile", default="./ctrl.log",
-                metavar="FILE", help="Log events to FILE.")
+                              metavar="FILE", help="Log events to FILE.")
     options_parser.add_option("--comm_logfile", dest="comm_logfile", default="./ctrl_comm.log",
-                metavar="FILE", help="Log communication messages to FILE.")
+                              metavar="FILE", help="Log communication messages to FILE.")
     options_parser.add_option("--server", dest="server", default="localhost",
-                help="The IP address of the server (simulator). Default is %default")
+                              help="The IP address of the server (simulator). Default is %default")
     options_parser.add_option("-p", "--port", type="int", dest="port", default=64444,
-                help="TCP Port to connect to. Default is: %default")
+                              help="TCP Port to connect to. Default is: %default")
     options_parser.add_option("--walk_speed", type="float", dest="walk_speed", default=1.33,
-                help="Speed, in meters/sec, at which passengers will walk to a neighboring station. A value of 0 will disable passenger walking entirely.")
+                              help="Speed, in meters/sec, at which passengers will walk to a neighboring station. A value of 0 will disable passenger walking entirely.")
     options, args = options_parser.parse_args()
 
     if len(args) != 1:
@@ -120,7 +120,9 @@ class GtfController(BaseController):
             elif leg.depart < 0 and \
                  (vehicle.ts_id == leg.dest_ts or vehicle.ts_id in self.v_manager.graph.predecessors(leg.dest_ts)):
                 vehicle.state = self.PARKING
-                t_arrival = vehicle.park()
+                station = self.v_manager.stations[leg.dest_station]
+                berth_pos, berth_id, dest_ts = station.reserve_berth(vehicle.id, Station.UNLOAD_PLATFORM)
+                t_arrival = vehicle.park(berth_pos, berth_id, dest_ts)
 
                 # use time-based notification of vehicle stopping in berth
                 # TODO: Add a SIM_NOTIFY_VEHICLE_STOPPED event message.
@@ -174,8 +176,8 @@ class GtfController(BaseController):
             if abs(vehicle.vel) < 0.001 and vehicle.leg.dest_ts == vehicle.ts_id:
                 vehicle.state = self.DISEMBARKING
                 pax = self.p_manager.fetch_disembarking_pax(vehicle.id,
-                                                          vehicle.leg.dest_station,
-                                                          vehicle.leg.arrive)
+                                                            vehicle.leg.dest_station,
+                                                            vehicle.leg.arrive)
                 vehicle.disembark(pax)
             else:
                 raise Exception("TODO: Parking trajectory was incorrect, and vehicle did not come to a full stop. vID: %d, vel: %f" % (vehicle.id, vehicle.vel))
@@ -238,7 +240,9 @@ class GtfController(BaseController):
         # reserve a berth, and update the trajectory.
         if vehicle.state is self.RUNNING_LEG and vehicle.ts_id == vehicle.path[-2]:
             vehicle.state = self.PARKING
-            t_arrival = vehicle.park()
+            station = self.v_manager.stations[vehicle.leg.dest_station]
+            berth_pos, berth_id, dest_ts = station.reserve_berth(vehicle.id, Station.UNLOAD_PLATFORM)
+            t_arrival = vehicle.park(berth_pos, berth_id, dest_ts)
             self.set_notification(vehicle.id, t_arrival+1)
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
@@ -247,7 +251,7 @@ class GtfController(BaseController):
         vehicle.update_vehicle(msg.v_status)
 
         if vehicle.state is self.RUNNING_LEG and msg.trackID == vehicle.leg.origin_ts:
-            if vehicle.berth_id != None:
+            if vehicle.berth_id is not None:
                 station_id = self.v_manager.track2station[vehicle.leg.origin_ts]
                 station = self.v_manager.stations[station_id]
                 station.release_berth(vehicle.berth_id, vehicle.platform_id)
@@ -288,7 +292,7 @@ class VehicleManager(object):
         # For vehicles that are currently parked in berths, reserve those berths for them.
         for vehicle in self.vehicles.itervalues():
             station_id = self.track2station.get(vehicle.ts_id)
-            if station_id != None:
+            if station_id is not None:
                 station = self.stations[station_id]
                 for idx, berth_pos in enumerate(station.berth_positions):
                     if abs(berth_pos - vehicle.pos) < 2:
@@ -482,6 +486,10 @@ class VehicleManager(object):
             return None
 
 class Station(object):
+    UNLOAD_PLATFORM = 0
+    QUEUE_PLATFORM = 0
+    LOAD_PLATFORM = 0
+
     def __init__(self, s_id, ts_ids, platform_ts_id, berth_positions):
         """s_id: An integer station id.
         ts_ids: A set containing integer TrackSegment ids.
@@ -538,12 +546,16 @@ class Vehicle(object):
         self.leg = None
         self.spline = None
         self.traj_solver = TrajectorySolver(self.v_max, self.a_max, self.j_max,
-                                           -5, self.a_min, self.j_min)
+                                            -5, self.a_min, self.j_min)
 
         self.platform_id = None
         self.berth_pos = None
         self.berth_id = None
         self.state = None
+
+        self.next_platform_id = None
+        self.next_berth_pos = None
+        self.next_berth_id = None
 
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
@@ -557,7 +569,7 @@ class Vehicle(object):
         if self.vel != 0:
             assert self.state in (self.controller.RUNNING_LEG, self.controller.PARKING)
 
-    def make_trajectory(self, dist, start_time, end_time):
+    def make_timed_trajectory(self, dist, start_time, end_time):
         """Returns a cubic_spline.CubicSpline containing a trajectory that moves
         the vehicle dist meters and comes to a stop.
         'start_time' and 'end_time' are both measured in seconds, with the
@@ -645,35 +657,60 @@ class Vehicle(object):
         departure_time = max(leg.depart, self.controller.current_time) # in seconds
         trip_dist = path_length - self.pos
         assert trip_dist >= 0
-        spline = self.make_trajectory(trip_dist, departure_time, leg.arrive)
+        spline = self.make_timed_trajectory(trip_dist, departure_time, leg.arrive)
 
         traj_msg = api.CtrlCmdVehicleTrajectory()
         traj_msg.vID = self.id
         spline.fill_spline_msg(traj_msg.spline)
         self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
 
-    def park(self):
-        """Reserves a berth for the vehicle, and changes the trajectory to
-        bring the vehicle into it. Assumes that the vehicle's status
-        information is up to date. Returns the time at which the vehicle will
-        be parked, according to the new trajectory."""
-        station = self.manager.stations[self.leg.dest_station]
+    def run(self, path, dist, final_speed=0, speed_limit=None):
+        """Commands the vehicle's path and trajectory. Obeys the speed_limit
+        constraint, if supplied. Assumes that the vehicle's pose is up to date
+        and accurate. Returns the scheduled arrival time."""
+        self.path = path
+        itinerary_msg = api.CtrlCmdVehicleItinerary()
+        itinerary_msg.vID = self.id
+        itinerary_msg.trackIDs.extend(path[1:]) # don't include the segment self is currently on
+        itinerary_msg.clear = False
+        self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
 
-        # reserve station berth
-        self.platform_id = 0
-        self.berth_pos, self.berth_id, dest_ts = station.reserve_berth(self.id, 0)
+        if speed_limit:
+            solver = TrajectorySolver(min(speed_limit, self.v_max), self.a_max, self.j_max, -5, self.a_min, self.j_min)
+        else:
+            sovler = self.traj_solver
+
+        spline = solver.target_position(Knot(self.pos, self.vel, self.accel, self.controller.current_time),
+                                        Knot(dist + self.pos, final_speed, 0, None))
+
+        final_time = spline.t[-1]
+        # Append a last knot which extends the spline until past the end of the simulation.
+        if spline.t[-1] <= self.controller.sim_end_time:
+            spline.append(Knot(dist+self.pos+final_speed*(self.controller.sim_end_time+1-final_time),
+                               	final_speed, 0, self.controller.sim_end_time+1))
+
+        traj_msg = api.CtrlCmdVehicleTrajectory()
+        traj_msg.vID = self.id
+        spline.fill_spline_msg(traj_msg.spline)
+        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
+
+        return final_time
+
+    def park(self, berth_pos, berth_id, ts_id):
+        """Changes the trajectory to bring the vehicle into the specified berth.
+        Assumes that the vehicle's status information is up to date.
+        Returns the time at which the vehicle will be parked, according to the new trajectory."""
+        self.berth_pos = berth_pos
+        self.berth_id = berth_id
+        self.platform_id = Station.UNLOAD_PLATFORM
 
         # calculate how far the vehicle needs to travel to end in the berth
-        path_length, self.path = self.manager.get_path(self.ts_id, dest_ts)
+        path_length, self.path = self.manager.get_path(self.ts_id, ts_id)
         dist = self.berth_pos + path_length - self.pos
-##        for b, a in pairwise(reversed(vehicle.path)): # b is closer to the end of the path
-##            if vehicle.ts_id == b:
-##                break
-##            dist += self.v_manager.graph[a][b]['weight']
         assert dist >= 0
 
         # make the trajectory
-        self.spline = self.make_trajectory(dist, self.controller.current_time, self.leg.arrive)
+        self.spline = self.make_timed_trajectory(dist, self.controller.current_time, self.leg.arrive)
 
         # send the trajectory
         traj_msg = api.CtrlCmdVehicleTrajectory()
@@ -690,9 +727,9 @@ class Vehicle(object):
     def disembark(self, passengers):
         """Disembark passengers"""
         for pax in passengers:
-			# if asserts are turned off, this will still be caught by the sim, logged, and an error msg sent to the controller.
+                        # if asserts are turned off, this will still be caught by the sim, logged, and an error msg sent to the controller.
             assert pax in self.pax, "t:%5.3f Disembark failed: vehicle %d at station %d disembarking %s not in %s" % \
-                                 (self.controller.current_time, self.id, self.leg.dest_station, pax, self.pax)
+                   (self.controller.current_time, self.id, self.leg.dest_station, pax, self.pax)
             self.pax.remove(pax)
 
         # send disembark command
@@ -728,6 +765,44 @@ class Vehicle(object):
 
         # Return overflow passengers
         return passengers[fill_line:]
+
+    def advance_berth(self, berth_position, berth_id, platform_id, ts_id):
+        """Sets the vehicle on a itenarary and trajectory for advancing to the
+        next berth. Returns the time at which the vehicle will arrive."""
+        if platform_id == self.platform_id: # staying on the same platform
+            final_pos = berth_pos - 0.1 # stop 10 cm short of the end
+            spline = self.traj_solver.target_position(Knot(self.pos, self.vel, self.accel, self.manager.current_time),
+                                                      Knot(final_pos, 0, 0, None))
+
+        else: # advancing to the next platform
+            path_length, path = self.manager.get_path(self.ts_id, ts_id)
+
+            itinerary_msg = api.CtrlCmdVehicleItinerary()
+            itinerary_msg.vID = self.id
+            itinerary_msg.trackIDs.extend(path[1:])
+            itinerary_msg.clear = False
+            self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
+
+            final_pos = self.pos + path_length - 0.1 # stop 10 cm short of the end
+            spline = self.traj_solver.target_position(Knot(self.pos, self.vel, self.accel, self.manager.current_time),
+                                                      Knot(final_pos, 0, 0, None))
+
+        finish_time = spline.t[-1]
+
+        # Append a last knot which extends the spline until past the end of the simulation.
+        if spline.t[-1] <= self.controller.sim_end_time:
+            spline.append(Knot(final_pos, 0, 0, self.controller.sim_end_time+1))
+
+        traj_msg = api.CtrlCmdVehicleTrajectory()
+        traj_msg.vID = self.id
+        spline.fill_spline_msg(traj_msg.spline)
+        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
+
+        self.next_berth_pos = berth_position
+        self.next_berth_id = berth_id
+        self.next_platform_id = platform_id
+
+        return finish_time
 
 class Leg(object):
     """Legs of a trip. Each leg travels from one station to the next."""
@@ -809,7 +884,7 @@ class PassengerManager(object):
         assert isinstance(pax, Passenger)
         assert not pax.actions # pax.actions is empty
         self.controller.log.info("t:%5.3f Pax %d created. Travelling from %d to %d.",
-                      pax.origin_time, pax.id, pax.origin_id, pax.dest_id)
+                                 pax.origin_time, pax.id, pax.origin_id, pax.dest_id)
 
         # Passenger can be created at any time. Find the earliest Node at the
         # passenger's origin station.
@@ -830,12 +905,12 @@ class PassengerManager(object):
             path = self.paths[origin_node][dest_node]
         except KeyError:
             self.controller.log.warn("t:%5.3f Pax %d cannot get from %d to %d on the remaining trips scheduled in the simulation time.",
-                                self.controller.current_time, pax.id, pax.origin_id, pax.dest_id)
+                                     self.controller.current_time, pax.id, pax.origin_id, pax.dest_id)
             return  # This passenger is stranded.
 
         if not path: # guard against case where passenger is created at its destination.
             self.controller.log.warn("t: %5.3f Pax %d was created at it's destination. origin: %d, dest: %d",
-                                self.controller.current_time, pax.id, pax.origin_id, pax.dest_id)
+                                     self.controller.current_time, pax.id, pax.origin_id, pax.dest_id)
             return
 
         # Iterate the path, noting when to embark/disembark on the nodes.
@@ -868,8 +943,8 @@ class PassengerManager(object):
 
             if curr_v == self.WALK_ID:
                 pax.add_action(PaxAction(b, self.WALK_ID, walk=True,
-                                          walk_dest=b.station,
-                                          walk_dist=self.graph[a][b]['weight']))
+                                         walk_dest=b.station,
+                                         walk_dist=self.graph[a][b]['weight']))
             prev_v = curr_v
 
         # Can ignore the last node, since it's the 'destination' node.

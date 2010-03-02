@@ -346,12 +346,16 @@ class  TestTrajectorySolver(unittest.TestCase):
                     print "Soln hs:", solver._soln_spline.h
                     self.plot_it(solver._soln_spline, solver, "test_remix...")
                     break
-
-
-
-##                spline = solver._soln_spline
-##                self.plot_it(spline, solver, "test_target_position_VI")
-##                self.assertTrue(False)
+##
+##    def test_target_position_VII(self):
+##        """Testing with a start point that is outside of the constraints"""
+##        solver = trajectory_solver.TrajectorySolver(5, 5, 2.5, 0, -5, -2.5)
+##        spline = solver.target_position(Knot(0, 10, -1, 0), Knot(100, 0, 0, None))
+##        self.plot_it(spline, solver, "test_target_position_VII")
+##        self.validate_spline(spline, solver)
+##        self.assertAlmostEqual(spline.q[-1], 100, self.PLACES)
+##        self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
+##        self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
 
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
