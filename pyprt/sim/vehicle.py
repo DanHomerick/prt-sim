@@ -165,6 +165,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             time = Sim.now()
         pos = self._spline.evaluate(time).pos - self._pos_offset_nose
         assert pos > -0.2 # position shouldn't be more than a little bit negative
+        assert pos <= self.loc.length + 1 # very loose sanity check
         return pos
     pos = property(fget = get_pos)
 
@@ -178,8 +179,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         finding each separately. Note that the nose and tail may be on different
         TrackSegments, and thus have different coordinate frames."""
         spline_pos = self._spline.evaluate(Sim.now()).pos
-        pos = spline_pos-self._pos_offset_nose
-        tail_pos = spline_pos-self._pos_offset_tail
+        pos = spline_pos - self._pos_offset_nose
+        tail_pos = spline_pos - self._pos_offset_tail
         assert pos > -0.2 # position shouldn't be more than a little bit negative
         assert tail_pos > -0.2
         return (pos, tail_pos)
@@ -188,6 +189,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """The vehicle's tail position, in meters, where the start of the current TrackSegment is 0."""
         tail_pos = self._spline.evaluate(Sim.now()).pos - self._pos_offset_tail
         assert tail_pos > -0.2 # position shouldn't be more than a little bit negative
+        assert tail_pos <= self.tail_loc.length + 1 # very loose sanity check
         return tail_pos
     tail_pos = property(fget=get_tail_pos)
 
@@ -260,6 +262,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
             if __debug__:
                 errors = [received-true for (received, true) in zip(reversed(poly_msg.coeffs), reversed(self._spline.coeffs[-1]))]
+                if len(errors) == 4:
+                    errors[0] += self._pos_offset_nose # Assuming that the traj msg sent in current position coordinate frame
                 error_str = ", ".join(msg + str(error) for (msg, error) in zip(['Pos: ', 'Vel: ', 'Accel: '], errors))
                 logging.debug("Spline check::Times: %s to %s. Errors: %s",
                               t_initial, t_final, error_str)
@@ -280,8 +284,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 ##            plotter = CSplinePlotter(self._spline, self.vel_max_norm, self.accel_max_norm, self.jerk_max_norm,
 ##                                     self.vel_min_norm, self.accel_min_norm, self.jerk_min_norm)
 ##            plotter.display_plot()
-
-
 
         # Notify vehicle behind me that I changed speeds.
         follower = self.find_following_vehicle()
@@ -318,18 +320,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
             # Check for interruption(s) and handle
             while self.interrupted():
-                if self.interruptCause is self: # my trajectory spline has changed.
-                    self._actions_queue = []
-                    self._traverse()
-                    self._collision_check()
-                    self._add_tail_release()
-                else: # Only need to recalculate upcoming collision with the interrupter.
-                    for idx, (time, action, v) in enumerate(self._actions_queue):
-                        if action == self.COLLISION and v is self.interruptCause:
-                            del self._actions_queue[idx]
-                            break
-                        heapq.heapify(self._actions_queue)
-                        self._collision_check()
+                # Note: If more than one interruption occurs, the older interruption
+                #       never gets handled. So, this needs to handle the interruption
+                #       in the most generic way.
+                self._actions_queue = []
+                self._traverse()
+                self._collision_check()
+                self._add_tail_release()
 
                 delay = self._actions_queue[0][0] - Sim.now()
                 assert delay >= 0
@@ -531,7 +528,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             except IndexError:
                 new_loc = old_loc.next_loc # do whatever the track is set to do.
         else:
-            new_loc = old_loc.next_loc
+            new_loc = self.loc.next_loc
 
         return new_loc
 

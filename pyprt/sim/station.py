@@ -333,7 +333,10 @@ class Station(traits.HasTraits):
         self.track_segments = track_segments
 
     def __str__(self):
-        return self.label
+        if self.label:
+            return self.label
+        else:
+            return str(self.ID)
 
     def __hash__(self):
         return hash(self.ID)
