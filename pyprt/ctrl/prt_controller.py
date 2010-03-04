@@ -44,11 +44,9 @@ class PrtController(BaseController):
     SLOWING = "SLOWING"                     # Off the main line, slowing for station entry.
     UNLOAD_ADVANCING = "UNLOAD_ADVANCING"   # Have passengers to unload, on unload platform.
     UNLOAD_WAITING = "UNLOAD_WAITING"       # Capable of immediately disembarking passengers.
-##    ARRIVED = "ARRIVED"                     # Parked in berth. May have passengers to unload.
     DISEMBARKING = "DISEMBARKING"           # Parked in berth, currently unloading passengers.
     QUEUE_WAITING = "QUEUE_WAITING"         # No passengers to unload. Waiting to reach load platform.
     QUEUE_ADVANCING = "QUEUE_ADVANCING"     # No passengers to unload. May be on either the Unload or Queue platform.
-##    WAITING = "WAITING"                     # Parked in berth. No passengers, no current activity.
     LOAD_WAITING = "LOAD_WAITING"           # Capable of immediately embarking passengers.
     LOAD_ADVANCING = "LOAD_ADVANCING"       # On the load platform.
     EMBARKING = "EMBARKING"                 # Parked in berth, loading passengers
@@ -56,8 +54,6 @@ class PrtController(BaseController):
     EXIT_ADVANCING = "EXIT_ADVANCING"       # Moving towards launch berth.
     LAUNCH_WAITING = "LAUNCH_WAITING"       # In the launch berth. Ready to lauch at any time.
     LAUNCHING = "LAUNCHING"                 # Accelerating towards the main line.
-##    ADVANCING = "ADVANCING"                 # In a station, moving from one berth to the next.
-##    READY_TO_DEPART = "READY_TO_DEPART"     # Parked in head-of-line berth, waiting for departure signal, ready to go immediately
 
     LINE_SPEED = 25  # in meter/sec
     HEARTBEAT_INTERVAL = 5  # in seconds. Choosen arbitrarily for testing
@@ -142,6 +138,7 @@ class PrtController(BaseController):
                             v.berth_id = None
                             v.berth_pos = None
                             v.platform_id = None
+                            v.plat_ts = None
 
         # schedule the next heartbeat
         self.set_s_notification(station, self.current_time + self.HEARTBEAT_INTERVAL)
@@ -158,7 +155,7 @@ class PrtController(BaseController):
         # if vehicle hasn't unloaded, only try to advance as far as the last unload berth
         if vehicle.state is self.UNLOAD_WAITING:
             try:
-                b_pos, b_id, ts_id = station.request_berth(vehicle, Station.UNLOAD_PLATFORM, vehicle.berth_id)
+                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD_PLATFORM, vehicle.berth_id)
                 plat_id = Station.UNLOAD_PLATFORM
             except NoBerthAvailableError:
                 return
@@ -166,33 +163,33 @@ class PrtController(BaseController):
         # All remaining cases should advance as far as the load platform, if able
         if vehicle.platform_id == Station.UNLOAD_PLATFORM:
             try: # see if vehicle can go all the way to loading platform
-                b_pos, b_id, ts_id = station.request_berth(vehicle, Station.LOAD_PLATFORM)
+                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.LOAD_PLATFORM)
                 plat_id = Station.LOAD_PLATFORM
             except NoBerthAvailableError: # Settle for trying to get into the queue
                 try:
-                    b_pos, b_id, ts_id = station.request_berth(vehicle, Station.QUEUE_PLATFORM)
+                    b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.QUEUE_PLATFORM)
                     plat_id = Station.QUEUE_PLATFORM
                 except NoBerthAvailableError: # Can I at least inch forward on UNLOAD_PLATFORM?
                     try:
-                        b_pos, b_id, ts_id = station.request_berth(vehicle, Station.UNLOAD_PLATFORM, vehicle.berth_id)
+                        b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD_PLATFORM, vehicle.berth_id)
                         plat_id = Station.UNLOAD_PLATFORM
                     except NoBerthAvailableError:
                         return
 
         elif vehicle.platform_id == Station.QUEUE_PLATFORM:
             try:
-                b_pos, b_id, ts_id = station.request_berth(vehicle, Station.LOAD_PLATFORM)
+                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.LOAD_PLATFORM)
                 plat_id = Station.LOAD_PLATFORM
             except NoBerthAvailableError: # Settle for staying on queue
                 try:
-                    b_pos, b_id, ts_id = station.request_berth(vehicle, Station.QUEUE_PLATFORM, vehicle.berth_id)
+                    b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.QUEUE_PLATFORM, vehicle.berth_id)
                     plat_id = Station.QUEUE_PLATFORM
                 except NoBerthAvailableError:
                     return
 
         elif vehicle.platform_id == Station.LOAD_PLATFORM:
             try:
-                b_pos, b_id, ts_id = station.request_berth(vehicle, Station.LOAD_PLATFORM, vehicle.berth_id)
+                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.LOAD_PLATFORM, vehicle.berth_id)
                 plat_id = Station.LOAD_PLATFORM
             except NoBerthAvailableError:
                 return
@@ -215,12 +212,15 @@ class PrtController(BaseController):
         else:
             assert False, "Unexpected state: %s" % vehicle.state
 
-        # move the vehicle
+        # store the reserved berth with the vehicle
         vehicle.station.release_berth(vehicle.berth_id, vehicle.platform_id)
-        t = vehicle.advance(b_pos, b_id, plat_id, ts_id)
-        self.set_v_notification(vehicle, t)
-        self.log.info("t:%5.3f Vehicle %d in station %d advancing to berth %d of platform %d with eta %.3f",
-                      self.current_time, vehicle.id, station.id, b_id, plat_id, t)
+        vehicle.berth_pos = b_pos
+        vehicle.berth_id = b_id
+        vehicle.platform_id = plat_id
+        vehicle.plat_ts = plat_ts
+
+        # do the actual movement after getting updated info from the sim
+        self.request_v_status(vehicle.id)
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
@@ -271,21 +271,17 @@ class PrtController(BaseController):
                     vehicle.state = self.SLOWING
 
                     # Reserve a berth for the vehicle
-                    berth_pos, berth_id, ts_id = station.request_berth(vehicle, Station.UNLOAD)
+                    berth_pos, berth_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD)
                     vehicle.berth_pos = berth_pos
                     vehicle.berth_id = berth_id
                     vehicle.platform_id = Station.UNLOAD_PLATFORM
+                    vehicle.plat_ts = plat_ts
                     vehicle.station = station
 
                     # Set up a trajectory for reaching the station's UNLOAD platform.
                     path_length, path = self.manager.get_path(vehicle.ts_id, station.ts_ids[Station.UNLOAD])
                     dist = path_length - vehicle.pos
-                    t_arrival = vehicle.run(dist, path, station.SPEED_LIMIT - 0.1)
-
-                    # use time-based notification of vehicle stopping in berth
-                    # TODO: Add a SIM_NOTIFY_VEHICLE_STOPPED event message.
-                    t_arrival = vehicle.park(berth_pos, berth_id, ts_id)
-                    self.set_v_notification(vehicle, t_arrival+1)
+                    t_arrival = vehicle.run(dist, path, station.SPEED_LIMIT - 0.1) # a little under the speed limit
 
                 # Outbound from a station
                 else:
@@ -334,19 +330,31 @@ class PrtController(BaseController):
         if vehicle.state in (self.UNLOAD_ADVANCING, self.QUEUE_ADVANCING,
                              self.LOAD_ADVANCING, self.EXIT_ADVANCING):
             # TODO: Move to on_NOTIFY_VEHICLE_STOPPED when message is implemented
-            if abs(vehicle.vel) < 0.001 and abs(vehicle.accel) < 0.001:
-                if vehicle.state is self.UNLOAD_ADVANCING:
-                    vehicle.state = self.UNLOAD_WAITING
-                elif vehicle.state is self.QUEUE_ADVANCING:
-                    vehicle.state = self.QUEUE_WAITING
-                elif vehicle.state is self.LOAD_ADVANCING:
-                    vehicle.state = self.LOAD_WAITING
-                elif vehicle.state is self.EXIT_ADVANCING:
-                    vehicle.state = self.EXIT_WAITING
+            if abs(vehicle.vel) < 0.01 and abs(vehicle.accel) < 0.01: # check that we're stopped
+
+                if vehicle._advancing is False: # advancing hasn't started yet
+                    assert vehicle.ts_id != vehicle.plat_ts or abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) > 1
+                    t_arrival = vehicle.advance()
+                    self.set_v_notification(vehicle, t_arrival)
+
+                elif vehicle._advancing is True: # flag indicates that advancing has completed
+                    vehicle._advancing = False # lower the flag
+                    assert abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1 and vehicle.ts_id == vehicle.plat_ts
+                    if vehicle.state is self.UNLOAD_ADVANCING:
+                        vehicle.state = self.UNLOAD_WAITING
+                    elif vehicle.state is self.QUEUE_ADVANCING:
+                        vehicle.state = self.QUEUE_WAITING
+                    elif vehicle.state is self.LOAD_ADVANCING:
+                        vehicle.state = self.LOAD_WAITING
+                    elif vehicle.state is self.EXIT_ADVANCING:
+                        vehicle.state = self.EXIT_WAITING
+                    else:
+                        raise Exception("Unexpected state: %s" % vehicle.state)
+
                 else:
-                    raise Exception("Unexpected state: %s" % vehicle.state)
+                    raise Exception("Unexpected case: %s" % vehicle._advancing)
             else:
-                raise Exception("TODO: Advancing trajectory was incorrect, and vehicle did not come to a full stop. vID: %d, vel: %f" % (vehicle.id, vehicle.vel))
+                raise Exception("TODO: Advancing trajectory was incorrect, and vehicle did not come to a full stop. vID: %d, vel: %f, accel: %f" % (vehicle.id, vehicle.vel, vehicle.accel))
 
         else:
             warnings.warn("Received vehicle status. Not sure why... vID: %d, v.state: %s" % (vehicle.id, vehicle.state))
@@ -397,8 +405,8 @@ class PrtController(BaseController):
                 vehicle.state = self.UNLOAD_ADVANCING
             else:
                 vehicle.state = self.QUEUE_ADVANCING
-            plat_ts_id = vehicle.station.ts_ids[vehicle.platform_id+3]
-            t_arrival = vehicle.advance(vehicle.berth_pos, vehicle.berth_id, vehicle.platform_id, plat_ts_id)
+
+            t_arrival = vehicle.advance()
             self.set_v_notification(vehicle, t_arrival)
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
@@ -415,11 +423,12 @@ class PrtController(BaseController):
             # Just left the main line to enter a station.
             if msg.trackID == station.ts_ids[Station.OFF_RAMP_I]:
                 # request a berth TODO: Request a berth BEFORE committing to entering the station! Also, try-except
-                berth_pos, berth_id, ts_id = station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
+                berth_pos, berth_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
                 vehicle.state = self.SLOWING
                 vehicle.berth_pos = berth_pos
                 vehicle.berth_id = berth_id
                 vehicle.platform_id = station.UNLOAD_PLATFORM
+                vehicle.plat_ts = plat_ts
                 vehicle.station = station
 
         # Just joined the main line, entirely exiting the station zone
@@ -601,7 +610,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             pax = avail_pax.pop()
             dest_station = self.stations[pax.dest_id]
             path_length, path = self.get_path(orig_station.ts_ids[Station.LOAD], dest_station.ts_ids[Station.UNLOAD])
-            dist = path_length - (orig_station.berth_positions[Station.UNLOAD_PLATFORM][-1] - 0.1)
+            dist = path_length - (orig_station.berth_positions[Station.UNLOAD_PLATFORM][-1] - vehicle.BERTH_GAP)
             return Trip(dest_station, dist, path, (pax.id,) ) # just one pax for now
 
         else: # vehicle must either wait, or travel to a different station
@@ -768,6 +777,7 @@ class Passenger(object):
 
 class Vehicle(object):
     SPEED_INCREMENT = 2.77777  # 10 km/hr
+    BERTH_GAP = 0.1 # 10 cm. A little room left between the vehicle's nose and the edge of the berth
 
     controller = None # interfaces with the sim
     manager = None # high level planner
@@ -795,14 +805,21 @@ class Vehicle(object):
 
         self.state = None
         self.station = None
+
+        # Info for the reserved berth, not the current berth!!
         self.platform_id = None
         self.berth_pos = None
         self.berth_id = None
+        self.plat_ts = None
+
+        # A private flag for indicating whether a vehicle's "advance" has been
+        # commanded yet or not.
+        self._advancing = False
 
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
         assert v_status.vID == self.id
-        self.ts_id = v_status.nose_locID
+        self.ts_id = int(v_status.nose_locID) # convert to int from a long
         self.pos = v_status.nose_pos
         self.vel = v_status.vel
         self.accel = v_status.accel
@@ -811,7 +828,7 @@ class Vehicle(object):
     def run_trip(self):
         """Runs the vehicle's stored trip. Returns the scheduled arrival time."""
         assert isinstance(self.trip, Trip)
-        t = self.run(self.trip.dist, self.trip.path, self.trip.dest_station.SPEED_LIMIT - 0.1, self.controller.LINE_SPEED)
+        t = self.run(self.trip.dist, self.trip.path, self.trip.dest_station.SPEED_LIMIT - 0.1, self.controller.LINE_SPEED) # slightly under the speed limit
         return t
 
     def run(self, dist, path, final_speed=0, speed_limit=None):
@@ -837,10 +854,14 @@ class Vehicle(object):
         spline = solver.target_position(Knot(self.pos, self.vel, self.accel, self.controller.current_time),
                                         Knot(dist + self.pos, final_speed, 0, None))
 
-##        if __debug__:
-##            from pyprt.shared.cspline_plotter import CSplinePlotter
-##            plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)
-##            plotter.display_plot()
+        if abs(spline.v[-1] - final_speed) > 0.001 or abs(spline.a[-1]) > 0.001:
+            from pyprt.shared.cspline_plotter import CSplinePlotter
+            plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)
+            plotter.display_plot()
+
+##        from pyprt.shared.cspline_plotter import CSplinePlotter
+##        plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)
+##        plotter.display_plot()
 
         final_time = spline.t[-1]
         # Append a last knot which extends the spline until past the end of the simulation.
@@ -854,24 +875,6 @@ class Vehicle(object):
         self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
 
         return final_time
-
-    def park(self, berth_pos, berth_id, ts_id):
-        """Changes the trajectory to bring the vehicle into the specified berth.
-        Assumes that the vehicle's status information is up to date.
-        Returns the time at which the vehicle will be parked, according to the new trajectory."""
-        self.berth_pos = berth_pos
-        self.berth_id = berth_id
-        self.platform_id = Station.UNLOAD_PLATFORM
-
-        # calculate how far the vehicle needs to travel to end in the berth
-        path_length, self.path = self.manager.get_path(self.ts_id, ts_id)
-        dist = (self.berth_pos - 0.1) + path_length - self.pos
-        assert dist >= 0
-
-        # update the trajectory (vehicle path unaltered)
-        time = self.run(dist, [], 0, self.station.SPEED_LIMIT)
-
-        return time
 
     def is_full(self):
         assert len(self.pax) <= self.capacity
@@ -891,8 +894,8 @@ class Vehicle(object):
         disembark_msg.passengerIDs.extend(passengers)
         self.controller.send(api.CTRL_CMD_PASSENGERS_DISEMBARK, disembark_msg)
 
-        self.controller.log.info("t:%5.3f Vehicle %d at station %d, berth %d, plat %d is starting disembark of %s",
-                                 self.controller.current_time, self.id, self.station.id, self.berth_id, self.platform_id, passengers)
+        self.controller.log.info("t:%5.3f Start Disembark: Vehicle %d, pos %.2f at station %d, plat %d, berth %d is starting disembark of %s",
+                                 self.controller.current_time, self.id, self.pos, self.station.id, self.platform_id, self.berth_id, passengers)
 
         for pax in passengers:
             self.pax.remove(pax)
@@ -912,31 +915,31 @@ class Vehicle(object):
         embark_msg.passengerIDs.extend(passengers[:fill_line])
         self.controller.send(api.CTRL_CMD_PASSENGERS_EMBARK, embark_msg)
 
-        self.controller.log.info("t:%5.3f Vehicle %d at station %d embarking %s. Overflow: %s",
-                                 self.controller.current_time, self.id, self.station.id,
+        self.controller.log.info("t:%5.3f Start Embark: Vehicle %d, pos %.2f at station %d, plat %d, berth %d is starting embark of %s. Overflow: %s",
+                                 self.controller.current_time, self.id, self.pos,
+                                 self.station.id, self.platform_id, self.berth_id,
                                  passengers[:fill_line], passengers[fill_line:])
 
         # Return overflow passengers
         return passengers[fill_line:]
 
-    def advance(self, berth_position, berth_id, platform_id, ts_id):
+    def advance(self, speed_limit=None):
         """Sets the vehicle on a itenarary and trajectory for advancing to the
-        requested berth. Assumes that the berth has already been reserved.
+        vehicle's reserved berth.
         Returns the time at which the vehicle will arrive."""
-        if ts_id == self.ts_id: # staying on the same platform
+        self._advancing = True
+        if self.plat_ts == self.ts_id: # staying on the same platform
             path = []
-            dist = (berth_position - 0.1) - self.pos # stop 10 cm short of the end
+            dist = (self.berth_pos - self.BERTH_GAP) - self.pos # stop a little short of the end
 
         else: # advancing to another next platform
-            path_length, path = self.manager.get_path(self.ts_id, ts_id)
-            dist = (path_length - self.pos) + (berth_position - 0.1) # stop 10 cm short of the end
+            path_length, path = self.manager.get_path(self.ts_id, self.plat_ts)
+            dist = (path_length - self.pos) + (self.berth_pos - self.BERTH_GAP) # stop a little short of the end
 
-        finish_time = self.run(dist, path, 0, self.station.SPEED_LIMIT)
+        if speed_limit == None:
+            speed_limit = self.station.SPEED_LIMIT
 
-        self.berth_pos = berth_position
-        self.berth_id = berth_id
-        self.platform_id = platform_id
-
+        finish_time = self.run(dist, path, 0, speed_limit)
         return finish_time
 
 

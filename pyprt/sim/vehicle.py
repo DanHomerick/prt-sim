@@ -253,10 +253,12 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             # has clearly come to a complete stop to zero out any accumulated
             # rounding errors in the velocity and acceleration.
             new_knot = cspline.Knot(q, v, a, t_final)
-            if abs(new_knot.vel) < 0.001 and abs(new_knot.accel) < 0.001:
-                new_knot.vel = 0
-                new_knot.accel = 0
-                # TODO: Send NOTIFY_STOPPED_MSG
+##            if (abs(new_knot.vel) < 0.001 and abs(new_knot.accel) < 0.001) or \
+##                                 (new_knot.vel < 0 and new_knot.accel < 0):
+##                logging.debug("Clipped vel and accel to 0. Vehicle %d, original knot: %s", self.ID, new_knot)
+##                new_knot.vel = 0
+##                new_knot.accel = 0
+##                # TODO: Send NOTIFY_STOPPED_MSG
 
             self._spline.append(new_knot)
 
@@ -265,8 +267,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 if len(errors) == 4:
                     errors[0] += self._pos_offset_nose # Assuming that the traj msg sent in current position coordinate frame
                 error_str = ", ".join(msg + str(error) for (msg, error) in zip(['Pos: ', 'Vel: ', 'Accel: '], errors))
-                logging.debug("Spline check::Times: %s to %s. Errors: %s",
-                              t_initial, t_final, error_str)
+                logging.debug("Vehicle %d, spline check::Times: %s to %s. Errors: %s",
+                              self.ID, t_initial, t_final, error_str)
 
         # In most cases, the controller should provide a spline that is valid until
         # the end of the sim. When it doesn't, extend the spline with the current
@@ -315,7 +317,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         # main loop
         while True:
             delay = self._actions_queue[0][0] - Sim.now()
-            assert delay >= 0
+            assert delay >= 0, delay
             yield Sim.hold, self, delay
 
             # Check for interruption(s) and handle
@@ -329,7 +331,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 self._add_tail_release()
 
                 delay = self._actions_queue[0][0] - Sim.now()
-                assert delay >= 0
+                assert delay >= 0, delay
                 self.interruptReset()
                 yield Sim.hold, self, delay
 
@@ -359,8 +361,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 ##            traverse_time = common.config_manager.get_sim_end_time()
             traverse_time = inf
         heapq.heappush(self._actions_queue, (traverse_time, self.BOUNDARY, None))
-        assert traverse_dist > 0
-        assert traverse_time > Sim.now()
+        assert traverse_dist > 0, (traverse_dist, self.loc.length, self.loc.ID)
+        assert traverse_time > Sim.now(), traverse_time
 
     def _boundary_handler(self):
         """Responsible for moving a vehicle to the next location when it reaches
@@ -383,6 +385,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         else: # new_loc is None ... Vehicle just hit a dead-end, or a track switch in mid-throw.
             heapq.heappush(self._actions_queue, (Sim.now(), self.COLLISION, None)) # single-vehicle crash
             return
+
+        assert self._pos_offset_nose == sum(l.length for l in self._path[:self._path_idx_nose])
 
         # Queue up other actions ( tail release is added by _tail_release_handler )
         self._traverse()

@@ -18,6 +18,7 @@ import sys
 from optparse import OptionParser
 import random
 from collections import defaultdict
+import warnings
 
 optpar = OptionParser(usage="usage: %prog [options] input-file")
 optpar.add_option("-t", "--time-dist", action="store", nargs=2, dest="beta",
@@ -45,10 +46,17 @@ else:
 trips = defaultdict(int) # keyed by (origin, dest) tuples, values are trip counts.
 stations = set() # set of unique station ids
 for line in inputfile:
+    if line.startswith('#'):
+        continue
     try: # comma separated
         origin, dest, count = line.split(',')
     except ValueError: # try tab separated, but otherwise give up
-        origin, dest, count = line.split()
+        try:
+            origin, dest, count = line.split()
+        except ValueError:
+            warnings.warn("Unable to make sense of: %s" % line)
+            continue
+
     origin, dest, count = int(origin), int(dest), int(count)
     trips[(origin, dest)] = count
     stations.add(origin)

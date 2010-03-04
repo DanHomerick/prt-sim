@@ -219,7 +219,8 @@ class ControlInterface(Sim.Process):
                 if all(self.resume_list):
                     break
                 else:
-                    logging.debug("Waiting for other controllers to resume: %s", self.resume_list)
+                    pass
+##                    logging.debug("Waiting for other controllers to resume: %s", self.resume_list)
 
             # Once all controllers have sent a CtrlResume, passivate self. Will
             # be reactivated once any part of the sim sends out a message.
@@ -244,9 +245,10 @@ class ControlInterface(Sim.Process):
                     if msg.last_sim_msgID == common.msg_id_widget.last_id():
                         # set the 'resume' that corresponds to the controller to True
                         self.resume_list[comm_idx] = True
-                        logging.debug("Processed current resume. msgID:%s, msg_time:%s", msgID, msg_time )
+##                        logging.debug("Processed current resume. msgID:%s, msg_time:%s", msgID, msg_time )
                     else:
-                        logging.debug("Processed stale resume. msgID:%s, msg_time:%s", msgID, msg_time )
+                        pass
+##                        logging.debug("Processed stale resume. msgID:%s, msg_time:%s", msgID, msg_time )
 
                 elif msg_type == api.CTRL_CMD_VEHICLE_TRAJECTORY:
                     msg = api.CtrlCmdVehicleTrajectory()

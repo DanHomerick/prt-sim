@@ -1,7 +1,8 @@
 from __future__ import division # use floating point division unless explicitly otherwise
 from math import isnan, isinf   # requires Python 2.6
+import warnings
 
-from numpy import roots, polysub
+from numpy import roots, polysub, polyval
 
 from utility import pairwise
 
@@ -284,13 +285,19 @@ class CubicSpline(object):
 
     def fill_spline_msg(self, spline_msg):
         """Fills a api.Spline msg with data from a cubic spline.
-        spline_msg: An api.Spline message instance.
+        spline_msg: An api.Spline message instance. Ommits extreamly short
+        duration coefficients, because they add no useful information and add
+        large amounts of error.
         """
-        for c in self.coeffs:
-            poly_msg = spline_msg.polys.add()
-            poly_msg.coeffs.extend( c )
-
-        spline_msg.times.extend(self.t)
+        spline_msg.times.append(self.t[0])
+        for c, (ti, tf) in zip(self.coeffs, pairwise(self.t)):
+            if tf - ti >= 0.001: # poly has duration of at least one millisecond
+                poly_msg = spline_msg.polys.add()
+                poly_msg.coeffs.extend( c )
+                spline_msg.times.append(tf)
+            else:
+                continue
+##                warnings.warn("Dropped coeffs %s. ti: %f, tf: %f" % (c, ti, tf))
 
     def _get_idx_from_time(self, time):
         """Returns the left index corresponding to time."""

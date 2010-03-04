@@ -657,7 +657,7 @@ class Visualizer(object):
 ##            self.plot.datasources['vehicle_y'].set_data(y)
 ##            self.plot.datasources['v_pax_cnt'].set_data(pax_cnt)
             common.vehicle_data_queue.task_done()
-        except Queue.Empty:
+        except (Queue.Empty, AttributeError):
             pass
 
         try:
@@ -1042,12 +1042,15 @@ class VisDataCollector(SimPy.Process):
         pos2img = {}
         # precalculate coordinate transform matrixes
         for track_seg in common.track_segments.itervalues():
-            dx = track_seg.x_end - track_seg.x_start
-            dy = track_seg.y_end - track_seg.y_start
-            angle = math.atan2(dy, dx)
-            scale = math.sqrt(dx**2 + dy**2) / track_seg.length # scaling factor
-            pos2img[track_seg] = array([[scale*math.cos(angle), track_seg.x_start],
-                                   [scale*math.sin(angle), track_seg.y_start]])
+            try:
+                dx = track_seg.x_end - track_seg.x_start
+                dy = track_seg.y_end - track_seg.y_start
+                angle = math.atan2(dy, dx)
+                scale = math.sqrt(dx**2 + dy**2) / track_seg.length # scaling factor
+                pos2img[track_seg] = array([[scale*math.cos(angle), track_seg.x_start],
+                                       [scale*math.sin(angle), track_seg.y_start]])
+            except ZeroDivisionError:
+                continue
 
         chaco_interval = self.chaco_interval
         data_interval = self.data_interval
