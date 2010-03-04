@@ -386,8 +386,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             heapq.heappush(self._actions_queue, (Sim.now(), self.COLLISION, None)) # single-vehicle crash
             return
 
-        assert self._pos_offset_nose == sum(l.length for l in self._path[:self._path_idx_nose])
-
         # Queue up other actions ( tail release is added by _tail_release_handler )
         self._traverse()
         self._collision_check()

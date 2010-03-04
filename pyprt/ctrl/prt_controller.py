@@ -133,12 +133,7 @@ class PrtController(BaseController):
                             v.state = self.LAUNCH_WAITING
                             # Temp -- just launch as soon as possible
                             v.state = self.LAUNCHING
-                            v.run_trip()
-                            station.release_berth(v.berth_id, v.platform_id)
-                            v.berth_id = None
-                            v.berth_pos = None
-                            v.platform_id = None
-                            v.plat_ts = None
+                            v._launching = False
 
         # schedule the next heartbeat
         self.set_s_notification(station, self.current_time + self.HEARTBEAT_INTERVAL)
@@ -149,6 +144,11 @@ class PrtController(BaseController):
         """
         assert isinstance(vehicle, Vehicle)
         assert isinstance(station, Station)
+
+        # This function only changes the state. The actual movement will be
+        # commanded after the sim returns current vehicle status information.
+        self.request_v_status(vehicle.id)
+
         if vehicle.state not in (self.UNLOAD_WAITING, self.QUEUE_WAITING, self.LOAD_WAITING, self.EXIT_WAITING, None):
             return
 
@@ -219,8 +219,7 @@ class PrtController(BaseController):
         vehicle.platform_id = plat_id
         vehicle.plat_ts = plat_ts
 
-        # do the actual movement after getting updated info from the sim
-        self.request_v_status(vehicle.id)
+        # ... wait for the v_status update from the sim
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
@@ -334,30 +333,41 @@ class PrtController(BaseController):
 
                 if vehicle._advancing is False: # advancing hasn't started yet
                     assert vehicle.ts_id != vehicle.plat_ts or abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) > 1
-                    t_arrival = vehicle.advance()
+                    t_arrival = vehicle.advance() # sets ._advancing flag to true
                     self.set_v_notification(vehicle, t_arrival)
 
                 elif vehicle._advancing is True: # flag indicates that advancing has completed
-                    vehicle._advancing = False # lower the flag
-                    assert abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1 and vehicle.ts_id == vehicle.plat_ts
-                    if vehicle.state is self.UNLOAD_ADVANCING:
-                        vehicle.state = self.UNLOAD_WAITING
-                    elif vehicle.state is self.QUEUE_ADVANCING:
-                        vehicle.state = self.QUEUE_WAITING
-                    elif vehicle.state is self.LOAD_ADVANCING:
-                        vehicle.state = self.LOAD_WAITING
-                    elif vehicle.state is self.EXIT_ADVANCING:
-                        vehicle.state = self.EXIT_WAITING
-                    else:
-                        raise Exception("Unexpected state: %s" % vehicle.state)
+                    # Really need a NOTIFY STOPPED message to clean up this flow
+                    if abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1 and vehicle.ts_id == vehicle.plat_ts and vehicle.vel < 0.001:
+                        vehicle._advancing = False # lower the flag
+                        if vehicle.state is self.UNLOAD_ADVANCING:
+                            vehicle.state = self.UNLOAD_WAITING
+                        elif vehicle.state is self.QUEUE_ADVANCING:
+                            vehicle.state = self.QUEUE_WAITING
+                        elif vehicle.state is self.LOAD_ADVANCING:
+                            vehicle.state = self.LOAD_WAITING
+                        elif vehicle.state is self.EXIT_ADVANCING:
+                            vehicle.state = self.EXIT_WAITING
+                        else:
+                            raise Exception("Unexpected state: %s" % vehicle.state)
 
                 else:
                     raise Exception("Unexpected case: %s" % vehicle._advancing)
-            else:
-                raise Exception("TODO: Advancing trajectory was incorrect, and vehicle did not come to a full stop. vID: %d, vel: %f, accel: %f" % (vehicle.id, vehicle.vel, vehicle.accel))
 
-        else:
-            warnings.warn("Received vehicle status. Not sure why... vID: %d, v.state: %s" % (vehicle.id, vehicle.state))
+        elif vehicle.state is self.LAUNCHING:
+            if vehicle._launching is False:
+                vehicle.run_trip()
+                vehicle.station.release_berth(vehicle.berth_id, vehicle.platform_id)
+                vehicle.berth_id = None
+                vehicle.berth_pos = None
+                vehicle.platform_id = None
+                vehicle.plat_ts = None
+                vehicle._launching = True
+            else:
+                pass
+
+##        else:
+##            warnings.warn("Received vehicle status. Not sure why... vID: %d, v.state: %s" % (vehicle.id, vehicle.state))
 
     def on_SIM_EVENT_PASSENGER_CREATED(self, msg, msgID, msg_time):
         p_status = msg.p_status
@@ -433,6 +443,7 @@ class PrtController(BaseController):
 
         # Just joined the main line, entirely exiting the station zone
         elif vehicle.state is self.LAUNCHING and vehicle.ts_id == station.ts_ids[Station.ON_RAMP_II]:
+            vehicle._launching = False
             vehicle.state = self.RUNNING
             vehicle.station = None
 
@@ -815,6 +826,7 @@ class Vehicle(object):
         # A private flag for indicating whether a vehicle's "advance" has been
         # commanded yet or not.
         self._advancing = False
+        self._launching = False
 
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""

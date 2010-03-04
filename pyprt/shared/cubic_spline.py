@@ -291,7 +291,7 @@ class CubicSpline(object):
         """
         spline_msg.times.append(self.t[0])
         for c, (ti, tf) in zip(self.coeffs, pairwise(self.t)):
-            if tf - ti >= 0.001: # poly has duration of at least one millisecond
+            if tf - ti >= 0.0001: # poly has duration of at least 1/10th of a millisecond
                 poly_msg = spline_msg.polys.add()
                 poly_msg.coeffs.extend( c )
                 spline_msg.times.append(tf)
