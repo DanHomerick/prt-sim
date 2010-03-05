@@ -664,7 +664,7 @@ class Visualizer(object):
             pax_count = common.station_data_queue.get_nowait() # non-blocking
             self.plot.datasources['stat_pax_cnt'].set_data(pax_count)
             common.station_data_queue.task_done()
-        except Queue.Empty:
+        except (Queue.Empty, AttributeError):
             pass
 
     def vehicle_selection_handler(self, object, name, new):

@@ -118,7 +118,7 @@ class PrtController(BaseController):
                     # try to do something useful with the time.
                     if v.state is self.UNLOAD_WAITING:
                         v.state = self.DISEMBARKING
-                        v.disembark(v.pax[:]) # pass a copy of the list
+                        v.disembark(v.trip.passengers)
 
                     elif v.state is self.LOAD_WAITING:
                         try:
@@ -133,7 +133,10 @@ class PrtController(BaseController):
                             v.state = self.LAUNCH_WAITING
                             # Temp -- just launch as soon as possible
                             v.state = self.LAUNCHING
-                            v._launching = False
+                            v._launch_begun = False
+
+                            assert v.station is station
+                            v.station.release_berth(v)
 
         # schedule the next heartbeat
         self.set_s_notification(station, self.current_time + self.HEARTBEAT_INTERVAL)
@@ -149,49 +152,31 @@ class PrtController(BaseController):
         # commanded after the sim returns current vehicle status information.
         self.request_v_status(vehicle.id)
 
+        # Exclude vehicles that have reserved berths, but aren't yet in the
+        # relevant states.
         if vehicle.state not in (self.UNLOAD_WAITING, self.QUEUE_WAITING, self.LOAD_WAITING, self.EXIT_WAITING, None):
             return
+
+        assert vehicle.station is station
 
         # if vehicle hasn't unloaded, only try to advance as far as the last unload berth
         if vehicle.state is self.UNLOAD_WAITING:
             try:
-                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD_PLATFORM, vehicle.berth_id)
-                plat_id = Station.UNLOAD_PLATFORM
+                station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
             except NoBerthAvailableError:
                 return
-
-        # All remaining cases should advance as far as the load platform, if able
-        if vehicle.platform_id == Station.UNLOAD_PLATFORM:
-            try: # see if vehicle can go all the way to loading platform
-                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.LOAD_PLATFORM)
-                plat_id = Station.LOAD_PLATFORM
-            except NoBerthAvailableError: # Settle for trying to get into the queue
+        else:
+            # All remaining cases should advance as far as the load platform, if able
+            for plat in (Station.LOAD_PLATFORM, Station.QUEUE_PLATFORM, Station.UNLOAD_PLATFORM):
                 try:
-                    b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.QUEUE_PLATFORM)
-                    plat_id = Station.QUEUE_PLATFORM
-                except NoBerthAvailableError: # Can I at least inch forward on UNLOAD_PLATFORM?
-                    try:
-                        b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD_PLATFORM, vehicle.berth_id)
-                        plat_id = Station.UNLOAD_PLATFORM
-                    except NoBerthAvailableError:
-                        return
-
-        elif vehicle.platform_id == Station.QUEUE_PLATFORM:
-            try:
-                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.LOAD_PLATFORM)
-                plat_id = Station.LOAD_PLATFORM
-            except NoBerthAvailableError: # Settle for staying on queue
-                try:
-                    b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.QUEUE_PLATFORM, vehicle.berth_id)
-                    plat_id = Station.QUEUE_PLATFORM
+                    station.request_berth(vehicle, plat)
+                    break
                 except NoBerthAvailableError:
-                    return
-
-        elif vehicle.platform_id == Station.LOAD_PLATFORM:
-            try:
-                b_pos, b_id, plat_ts = station.request_berth(vehicle, Station.LOAD_PLATFORM, vehicle.berth_id)
-                plat_id = Station.LOAD_PLATFORM
-            except NoBerthAvailableError:
+                    if plat > vehicle.platform_id:
+                        continue
+                    else:
+                        return
+            else:
                 return
 
         # update vehicle's state
@@ -199,12 +184,12 @@ class PrtController(BaseController):
             vehicle.state = self.UNLOAD_ADVANCING
         elif vehicle.state is self.QUEUE_WAITING:
             # Change from QUEUE_* to LOAD_* once vehicle has made it to load platform
-            if plat_id == Station.UNLOAD_PLATFORM or plat_id == Station.QUEUE_PLATFORM:
+            if plat == Station.UNLOAD_PLATFORM or plat == Station.QUEUE_PLATFORM:
                 vehicle.state = self.QUEUE_ADVANCING
-            elif plat_id == Station.LOAD_PLATFORM:
+            elif plat == Station.LOAD_PLATFORM:
                 vehicle.state = self.LOAD_ADVANCING
             else:
-                raise Exception("Unknown platform_id: %d" % plat_id)
+                raise Exception("Unknown platform_id: %d" % plat)
         elif vehicle.state is self.LOAD_WAITING:
             vehicle.state = self.LOAD_ADVANCING
         elif vehicle.state is self.EXIT_WAITING:
@@ -212,14 +197,10 @@ class PrtController(BaseController):
         else:
             assert False, "Unexpected state: %s" % vehicle.state
 
-        # store the reserved berth with the vehicle
-        vehicle.station.release_berth(vehicle.berth_id, vehicle.platform_id)
-        vehicle.berth_pos = b_pos
-        vehicle.berth_id = b_id
-        vehicle.platform_id = plat_id
-        vehicle.plat_ts = plat_ts
+        assert vehicle.plat_ts in vehicle.station.ts_ids
 
-        # ... wait for the v_status update from the sim
+        # ... wait for the v_status update from the sim to do the movement
+        vehicle._advance_begun = False
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
@@ -238,17 +219,14 @@ class PrtController(BaseController):
             for v in reversed(station.berth_reservations[Station.LOAD_PLATFORM]):
                 if v is not None:
                     v.state = self.LOAD_WAITING
-                    self.trigger_advance(v, station)
 
             for v in reversed(station.berth_reservations[Station.QUEUE_PLATFORM]):
                 if v is not None:
                     v.state = self.QUEUE_WAITING
-                    self.trigger_advance(v, station)
 
             for v in reversed(station.berth_reservations[Station.UNLOAD_PLATFORM]):
                 if v is not None:
                     v.state = self.QUEUE_WAITING # Assuming vehicles don't start with passengers on board
-                    self.trigger_advance(v, station)
 
         for vehicle in self.manager.vehicles.itervalues():
             assert isinstance(vehicle, Vehicle)
@@ -256,11 +234,12 @@ class PrtController(BaseController):
             if vehicle.state is not None:
                 continue
 
-            station_id = self.manager.track2station.get(vehicle.ts_id)
+            station = self.manager.track2station.get(vehicle.ts_id)
+            if station is None:
+                station = self.manager.choice2station.get(vehicle.ts_id)
 
             # Within the boundaries of a station, but not at a berth.
-            if station_id is not None:
-                station = self.manager.stations[station_id]
+            if station is not None:
                 assert isinstance(station, Station)
 
                 # Approaching station
@@ -268,19 +247,22 @@ class PrtController(BaseController):
                                      station.ts_ids[Station.OFF_RAMP_II],
                                      station.ts_ids[Station.DECEL]):
                     vehicle.state = self.SLOWING
+                elif vehicle.ts_id == station.choice:
+                    assert vehicle.ts_id == station.choice
+                    vehicle.state = self.RUNNING
+                else: # vehicle on ACCEL, or ON_RAMPs
+                    pass
 
+                if vehicle.state in (self.SLOWING, self.RUNNING):
                     # Reserve a berth for the vehicle
-                    berth_pos, berth_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD)
-                    vehicle.berth_pos = berth_pos
-                    vehicle.berth_id = berth_id
-                    vehicle.platform_id = Station.UNLOAD_PLATFORM
-                    vehicle.plat_ts = plat_ts
+                    station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
                     vehicle.station = station
 
-                    # Set up a trajectory for reaching the station's UNLOAD platform.
+                    # Set up a trip for reaching the station's UNLOAD platform.
                     path_length, path = self.manager.get_path(vehicle.ts_id, station.ts_ids[Station.UNLOAD])
                     dist = path_length - vehicle.pos
-                    t_arrival = vehicle.run(dist, path, station.SPEED_LIMIT - 0.1) # a little under the speed limit
+                    vehicle.trip = Trip(station, dist, path, tuple())
+                    vehicle.run_trip()
 
                 # Outbound from a station
                 else:
@@ -288,14 +270,16 @@ class PrtController(BaseController):
                                              station.ts_ids[Station.ON_RAMP_I],
                                              station.ts_ids[Station.ON_RAMP_II])
                     vehicle.state = self.LAUNCHING
-                    dest_station_id, dist, path = self.manager.deadhead(vehicle.id)
-                    vehicle.run(dist, path, Station.SPEED_LIMIT, self.LINE_SPEED)
+                    vehicle._launch_begun = True
+                    vehicle.station = station
+                    vehicle.trip = self.manager.deadhead(vehicle.id)
+                    vehicle.run_trip()
 
             # Not inside a station's boundaries, or outbound from a station
             else:
-                dest_station_id, dist, path = self.manager.deadhead(vehicle.id)
                 vehicle.state = self.RUNNING
-                vehicle.run(dist, path, Station.SPEED_LIMIT, self.LINE_SPEED)
+                vehicle.trip = self.manager.deadhead(vehicle.id)
+                vehicle.run_trip()
 
         # station's heartbeats are all synchronized for now. Change that in the future?
         for station in self.manager.stations.itervalues():
@@ -331,15 +315,13 @@ class PrtController(BaseController):
             # TODO: Move to on_NOTIFY_VEHICLE_STOPPED when message is implemented
             if abs(vehicle.vel) < 0.01 and abs(vehicle.accel) < 0.01: # check that we're stopped
 
-                if vehicle._advancing is False: # advancing hasn't started yet
-                    assert vehicle.ts_id != vehicle.plat_ts or abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) > 1
-                    t_arrival = vehicle.advance() # sets ._advancing flag to true
-                    self.set_v_notification(vehicle, t_arrival)
+                if vehicle._advance_begun is False:
+                    vehicle.advance()
+                    vehicle._advance_begun = True
 
-                elif vehicle._advancing is True: # flag indicates that advancing has completed
-                    # Really need a NOTIFY STOPPED message to clean up this flow
+                elif vehicle._advance_begun is True:
+                    # Really need a NOTIFY STOPPED message to clean up this flow. For now just check if I've reached my berth and stopped.
                     if abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1 and vehicle.ts_id == vehicle.plat_ts and vehicle.vel < 0.001:
-                        vehicle._advancing = False # lower the flag
                         if vehicle.state is self.UNLOAD_ADVANCING:
                             vehicle.state = self.UNLOAD_WAITING
                         elif vehicle.state is self.QUEUE_ADVANCING:
@@ -352,17 +334,12 @@ class PrtController(BaseController):
                             raise Exception("Unexpected state: %s" % vehicle.state)
 
                 else:
-                    raise Exception("Unexpected case: %s" % vehicle._advancing)
+                    raise Exception("Unexpected case: %s" % vehicle._advance_begun)
 
         elif vehicle.state is self.LAUNCHING:
-            if vehicle._launching is False:
+            if vehicle._launch_begun is False:
                 vehicle.run_trip()
-                vehicle.station.release_berth(vehicle.berth_id, vehicle.platform_id)
-                vehicle.berth_id = None
-                vehicle.berth_pos = None
-                vehicle.platform_id = None
-                vehicle.plat_ts = None
-                vehicle._launching = True
+                vehicle._launch_begun = True
             else:
                 pass
 
@@ -383,7 +360,7 @@ class PrtController(BaseController):
                        self.current_time, vehicle.id, vehicle.station.id, vehicle.berth_id, vehicle.platform_id, msg.cmd.passengerIDs)
 
         vehicle.state = self.QUEUE_WAITING
-##        self.trigger_advance(vehicle, vehicle.station) # Start advancing to the loading platform
+        vehicle.trip = None
 
     def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.cmd.vID]
@@ -393,59 +370,79 @@ class PrtController(BaseController):
                        self.current_time, vehicle.id, vehicle.station.id, vehicle.berth_id, vehicle.platform_id, msg.cmd.passengerIDs)
 
         vehicle.state = self.EXIT_WAITING
-##        self.trigger_advance(vehicle, vehicle.station) # Start advancing to the exit berth
-##        if vehicle.state is self.READY_TO_DEPART:
-##            station = vehicle.station
-##            if station.is_launch_berth(vehicle.berth_id, vehicle.platform_id):
-##                vehicle.state = self.RUNNING
-##                vehicle.run_trip()
-##                station.release_berth(vehicle.berth_id, vehicle.platform_id)
-##                vehicle.berth_id = None
-##                vehicle.berth_pos = None
-##                vehicle.platform_id = None
 
     def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status)
 
-        if vehicle.state is self.SLOWING and vehicle.ts_id == vehicle.station.ts_ids[Station.UNLOAD]:
+        if vehicle.state is self.SLOWING and msg.trackID == vehicle.station.ts_ids[Station.UNLOAD]:
             # Just reached the beginning of the unload platform. Go to the already reserved berth.
             if vehicle.pax:
                 vehicle.state = self.UNLOAD_ADVANCING
             else:
+                # Skip disembarking entirely
                 vehicle.state = self.QUEUE_ADVANCING
+                vehicle.trip = None
+
+            # WARNING TODO FIXME: This is wallpapering over a bug!
+            # Very rarely, vehicles are showing up on the station's doorstep without having
+            # made reservations. Not cool. See if we can squeeze them in anyways.
+            if vehicle.berth_id is None:
+                vehicle.station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
 
             t_arrival = vehicle.advance()
             self.set_v_notification(vehicle, t_arrival)
+
+
+        # TODO: Try to move the decision process closer to the switch to improve efficiency.
+        # Vehicle needs to make choice to enter station or bypass.
+        elif vehicle.state is self.RUNNING and msg.trackID == vehicle.trip.dest_station.choice:
+            try:   # Reserve an unload berth
+                vehicle.trip.dest_station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
+            except NoBerthAvailableError: # none available, circle around and try again
+                # plan a path to the ts prior from current (that is, loop around)
+                prev_tses = self.manager.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of choice ts
+                best_loop_length, best_loop_path = float('inf'), None
+                for prev_ts in prev_tses:
+                    loop_length, loop_path = self.manager.get_path(vehicle.ts_id, prev_ts)
+                    if loop_length < best_loop_length:
+                        best_loop_length = loop_length
+                        best_loop_path = loop_path
+
+                # concatenate that path with a path to the station's unload
+                entry_length, entry_path = self.manager.get_path(prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
+
+                dist = best_loop_length + entry_length - vehicle.pos # vehicle.pos should be zero, but this code may get moved...
+                path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
+
+                vehicle.run(dist, path, vehicle.trip.dest_station.SPEED_LIMIT - 0.1, self.LINE_SPEED, clear=True)
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status)
 
-        station_id = self.manager.track2station.get(msg.trackID)
-        if station_id is not None:
-            station = self.manager.stations[station_id]
-
-        # Within a station's zone
-        if vehicle.state is self.RUNNING and station_id is not None:
-            # Just left the main line to enter a station.
-            if msg.trackID == station.ts_ids[Station.OFF_RAMP_I]:
-                # request a berth TODO: Request a berth BEFORE committing to entering the station! Also, try-except
-                berth_pos, berth_id, plat_ts = station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
+        if vehicle.state is self.RUNNING:
+            station = self.manager.choice2station.get(msg.trackID)
+            # Just cleared the main line by entering a station.
+            if station is not None and vehicle.ts_id in station.ts_ids:
                 vehicle.state = self.SLOWING
-                vehicle.berth_pos = berth_pos
-                vehicle.berth_id = berth_id
-                vehicle.platform_id = station.UNLOAD_PLATFORM
-                vehicle.plat_ts = plat_ts
                 vehicle.station = station
 
-        # Just joined the main line, entirely exiting the station zone
-        elif vehicle.state is self.LAUNCHING and vehicle.ts_id == station.ts_ids[Station.ON_RAMP_II]:
-            vehicle._launching = False
-            vehicle.state = self.RUNNING
-            vehicle.station = None
+
+        elif vehicle.state is self.LAUNCHING:
+            station = self.manager.track2station.get(msg.trackID)
+            # Just joined the main line, entirely exiting the station zone
+            if msg.trackID == station.ts_ids[Station.ON_RAMP_II]:
+                vehicle.state = self.RUNNING
+                vehicle.station = None
+
+                if __debug__: # Check that the vehicle isn't still considered to be in a berth
+                    for s in self.manager.stations.values():
+                        for p in s.berth_reservations:
+                            for b in p:
+                                assert b is not vehicle, (s.id, vehicle.id)
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
@@ -466,17 +463,16 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         self.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0],
                                            doc.getElementsByTagName('VehicleModels')[0])
 
-        # Mapping from station id to the station's trackSegments.
-        self.station2tracks = dict((s.id, s.ts_ids) for s in self.stations.values())
-
         # Mapping from station's trackSegments to a station id.
-        self.track2station = dict((ts, s.id) for s in self.stations.values() for ts in s.ts_ids)
+        self.track2station = dict((ts, s) for s in self.stations.values() for ts in s.ts_ids)
+
+        # Mapping from the choice ts id to the Station instance
+        self.choice2station = dict((s.choice, s) for s in self.stations.values())
 
         # For vehicles that are currently parked in berths, reserve those berths for them.
         for vehicle in self.vehicles.itervalues():
-            station_id = self.track2station.get(vehicle.ts_id)
-            if station_id is not None:
-                station = self.stations[station_id]
+            station = self.track2station.get(vehicle.ts_id)
+            if station is not None:
                 if vehicle.ts_id == station.ts_ids[Station.UNLOAD]:
                     platform = Station.UNLOAD_PLATFORM
                 elif vehicle.ts_id == station.ts_ids[Station.QUEUE]:
@@ -485,6 +481,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                     platform = Station.LOAD_PLATFORM
                 else:
                     platform = None
+
                 if platform is not None:
                     for idx, berth_pos in enumerate(station.berth_positions[platform]):
                         if abs(berth_pos - vehicle.pos) < 2: # within 2 meters of the target position
@@ -493,6 +490,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                             vehicle.berth_pos = berth_pos
                             vehicle.berth_id = idx
                             vehicle.platform_id = platform
+                            vehicle.plat_ts = vehicle.ts_id
                             break
         doc.unlink() # facilitates garbage collection
 
@@ -566,7 +564,11 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                     bypass = ts
                     break
 
-            stations[station_int_id] = Station(station_int_id, ts_ids, bypass,
+            # Discover the 'choice' TrackSegment id from the graph.
+            assert len(graph.predecessors(ts_ids[Station.OFF_RAMP_I])) == 1
+            choice = graph.predecessors(ts_ids[Station.OFF_RAMP_I])[0]
+
+            stations[station_int_id] = Station(station_int_id, ts_ids, bypass, choice,
                                                unload_positions, queue_positions, load_positions)
         return stations
 
@@ -610,7 +612,8 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
     def request_trip(self, vehicle):
         """The vehicle must be currently in a station. For best efficiency,
         delay calling this function until the vehicle is ready to load passengers.
-        Returns a Trip instance.
+        Returns a Trip instance whose distance presumes that vehicle is in the
+        origin station's launch berth at the start.
         Raises a NoPaxAvailableError if, surprise!, no passengers are available.
         """
         assert isinstance(vehicle, Vehicle)
@@ -621,16 +624,15 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             pax = avail_pax.pop()
             dest_station = self.stations[pax.dest_id]
             path_length, path = self.get_path(orig_station.ts_ids[Station.LOAD], dest_station.ts_ids[Station.UNLOAD])
-            dist = path_length - (orig_station.berth_positions[Station.UNLOAD_PLATFORM][-1] - vehicle.BERTH_GAP)
+            dist = path_length - (orig_station.berth_positions[Station.LOAD_PLATFORM][-1] - vehicle.BERTH_GAP)
             return Trip(dest_station, dist, path, (pax.id,) ) # just one pax for now
 
         else: # vehicle must either wait, or travel to a different station
             raise NoPaxAvailableError
 
     def deadhead(self, vehicle_id):
-        """Go to the nearest station that has waiting passengers. Returns a
-        3-tuple: (station_id, dist, path)
-        where path leads to the station's unloading platform.
+        """Go to the nearest station that has waiting passengers.
+        Returns a Trip instance.
         """
         vehicle = self.vehicles[vehicle_id]
         dists, paths = networkx.single_source_dijkstra(self.graph, vehicle.ts_id)
@@ -649,7 +651,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                     closest_station = station
                     closest_dist = dist
 
-        return closest_station.id, closest_dist - vehicle.pos, paths[closest_station.ts_ids[Station.UNLOAD]]
+        return Trip(closest_station, closest_dist - vehicle.pos, paths[closest_station.ts_ids[Station.UNLOAD]], tuple())
 
     def add_passenger(self, pax):
         assert isinstance(pax, Passenger)
@@ -684,13 +686,14 @@ class Station(object):
     SPEED_LIMIT = 2.5 # m/s (approx 5 mph)
     controller = None
 
-    def __init__(self, s_id, ts_ids, bypass_ts_id, unload_positions,
-                 queue_positions, load_positions):
+    def __init__(self, s_id, ts_ids, bypass_ts_id, choice_ts_id,
+                 unload_positions, queue_positions, load_positions):
         """s_id: An integer station id.
         ts_ids: A list containing integer TrackSegment ids. See Station consts.
         bypass_ts_id: The TrackSegment id which bypasses the station. That is,
                       the main track rather than the station's track.
-
+        choice_ts_id: The TrackSegment id upsteam of both the bypass and the
+                        offramp.
         unload_positions, queue_positions, load_positions:
         Each of the above are lists of floats, where each float designates
         a position that the vehicle will target in order to park in the berth.
@@ -700,6 +703,7 @@ class Station(object):
         self.id = s_id
         self.ts_ids = ts_ids
         self.bypass = bypass_ts_id
+        self.choice = choice_ts_id
         self.berth_positions = [unload_positions, queue_positions, load_positions]
         self.berth_reservations = [[None]*len(unload_positions),
                                    [None]*len(queue_positions),
@@ -718,13 +722,28 @@ class Station(object):
             except IndexError: # whoops. I was at the head of the loading platform_id
                 return None
 
-    def request_berth(self, vehicle, platform_id, curr_berth_id=-1):
+    def request_berth(self, vehicle, platform_id):
         """Finds an accessible, available berth which is as close to the station exit as
-        possible, and reserves it for use by vehicle.:
-            (berth_position, berth_id, ts_id)
-        platform: one of the station consts: *_PLATFORM
+        possible, and reserves it for use by vehicle.
+        platform_id: one of the station consts: *_PLATFORM
+
+        If a berth is found then the vehicle's old berth is released and the vehicle's
+        berth_pos, berth_id, platform_id, and plat_ts are updated.
+
+        Will only choose a berth that is ahead of the vehicle's current berth.
+
+        Returns (berth_position, berth_id, platform_id, ts_id) if sucessful,
         Raises NoBerthAvailableError if no berths are available on the requested platform.
         """
+        assert isinstance(vehicle, Vehicle)
+        if vehicle.platform_id is not None:
+            assert platform_id >= vehicle.platform_id
+
+        if platform_id == vehicle.platform_id:
+            curr_berth_id = vehicle.berth_id
+        else:
+            curr_berth_id = -1
+
         choosen_idx = None
         for idx, reservation in enumerate(self.berth_reservations[platform_id]):
             if idx <= curr_berth_id:
@@ -735,16 +754,34 @@ class Station(object):
                 break
 
         if choosen_idx is not None:
+            self.release_berth(vehicle)
             self.berth_reservations[platform_id][choosen_idx] = vehicle
-            return (self.berth_positions[platform_id][choosen_idx], choosen_idx, self.ts_ids[platform_id+3]) # +3 maps platform_id to ts const
+            berth_pos = self.berth_positions[platform_id][choosen_idx]
+            plat_ts = self.ts_ids[platform_id+3]  # +3 maps platform_id to ts
+            vehicle.berth_pos = berth_pos
+            vehicle.berth_id = choosen_idx
+            vehicle.platform_id = platform_id
+            vehicle.plat_ts = plat_ts
+            return (berth_pos, choosen_idx, platform_id, plat_ts)
         else: # no berth available
             raise NoBerthAvailableError()
 
-    def release_berth(self, berth_id, platform_id):
-        """Frees the berth for reuse.
-        platform: one of the station consts: *_PLATFORM
+    def release_berth(self, vehicle):
+        """Frees the vehicle's current berth for reuse. Alters the vehicle!
         Returns None."""
-        self.berth_reservations[platform_id][berth_id] = None
+        assert isinstance(vehicle, Vehicle)
+        found = False
+        for platform in self.berth_reservations:
+            for idx, v in enumerate(platform):
+                if v is vehicle:
+                    platform[idx] = None
+                    found = True
+                    break
+
+        vehicle.berth_pos = None
+        vehicle.berth_id = None
+        vehicle.platform_id = None
+        vehicle.plat_ts = None
 
     def is_launch_berth(self, berth_id, platform_id):
         """Does berth have direct access to the main line? That is, a
@@ -825,8 +862,8 @@ class Vehicle(object):
 
         # A private flag for indicating whether a vehicle's "advance" has been
         # commanded yet or not.
-        self._advancing = False
-        self._launching = False
+        self._advance_begun = False
+        self._launch_begun = False
 
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
@@ -843,10 +880,11 @@ class Vehicle(object):
         t = self.run(self.trip.dist, self.trip.path, self.trip.dest_station.SPEED_LIMIT - 0.1, self.controller.LINE_SPEED) # slightly under the speed limit
         return t
 
-    def run(self, dist, path, final_speed=0, speed_limit=None):
+    def run(self, dist, path, final_speed=0, speed_limit=None, clear=False):
         """Commands the vehicle's path and trajectory. Obeys the speed_limit
         constraint, if supplied. Assumes that the vehicle's pose is up to date
-        and accurate. Returns the scheduled arrival time."""
+        and accurate. Set clear to True if the vehicle's path is being changed
+        from what was previously commanded. Returns the scheduled arrival time."""
         if path and self.path:
             assert path[0] == self.path[-1]
             self.path.extend(path[1:])
@@ -855,7 +893,7 @@ class Vehicle(object):
             itinerary_msg = api.CtrlCmdVehicleItinerary()
             itinerary_msg.vID = self.id
             itinerary_msg.trackIDs.extend(path[1:]) # don't include the segment self is currently on
-            itinerary_msg.clear = False
+            itinerary_msg.clear = clear
             self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
 
         if speed_limit:
@@ -939,13 +977,13 @@ class Vehicle(object):
         """Sets the vehicle on a itenarary and trajectory for advancing to the
         vehicle's reserved berth.
         Returns the time at which the vehicle will arrive."""
-        self._advancing = True
         if self.plat_ts == self.ts_id: # staying on the same platform
             path = []
             dist = (self.berth_pos - self.BERTH_GAP) - self.pos # stop a little short of the end
 
         else: # advancing to another next platform
             path_length, path = self.manager.get_path(self.ts_id, self.plat_ts)
+            assert len(path) < 10, path # sanity check
             dist = (path_length - self.pos) + (self.berth_pos - self.BERTH_GAP) # stop a little short of the end
 
         if speed_limit == None:
