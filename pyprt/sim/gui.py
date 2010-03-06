@@ -162,7 +162,7 @@ class MainWindow(wx.Frame):
         try:
             timer_interval = (1.0 / common.config_manager.get_fps()) * 1000 # in millisec
         except ZeroDivisionError:
-            timer_interval = 200 # 5 updates per sec
+            timer_interval = 5000 # 1 update per 5 sec
         self.viz_timer.Start(timer_interval, wx.TIMER_CONTINUOUS)
         self.status_bar_timer.Start(timer_interval, wx.TIMER_CONTINUOUS)
 

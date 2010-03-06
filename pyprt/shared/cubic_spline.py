@@ -183,6 +183,15 @@ class CubicSpline(object):
                (t.real <= valid_end_time or abs(t.real - valid_end_time) < self.TIME_EPSILON)]
         pts.sort() # want the earliest intersection with target_pos
 
+        # Accept that there's some inexactness, and accept a root that has
+        # an imaginary component.
+        if len(pts) == 0:
+            pts = [t.real for t in r if
+               (t.real >= valid_start_time or abs(t.real - valid_start_time) < self.TIME_EPSILON) and \
+               (t.real <= valid_end_time or abs(t.real - valid_end_time) < self.TIME_EPSILON)]
+            pts.sort()
+            assert abs(self.evaluate(pts[0]).pos - target_pos) < 0.5, (self.evaluate(pts[0]), target_pos) # loose sanity check
+
 ##        assert abs(polyval(self.coeffs[idx], pts[0]) - target_pos) < self.DIST_EPSILON
         return pts[0]
 

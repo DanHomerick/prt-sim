@@ -164,7 +164,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         if time is None:
             time = Sim.now()
         pos = self._spline.evaluate(time).pos - self._pos_offset_nose
-        assert pos > -0.2 # position shouldn't be more than a little bit negative
+        assert pos > -1 # position shouldn't be more than a little bit negative
         assert pos <= self.loc.length + 1 # very loose sanity check
         return pos
     pos = property(fget = get_pos)
@@ -181,14 +181,14 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         spline_pos = self._spline.evaluate(Sim.now()).pos
         pos = spline_pos - self._pos_offset_nose
         tail_pos = spline_pos - self._pos_offset_tail
-        assert pos > -0.2 # position shouldn't be more than a little bit negative
-        assert tail_pos > -0.2
+        assert pos > -1 # position shouldn't be more than a little bit negative
+        assert tail_pos > -1
         return (pos, tail_pos)
 
     def get_tail_pos(self):
         """The vehicle's tail position, in meters, where the start of the current TrackSegment is 0."""
         tail_pos = self._spline.evaluate(Sim.now()).pos - self._pos_offset_tail
-        assert tail_pos > -0.2 # position shouldn't be more than a little bit negative
+        assert tail_pos > -1, tail_pos # position shouldn't be more than a little bit negative
         assert tail_pos <= self.tail_loc.length + 1 # very loose sanity check
         return tail_pos
     tail_pos = property(fget=get_tail_pos)
@@ -370,7 +370,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         Alters the self._actions_queue.
         """
         old_loc = self.loc
-        assert utility.dist_eql(self.pos, old_loc.length)
+        assert abs(self.pos - old_loc.length) < 1, (self.pos, old_loc.length) # loose sanity checking
 
         # What location will be next
         new_loc = self.get_next_loc(old_loc, self._path_idx_nose)
@@ -401,7 +401,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """Responsible for moving the tail of the vehicle from one TrackSegment
         to the next, and for adding the next tail release to the _actions_queue.
         """
-        assert utility.dist_eql(self.tail_pos, self.tail_loc.length)
+        assert abs(self.tail_pos - self.tail_loc.length) < 1, (self.tail_pos, self.tail_loc.length) # loose sanity checking
         old_loc = self.tail_loc
         old_loc.vehicles.remove(self) # remove myself from old TrackSegment's vehicle list
         self._pos_offset_tail += old_loc.length
@@ -483,7 +483,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             if lv.tail_loc is loc: # normal case - lv's tail is on self's loc
                 dist = lv.tail_pos - self.pos
             else: # bad case - this vehicle is somehow in the middle of lv. If not a bug, then a sideswipe.
-##                assert utility.dist_eql(self.pos, 0.0) # sideswipe should be caught as soon as this vehicle enters a new tracksegment.
                 dist = 0
         else:
             lv = None
