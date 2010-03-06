@@ -202,6 +202,25 @@ class PrtController(BaseController):
         # ... wait for the v_status update from the sim to do the movement
         vehicle._advance_begun = False
 
+    def wave_off(self, vehicle):
+        """Sends a vehicle around in a loop so as to come back and try entering the
+        station later."""
+        prev_tses = self.manager.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of choice ts
+        best_loop_length, best_loop_path = float('inf'), None
+        for prev_ts in prev_tses:
+            loop_length, loop_path = self.manager.get_path(vehicle.ts_id, prev_ts)
+            if loop_length < best_loop_length:
+                best_loop_length = loop_length
+                best_loop_path = loop_path
+
+        # concatenate that path with a path to the station's unload
+        entry_length, entry_path = self.manager.get_path(prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
+
+        dist = best_loop_length + entry_length - vehicle.pos # vehicle.pos should be zero, but this code may get moved...
+        path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
+
+        vehicle.run(dist, path, vehicle.trip.dest_station.SPEED_LIMIT - 0.1, self.LINE_SPEED, clear=True)
+
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
         self.sim_end_time = msg.sim_end_time
@@ -228,40 +247,40 @@ class PrtController(BaseController):
                 if v is not None:
                     v.state = self.QUEUE_WAITING # Assuming vehicles don't start with passengers on board
 
-        for vehicle in self.manager.vehicles.itervalues():
+        v_list = self.manager.vehicles.values()
+        # Sort based on location, secondarily sorted by position -- both in descending order.
+        v_list.sort(cmp=lambda x,y: cmp(y.ts_id, x.ts_id) if x.ts_id != y.ts_id else cmp(y.pos, x.pos))
+
+        # Make a first pass through the vehicles, setting up the vehicles which
+        # are committed to a particular station.
+        for vehicle in v_list:
             assert isinstance(vehicle, Vehicle)
             # skip already handled vehicles
             if vehicle.state is not None:
                 continue
 
             station = self.manager.track2station.get(vehicle.ts_id)
-            if station is None:
-                station = self.manager.choice2station.get(vehicle.ts_id)
 
             # Within the boundaries of a station, but not at a berth.
             if station is not None:
                 assert isinstance(station, Station)
 
-                # Approaching station
+                # Approaching station. Taking advantage of the fact that DECEL will have
+                # a higher ts_id than OFF_RAMP_I, thus vehicles on DECEL will be handled
+                # first and the berth reservation ordering will be correct.
                 if vehicle.ts_id in (station.ts_ids[Station.OFF_RAMP_I],
                                      station.ts_ids[Station.OFF_RAMP_II],
                                      station.ts_ids[Station.DECEL]):
                     vehicle.state = self.SLOWING
-                elif vehicle.ts_id == station.choice:
-                    assert vehicle.ts_id == station.choice
-                    vehicle.state = self.RUNNING
-                else: # vehicle on ACCEL, or ON_RAMPs
-                    pass
-
-                if vehicle.state in (self.SLOWING, self.RUNNING):
-                    # Reserve a berth for the vehicle
-                    station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
-                    vehicle.station = station
 
                     # Set up a trip for reaching the station's UNLOAD platform.
                     path_length, path = self.manager.get_path(vehicle.ts_id, station.ts_ids[Station.UNLOAD])
                     dist = path_length - vehicle.pos
                     vehicle.trip = Trip(station, dist, path, tuple())
+
+                    # Reserve a berth for the vehicle
+                    station.request_berth(vehicle, Station.UNLOAD_PLATFORM) # raises an exception if fails.
+                    vehicle.station = station
                     vehicle.run_trip()
 
                 # Outbound from a station
@@ -274,6 +293,29 @@ class PrtController(BaseController):
                     vehicle.station = station
                     vehicle.trip = self.manager.deadhead(vehicle.id)
                     vehicle.run_trip()
+
+        # Make a second pass through the vehicles, handling the remaining vehicles.
+        for vehicle in v_list:
+            if vehicle.state is not None:
+                continue
+
+            station = self.manager.choice2station.get(vehicle.ts_id)
+
+            if station is not None: # vehicle is on the station's "choice" trackseg
+                assert vehicle.ts_id == station.choice
+                vehicle.state = self.RUNNING
+
+                # Set up a trip for reaching the station's UNLOAD platform.
+                path_length, path = self.manager.get_path(vehicle.ts_id, station.ts_ids[Station.UNLOAD])
+                dist = path_length - vehicle.pos
+                vehicle.trip = Trip(station, dist, path, tuple())
+
+                # Reserve a berth for the vehicle
+                try:
+                    station.request_berth(vehicle, Station.UNLOAD_PLATFORM) # raises an exception if fails.
+                    vehicle.run_trip()
+                except NoBerthAvailableError:
+                    self.wave_off(vehicle)
 
             # Not inside a station's boundaries, or outbound from a station
             else:
@@ -402,21 +444,7 @@ class PrtController(BaseController):
                 vehicle.trip.dest_station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
             except NoBerthAvailableError: # none available, circle around and try again
                 # plan a path to the ts prior from current (that is, loop around)
-                prev_tses = self.manager.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of choice ts
-                best_loop_length, best_loop_path = float('inf'), None
-                for prev_ts in prev_tses:
-                    loop_length, loop_path = self.manager.get_path(vehicle.ts_id, prev_ts)
-                    if loop_length < best_loop_length:
-                        best_loop_length = loop_length
-                        best_loop_path = loop_path
-
-                # concatenate that path with a path to the station's unload
-                entry_length, entry_path = self.manager.get_path(prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
-
-                dist = best_loop_length + entry_length - vehicle.pos # vehicle.pos should be zero, but this code may get moved...
-                path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
-
-                vehicle.run(dist, path, vehicle.trip.dest_station.SPEED_LIMIT - 0.1, self.LINE_SPEED, clear=True)
+                self.wave_off(vehicle)
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
