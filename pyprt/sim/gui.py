@@ -97,7 +97,8 @@ class MainWindow(wx.Frame):
 ##                self.SetSize(wx.Size(common.img_width/2, common.img_height/2)) # use half-resolution
 
             # Create the Visualizer
-            self.visualizer = Visualizer(common.digraph, common.max_vehicle_pax_capacity)
+            max_pax_capacity = max(v.max_pax_capacity for v in common.vehicles.itervalues())
+            self.visualizer = Visualizer(common.digraph, max_pax_capacity)
             self.chaco_window.component = self.visualizer.plot
 
             # update what options are enabled in the menu
@@ -585,8 +586,8 @@ class Visualizer(object):
                                               color_mapper=vehicle_colormap,
                                               orientation=plot.orientation,
                                               origin=plot.origin,
-                                              fill_alpha=0.8,
-                                              marker_size=6,
+                                              fill_alpha=1,
+                                              marker_size=5,
                                               hide_grids=True,
                                               bgcolor='transparent')
         plot.add(v_plot)

@@ -368,9 +368,7 @@ class ScenarioManager(object):
             }
 
             all_models[model_name] = type(str(model_name), (vehicle.BaseVehicle,), type_dict)
-            max_pax = max(max_pax, max_pax_capacity)
 
-        common.max_vehicle_pax_capacity = max_pax
         return all_models
 
 # a testing stub

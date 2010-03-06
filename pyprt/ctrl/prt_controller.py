@@ -56,7 +56,7 @@ class PrtController(BaseController):
     LAUNCHING = "LAUNCHING"                 # Accelerating towards the main line.
 
     LINE_SPEED = 25  # in meter/sec
-    HEARTBEAT_INTERVAL = 5  # in seconds. Choosen arbitrarily for testing
+    HEARTBEAT_INTERVAL = 5.1  # in seconds. Choosen arbitrarily for testing
 
     def __init__(self, log_path, commlog_path, scenario_path):
         super(PrtController, self).__init__(log_path, commlog_path)
@@ -126,7 +126,18 @@ class PrtController(BaseController):
                             v.state = self.EMBARKING
                             v.embark(v.trip.passengers)
                         except NoPaxAvailableError:
-                            pass # no passengers avail... # TODO: Deadhead to another station
+                            if station.is_launch_berth(v.berth_id, v.platform_id):
+                                # Temp -- just launch as soon as possible, if there
+                                # is another station with passengers waiting.
+                                trip = self.manager.deadhead(v)
+                                if self.manager.passengers[trip.dest_station.id]:
+                                    v.state = self.LAUNCH_WAITING
+                                    v.trip = trip
+                                    v.state = self.LAUNCHING
+                                    v._launch_begun = False
+                                    v.station.release_berth(v)
+                                    assert v.station is station
+
 
                     elif v.state is self.EXIT_WAITING:
                         if station.is_launch_berth(v.berth_id, v.platform_id):
@@ -134,9 +145,9 @@ class PrtController(BaseController):
                             # Temp -- just launch as soon as possible
                             v.state = self.LAUNCHING
                             v._launch_begun = False
-
-                            assert v.station is station
                             v.station.release_berth(v)
+                            assert v.station is station
+
 
         # schedule the next heartbeat
         self.set_s_notification(station, self.current_time + self.HEARTBEAT_INTERVAL)
@@ -204,22 +215,28 @@ class PrtController(BaseController):
 
     def wave_off(self, vehicle):
         """Sends a vehicle around in a loop so as to come back and try entering the
-        station later."""
-        prev_tses = self.manager.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of choice ts
-        best_loop_length, best_loop_path = float('inf'), None
-        for prev_ts in prev_tses:
-            loop_length, loop_path = self.manager.get_path(vehicle.ts_id, prev_ts)
-            if loop_length < best_loop_length:
-                best_loop_length = loop_length
-                best_loop_path = loop_path
+        station later, or sends it to a different station if empty."""
+        if vehicle.trip.passengers:
+            prev_tses = self.manager.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of choice ts
+            best_loop_length, best_loop_path = float('inf'), None
+            for prev_ts in prev_tses:
+                loop_length, loop_path = self.manager.get_path(vehicle.ts_id, prev_ts)
+                if loop_length < best_loop_length:
+                    best_loop_length = loop_length
+                    best_loop_path = loop_path
 
-        # concatenate that path with a path to the station's unload
-        entry_length, entry_path = self.manager.get_path(prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
+            # concatenate that path with a path to the station's unload
+            entry_length, entry_path = self.manager.get_path(prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
 
-        dist = best_loop_length + entry_length - vehicle.pos # vehicle.pos should be zero, but this code may get moved...
-        path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
+            dist = best_loop_length + entry_length - vehicle.pos # vehicle.pos should be zero, but this code may get moved...
+            path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
 
-        vehicle.run(dist, path, vehicle.trip.dest_station.SPEED_LIMIT - 0.1, self.LINE_SPEED, clear=True)
+            vehicle.run(dist, path, vehicle.trip.dest_station.SPEED_LIMIT - 0.1, self.LINE_SPEED, clear=True)
+
+        else:
+            old_dest_station = vehicle.trip.dest_station
+            vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest_station,))
+            vehicle.run_trip()
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
@@ -291,7 +308,7 @@ class PrtController(BaseController):
                     vehicle.state = self.LAUNCHING
                     vehicle._launch_begun = True
                     vehicle.station = station
-                    vehicle.trip = self.manager.deadhead(vehicle.id)
+                    vehicle.trip = self.manager.deadhead(vehicle)
                     vehicle.run_trip()
 
         # Make a second pass through the vehicles, handling the remaining vehicles.
@@ -320,7 +337,7 @@ class PrtController(BaseController):
             # Not inside a station's boundaries, or outbound from a station
             else:
                 vehicle.state = self.RUNNING
-                vehicle.trip = self.manager.deadhead(vehicle.id)
+                vehicle.trip = self.manager.deadhead(vehicle)
                 vehicle.run_trip()
 
         # station's heartbeats are all synchronized for now. Change that in the future?
@@ -427,11 +444,11 @@ class PrtController(BaseController):
                 vehicle.state = self.QUEUE_ADVANCING
                 vehicle.trip = None
 
-            # WARNING TODO FIXME: This is wallpapering over a bug!
-            # Very rarely, vehicles are showing up on the station's doorstep without having
-            # made reservations. Not cool. See if we can squeeze them in anyways.
-            if vehicle.berth_id is None:
-                vehicle.station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
+##            # WARNING TODO FIXME: This is wallpapering over a bug!
+##            # Very rarely, vehicles are showing up on the station's doorstep without having
+##            # made reservations. Not cool. See if we can squeeze them in anyways.
+##            if vehicle.berth_id is None:
+##                vehicle.station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
 
             t_arrival = vehicle.advance()
             self.set_v_notification(vehicle, t_arrival)
@@ -439,9 +456,12 @@ class PrtController(BaseController):
 
         # TODO: Try to move the decision process closer to the switch to improve efficiency.
         # Vehicle needs to make choice to enter station or bypass.
-        elif vehicle.state is self.RUNNING and msg.trackID == vehicle.trip.dest_station.choice:
+        # Note: Some track networks will have one station's ON_RAMP_II lead straight into
+        #       another station's "choice" track seg.
+        elif vehicle.state in (self.RUNNING, self.LAUNCHING) and msg.trackID == vehicle.trip.dest_station.choice:
             try:   # Reserve an unload berth
                 vehicle.trip.dest_station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
+                assert vehicle.berth_id is not None
             except NoBerthAvailableError: # none available, circle around and try again
                 # plan a path to the ts prior from current (that is, loop around)
                 self.wave_off(vehicle)
@@ -455,6 +475,7 @@ class PrtController(BaseController):
             station = self.manager.choice2station.get(msg.trackID)
             # Just cleared the main line by entering a station.
             if station is not None and vehicle.ts_id in station.ts_ids:
+                assert vehicle.berth_id is not None
                 vehicle.state = self.SLOWING
                 vehicle.station = station
 
@@ -465,12 +486,6 @@ class PrtController(BaseController):
             if msg.trackID == station.ts_ids[Station.ON_RAMP_II]:
                 vehicle.state = self.RUNNING
                 vehicle.station = None
-
-                if __debug__: # Check that the vehicle isn't still considered to be in a berth
-                    for s in self.manager.stations.values():
-                        for p in s.berth_reservations:
-                            for b in p:
-                                assert b is not vehicle, (s.id, vehicle.id)
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
@@ -527,6 +542,9 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         # keys are station ids, values are lists of waiting (empty) vehicles at station
         self.idle = defaultdict(list) # idle vehicles
+
+        # Precalculate common trips.
+        self._dist_path_dict = self._build_station_tables()
 
     def build_graph(self, track_segments_xml):
         """Returns a networkx.DiGraph suitable for routing vehicles over."""
@@ -658,16 +676,19 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         else: # vehicle must either wait, or travel to a different station
             raise NoPaxAvailableError
 
-    def deadhead(self, vehicle_id):
-        """Go to the nearest station that has waiting passengers.
+    def deadhead(self, vehicle, exclude=tuple()):
+        """Go to the nearest station that has waiting passengers. The exclude
+        parameter is a tuple of Station instances that the vehicle should not
+        pick as a destination.
         Returns a Trip instance.
         """
-        vehicle = self.vehicles[vehicle_id]
         dists, paths = networkx.single_source_dijkstra(self.graph, vehicle.ts_id)
         closest_dist = float('inf')
         closest_station = None
         has_pax = False
         for station in self.stations.itervalues():
+            if station in exclude:
+                continue
             station_ts = station.ts_ids[Station.UNLOAD]
             dist = dists[station_ts]
             if dist < closest_dist:
@@ -688,7 +709,25 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
     def get_path(self, ts_1, ts_2):
         """Returns a two tuple. The first element is the path length (in meters),
         and the second is the path. ts_1 and ts_2 are integer trackSegment ids."""
-        return networkx.bidirectional_dijkstra(self.graph, ts_1, ts_2)
+        try:
+            return self._dist_path_dict[ts_1][ts_2]
+        except KeyError:
+            return networkx.bidirectional_dijkstra(self.graph, ts_1, ts_2)
+
+    def _build_station_tables(self):
+        """Returns a pair of 2D tables containing distances and paths. The tables
+        are accessed like table[origin][dest], where each origin is a station's
+        LOAD ts and the dest is a station's UNLOAD ts."""
+        origins = [s.ts_ids[Station.LOAD] for s in self.stations.values()]
+        dests = [s.ts_ids[Station.UNLOAD] for s in self.stations.values()]
+
+        path_dist_dict = defaultdict(dict)
+
+        for o in origins:
+            for d in dests:
+                path_dist_dict[o][d] = networkx.bidirectional_dijkstra(self.graph, o, d)
+
+        return path_dist_dict
 
     def _to_numeric_id(self, element):
         """For elements similar to:
@@ -711,7 +750,7 @@ class Station(object):
     QUEUE_PLATFORM = 1
     LOAD_PLATFORM = 2
 
-    SPEED_LIMIT = 2.5 # m/s (approx 5 mph)
+    SPEED_LIMIT = 2.4 # m/s (approx 5 mph) An ideal speed will be just *below* the max speed that a vehicle would hit when advancing one berth.
     controller = None
 
     def __init__(self, s_id, ts_ids, bypass_ts_id, choice_ts_id,
@@ -890,8 +929,8 @@ class Vehicle(object):
 
         # A private flag for indicating whether a vehicle's "advance" has been
         # commanded yet or not.
-        self._advance_begun = False
-        self._launch_begun = False
+        self._advance_begun = True
+        self._launch_begun = True
 
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
@@ -908,11 +947,12 @@ class Vehicle(object):
         t = self.run(self.trip.dist, self.trip.path, self.trip.dest_station.SPEED_LIMIT - 0.1, self.controller.LINE_SPEED) # slightly under the speed limit
         return t
 
-    def run(self, dist, path, final_speed=0, speed_limit=None, clear=False):
+    def run(self, dist, path, final_speed=0, speed_limit=None, clear=True):
         """Commands the vehicle's path and trajectory. Obeys the speed_limit
         constraint, if supplied. Assumes that the vehicle's pose is up to date
-        and accurate. Set clear to True if the vehicle's path is being changed
-        from what was previously commanded. Returns the scheduled arrival time."""
+        and accurate. Set clear to False if the vehicle's path should be extended
+        instead of being changed from what was previously commanded.
+        Returns the scheduled arrival time."""
         if path and self.path:
             assert path[0] == self.path[-1]
             self.path.extend(path[1:])
@@ -925,12 +965,18 @@ class Vehicle(object):
             self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
 
         if speed_limit:
+            if self.vel > speed_limit:
+                # Bumping the speed_limit by .001 is a workaround for a bug that manifests when the
+                # initial velocity is just *slightly* above the velocity constraint.
+                speed_limit += 0.001
             solver = TrajectorySolver(min(speed_limit, self.v_max), self.a_max, self.j_max, -5, self.a_min, self.j_min)
         else:
             solver = self.traj_solver
 
         spline = solver.target_position(Knot(self.pos, self.vel, self.accel, self.controller.current_time),
                                         Knot(dist + self.pos, final_speed, 0, None))
+        if speed_limit:
+            assert spline.get_max_velocity() < speed_limit + 5, (spline.get_max_velocity(), speed_limit)
 
         if abs(spline.v[-1] - final_speed) > 0.001 or abs(spline.a[-1]) > 0.001:
             from pyprt.shared.cspline_plotter import CSplinePlotter

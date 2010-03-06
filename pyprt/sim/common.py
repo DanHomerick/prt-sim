@@ -33,9 +33,6 @@ img_height = -1
 img_xbounds = None
 img_ybounds = None
 
-# set by scenario.make_vehicle_classes, used by gui.MainWindow.load_scenario
-max_vehicle_pax_capacity = None
-
 trace = False
 real_time = False  # A flag indicating that we're using the RT version of SimPy
 errors = 0
