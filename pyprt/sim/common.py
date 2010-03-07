@@ -18,6 +18,7 @@ event_manager = None # Event Manager
 sim_ended = False
 vehicle_viz_data_collector = None
 station_viz_data_collector = None
+reports = None
 
 vehicle_data_queue = None
 station_data_queue = None

@@ -17,7 +17,7 @@ package edu.ucsc.track_builder
 	public final class Stations
 	{			
 		[Bindable] public var maxSpeed:Number;
-		public var label:String;
+		public var label:String = "";
 		public var bidirectional:Boolean;
 		[Bindable] public var lateralOffset:Number;
 		[Bindable] public var accelLength:Number;

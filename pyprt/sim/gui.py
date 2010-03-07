@@ -31,12 +31,13 @@ common.real_time = True
 
 import SimPy.SimulationRT as SimPy
 
+from menubar_manager import MenuBarManager
 import pyprt
 import pyprt.shared.api_pb2 as api
 import layout
 import segment_plot
 import station
-from pyprt.shared.utility import sec_to_hms
+import report
 
 class GUI_App(wx.App):
     def OnInit(self):
@@ -49,7 +50,6 @@ class GUI_App(wx.App):
 
 class MainWindow(wx.Frame):
     def __init__(self, *args, **kwds):
-        from menubar_manager import MenuBarManager
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
         self.visualizer = None # Set to a Visualizer by Open Config...
@@ -71,6 +71,8 @@ class MainWindow(wx.Frame):
 
         if common.config_manager.get_start_controllers() == True:
             self.simmenu_connectcontroller_handler(None)
+
+        common.reports = report.Reports(common.passengers, common.vehicles, common.stations)
 
     def __set_properties(self):
         self.SetTitle("PRT Simulation")
@@ -310,6 +312,9 @@ class MainWindow(wx.Frame):
         # use self as the parent, so that the Legend will close when the MainWindow is closed.
         legend = Legend(self, self.visualizer.station_colormap, self.visualizer.vehicle_colormap)
 
+    def viewmenu_reports_handler(self, event):
+        common.reports.display()
+
     def record_start_handler(self, event):
         # setup the timer
         try:
@@ -428,9 +433,10 @@ class MainWindow(wx.Frame):
 
     def sim_end_callback(self):
         """For now just pops a window announcing that the sim is done."""
-        summary = postsim_summary()
+##        common.reports.display()
 
-        print summary
+        summary = common.reports.summary_report.postsim_summary()
+        common.reports.write(common.config_manager.get_results_file())
         logging.info(summary)
         dialog = wx.MessageDialog(self,
                   message='Simulation Complete.\n'+summary,
@@ -1154,73 +1160,6 @@ def add_xy_plot(index_name, value_name, plot, renderer_factory, name=None,
     plot.plots[name] = [renderer]
     plot.invalidate_and_redraw()
     return plot.plots[name]
-
-def postsim_summary():
-    """Returns a formatted string containing summary statistics."""
-    summary = []
-    end_time = common.config_manager.get_sim_end_time()
-    summary.append("\nPost Sim Vehicle Status")
-    summary.append("%4s%15s%15s%25s%15s" \
-        % ('vID', 'vPos', 'vVel', 'location', 'distTrav'))
-    for v in common.vehicle_list:
-        summary.append("%4d%15.3f%15.3f%25s%15.3f" \
-                % (v.ID, v.pos, v.vel, v.loc, v.get_dist_travelled()))
-
-##    summary.append("\n Post Sim Vehicle Crash Report (Multiple crashes may be reported for the same incident)")
-##    summary.append(("%4s"+"%12s"+"%15s%15s"+"%15s"+"%10s%10s%10s") \
-##           % ('vID', 'time', 'loc', 'pos', 'leadVehicle', 'rearend',
-##              'sideswipe', 'occurred'))
-##    for v in common.vehicle_list:
-##        for crash in v.collisions:
-##            summary.append(("%4d"+"%12.3f"+"%15s%15s"+"%15d"+"%10s%10s%10s") \
-##                % (v.ID, crash.time, crash.trav.loc,
-##                   crash.trav.get_pos_from_time(crash.time),
-##                   crash.lv.ID, crash.rearend, crash.sideswipe, crash.occurred))
-
-    if common.passengers: # some passengers were simulated
-        summary.append("\nPost Sim Passenger Report")
-        pax_display_limit = 10 # Limit the report to include a manageble number of records
-        pax_list = common.passengers.values()
-        pax_list.sort()
-        summary.append(("%4s" + "%13s"*8) \
-                % ('pID','srcStat','destStat','curLoc','waitT','walkT','rideT','totalT','Success'))
-        for p in pax_list[:pax_display_limit]:
-            summary.append(("%4d" + "%13s"*8) \
-                    % (p.ID, p.src_station, p.dest_station, p.loc,
-                       sec_to_hms(p.wait_time), sec_to_hms(p.walk_time),
-                       sec_to_hms(p.ride_time), sec_to_hms(p.total_time),
-                       p.trip_success))
-        if len(pax_list) > pax_display_limit:
-            summary.append('An additional %d passenger records not shown...' % (len(pax_list) - pax_display_limit) )
-
-        summary.append("\nPost Sim Passenger Summary Statistics")
-        summary.append(("%7s" + "%13s"*4 + "%13s") \
-                % ('numPax','aveWait','aveWalk','aveRide','aveTotal','%Success'))
-        ave_wait = sec_to_hms(sum(p.wait_time for p in pax_list)/len(pax_list))
-        ave_walk = sec_to_hms(sum(p.walk_time for p in pax_list)/len(pax_list))
-        ave_ride = sec_to_hms(sum(p.ride_time for p in pax_list)/len(pax_list))
-        ave_total = sec_to_hms(sum(p.total_time for p in pax_list)/len(pax_list))
-        success_rate = sum(1 for p in pax_list if p.trip_success)/len(pax_list) * 100
-        summary.append(("%7d" + "%13s"*4 + "%15.3f") \
-                % (len(pax_list), ave_wait, ave_walk, ave_ride, ave_total, success_rate))
-    else:
-        summary.append("\nNo passengers simulated.")
-
-##    summary.append("\nPost Sim Switch Report")
-##    summary.append("%4s%15s%10s" % ('ID', 'Name', 'Errors'))
-##    for sw in common.switch_list:
-##        summary.append("%4d%15s%10d" % (sw.ID, sw, sw.errors))
-
-##    summary.append("\nPost Sim Station Report")
-##    summary.append(("%4s%17s" + "%10s"*7) % ('ID', 'Name', 'Departs', 'Arrives', 'Crashes', 'Unload', 'Queue', 'Load', 'Storage'))
-##    for s in common.station_list:
-##        summary.append(("%4d%17s" + "%10d"*7) % \
-##                (s.ID, s.label, s.totalArrivals, s.totalDepartures, s.totalCrashes,
-##                 s.num_load_berths, s.num_queue_slots, s.num_load_berths,
-##                 s.num_storage_slots))
-
-    return '\n'.join(summary)
-
 
 if __name__ == "__main__":
 #    import psyco

@@ -12,7 +12,7 @@ def main():
     common.event_manager = events.EventManager()
 
     import comm
-    common.interface = comm.ControlInterface(log=common.config_manager.get_comm_logfile())
+    common.interface = comm.ControlInterface(log=common.config_manager.get_comm_log_file())
 
     import scenario
     common.scenario_manager = scenario.ScenarioManager()
@@ -43,8 +43,8 @@ def main():
 def initialize_logging(config_manager):
     import logging
     from sys import stdout
-    logfile = config_manager.get_logfile()
-    loglevel = config_manager.get_loglevel()
+    logfile = config_manager.get_log_file()
+    loglevel = config_manager.get_log_level()
 
     if logfile == "stdout":
         logging.basicConfig(format='%(filename)10s %(funcName)20s %(lineno)d' \

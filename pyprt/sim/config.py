@@ -61,13 +61,15 @@ class ConfigManager(object):
         group.add_option("--disable_viz", action="store_true", dest="disable_viz",
                   help="Disables the visualization of the sim, but does not affect whether the GUI is used.")
         group.add_option("--fps", type="float", dest="fps", help="Target number of frames per second for the visualization.")
-        group.add_option("--loglevel", dest="loglevel",
+        group.add_option("--log_level", dest="log_level",
                   choices=self.loglevels.keys(),
                   help="Minimum level of importance for which events are logged. Choices are: %s" % ', '.join(self.loglevels.keys()))
-        group.add_option("--logfile", dest="logfile",
+        group.add_option("--log", dest="log",
                   metavar="FILE", help="Log details to FILE.")
-        group.add_option("--comm_logfile", dest="comm_logfile",
+        group.add_option("--comm_log", dest="comm_log",
                   metavar="FILE", help="Log communication messages to FILE.")
+        group.add_option("--results", dest="results",
+                  metavar="FILE", help="Write results report to FILE. Use '-' for stdout.")
         group.add_option("--pax_load_time", type="float", dest="pax_load_time",
                   help="Default passenger boarding time, in seconds.")
         group.add_option("--pax_unload_time", type="float", dest="pax_unload_time",
@@ -105,29 +107,36 @@ class ConfigManager(object):
             except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
                 return None
 
-    def get_loglevel(self):
+    def get_log_level(self):
         """Returns an integer loglevel"""
-        if self.options.loglevel != None:
-            loglevelstr = self.options.loglevel
+        if self.options.log_level != None:
+            loglevelstr = self.options.log_level
         else:
             loglevelstr = self.config_parser.get('Simulation', 'log_level')
 
         loglevel = self.loglevels[loglevelstr]
         return loglevel
 
-    def get_logfile(self):
-        if self.options.logfile != None:
-            logfile = self.options.logfile
+    def get_log_file(self):
+        if self.options.log != None:
+            logfile = self.options.log
         else:
             logfile = self.config_dir + self.config_parser.get('Output Files', 'log')
         return logfile
 
-    def get_comm_logfile(self):
-        if self.options.comm_logfile != None:
-            comm_logfile = self.options.comm_logfile
+    def get_comm_log_file(self):
+        if self.options.comm_log != None:
+            comm_logfile = self.options.comm_log
         else:
             comm_logfile = self.config_dir + self.config_parser.get('Output Files', 'comm_log')
         return comm_logfile
+
+    def get_results_file(self):
+        if self.options.results != None:
+            resultsfile = self.options.results
+        else:
+            resultsfile = self.config_dir + self.config_parser.get('Output Files', 'results')
+        return resultsfile
 
     def get_passengers_path(self):
         if self.options.passengers_path != None:

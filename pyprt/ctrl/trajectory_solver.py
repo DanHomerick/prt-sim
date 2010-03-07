@@ -659,7 +659,11 @@ class TrajectorySolver(object):
         try:
             tmp = (B**2 - 4*A*C)**(0.5)
         except ValueError: # negative number cannot be raised to a fractional power
-            raise TrajectoryError('No real roots')
+            # Allow that rounding errors may have pushed a zero to be a slight negative.
+            if (B**2 - 4*A*C) > -0.0001:
+                tmp = 0
+            else:
+                raise TrajectoryError('No real roots')
 
         roots = [(-B + tmp)/(2*A), (-B - tmp)/(2*A)]
         def is_positive(x):
@@ -673,7 +677,11 @@ class TrajectorySolver(object):
         try:
             tmp = (B**2 - 4*A*C)**(0.5)
         except ValueError: # negative number cannot be raised to a fractional power
-            raise TrajectoryError('No real roots')
+             # Allow that rounding errors may have pushed a zero to be a slight negative.
+            if (B**2 - 4*A*C) > -0.0001:
+                tmp = 0
+            else:
+                raise TrajectoryError('No real roots')
 
         roots = [(-B + tmp)/(2*A), (-B - tmp)/(2*A)]
         def is_negative(x):

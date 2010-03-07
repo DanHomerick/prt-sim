@@ -400,7 +400,7 @@
     </TrackSegment>
   </TrackSegments>
   <Stations>
-    <Station id="0_station" label="null">
+    <Station id="0_station" label="">
       <TrackSegmentID>2_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>3_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>4_trackSegment_forward</TrackSegmentID>
@@ -450,7 +450,7 @@
       <Coverage radius="200"/>
       <Usage peak_hour="0" daily="0"/>
     </Station>
-    <Station id="1_station" label="null">
+    <Station id="1_station" label="">
       <TrackSegmentID>15_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>16_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>17_trackSegment_forward</TrackSegmentID>

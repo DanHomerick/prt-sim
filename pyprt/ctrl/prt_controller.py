@@ -965,10 +965,10 @@ class Vehicle(object):
             self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
 
         if speed_limit:
-            if self.vel > speed_limit:
-                # Bumping the speed_limit by .001 is a workaround for a bug that manifests when the
-                # initial velocity is just *slightly* above the velocity constraint.
-                speed_limit += 0.001
+##            if self.vel > speed_limit:
+##                # Bumping the speed_limit by .001 is a workaround for a bug that manifests when the
+##                # initial velocity is just *slightly* above the velocity constraint.
+##                speed_limit += 0.001
             solver = TrajectorySolver(min(speed_limit, self.v_max), self.a_max, self.j_max, -5, self.a_min, self.j_min)
         else:
             solver = self.traj_solver

@@ -60,6 +60,7 @@ class MenuBarManager(object):
         self.track = wx.MenuItem(self.viewmenu, wx.NewId(), "&Track...", "", wx.ITEM_NORMAL)
         self.passenger = wx.MenuItem(self.viewmenu, wx.ID_ANY, "&Passenger...", "", wx.ITEM_NORMAL)
         self.legend = wx.MenuItem(self.viewmenu, wx.ID_ANY, "&Legend")
+        self.reports = wx.MenuItem(self.viewmenu, wx.ID_ANY, "&Reports")
 
         self.viewmenu.AppendItem(self.vehicle)
         self.viewmenu.AppendItem(self.station)
@@ -68,6 +69,7 @@ class MenuBarManager(object):
         self.viewmenu.AppendItem(self.passenger)
         self.viewmenu.AppendSeparator()
         self.viewmenu.AppendItem(self.legend)
+        self.viewmenu.AppendItem(self.reports)
         self.menubar.Append(self.viewmenu, "&View")
 
         ### Record Menu ###
@@ -111,6 +113,7 @@ class MenuBarManager(object):
         pw.Bind(wx.EVT_MENU, pw.viewmenu_track_handler, self.track)
         pw.Bind(wx.EVT_MENU, pw.viewmenu_passenger_handler, self.passenger)
         pw.Bind(wx.EVT_MENU, pw.viewmenu_legend_handler, self.legend)
+        pw.Bind(wx.EVT_MENU, pw.viewmenu_reports_handler, self.reports)
         pw.Bind(wx.EVT_MENU, pw.record_start_handler, self.record_start)
         #pw.Bind(wx.EVT_MENU, pw.record_pause_handler, self.record_pause)
         pw.Bind(wx.EVT_MENU, pw.record_stop_handler, self.record_stop)
