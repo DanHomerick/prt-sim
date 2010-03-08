@@ -693,12 +693,15 @@ class Visualizer(object):
 ##                     self.plot_data.get_data('vehicle_y')[select])
             v = common.vehicle_list[select]
             num_pax = v.passenger_count()
+	    vel = v.get_vel()
+	    mph = vel * 2.237
             pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
             self._v_label = chaco.DataLabel(
                               component=self.plot,
                               data_point = point,
                               lines = ['ID: %d' % v.ID,
                                        'numPax: %d' % num_pax,
+				       'speed: %4.1f m/s %4.0f mph' % (vel, mph),
                                        'paxIDs: ' + pax_ids]
                               )
             self.plot.overlays.append(self._v_label)
