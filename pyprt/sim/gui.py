@@ -38,6 +38,7 @@ import layout
 import segment_plot
 import station
 import report
+import pyprt.shared.utility as utility
 
 class GUI_App(wx.App):
     def OnInit(self):
@@ -435,9 +436,8 @@ class MainWindow(wx.Frame):
         """For now just pops a window announcing that the sim is done."""
 ##        common.reports.display()
 
-        summary = common.reports.summary_report.postsim_summary()
-        common.reports.write(common.config_manager.get_results_file())
-        logging.info(summary)
+        common.reports.write(common.config_manager.get_results_file(), update=True)
+        summary = str(common.reports.summary_report)
         dialog = wx.MessageDialog(self,
                   message='Simulation Complete.\n'+summary,
                   style=wx.OK)
@@ -489,8 +489,11 @@ class Visualizer(object):
         # When mousing over, their ordering is used to recover the true object.
         for s in common.station_list:
             assert isinstance(s, station.Station)
-            stat_x.append( (s.platforms[0].track_segment.x_start + s.platforms[0].track_segment.x_end)/2.0 )
-            stat_y.append( (s.platforms[0].track_segment.y_start + s.platforms[0].track_segment.y_end)/2.0 )
+            # find the station midpoint, and use it place a 'station' icon
+            mid_platform_idx = len(s.platforms)//2
+            mid_platform_ts = s.platforms[mid_platform_idx].track_segment
+            stat_x.append( (mid_platform_ts.x_start + mid_platform_ts.x_end)/2.0 )
+            stat_y.append( (mid_platform_ts.y_start + mid_platform_ts.y_end)/2.0 )
             for plat in s.platforms:
                 stat_track_x.append( plat.track_segment.x_start )
                 stat_track_x.append( plat.track_segment.x_end   )
@@ -553,7 +556,7 @@ class Visualizer(object):
                               fill_alpha=1,
                               name='stat',
                               marker='circle',
-                              marker_size=12,
+                              marker_size=14,
                               bgcolor='transparent')[0]
 
         wypt_plot = plot.plot(('wypt_x', 'wypt_y'), type='scatter', name='wypt',
@@ -754,20 +757,20 @@ class Visualizer(object):
             now = SimPy.now()
             wait_times = [pax.wait_time for pax in stat.passengers]
             if wait_times:
-                max_wait = max(wait_times)
-                avg_wait = sum(wait_times) / len(wait_times)
+                max_wait = utility.sec_to_hms(max(wait_times))
+                avg_wait = utility.sec_to_hms(sum(wait_times) / len(wait_times))
             else:
-                max_wait = 0.0
-                avg_wait = 0.0
+                max_wait = utility.sec_to_hms(0)
+                avg_wait = utility.sec_to_hms(0)
 #            print "stuff", stat_name, num_pax, max_wait, avg_wait
             self._stat_label = chaco.DataLabel(
                               component=self.plot,
                               data_point = point,
                               lines = ['%s' % stat_name,
                                        'ID: %d' % stat.ID,
-                                       'PAX Waiting: %i' % num_pax,
-                                       'max wait: %.1f' % max_wait,
-                                       'avg wait: %.1f' % avg_wait]
+                                       'PAX Waiting: %d' % num_pax,
+                                       'max wait: %s' % max_wait,
+                                       'avg wait: %s' % avg_wait]
                               )
             self.plot.overlays.append(self._stat_label)
 

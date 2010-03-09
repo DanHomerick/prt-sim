@@ -134,7 +134,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     break
 
                 # Move the passenger from the vehicle to the station
-                self._disembark_vehicle.passengers.remove(pax)
+                self._disembark_vehicle.disembark(pax)
                 pax.loc = self.station
 
                 # Note if the passenger has arrived at final dest (may not be
@@ -144,7 +144,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     pax.trip_success = True
                     common.delivered_pax.add(pax)
                     logging.info("T=%4.3f %s delivered to platform %s in %s by %s (%d out of %d), disembarked in berth %s",
-                                 Sim.now(), pax, self.platform.ID, self.station.ID, self._disembark_vehicle.ID, self._disembark_vehicle.passenger_count(), self._disembark_vehicle.max_pax_capacity,  self.ID)
+                                 Sim.now(), pax, self.platform.ID, self.station.ID, self._disembark_vehicle.ID, self._disembark_vehicle.get_pax_count(), self._disembark_vehicle.max_pax_capacity,  self.ID)
                 else:
                     self.station.passengers.append(pax)
 
@@ -208,7 +208,7 @@ class Berth(Sim.Process, traits.HasTraits):
                     continue # process other passengers
 
                 # Error if the vehicle is at full capacity
-                if len(self._embark_vehicle.passengers) >= self._embark_vehicle.max_pax_capacity:
+                if self._embark_vehicle.get_pax_count() >= self._embark_vehicle.max_pax_capacity:
                     logging.info("T=%4.3f Embarking passenger failed since vehicle is at max capacity. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
                                  Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
                     error_msg = api.SimMsgBodyInvalidId()
@@ -243,12 +243,12 @@ class Berth(Sim.Process, traits.HasTraits):
                     break
 
                 # Move passenger's location to the vehicle
-                self._embark_vehicle.passengers.add(pax)
+                self._embark_vehicle.embark(pax)
                 pax.loc = self._embark_vehicle
                 self.station.passengers.remove(pax)
                 pax.trip_boarded = Sim.now()
                 logging.info("T=%4.3f %s loaded into %s (%d out of %d) at station %s, platform %s, berth %s ",
-                             Sim.now(), pax, self._embark_vehicle.ID, self._embark_vehicle.passenger_count(), self._embark_vehicle.max_pax_capacity,  self.station.ID, self.platform.ID, self.ID )
+                             Sim.now(), pax, self._embark_vehicle.ID, self._embark_vehicle.get_pax_count(), self._embark_vehicle.max_pax_capacity,  self.station.ID, self.platform.ID, self.ID )
 
                 # Notify that embark of this passenger is complete
                 em_end_msg = api.SimNotifyPassengerEmbarkEnd()
@@ -314,7 +314,7 @@ class Station(traits.HasTraits):
                                 ui.Label('Waiting Passengers'),
                                 ui.Item(name='passengers',
                                         show_label = False,
-                                        editor=Passenger.pax_table_editor
+                                        editor=Passenger.table_editor
                                         ),
                                 show_border = True)
                            ),

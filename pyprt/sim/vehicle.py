@@ -8,6 +8,7 @@ import heapq
 from numpy import inf
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
+import enthought.traits.ui.table_column as ui_tc
 import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
@@ -37,12 +38,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     """
     # The CType indicates that the Type can be coerced from a string.
     ID              = traits.CInt     # Unique numeric ID.
+    label           = traits.Str
     length          = traits.CFloat(5) # Length of vehicle, in meters.
     v_mass          = traits.CInt   # mass of vehicle, in kg
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg
     max_pax_capacity = traits.CInt
-    passengers       = traits.Set(traits.Instance('events.Passenger'))
+    _passengers       = traits.List(traits.Instance('events.Passenger'))
 
     # Action consts
     BOUNDARY = 1
@@ -57,7 +59,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                            ui.Item(name='passenger_mass'),
                            ui.Item(name='total_mass'),
                            ui.Item(name='max_pax_capacity', label='Max. Passenger Capacity'),
-                           ui.Item('passengers@',
+                           ui.Item('_passengers@',
                                    editor = ui.ListEditor( use_notebook = True,
                                                            deletable    = False,
                                                            export       = 'DockShellWindow',
@@ -66,7 +68,61 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                            style='readonly'
                            )
 
-    def __init__(self, ID, loc, position, vel, **tr):
+    table_editor = ui.TableEditor(
+        columns = [ui_tc.ObjectColumn(name='ID', label='ID', tooltip='Vehicle ID'),
+                   ui_tc.ObjectColumn(name='loc', label='Location', tooltip='Current Location'),
+                   ui_tc.ObjectColumn(name='pos', label='Position', format='%.3f',
+                                      tooltip='Current Position (meters)'),
+                   ui_tc.ObjectColumn(name='vel', label='Velocity', format='%.3f',
+                                      tooltip='Current Velocity (m/s)'),
+                   ui_tc.ObjectColumn(name='accel', label='Accel', format='%.3f',
+                                      tooltip='Current Acceleration (m/s^2)'),
+                   ui_tc.ExpressionColumn(label='# Pax',
+                                          expression='len(object._passengers)',
+                                          tooltip='Current number of passengers'),
+                   ui_tc.ExpressionColumn(label='Max Pax',
+                                          expression='object.get_max_pax()',
+                                          tooltip='Most passengers in vehicle'),
+                   ui_tc.ObjectColumn(name='max_pax_capacity', label='Capacity',
+                                      tooltip='Passenger capacity'),
+                   ui_tc.ObjectColumn(name='total_pax', label='Total Pax',
+                                      tooltip='Total number of passengers carried'),
+                   ui_tc.ObjectColumn(name='dist_travelled', label='Dist Travelled',
+                                      format='%d', tooltip='Distance travelled (meters)'),
+                   ui_tc.ExpressionColumn(label='Empty Dist', format='%d',
+                                          expression='object.get_empty_dist()',
+                                          tooltip='Distance travelled with no passengers (meters)'),
+                   ui_tc.ExpressionColumn(label='Passenger Meters', format='%d',
+                                          expression='object.get_pax_dist()',
+                                          tooltip='Distance travelled * passengers carried'),
+                   ui_tc.ExpressionColumn(label='Time-Weighted Ave Pax', format='%.2f',
+                                          expression='object.get_time_ave_pax()',
+                                          tooltip='Average number of passengers, weighted by time'),
+                   ui_tc.ExpressionColumn(label='Dist-Weighted Ave Pax', format='%.2f',
+                                          expression='object.get_dist_ave_pax()',
+                                          tooltip='Average number of passengers, weighted by distance')
+                   ],
+        other_columns = [ui_tc.ObjectColumn(name='v_mass', label='Vehicle Mass',
+                                            tooltip='Excludes passenger or cargo weight (kg)'),
+                         ui_tc.ObjectColumn(name='passenger_mass', label='Passenger Mass',
+                                            tooltip="Includes passengers' luggage (kg)"),
+                         ui_tc.ObjectColumn(name='total_mass', label='Total Mass',
+                                            tooltip='(kg)')
+                         ],
+        deletable = False,
+        editable=False,
+        sortable = True,
+        sort_model = False,
+        auto_size = True,
+        orientation = 'vertical',
+        show_toolbar = True,
+        reorderable = False,
+        rows = 15,
+        row_factory = traits.This)
+
+
+
+    def __init__(self, ID, loc, position, vel, label="", **tr):
         assert not isinstance(position, basestring)
         assert not isinstance(vel, basestring)
         assert position <= loc.length
@@ -74,6 +130,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         traits.HasTraits.__init__(self, **tr)
 
         self.ID = ID
+        self.label = (label if label else str(ID)+'_'+self.__class__.__name__)
         self.door = 0 # 0=closed, 1=open
 
         self._path = [loc]
@@ -119,20 +176,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         self._actions_queue = [] # contains 3-tuples: (time, action, data)
 
+        self.total_pax = 0
+        self._pax_times = [(0,0)] # elements are (time, num_pax)
+
 ##        self.emergency = False
 ##        self.disabled = False
-
-##        # upcoming markers
-##        self.tail_releases = []
-##        self.collisions = []
-##        self.collision_idx = 0
-
-        # Flags/Settings to indicate vehicle should do a particular behavior
-#        self.open_door = None
-#        self.close_door = None
-
-##        # Internal flags/settings controlling vehicle behavior
-##        self._handle_boundry = False
 
         # attributes: max_speed, maxG, maxlatG
         # forces: gravity (if z), drag, friction, braking, centripital, thrust
@@ -149,15 +197,62 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def __hash__(self):
         return self.ID.__hash__()
 
-    @traits.on_trait_change('passengers')
-    def _update_passanger_mass(self):
-        """Keep the passenger_mass up to date"""
-        self.passenger_mass = sum(p.mass for p in self.passengers)
+    def get_passengers(self):
+        return self._passengers[:]
+    passengers = property(fget=get_passengers)
 
-    @traits.on_trait_change('v_mass, passenger_mass')
-    def _update_total_mass(self):
-        """Keep the total_mass trait up to date"""
-        self.total_mass = self.v_mass + self.passenger_mass
+    def embark(self, pax):
+        assert pax not in self._passengers
+        self._passengers.append(pax)
+        self.passenger_mass += pax.mass
+        self.total_mass += pax.mass
+        self.total_pax += 1
+        self._pax_times.append( (Sim.now(), len(self._passengers)) )
+
+    def disembark(self, pax):
+        self._passengers.remove(pax)
+        self.passenger_mass -= pax.mass
+        self.total_mass -= pax.mass
+        self._pax_times.append( (Sim.now(), len(self._passengers)) )
+
+    def get_pax_count(self):
+        """Return the current number of the passengers"""
+        return len(self._passengers)
+
+    def get_time_ave_pax(self):
+        """Returns the time-weighted average number of passengers onboard the
+        vehicle from the start until now."""
+        if Sim.now() == 0: # guard against ZeroDivision
+            return len(self._passengers)
+
+        ave = 0
+        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
+            ave += (t_f - t_i) * cnt_i
+
+        t_final, cnt_final = self._pax_times[-1]
+        ave += (Sim.now() - t_final) * cnt_final
+        return ave / Sim.now()
+
+    def get_dist_ave_pax(self):
+        """Returns the dist-weighted average number of passengers onboard the
+        vehicle from start until now."""
+        ave = 0
+        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
+            ave += (self._spline.evaluate(t_f).pos - self._spline.evaluate(t_i).pos) * cnt_i
+
+        t_final, cnt_final = self._pax_times[-1]
+        ave += (self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(t_final).pos) * cnt_final
+
+        try:
+            result = ave/self.get_dist_travelled()
+        except ZeroDivisionError:
+            result = len(self._passengers)
+        return result
+
+    def get_max_pax(self):
+        """Returns the max number of simultaneous passengers. Not the max
+        passenger capacity!"""
+        return max(pax_count for (time, pax_count) in self._pax_times)
 
     def get_pos(self, time=None):
         """The vehicle's nose position, in meters, where the start of the current TrackSegment is 0."""
@@ -213,6 +308,33 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     def get_dist_travelled(self):
         return self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(0.0).pos
+    dist_travelled = property(fget=get_dist_travelled)
+
+    def get_empty_dist(self):
+        """Returns the deadhead distance, in m."""
+        dist = 0
+        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
+            if cnt_i == 0:
+                dist += self._spline.evaluate(t_f).pos - self._spline.evaluate(t_i).pos
+
+        t_final, cnt_final = self._pax_times[-1]
+        if cnt_final == 0:
+            dist += self._spline.evaluate(Sim.now()).pos - \
+                    self._spline.evaluate(t_final).pos
+        return dist
+
+    def get_pax_dist(self):
+        """Returns the passenger-meters travelled."""
+        dist = 0
+        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
+            if cnt_i > 0:
+                dist += (self._spline.evaluate(t_f).pos - self._spline.evaluate(t_i).pos) * cnt_i
+
+        t_final, cnt_final = self._pax_times[-1]
+        if cnt_final > 0:
+            dist += self._spline.evaluate(Sim.now()).pos - \
+                    self._spline.evaluate(t_final).pos * cnt_final
+        return dist
 
     def clear_path(self):
         """Clears the planned itinerary."""
@@ -554,6 +676,3 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """Return the amount of energy used, in Joules"""
         pass
 
-    def passenger_count(self):
-        """Return the number of the passengers"""
-        return len(self.passengers)

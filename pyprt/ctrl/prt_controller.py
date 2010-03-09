@@ -982,6 +982,7 @@ class Vehicle(object):
             from pyprt.shared.cspline_plotter import CSplinePlotter
             plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)
             plotter.display_plot()
+            raise Exception('Targetted velocity or accel not met.')
 
 ##        from pyprt.shared.cspline_plotter import CSplinePlotter
 ##        plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)

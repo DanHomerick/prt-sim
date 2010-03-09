@@ -118,7 +118,8 @@ class CubicSpline(object):
 
         # interval, knot_initial, knot_final
         for hi, (ai, af) in zip(self.h, pairwise(self.a)):
-            jerks.append((af - ai)/hi)
+            if hi: # guard against zero duration polys
+                jerks.append((af - ai)/hi)
         return jerks
 
     def evaluate(self, time):

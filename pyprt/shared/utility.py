@@ -49,6 +49,6 @@ def sec_to_hms(seconds):
     minutes = remain//60
     sec = remain % 60
     if hours:
-        return "%2d:%02d:%02d" % (hours, minutes, sec)
+        return "%d:%02d:%02d" % (hours, minutes, sec)
     else:
-        return "%2d:%02d" % (minutes, sec)
+        return "%d:%02d" % (minutes, sec)
