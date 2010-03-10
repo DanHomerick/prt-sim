@@ -240,6 +240,8 @@ class Berth(Sim.Process, traits.HasTraits):
                     error_msg.id_type = api.VEHICLE
                     error_msg.ID = self._embark_vehicle.ID
                     common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                    logging.warning("T=%4.3f vehicle %s not parked in berth cannot embark passenger . Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
+                                 Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
                     break
 
                 # Move passenger's location to the vehicle
