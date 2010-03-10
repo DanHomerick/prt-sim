@@ -488,7 +488,7 @@ class TrajectorySolver(object):
 
         return spline
 
-    def target_position_none(self, knot_initial, knot_final, initial_hs=None, error_threshold=1E-5):
+    def target_position_none(self, knot_initial, knot_final, initial_hs=None, error_threshold=1E-6):
         """Trajectory does not reach v_max or a_max. Solve using a library's
         optimization routine. Note that a *guarantee* of time-optimality does
         not apply with this function, but is typically satisfied regardless due

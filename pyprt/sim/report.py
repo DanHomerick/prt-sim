@@ -4,6 +4,7 @@ from sys import stdout
 
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
+import SimPy.SimulationRT as Sim
 
 import common
 from pyprt.shared.utility import sec_to_hms
@@ -35,8 +36,7 @@ class SummaryReport(Report):
         """Returns a list of strings containing summary info."""
         KM_TO_MILES = 0.621371192
         lines = []
-        end_time = common.config_manager.get_sim_end_time()
-        sim_hours = end_time/3600.
+        sim_hours = Sim.now()/3600.
 
         # Passenger summary statistics
         if common.passengers: # some passengers were simulated

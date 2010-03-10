@@ -695,7 +695,7 @@ class Visualizer(object):
 ##            point = (self.plot_data.get_data('vehicle_x')[select],
 ##                     self.plot_data.get_data('vehicle_y')[select])
             v = common.vehicle_list[select]
-            num_pax = v.passenger_count()
+            num_pax = v.get_pax_count()
 	    vel = v.get_vel()
 	    mph = vel * 2.237
             pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
@@ -1077,7 +1077,7 @@ class VisDataCollector(SimPy.Process):
                 x, y = numpy.dot(pos2img[v.loc], position) # matrix mult
                 x_coords.append(x)
                 y_coords.append(y)
-                pax_cnt.append(len(v.passengers))
+                pax_cnt.append(v.get_pax_count())
             self.queue.put( (x_coords, y_coords, pax_cnt) )
             yield SimPy.hold, self, data_interval
 
