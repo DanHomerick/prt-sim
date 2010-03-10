@@ -551,7 +551,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         else:
             assert isinstance(other_vehicle, BaseVehicle)
-            logging.info("T=%4.3f Vehicle %s collided with vehicle %s.", Sim.now(), self.ID, other_vehicle.ID)
+            logging.warn("T=%4.3f Vehicle %s collided with vehicle %s.", Sim.now(), self.ID, other_vehicle.ID)
             msg = api.SimNotifyVehicleCollision()
             other_vehicle.fill_VehicleStatus(msg.v1_status)
             self.fill_VehicleStatus(msg.v2_status)
