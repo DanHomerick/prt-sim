@@ -79,8 +79,8 @@ class SummaryReport(Report):
         max_miles = max_km * KM_TO_MILES
         min_km = min(v.get_dist_travelled() for v in common.vehicle_list)/1000.
         min_miles = min_km * KM_TO_MILES
-        mean_vel_kph = total_km/sim_hours
-        mean_vel_mph = total_miles/sim_hours
+        mean_vel_kph = total_km/sim_hours/len(common.vehicle_list)
+        mean_vel_mph = total_miles/sim_hours/len(common.vehicle_list)
         total_pax = sum(v.total_pax for v in common.vehicle_list)
         min_pax = min(v.total_pax for v in common.vehicle_list)
         mean_pax = total_pax/len(common.vehicle_list)
