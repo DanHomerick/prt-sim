@@ -21,7 +21,15 @@ def main():
                 help="The IP address of the server (simulator). Default is %default")
     options_parser.add_option("-p", "--port", type="int", dest="port", default=64444,
                 help="TCP Port to connect to. Default is: %default")
+    options_parser.add_option("--line_speed", type="float", dest="line_speed", default=25,
+                help="The cruising speed for vehicles on the main line, in m/s. Default is %default")
+    options_parser.add_option("--station_speed", type="float", dest="station_speed", default=2.4,
+                help="The maximum speed for vehicles on station platforms, in m/s. " + \
+                "Setting too high may negatively affect computation performance. Default is %default")
     options, args = options_parser.parse_args()
+
+    PrtController.LINE_SPEED = options.line_speed
+    Station.SPEED_LIMIT = options.station_speed
 
     if len(args) != 1:
         options_parser.error("Expected one argument. Received: %s" % ' '.join(args))
@@ -55,7 +63,7 @@ class PrtController(BaseController):
     LAUNCH_WAITING = "LAUNCH_WAITING"       # In the launch berth. Ready to lauch at any time.
     LAUNCHING = "LAUNCHING"                 # Accelerating towards the main line.
 
-    LINE_SPEED = 25  # in meter/sec
+    LINE_SPEED = None  # in meter/sec. Set in main().
     HEARTBEAT_INTERVAL = 5.1  # in seconds. Choosen arbitrarily for testing
 
     def __init__(self, log_path, commlog_path, scenario_path):
@@ -750,7 +758,8 @@ class Station(object):
     QUEUE_PLATFORM = 1
     LOAD_PLATFORM = 2
 
-    SPEED_LIMIT = 2.4 # m/s (approx 5 mph) An ideal speed will be just *below* the max speed that a vehicle would hit when advancing one berth.
+    SPEED_LIMIT = None # In m/s. Set in main(). An ideal speed will be just *below*
+                       # the max speed that a vehicle would hit when advancing one berth.
     controller = None
 
     def __init__(self, s_id, ts_ids, bypass_ts_id, choice_ts_id,
