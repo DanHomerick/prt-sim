@@ -10,6 +10,7 @@ import pyprt.shared.api_pb2 as api
 from pyprt.ctrl.base_controller import BaseController
 from trajectory_solver import TrajectorySolver
 from pyprt.shared.cubic_spline import Knot
+from pyprt.shared.utility import pairwise
 
 def main():
     options_parser = optparse.OptionParser(usage="usage: %prog [options] FILE\nFILE is a path to to the scenario file.")
@@ -26,9 +27,12 @@ def main():
     options_parser.add_option("--station_speed", type="float", dest="station_speed", default=2.4,
                 help="The maximum speed for vehicles on station platforms, in m/s. " + \
                 "Setting too high may negatively affect computation performance. Default is %default")
+    options_parser.add_option("--headway", type="float", dest="headway", default="2.0",
+                help="The minimum following time for vehicles, in seconds. Measured from tip-to-tail.")
     options, args = options_parser.parse_args()
 
     PrtController.LINE_SPEED = options.line_speed
+    PrtController.HEADWAY = options.headway
     Station.SPEED_LIMIT = options.station_speed
 
     if len(args) != 1:
@@ -64,6 +68,7 @@ class PrtController(BaseController):
     LAUNCHING = "LAUNCHING"                 # Accelerating towards the main line.
 
     LINE_SPEED = None  # in meter/sec. Set in main().
+    HEADWAY = None     # in sec. Measured from tip-to-tail. Set in main()
     HEARTBEAT_INTERVAL = 5.1  # in seconds. Choosen arbitrarily for testing
 
     def __init__(self, log_path, commlog_path, scenario_path):
@@ -82,8 +87,8 @@ class PrtController(BaseController):
         key = int(time*1000)
         try:
             v_list, s_list = self.t_reminders[key]
-            assert vehicle not in v_list
-            v_list.append(vehicle)
+            if vehicle not in v_list: # TODO: Could use a set here, though list will generally be small
+                v_list.append(vehicle)
 
         except KeyError:
             notify = api.CtrlSetnotifyTime()
@@ -135,27 +140,16 @@ class PrtController(BaseController):
                             v.embark(v.trip.passengers)
                         except NoPaxAvailableError:
                             if station.is_launch_berth(v.berth_id, v.platform_id):
-                                # Temp -- just launch as soon as possible, if there
+                                # launch as soon as possible, if there
                                 # is another station with passengers waiting.
                                 trip = self.manager.deadhead(v)
                                 if self.manager.passengers[trip.dest_station.id]:
                                     v.state = self.LAUNCH_WAITING
                                     v.trip = trip
-                                    v.state = self.LAUNCHING
-                                    v._launch_begun = False
-                                    v.station.release_berth(v)
-                                    assert v.station is station
-
 
                     elif v.state is self.EXIT_WAITING:
                         if station.is_launch_berth(v.berth_id, v.platform_id):
                             v.state = self.LAUNCH_WAITING
-                            # Temp -- just launch as soon as possible
-                            v.state = self.LAUNCHING
-                            v._launch_begun = False
-                            v.station.release_berth(v)
-                            assert v.station is station
-
 
         # schedule the next heartbeat
         self.set_s_notification(station, self.current_time + self.HEARTBEAT_INTERVAL)
@@ -363,6 +357,20 @@ class PrtController(BaseController):
                 req_v_status = api.CtrlRequestVehicleStatus()
                 req_v_status.vID = vehicle.id
                 self.send(api.CTRL_REQUEST_VEHICLE_STATUS, req_v_status)
+            elif vehicle.state is self.LAUNCH_WAITING:
+                blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
+                if not blocked_time:
+                    vehicle.state = self.LAUNCHING
+                    vehicle.run_trip()
+                    vehicle._launch_begun = True
+                    vehicle.station.release_berth(vehicle)
+                    self.log.info("t:%5.3f Launched vehicle %d from station %d.",
+                                  self.current_time, vehicle.id, vehicle.station.id)
+                else:
+                    self.set_v_notification(vehicle, blocked_time)
+                    self.log.info("t:%5.3f Delaying launch of vehicle %d from station %d until %.3f (%.3f delay)",
+                                  self.current_time, vehicle.id, vehicle.station.id, blocked_time, blocked_time-self.current_time)
+
             else:
                 warnings.warn("Huh? What was this reminder for again? vehicle %d, state: %s" % (vehicle.id, vehicle.state))
 ##                raise Exception("Huh? What was this reminder for again? Current State: %s" % vehicle.state)
@@ -375,7 +383,7 @@ class PrtController(BaseController):
     def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
-        vehicle.update_vehicle(msg.v_status)
+        vehicle.update_vehicle(msg.v_status, msg.time)
 
         if vehicle.state in (self.UNLOAD_ADVANCING, self.QUEUE_ADVANCING,
                              self.LOAD_ADVANCING, self.EXIT_ADVANCING):
@@ -403,12 +411,19 @@ class PrtController(BaseController):
                 else:
                     raise Exception("Unexpected case: %s" % vehicle._advance_begun)
 
-        elif vehicle.state is self.LAUNCHING:
-            if vehicle._launch_begun is False:
+        elif vehicle.state is self.LAUNCH_WAITING:
+            blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
+            if not blocked_time:
+                vehicle.state = self.LAUNCHING
                 vehicle.run_trip()
                 vehicle._launch_begun = True
+                vehicle.station.release_berth(vehicle)
+                self.log.info("t:%5.3f Launched vehicle %d from station %d.",
+                              self.current_time, vehicle.id, vehicle.station.id)
             else:
-                pass
+                self.set_v_notification(vehicle, blocked_time)
+                self.log.info("t:%5.3f Delaying launch of vehicle %d from station %d until %.3f (%.3f delay)",
+                              self.current_time, vehicle.id, vehicle.station.id, blocked_time, blocked_time-self.current_time)
 
 ##        else:
 ##            warnings.warn("Received vehicle status. Not sure why... vID: %d, v.state: %s" % (vehicle.id, vehicle.state))
@@ -441,7 +456,7 @@ class PrtController(BaseController):
     def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
-        vehicle.update_vehicle(msg.v_status)
+        vehicle.update_vehicle(msg.v_status, msg.time)
 
         if vehicle.state is self.SLOWING and msg.trackID == vehicle.station.ts_ids[Station.UNLOAD]:
             # Just reached the beginning of the unload platform. Go to the already reserved berth.
@@ -451,12 +466,6 @@ class PrtController(BaseController):
                 # Skip disembarking entirely
                 vehicle.state = self.QUEUE_ADVANCING
                 vehicle.trip = None
-
-##            # WARNING TODO FIXME: This is wallpapering over a bug!
-##            # Very rarely, vehicles are showing up on the station's doorstep without having
-##            # made reservations. Not cool. See if we can squeeze them in anyways.
-##            if vehicle.berth_id is None:
-##                vehicle.station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
 
             t_arrival = vehicle.advance()
             self.set_v_notification(vehicle, t_arrival)
@@ -477,7 +486,7 @@ class PrtController(BaseController):
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
-        vehicle.update_vehicle(msg.v_status)
+        vehicle.update_vehicle(msg.v_status, msg.time)
 
         if vehicle.state is self.RUNNING:
             station = self.manager.choice2station.get(msg.trackID)
@@ -622,7 +631,12 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             assert len(graph.predecessors(ts_ids[Station.OFF_RAMP_I])) == 1
             choice = graph.predecessors(ts_ids[Station.OFF_RAMP_I])[0]
 
-            stations[station_int_id] = Station(station_int_id, ts_ids, bypass, choice,
+            # Calculate the total onramp length
+            post_merge = graph.successors(ts_ids[Station.ON_RAMP_II])[0]
+            onramp_length = networkx.dijkstra_path_length(self.graph,
+                                            ts_ids[Station.ACCEL], post_merge)
+
+            stations[station_int_id] = Station(station_int_id, ts_ids, bypass, choice, onramp_length,
                                                unload_positions, queue_positions, load_positions)
         return stations
 
@@ -644,6 +658,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             model_name = vehicle_xml.getAttribute('model')
 
             model_xml = models[model_name]
+            length = float(model_xml.getAttribute('length'))
             capacity = int(model_xml.getAttribute('passenger_capacity'))
             jerk_xml = model_xml.getElementsByTagName('Jerk')[0]
             accel_xml = model_xml.getElementsByTagName('Acceleration')[0]
@@ -651,6 +666,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
             vehicles[vehicle_int_id] = Vehicle(vehicle_int_id,
                                                model_name,
+                                               length,
                                                capacity,
                                                ts_int_id,
                                                float(vehicle_xml.getAttribute('position')),
@@ -722,6 +738,119 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         except KeyError:
             return networkx.bidirectional_dijkstra(self.graph, ts_1, ts_2)
 
+    def is_launch_blocked(self, station, vehicle, now):
+        """Returns false if the vehicle may launch immediately. Otherwise,
+        returns the time at which the vehicle(s) currently obstructing the
+        launch exit the conflict zone. At that time, a new check will need to be
+        made, as there is no guarantee that other vehicles won't have entered
+        the conflict zone in the interveaning time.
+
+        ASSUMPTION: On vehicles on the network are the same length as vehicle!
+        """
+        assert isinstance(station, Station)
+        assert isinstance(vehicle, Vehicle)
+        # Optimization note: this is inefficent. Expect there to only be a few vehicle and station
+        # variations, so caching the results for those few cases may make sense.
+
+        # find the time it takes for the launch vehicle to reach the main line
+        knot_initial = Knot(vehicle.pos, vehicle.vel, vehicle.accel, now)
+        knot_final = Knot(vehicle.pos + station.onramp_length,
+                          PrtController.LINE_SPEED, 0, None)
+
+        spline = vehicle.traj_solver.target_velocity(knot_initial, knot_final)
+        assert spline.q[-1] <= vehicle.pos + station.onramp_length, (spline.q[-1], vehicle.pos + station.onramp_length)
+        merge_delay = spline.t[-1] - spline.t[0]
+        assert merge_delay > PrtController.HEADWAY
+
+        # Making the assumption that all vehicles on the main line are travelling
+        # at constant velocity, then a safe launch just requires that a particular
+        # section of track upstream of the merge is unoccupied. I'm referring
+        # to that section as the confict_zone. So long as the line_speed is low,
+        # the conflict zone will be close to the station onramp and is unlikely
+        # to be complicated. As line speed increases, the conflict zone will be
+        # pushed back and enlarge and will be increasing likely to have a merge
+        # or station lie between the conflict zone and the onramp.
+        headway_dist = PrtController.HEADWAY * PrtController.LINE_SPEED
+        conflict_zone_start_dist = PrtController.LINE_SPEED * merge_delay - headway_dist
+        conflict_zone_end_dist = conflict_zone_start_dist + vehicle.length + headway_dist
+
+        # walk back from the merge point finding the tracksegments and positions
+        # that are in the conflict zone
+        merge_seg = self.graph.successors(station.ts_ids[Station.ON_RAMP_II])[0] # assuming only one
+        nodes, starts, ends = self.find_distant_segs_reverse(merge_seg,
+                           conflict_zone_start_dist, conflict_zone_end_dist, [], [], [])
+
+        # TODO optimize this?
+        times = []
+        for v in self.vehicles.itervalues():
+            if v.station != None:
+                continue
+
+            try:
+                idx = nodes.index(v.ts_id)
+            except ValueError:
+                continue
+
+            # v may be in conflict zone. Estimate current position
+            if abs(v.accel) > 0.0001:
+                warnings.warn("Vehicle on main line NOT travelling at constant velocity! v: %d, ts: %d, vel: %.3f, accel: %.3f" %\
+                          (v.id, v.ts_id, v.vel, v.accel))
+##            assert abs(v.accel) < 0.0001, v.accel
+            v_pos = v.pos + (now - v.last_update)*v.vel
+
+            if v_pos > starts[idx] and v_pos < ends[idx]:
+                # find the distance, and thus time, until v clears the conflict zone
+                seg = v.ts_id
+                clearing_dist = ends[idx] - v_pos
+                path = networkx.shortest_path(self.graph, seg, merge_seg)
+                for seg in path[1:]:
+                    try:
+                        idx = nodes.index(seg)
+                        clearing_dist += ends[idx] - starts[idx]
+                    except ValueError:
+                        break
+
+                times.append(clearing_dist/v.vel)
+
+        if times:
+            return max(times) + now
+        else:
+            return False
+
+    def find_distant_segs_reverse(self, initial_node, start_dist, end_dist,
+                                  nodes, starts, ends):
+        """Recursively walk the edges of a weighted networkx digraph until start_dist is
+        reached, then adds all nodes encountered until end_dist is reached.
+        Excludes stations from the walk.
+        initial_node: the starting segment
+        start_dist: the distance from initial node at which the conflict zone starts
+        end_dist: the distance from initial node at which the conflict zone ends
+        nodes, starts, ends: lists to which the results are added.
+        Returns three parallel lists: nodes, starts, and ends"""
+        preds = self.graph.predecessors(initial_node)
+        for node in preds:
+            # exclude station segments from the walk
+            if self.track2station.get(node) is not None:
+                continue
+
+            edge_length = self.graph[node][initial_node]['weight']
+            if start_dist <= edge_length:
+                start = max(edge_length-end_dist, 0)
+                end = min(edge_length-start_dist, edge_length)
+                try: # don't add duplicates. Use the widest start/end values found
+                    idx = nodes.index(node)
+                    starts[idx] = min(start, starts[idx])
+                    ends[idx] = max(end, ends[idx])
+                except ValueError: # regular case, adding a new node
+                    nodes.append(node)
+                    starts.append(start)
+                    ends.append(end)
+
+            if end_dist > edge_length:
+                self.find_distant_segs_reverse(node, start_dist-edge_length,
+                                          end_dist-edge_length, nodes, starts, ends)
+        return nodes, starts, ends
+
     def _build_station_tables(self):
         """Returns a pair of 2D tables containing distances and paths. The tables
         are accessed like table[origin][dest], where each origin is a station's
@@ -762,7 +891,7 @@ class Station(object):
                        # the max speed that a vehicle would hit when advancing one berth.
     controller = None
 
-    def __init__(self, s_id, ts_ids, bypass_ts_id, choice_ts_id,
+    def __init__(self, s_id, ts_ids, bypass_ts_id, choice_ts_id, onramp_length,
                  unload_positions, queue_positions, load_positions):
         """s_id: An integer station id.
         ts_ids: A list containing integer TrackSegment ids. See Station consts.
@@ -770,6 +899,7 @@ class Station(object):
                       the main track rather than the station's track.
         choice_ts_id: The TrackSegment id upsteam of both the bypass and the
                         offramp.
+        onramp_length: Sum of track segment lengths for segments leading to exit.
         unload_positions, queue_positions, load_positions:
         Each of the above are lists of floats, where each float designates
         a position that the vehicle will target in order to park in the berth.
@@ -780,6 +910,7 @@ class Station(object):
         self.ts_ids = ts_ids
         self.bypass = bypass_ts_id
         self.choice = choice_ts_id
+        self.onramp_length = onramp_length
         self.berth_positions = [unload_positions, queue_positions, load_positions]
         self.berth_reservations = [[None]*len(unload_positions),
                                    [None]*len(queue_positions),
@@ -906,10 +1037,11 @@ class Vehicle(object):
     controller = None # interfaces with the sim
     manager = None # high level planner
 
-    def __init__(self, v_id, model, capacity, ts_id, pos, vel, accel, j_max, j_min, a_max, a_min, v_max):
+    def __init__(self, v_id, model, length, capacity, ts_id, pos, vel, accel, j_max, j_min, a_max, a_min, v_max):
         self.id = v_id
         self.model = model
         self.capacity = capacity
+        self.length = length
         self.ts_id = ts_id
         self.pos = pos
         self.vel = vel
@@ -925,8 +1057,8 @@ class Vehicle(object):
         self.spline = None
         self.traj_solver = TrajectorySolver(self.v_max, self.a_max, self.j_max,
                                             -5, self.a_min, self.j_min)
+        self.last_update = 0.0
         self.trip = None
-
         self.state = None
         self.station = None
 
@@ -941,7 +1073,7 @@ class Vehicle(object):
         self._advance_begun = True
         self._launch_begun = True
 
-    def update_vehicle(self, v_status):
+    def update_vehicle(self, v_status, time):
         """Updates the relevant vehicle data."""
         assert v_status.vID == self.id
         self.ts_id = int(v_status.nose_locID) # convert to int from a long
@@ -949,6 +1081,7 @@ class Vehicle(object):
         self.vel = v_status.vel
         self.accel = v_status.accel
         self.pax = v_status.passengerIDs[:] # copy
+        self.last_update = time
 
     def run_trip(self):
         """Runs the vehicle's stored trip. Returns the scheduled arrival time."""

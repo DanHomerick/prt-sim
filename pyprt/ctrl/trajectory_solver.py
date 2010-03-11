@@ -778,11 +778,11 @@ class TrajectorySolver(object):
 
 
 if __name__ == '__main__':
-    initial = Knot(2,5,0,11)
-    final = Knot(50,0,0,None)
+    initial = Knot(0,0,0,0)
+    final = Knot(1000,16,0,None)
     solver = TrajectorySolver(25, 5, 2.5)  # v_max, a_max, j_max
 
-    spline = solver.target_position(initial, final)
+    spline = solver.target_velocity(initial, final)
 
     from pyprt.shared.cspline_plotter import CSplinePlotter
     plotter = CSplinePlotter(spline, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)

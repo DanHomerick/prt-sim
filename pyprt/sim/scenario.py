@@ -43,6 +43,8 @@ class ScenarioManager(object):
 
         # Stations
         common.stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
+        # mapping from track_segment ids to Platform instances
+        common.platforms = dict((p.track_segment.ID, p) for s in common.stations.itervalues() for p in s.platforms)
 
         # Passengers
         passengers_path = common.config_manager.get_passengers_path()

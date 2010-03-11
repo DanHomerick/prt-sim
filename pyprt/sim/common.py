@@ -8,6 +8,7 @@ config_manager = None
 digraph = None
 interface = None
 stations = dict()
+platforms = dict()
 track_segments = dict()
 vehicle_models = dict()
 vehicles = dict()

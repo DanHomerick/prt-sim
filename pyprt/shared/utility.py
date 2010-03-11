@@ -17,6 +17,31 @@ DIST_RND = 2
 TIME_RES = 0.001
 TIME_RND = 3
 
+##def find_distant_segs_forward(graph, initial_node, start_dist, end_dist,
+##                              nodes=[], starts=[], ends=[]):
+##    """Recursively walk the edges of a weighted networkx digraph until start_dist is
+##    reached, then adds all nodes encountered until end_dist is reached.
+##    Returns a set of nodes"""
+##    succs = graph.successors(initial_node)
+##    for node in succs:
+##        edge_length = graph[initial_node][node]['weight']
+##        if start_dist < edge_length:
+##            start = max(start_dist, 0)
+##            end = min(edge_length, end_dist)
+##            try: # don't add duplicates. Use the widest start/end values found
+##                idx = nodes.index(node)
+##                starts[idx] = min(start, starts[idx])
+##                ends[idx] = max(end, ends[idx])
+##            except ValueError: # regular case, adding a new node
+##                nodes.append(node)
+##                starts.append(start)
+##                ends.append(end)
+##
+##        if end_dist >= edge_length:
+##            find_distant_segs_forward(graph, node, edge_length,
+##                                      end_dist-edge_length, nodes, starts, ends)
+##    return nodes, starts, ends
+
 def dist_eql(a, b):
     """Include == test to capture float('inf') == float('inf')"""
     return (True if a == b or round(abs(a-b), DIST_RND) < DIST_RES else False)

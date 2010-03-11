@@ -112,9 +112,9 @@ class MainWindow(wx.Frame):
     def filemenu_open_scenario_handler(self, event): # wxGlade: MainWindow.<event_handler>
         """Load the scenario from file."""
         filename = wx.FileSelector(flags=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
-              wildcard='xml files (*.xml)|*.xml|all files (*.*)|*.*',
-              default_path='../tests/',
-              default_filename='scenario.xml')
+                                   wildcard='xml files (*.xml)|*.xml|all files (*.*)|*.*',
+                                   default_path='../tests/',
+                                   default_filename='scenario.xml')
         self.load_scenario(filename)
 
     def filemenu_saveconfig_handler(self, event):
@@ -130,13 +130,13 @@ class MainWindow(wx.Frame):
                 self.visualizer.save_plot(filename)
             except Exception, e:
                 dialog = wx.MessageDialog(self,
-                          message='An error occurred while saving: ' + filename,
-                          style=wx.OK)
+                                          message='An error occurred while saving: ' + filename,
+                                          style=wx.OK)
                 dialog.ShowModal()
         else:
             dialog = wx.MessageDialog(self,
-                      message='A configuration file must be loaded first.',
-                      style=wx.OK)
+                                      message='A configuration file must be loaded first.',
+                                      style=wx.OK)
             dialog.ShowModal()
 
     def filemenu_exit_handler(self, event):
@@ -201,11 +201,11 @@ class MainWindow(wx.Frame):
                 cmd = cmd.split()
                 try:
                     ctrl_proc = subprocess.Popen(cmd,
-                                                cwd=common.config_manager.get_config_dir())
+                                                 cwd=common.config_manager.get_config_dir())
                 except OSError:
                     dialog = wx.MessageDialog(self,
-                        message='Failed to open controller using command: %s' % cmd,
-                        style=wx.OK)
+                                              message='Failed to open controller using command: %s' % cmd,
+                                              style=wx.OK)
                     dialog.ShowModal()
                     return
 
@@ -216,18 +216,18 @@ class MainWindow(wx.Frame):
 
         else:
             dialog = wx.MessageDialog(self,
-                      message='A configuration file must be loaded first.',
-                      style=wx.OK)
+                                      message='A configuration file must be loaded first.',
+                                      style=wx.OK)
             dialog.ShowModal()
 
     def open_port_handler(self, event):
         dialog = wx.NumberEntryDialog(self,
-                          message="Debugging Tool.\nOpens the specified TCP port.\nThe sim will block until a controller\nconnects at the specified port.\n\nChoose connection port (TCP)",
-                          prompt='Port:',
-                          caption='Connect External Controller...',
-                          value=common.config_manager.get_TCP_port(),
-                          min=2,
-                          max=65535)
+                                      message="Debugging Tool.\nOpens the specified TCP port.\nThe sim will block until a controller\nconnects at the specified port.\n\nChoose connection port (TCP)",
+                                      prompt='Port:',
+                                      caption='Connect External Controller...',
+                                      value=common.config_manager.get_TCP_port(),
+                                      min=2,
+                                      max=65535)
         if dialog.ShowModal() == wx.ID_OK:
             port_num = dialog.GetValue()
             common.interface.setup_server_sockets(TCP_port=port_num)
@@ -266,8 +266,8 @@ class MainWindow(wx.Frame):
             print 'Speed set to', speed, 'X'
         except AttributeError:
             dialog = wx.MessageDialog(self,
-                                    message='Start simulation first.',
-                                    style=wx.OK)
+                                      message='Start simulation first.',
+                                      style=wx.OK)
             dialog.ShowModal()
 
 
@@ -325,13 +325,13 @@ class MainWindow(wx.Frame):
             self.Bind(wx.EVT_TIMER, self.record_handler, id=record_timerId)
         except ZeroDivisionError:
             dialog = wx.MessageDialog(self,
-                      message="Target FPS in the config file is set to 0, so recording is not possible.",
-                      style=wx.OK)
+                                      message="Target FPS in the config file is set to 0, so recording is not possible.",
+                                      style=wx.OK)
             dialog.ShowModal()
         except NoSectionError: # from ConfigParser
             dialog = wx.MessageDialog(self,
-                      message="Config file is missing a 'Simulation' section.",
-                      style=wx.OK)
+                                      message="Config file is missing a 'Simulation' section.",
+                                      style=wx.OK)
             dialog.ShowModal()
 
         # setup the filename
@@ -344,8 +344,8 @@ class MainWindow(wx.Frame):
             self._record_count = 0
         except ValueError:
             dialog = wx.MessageDialog(self,
-                      message="Unable to use filename. I expect the path to have exactly one '.' in it, and can't handle other cases.",
-                      style=wx.OK)
+                                      message="Unable to use filename. I expect the path to have exactly one '.' in it, and can't handle other cases.",
+                                      style=wx.OK)
             dialog.ShowModal()
             return
 
@@ -371,8 +371,8 @@ class MainWindow(wx.Frame):
                 # stop the recording
                 self.record_stop_handler(event) # passes the wrong event type, but stop doesn't use the event anyways
                 dialog = wx.MessageDialog(self,
-                          message="Saving the recording snapshot %s failed." % filename,
-                          style=wx.OK)
+                                          message="Saving the recording snapshot %s failed." % filename,
+                                          style=wx.OK)
                 dialog.ShowModal()
         else:
             # stop recording
@@ -439,8 +439,8 @@ class MainWindow(wx.Frame):
         common.reports.write(common.config_manager.get_results_file(), update=True)
         summary = str(common.reports.summary_report)
         dialog = wx.MessageDialog(self,
-                  message='Simulation Complete.\n'+summary,
-                  style=wx.OK)
+                                  message='Simulation Complete.\n'+summary,
+                                  style=wx.OK)
         dialog.ShowModal()
 
 # end of class MainWindow
@@ -560,13 +560,13 @@ class Visualizer(object):
                               bgcolor='transparent')[0]
 
         wypt_plot = plot.plot(('wypt_x', 'wypt_y'), type='scatter', name='wypt',
-                  marker='circle', color='blue', marker_size=1, hide_grids=True,  bgcolor='transparent')[0]
+                              marker='circle', color='blue', marker_size=1, hide_grids=True,  bgcolor='transparent')[0]
 
         merge_plot = plot.plot(('merge_x', 'merge_y'), type='scatter', name='merge',
-                  marker='inverted_triangle', color='blue', marker_size=5, hide_grids=True,  bgcolor='transparent')[0]
+                               marker='inverted_triangle', color='blue', marker_size=5, hide_grids=True,  bgcolor='transparent')[0]
 
         switch_plot = plot.plot(('switch_x', 'switch_y'), type='scatter', name='switch',
-                  marker='triangle', color='blue', marker_size=5, hide_grids=True,  bgcolor='transparent')[0]
+                                marker='triangle', color='blue', marker_size=5, hide_grids=True,  bgcolor='transparent')[0]
 
         add_xy_plot('stat_track_x', 'stat_track_y', plot, segment_plot.SegmentPlot,
                     color='red', hide_grids=True,  bgcolor='transparent')
@@ -581,9 +581,9 @@ class Visualizer(object):
         #   The old colormapper is overwritten, rather than allowing multiple color_maps.
         # The following code duplicates, for a single case, the logic in plot.plot.
         imap = chaco.LinearMapper(range=plot.index_range,
-                                stretch_data=plot.index_mapper.stretch_data)
+                                  stretch_data=plot.index_mapper.stretch_data)
         vmap = chaco.LinearMapper(range=plot.value_range,
-                                stretch_data=plot.value_mapper.stretch_data)
+                                  stretch_data=plot.value_mapper.stretch_data)
         self.v_x_datasource = plot._get_or_create_datasource('vehicle_x')
         self.v_y_datasource = plot._get_or_create_datasource('vehicle_y')
         self.v_color_datasource = plot._get_or_create_datasource('v_pax_cnt')
@@ -637,9 +637,9 @@ class Visualizer(object):
         # datasource, which will cause a trait event to fire.  So, we'll hook
         # up a listener to that event.
         plot.datasources['vehicle_x'].on_trait_change(self.vehicle_selection_handler,
-                                                 name="metadata_changed")
+                                                      name="metadata_changed")
         plot.datasources['stat_x'].on_trait_change(self.station_selection_handler,
-                                                 name="metadata_changed")
+                                                   name="metadata_changed")
         return plot
 
     def save_plot(self, filename):
@@ -696,17 +696,17 @@ class Visualizer(object):
 ##                     self.plot_data.get_data('vehicle_y')[select])
             v = common.vehicle_list[select]
             num_pax = v.get_pax_count()
-	    vel = v.get_vel()
-	    mph = vel * 2.237
+            vel = v.get_vel()
+            mph = vel * 2.237
             pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
             self._v_label = chaco.DataLabel(
-                              component=self.plot,
-                              data_point = point,
-                              lines = ['ID: %d' % v.ID,
-                                       'numPax: %d' % num_pax,
-				       'speed: %4.1f m/s %4.0f mph' % (vel, mph),
-                                       'paxIDs: ' + pax_ids]
-                              )
+                component=self.plot,
+                data_point = point,
+                lines = ['ID: %d' % v.ID,
+                         'numPax: %d' % num_pax,
+                         'speed: %4.1f m/s %4.0f mph' % (vel, mph),
+                         'paxIDs: ' + pax_ids]
+            )
             self.plot.overlays.append(self._v_label)
         else:
             # see note in station_selection_handler
@@ -764,14 +764,14 @@ class Visualizer(object):
                 avg_wait = utility.sec_to_hms(0)
 #            print "stuff", stat_name, num_pax, max_wait, avg_wait
             self._stat_label = chaco.DataLabel(
-                              component=self.plot,
-                              data_point = point,
-                              lines = ['%s' % stat_name,
-                                       'ID: %d' % stat.ID,
-                                       'PAX Waiting: %d' % num_pax,
-                                       'max wait: %s' % max_wait,
-                                       'avg wait: %s' % avg_wait]
-                              )
+                component=self.plot,
+                data_point = point,
+                lines = ['%s' % stat_name,
+                         'ID: %d' % stat.ID,
+                         'PAX Waiting: %d' % num_pax,
+                         'max wait: %s' % max_wait,
+                         'avg wait: %s' % avg_wait]
+            )
             self.plot.overlays.append(self._stat_label)
 
         # Ahh, the hackery work of a hack. Suck.
@@ -833,13 +833,13 @@ class Legend(wx.Frame):
     def make_colorbar(self, title, color_map):
         max_range = int(color_map.range.high)
         colorbar = chaco.ColorBar(
-                            index_mapper=chaco.LinearMapper(range=color_map.range),
-                            color_mapper=color_map,
-                            orientation='h',
-                            direction='normal',
-                            grid_visible=False,
-                            fill_padding = True,
-                            padding=(10, 10, 40, 20)) # left, right, top, bottom
+            index_mapper=chaco.LinearMapper(range=color_map.range),
+            color_mapper=color_map,
+            orientation='h',
+            direction='normal',
+            grid_visible=False,
+            fill_padding = True,
+            padding=(10, 10, 40, 20)) # left, right, top, bottom
         colorbar.overlays.pop() # remove the old axis
 
         labels = [str(x) for x in xrange(0, max_range+1)]
@@ -988,16 +988,16 @@ def run_sim(end_time, callback, *args):
             # Create and activate the SimPy Processes which collect data and
             # push it to the visualization module via queues.
             common.vehicle_viz_data_collector = VisDataCollector(data_interval=chaco_frame_interval,
-                                                     queue=common.vehicle_data_queue,
-                                                     chaco_interval=chaco_frame_interval)
+                                                                 queue=common.vehicle_data_queue,
+                                                                 chaco_interval=chaco_frame_interval)
             SimPy.activate(common.vehicle_viz_data_collector,
-                         common.vehicle_viz_data_collector.collect_vehicle_data())
+                           common.vehicle_viz_data_collector.collect_vehicle_data())
 
             common.station_viz_data_collector = VisDataCollector(data_interval=1.0, # don't need station updates < 1 sec
-                                                     queue=common.station_data_queue,
-                                                     chaco_interval=chaco_frame_interval)
+                                                                 queue=common.station_data_queue,
+                                                                 chaco_interval=chaco_frame_interval)
             SimPy.activate(common.station_viz_data_collector,
-                         common.station_viz_data_collector.collect_station_data())
+                           common.station_viz_data_collector.collect_station_data())
 
     # start the communication control
     SimPy.activate(common.interface, common.interface.talk())
@@ -1061,7 +1061,7 @@ class VisDataCollector(SimPy.Process):
                 angle = math.atan2(dy, dx)
                 scale = math.sqrt(dx**2 + dy**2) / track_seg.length # scaling factor
                 pos2img[track_seg] = array([[scale*math.cos(angle), track_seg.x_start],
-                                       [scale*math.sin(angle), track_seg.y_start]])
+                                            [scale*math.sin(angle), track_seg.y_start]])
             except ZeroDivisionError:
                 continue
 
@@ -1117,7 +1117,7 @@ class VisDataCollector(SimPy.Process):
             yield SimPy.hold, self, self.data_interval
 
 def add_xy_plot(index_name, value_name, plot, renderer_factory, name=None,
-    origin=None, **kwds):
+                origin=None, **kwds):
     """ Add a BaseXYPlot renderer subclass to a Plot.
 
     Parameters

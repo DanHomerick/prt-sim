@@ -50,6 +50,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     BOUNDARY = 1
     TAIL_RELEASE = 2
     COLLISION = 3
+    ENTER_BERTH = 4
+    EXIT_BERTH = 5
 
     # A default view for vehicles.
     traits_view =  ui.View('ID', 'length',
@@ -485,6 +487,18 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         heapq.heappush(self._actions_queue, (traverse_time, self.BOUNDARY, None))
         assert traverse_dist > 0, (traverse_dist, self.loc.length, self.loc.ID)
         assert traverse_time > Sim.now(), traverse_time
+
+##        # Do some extra work to collect statistics about berth usages if the loc is a station platform
+##        platform = common.platforms.get(self.loc.ID)
+##        if platform is not None:
+##            my_pos = self.pos
+##            for berth in platform.berths:
+##                berth_enter_dist = berth.start_pos - my_pos
+##                berth_exit_dist = berth.end_pos - my_pos
+##                berth_enter_time = self._spline.get_time_from_dist(berth_enter_dist, Sim.now())
+##                berth_exit_time = self._spline.get_time_from_dist(berth_exit_dist, Sim.now())
+##                heapq.heappush(self._actions_queue, (berth_enter_time, self.ENTER_BERTH, berth))
+##                heapq.heappush(self._actions_queue, (berth_exit_time, self.EXIT_BERTH, berth))
 
     def _boundary_handler(self):
         """Responsible for moving a vehicle to the next location when it reaches
