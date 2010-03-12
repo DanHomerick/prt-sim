@@ -142,14 +142,14 @@ class PrtController(BaseController):
                             if station.is_launch_berth(v.berth_id, v.platform_id):
                                 # launch as soon as possible, if there
                                 # is another station with passengers waiting.
-                                trip = self.manager.deadhead(v)
-                                if self.manager.passengers[trip.dest_station.id]:
-                                    v.state = self.LAUNCH_WAITING
-                                    v.trip = trip
+                                v.trip = self.manager.deadhead(v, (station,))
+                                v.state = self.LAUNCH_WAITING
 
                     elif v.state is self.EXIT_WAITING:
                         if station.is_launch_berth(v.berth_id, v.platform_id):
                             v.state = self.LAUNCH_WAITING
+
+                    self.request_v_status(v.id)
 
         # schedule the next heartbeat
         self.set_s_notification(station, self.current_time + self.HEARTBEAT_INTERVAL)
@@ -163,7 +163,6 @@ class PrtController(BaseController):
 
         # This function only changes the state. The actual movement will be
         # commanded after the sim returns current vehicle status information.
-        self.request_v_status(vehicle.id)
 
         # Exclude vehicles that have reserved berths, but aren't yet in the
         # relevant states.
@@ -432,7 +431,8 @@ class PrtController(BaseController):
         p_status = msg.p_status
         pax = Passenger(p_status.pID, p_status.src_stationID,
                         p_status.dest_stationID, p_status.creation_time)
-        self.manager.add_passenger(pax)
+        station = self.manager.stations[pax.origin_id]
+        station.add_passenger(pax)
 
     def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.cmd.vID]
@@ -482,6 +482,13 @@ class PrtController(BaseController):
             except NoBerthAvailableError: # none available, circle around and try again
                 # plan a path to the ts prior from current (that is, loop around)
                 self.wave_off(vehicle)
+
+            if not vehicle.pax and vehicle.berth_id: # if empty vehicle, and received a berth
+                if vehicle.platform_id == Station.UNLOAD_PLATFORM and \
+                                                       vehicle.berth_id == 0:
+                    # Don't clog up the station entrance with an empty vehicle
+                    vehicle.station.release_berth(vehicle)
+                    self.wave_off(vehicle)
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
@@ -553,9 +560,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                             vehicle.plat_ts = vehicle.ts_id
                             break
         doc.unlink() # facilitates garbage collection
-
-        # keys are station ids, values are lists of passengers originating there
-        self.passengers = defaultdict(list)
 
         # keys are station ids, values are lists of waiting (empty) vehicles at station
         self.idle = defaultdict(list) # idle vehicles
@@ -684,51 +688,53 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         delay calling this function until the vehicle is ready to load passengers.
         Returns a Trip instance whose distance presumes that vehicle is in the
         origin station's launch berth at the start.
-        Raises a NoPaxAvailableError if, surprise!, no passengers are available.
+        Propagates a NoPaxAvailableError if no passengers are available at vehicle's current station.
         """
         assert isinstance(vehicle, Vehicle)
         orig_station = vehicle.station
-        avail_pax = self.passengers[orig_station.id]
-        if avail_pax: # passenger available at vehicle's current station
-            avail_pax.sort(key=attrgetter('origin_time'), reverse=True) # put the oldest pax at the end
-            pax = avail_pax.pop()
-            dest_station = self.stations[pax.dest_id]
-            path_length, path = self.get_path(orig_station.ts_ids[Station.LOAD], dest_station.ts_ids[Station.UNLOAD])
-            dist = path_length - (orig_station.berth_positions[Station.LOAD_PLATFORM][-1] - vehicle.BERTH_GAP)
-            return Trip(dest_station, dist, path, (pax.id,) ) # just one pax for now
-
-        else: # vehicle must either wait, or travel to a different station
-            raise NoPaxAvailableError
+        pax = orig_station.pop_passenger()
+        dest_station = self.stations[pax.dest_id]
+        path_length, path = self.get_path(orig_station.ts_ids[Station.LOAD], dest_station.ts_ids[Station.UNLOAD])
+        dist = path_length - (orig_station.berth_positions[Station.LOAD_PLATFORM][-1] - vehicle.BERTH_GAP)
+        return Trip(dest_station, dist, path, (pax.id,) ) # just one pax for now
 
     def deadhead(self, vehicle, exclude=tuple()):
-        """Go to the nearest station that has waiting passengers. The exclude
+        """Go to a that has waiting passengers and needs more vehicles. The exclude
         parameter is a tuple of Station instances that the vehicle should not
         pick as a destination.
         Returns a Trip instance.
         """
+        assert isinstance(vehicle, Vehicle)
         dists, paths = networkx.single_source_dijkstra(self.graph, vehicle.ts_id)
+        max_dist = max(dists.itervalues())
         closest_dist = float('inf')
         closest_station = None
-        has_pax = False
+        best_station = None
+        best_station_dist = 0
+        best_value = 0
         for station in self.stations.itervalues():
             if station in exclude:
                 continue
             station_ts = station.ts_ids[Station.UNLOAD]
             dist = dists[station_ts]
-            if dist < closest_dist:
-                if self.passengers[station.id]: # prefer that the station have waiting pax
-                    has_pax = True
-                    closest_station = station
-                    closest_dist = dist
-                elif has_pax is False: # only consider stations without passengers if none found with pax
-                    closest_station = station
-                    closest_dist = dist
+            demand = station.get_demand()
+            value = max_dist/dist * demand
+            if value >= best_value:
+                best_station = station
+                best_station_dist = dist
+                best_value = value
+            if dist <= closest_dist:
+                closest_station = station
+                closest_dist = dist
 
-        return Trip(closest_station, closest_dist - vehicle.pos, paths[closest_station.ts_ids[Station.UNLOAD]], tuple())
+        if best_value:
+            my_station = best_station
+            my_dist = best_station_dist
+        else: # no demand anywhere
+            my_station = closest_station
+            my_dist = closest_dist
 
-    def add_passenger(self, pax):
-        assert isinstance(pax, Passenger)
-        self.passengers[pax.origin_id].append(pax)
+        return Trip(my_station, my_dist - vehicle.pos, paths[my_station.ts_ids[Station.UNLOAD]], tuple())
 
     def get_path(self, ts_1, ts_2):
         """Returns a two tuple. The first element is the path length (in meters),
@@ -758,7 +764,10 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                           PrtController.LINE_SPEED, 0, None)
 
         spline = vehicle.traj_solver.target_velocity(knot_initial, knot_final)
-        assert spline.q[-1] <= vehicle.pos + station.onramp_length, (spline.q[-1], vehicle.pos + station.onramp_length)
+        assert spline.q[-1] <= vehicle.pos + station.onramp_length, \
+               "Vehicle's accel and jerk settings are not sufficient to reach line speed before merging with the main line. " + \
+               "Adjust the network or vehicle settings in the scenario's XML file. %.3f, %.3f" \
+               % (spline.q[-1], vehicle.pos + station.onramp_length)
         merge_delay = spline.t[-1] - spline.t[0]
         assert merge_delay > PrtController.HEADWAY
 
@@ -916,6 +925,20 @@ class Station(object):
                                    [None]*len(queue_positions),
                                    [None]*len(load_positions)]
 
+        self.passengers = []
+        self.v_count = 0
+
+    def add_passenger(self, pax):
+        self.passengers.append(pax)
+
+    def pop_passenger(self):
+        """Pops the oldest passenger and returns it. Raises NoPaxAvailableError
+        if none available."""
+        try:
+            return self.passengers.pop(0)
+        except IndexError:
+            raise NoPaxAvailableError
+
     def get_next_berth(self, berth_id, platform_id):
         """Returns a 4-tuple: (berth_pos, berth_id, platform_id, ts_id)
         describing the berth following the arguments. Returns None if there
@@ -963,6 +986,7 @@ class Station(object):
         if choosen_idx is not None:
             self.release_berth(vehicle)
             self.berth_reservations[platform_id][choosen_idx] = vehicle
+            self.v_count += 1
             berth_pos = self.berth_positions[platform_id][choosen_idx]
             plat_ts = self.ts_ids[platform_id+3]  # +3 maps platform_id to ts
             vehicle.berth_pos = berth_pos
@@ -984,6 +1008,8 @@ class Station(object):
                     platform[idx] = None
                     found = True
                     break
+        if found:
+            self.v_count -= 1
 
         vehicle.berth_pos = None
         vehicle.berth_id = None
@@ -1008,12 +1034,20 @@ class Station(object):
             return False
 
     def is_empty(self):
+        """Returns True if no berths that have been reserved by vehicles."""
         if any(any(self.berth_reservations[self.UNLOAD_PLATFORM]),
                any(self.berth_reservations[self.QUEUE_PLATFORM]),
                any(self.berth_reservations[self.LOAD_PLATFORM])):
             return False
         else:
             return True
+
+    def get_demand(self):
+        """Returns a value indicating vehicle demand. Minimum of 0"""
+        if self.v_count == 0: # report at least a little demand if empty of vehicles
+            return max(len(self.passengers), 0.2)
+        else:
+            return max(len(self.passengers), 0)
 
 class Passenger(object):
     def __init__(self, pax_id, origin_id, dest_id, origin_time):
@@ -1209,15 +1243,13 @@ class Vehicle(object):
         finish_time = self.run(dist, path, 0, speed_limit)
         return finish_time
 
-
 class Trip(object):
     def __init__(self, dest_station, dist, path, passengers):
         """A data holding object for vehicle trip info.
         dest_station: the destination Station instance
-        dist: from the beginning of the origin station's ACCEL track seg
-                   to the beginning of the destination station's unload platform
-        path: first element is origin station's ACCEL track seg id,
-              last element is destination station's unload platform ts id.
+        dist: The distance to travel.
+        path: first element is the vehicle's location at the intended beginning
+              of the trip.
         passengers: a tuple of passenger ids.
         """
         self.dest_station = dest_station

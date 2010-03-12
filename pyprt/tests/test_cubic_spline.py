@@ -104,6 +104,15 @@ class  TestCubicSpline(unittest.TestCase):
             [10, 12.0, 15.403124237432849, 19.403124237432849, 22.806248474865697, 24.806248474865697]) # time
         self.polys_coeffs_check(spline)
 
+    def test_coeffs_III(self):
+        """Test from problematic 'real world' data"""
+        spline = CubicSpline(
+            [22577.502046707479, 22587.582886707482], # pos
+            [16.000000000000764, 13.822000000000493], # vel
+            [0.0, -6.6000000000000005], # accel
+            [1990.5708351089697, 1991.2308351089698]) # time
+        self.polys_coeffs_check(spline)
+
     def test_find_intersection(self):
         # spline2 starts behind spline1, but ends in the same place.
         spline1 = CubicSpline( # goes to position: 100, then stays forever

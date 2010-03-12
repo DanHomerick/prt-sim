@@ -201,6 +201,9 @@ class CubicSpline(object):
         The ordering of the coefficients matches that used by scipy.poly1d, the
         highest degree polynomial first. Returns a 4-tuple.
         """
+        # Note: The math in this function is correct, but when t1 and t2 are large,
+        # but close to each other, there may be significant precision loss.
+
         # Find poly coefficients for the poly between each pair of knots.
         right_idx = left_idx+1
         t1 = self.t[left_idx]
@@ -231,13 +234,15 @@ class CubicSpline(object):
         except ZeroDivisionError:
             ca = a1 - j*t1
         try:
-            cv = t1_2/(t1_2 - t2_2)*(v2 - ca*t2) - (t2_2/(t1_2 - t2_2))*(v1 - ca*t1)
+##            cv = (t2_2*(v1-ca*t1) - t1_2*(v2-ca*t2)) / (t2_2 - t1_2) # original form
+            cv = ((t2_2*v1 - t1_2*v2) + ca*t1*t2*(t1-t2)) / ((t2+t1)*(t2-t1)) # carefully crafted to reduce rounding error
             if isnan(cv) or isinf(cv):
                 raise ZeroDivisionError
         except ZeroDivisionError:
             cv = v1 - j*t1_2/2 - ca*t1
         try:
-            cq = t1_3/(t1_3 - t2_3)*(q2 - ca*t2_2/2 - cv*t2) - t2_3/(t1_3 - t2_3)*(q1 - ca*t1_2/2 - cv*t1)
+##            cq = (t2_3*(q1 - ca*t1_2/2 - cv*t1) - t1_3*(q2 - ca*t2_2/2 - cv*t2)) / (t2_3 - t1_3) # original form
+            cq = (t2_3*q1 - t1_3*q2 + t1_2*t2_2*ca/2*(t1-t2) + t1*t2*cv*((t1+t2)*(t1-t2))) / ((t2-t1)*(t2*t1 + t2_2 + t1_2)) # slower, but better numerical precision
             if isnan(cq) or isinf(cq):
                 raise ZeroDivisionError
         except ZeroDivisionError:

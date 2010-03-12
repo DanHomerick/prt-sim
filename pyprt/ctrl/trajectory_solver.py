@@ -657,10 +657,10 @@ class TrajectorySolver(object):
         """Finds the nonnegative roots of a 2nd degree polynomial, using quadratic formula.
         Raises a TrajectoryError if answer would be imaginary."""
         try:
-            tmp = (B**2 - 4*A*C)**(0.5)
+            tmp = (B*B - 4*A*C)**(0.5)
         except ValueError: # negative number cannot be raised to a fractional power
             # Allow that rounding errors may have pushed a zero to be a slight negative.
-            if (B**2 - 4*A*C) > -0.0001:
+            if (B*B - 4*A*C) > -0.0001:
                 tmp = 0
             else:
                 raise TrajectoryError('No real roots')
@@ -675,10 +675,10 @@ class TrajectorySolver(object):
         """Finds the nonpositive roots of a 2nd degree polynomial, using quadratic formula.
         Raises a TrajectoryError if answer would be imaginary."""
         try:
-            tmp = (B**2 - 4*A*C)**(0.5)
+            tmp = (B*B - 4*A*C)**(0.5)
         except ValueError: # negative number cannot be raised to a fractional power
              # Allow that rounding errors may have pushed a zero to be a slight negative.
-            if (B**2 - 4*A*C) > -0.0001:
+            if (B*B - 4*A*C) > -0.0001:
                 tmp = 0
             else:
                 raise TrajectoryError('No real roots')
