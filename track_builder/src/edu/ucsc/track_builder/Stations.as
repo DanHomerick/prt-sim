@@ -110,7 +110,7 @@ package edu.ucsc.track_builder
 			var bypass:TrackSegment;
 			bypass = reverse ? bypassOverlay.segments[1] : bypassOverlay.segments[0]; 	
 
-			if (stationStart != null) {
+			if (stationStart != null && !stationStart.equals(bypassOverlay.getStart())) {
 				bypassOverlay = bypassOverlay.split(stationStart, bypass.getStartOffset(), preview);
 				bypass = reverse ? bypassOverlay.segments[1] : bypassOverlay.segments[0]; 
 			} else {
