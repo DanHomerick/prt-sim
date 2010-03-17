@@ -1,5 +1,5 @@
 #! python
 
-import pyprt.sim.main
+import pyprt
 
-main()
+pyprt.sim.main.main()

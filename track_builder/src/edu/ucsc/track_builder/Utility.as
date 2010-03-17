@@ -114,6 +114,20 @@ package edu.ucsc.track_builder
 			return int_x - int_y;
 		}
 
+		/** Converts a string id to just the leading integer. */
+		public static function toIntegerId(id:String):Number {
+			var parts:Array = id.split("_");
+			return Number(parts[0]);			
+		}
+		
+		public static function compareIds(a:Object, b:Object):int {
+            var aInt:int = Utility.toIntegerId(a.id);
+            var bInt:int = Utility.toIntegerId(b.id);
+            if (aInt > bInt) return -1;
+            else if (aInt == bInt) return 0;
+            else return 1; // (aInt < bInt)
+  		}
+
 		// Looks good. Off by at most a couple meters at high latitude over a full degree (7000 m)
 		public static function unitTest():void {
 			trace("Utility.unitTest!!!!!");

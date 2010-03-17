@@ -5,6 +5,7 @@
 package edu.ucsc.track_builder
 {
 	import com.google.maps.LatLng;
+	import com.google.maps.LatLngBounds;
 	import com.google.maps.MapEvent;
 	import com.google.maps.interfaces.IMap;
 	import com.google.maps.interfaces.IPane;
@@ -51,7 +52,11 @@ package edu.ucsc.track_builder
             
             /* Side effects */
             Undo.pushMicro(Globals.stationPane, Globals.stationPane.removeOverlay, this);
-            Globals.stationPane.addOverlay(this);            
+            Globals.stationPane.addOverlay(this);  
+            
+			// add a reference to the global store.
+			Globals.stations.overlays.push(this);
+			Undo.pushMicro(Globals.stations.overlays, Globals.stations.overlays.pop);         
 		}
 
         public override function getDefaultPane(map:IMap):IPane
@@ -108,7 +113,16 @@ package edu.ucsc.track_builder
         	// ...
         	
         }
-        
+
+		public function getLatLngBounds():LatLngBounds {
+			var bounds:LatLngBounds = new LatLngBounds();
+			for each (var seg:TrackSegment in station.allSegments) {
+				bounds.extend(seg.getStart());
+				bounds.extend(seg.getEnd());
+			}
+			return bounds;
+		}
+
         public function onToolTip(event:ToolTipEvent):void {
         	var txt:String = station.label ? station.label + "\n" : "";
 //        	txt += "Queue:   \t"  + station.queueSlots +

@@ -8,7 +8,7 @@ import networkx
 
 import pyprt.shared.api_pb2 as api
 from pyprt.ctrl.base_controller import BaseController
-from trajectory_solver import TrajectorySolver
+from trajectory_solver import TrajectorySolver, FatalTrajectoryError
 from pyprt.shared.cubic_spline import Knot
 from pyprt.shared.utility import pairwise
 
@@ -143,7 +143,8 @@ class PrtController(BaseController):
                                 # launch as soon as possible, if there
                                 # is another station with passengers waiting.
                                 v.trip = self.manager.deadhead(v, (station,))
-                                v.state = self.LAUNCH_WAITING
+                                if v.trip is not None:
+                                    v.state = self.LAUNCH_WAITING
 
                     elif v.state is self.EXIT_WAITING:
                         if station.is_launch_berth(v.berth_id, v.platform_id):
@@ -707,11 +708,11 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         assert isinstance(vehicle, Vehicle)
         dists, paths = networkx.single_source_dijkstra(self.graph, vehicle.ts_id)
         max_dist = max(dists.itervalues())
-        closest_dist = float('inf')
-        closest_station = None
         best_station = None
         best_station_dist = 0
         best_value = 0
+        closest_station = None
+        closest_dist = float('inf')
         for station in self.stations.itervalues():
             if station in exclude:
                 continue
@@ -723,18 +724,17 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                 best_station = station
                 best_station_dist = dist
                 best_value = value
-            if dist <= closest_dist:
+            if dist < closest_dist:
                 closest_station = station
                 closest_dist = dist
 
-        if best_value:
-            my_station = best_station
-            my_dist = best_station_dist
+        if best_value > 0:
+            return Trip(best_station, best_station_dist - vehicle.pos, paths[best_station.ts_ids[Station.UNLOAD]], tuple())
         else: # no demand anywhere
-            my_station = closest_station
-            my_dist = closest_dist
-
-        return Trip(my_station, my_dist - vehicle.pos, paths[my_station.ts_ids[Station.UNLOAD]], tuple())
+            if vehicle.station is not None: # in a station -- just stay there
+                return None
+            else: # on the main line, really need someplace to go
+                return Trip(closest_station, closest_dist - vehicle.pos, paths[closest_station.ts_ids[Station.UNLOAD]], tuple())
 
     def get_path(self, ts_1, ts_2):
         """Returns a two tuple. The first element is the path length (in meters),
@@ -751,7 +751,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         made, as there is no guarantee that other vehicles won't have entered
         the conflict zone in the interveaning time.
 
-        ASSUMPTION: On vehicles on the network are the same length as vehicle!
+        ASSUMPTION: All vehicles on the network are the same length as vehicle!
         """
         assert isinstance(station, Station)
         assert isinstance(vehicle, Vehicle)
@@ -1047,7 +1047,7 @@ class Station(object):
         if self.v_count == 0: # report at least a little demand if empty of vehicles
             return max(len(self.passengers), 0.2)
         else:
-            return max(len(self.passengers), 0)
+            return max(len(self.passengers), 0) - self.v_count
 
 class Passenger(object):
     def __init__(self, pax_id, origin_id, dest_id, origin_time):
@@ -1168,7 +1168,7 @@ class Vehicle(object):
         # Append a last knot which extends the spline until past the end of the simulation.
         if spline.t[-1] <= self.controller.sim_end_time:
             spline.append(Knot(dist+self.pos+final_speed*(self.controller.sim_end_time+1-final_time),
-                               	final_speed, 0, self.controller.sim_end_time+1))
+                                final_speed, 0, self.controller.sim_end_time+1))
 
         traj_msg = api.CtrlCmdVehicleTrajectory()
         traj_msg.vID = self.id

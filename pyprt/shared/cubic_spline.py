@@ -144,7 +144,7 @@ class CubicSpline(object):
 
         at = jerk*delta_t + a
         vt = jerk*delta_t__2/2 + a*delta_t + v
-        qt = jerk*delta_t__3/6 + a*delta_t__2/2 + v*delta_t + q
+        qt = delta_t__3*(jerk/6) + delta_t__2*(a/2) + v*delta_t + q
 
         return Knot(qt, vt, at, time)
 
@@ -192,6 +192,11 @@ class CubicSpline(object):
                (t.real <= valid_end_time or abs(t.real - valid_end_time) < self.TIME_EPSILON)]
             pts.sort()
             assert abs(self.evaluate(pts[0]).pos - target_pos) < 0.5, (self.evaluate(pts[0]), target_pos) # loose sanity check
+
+        # TODO: use the bisect algo to find roots instead. I don't see a way
+        # around the precision loss that occurs in finding the poly's coefficents
+        # when time is very large. If it worked out to 86400 seconds (24 hours),
+        # it would be okay, but it doesn't.s
 
 ##        assert abs(polyval(self.coeffs[idx], pts[0]) - target_pos) < self.DIST_EPSILON
         return pts[0]

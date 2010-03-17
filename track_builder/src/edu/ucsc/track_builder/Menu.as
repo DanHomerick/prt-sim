@@ -1,9 +1,7 @@
 package edu.ucsc.track_builder
 {
 	import com.google.maps.LatLng;
-	import com.google.maps.LatLngBounds;
 	
-	import edu.ucsc.track_builder.gtf_import.GtfImporter;
 	import edu.ucsc.track_builder.gtf_import.GtfImportError;
 	import edu.ucsc.track_builder.gtf_import.GtfImportUI;
 	
@@ -32,12 +30,7 @@ package edu.ucsc.track_builder
 		public var attrEditor:AttributesEditor;
 		public var autoLevelUI:AutoLevelUI;
 		public var gtfImportUI:GtfImportUI;
-		public var htmlHelp:HTMLLoader;
-		
-		public var selectTrackSegmentMenu:NativeMenu;
-		public var selectTrackOverlayMenu:NativeMenu;
-		public var selectStationMenu:NativeMenu;
-		public var selectVehicleMenu:NativeMenu;
+		public var htmlHelp:HTMLLoader;	
 		
 		public var hideTracks:NativeMenuItem;
 		public var hideStations:NativeMenuItem;
@@ -121,20 +114,18 @@ package edu.ucsc.track_builder
 			
 			/* Select Menu */
 			var selectMenu:NativeMenu = new NativeMenu();
-			selectTrackSegmentMenu = new NativeMenu();
-//			selectTrackOverlayMenu = new NativeMenu();
-			selectStationMenu = new NativeMenu();
-			selectVehicleMenu = new NativeMenu();
-		
-			selectTrackSegmentMenu.addEventListener(Event.DISPLAYING, onSelectTrackSegmentDisplay);
-//			selectTrackOverlayMenu.addEventListener(Event.DISPLAYING, onSelectTrackOverlayDisplay);			
-			selectStationMenu.addEventListener(Event.DISPLAYING, onSelectStationDisplay);
-			selectVehicleMenu.addEventListener(Event.DISPLAYING, onSelectVehicleDisplay);
+			var selectTrackSegment:NativeMenuItem = new NativeMenuItem("Track Segment...");
+			selectTrackSegment.addEventListener(Event.SELECT, onSelectTrackSegment);
 			
-			selectMenu.addSubmenu(selectTrackSegmentMenu, "TrackSegment");			
-//			selectMenu.addSubmenu(selectTrackOverlayMenu, "TrackOverlay");
-			selectMenu.addSubmenu(selectStationMenu, "Station");
-			selectMenu.addSubmenu(selectVehicleMenu, "Vehicle");
+			var selectStation:NativeMenuItem = new NativeMenuItem("Station...");
+			selectStation.addEventListener(Event.SELECT, onSelectStation);
+			
+			var selectVehicle:NativeMenuItem = new NativeMenuItem("Vehicle...");
+			selectVehicle.addEventListener(Event.SELECT, onSelectVehicle);
+						
+			selectMenu.addItem(selectTrackSegment);
+			selectMenu.addItem(selectStation);
+			selectMenu.addItem(selectVehicle);			
 			baseMenu.addSubmenu(selectMenu, "Select");
 			
 			/* View Menu */
@@ -587,47 +578,38 @@ package edu.ucsc.track_builder
 			}			
 		}
 
-		// TODO: Replace with a prompt with a Numeric Stepper. This doesn't scale.
-		public function onSelectTrackSegmentDisplay(event:Event):void {
-			selectTrackSegmentMenu.removeAllItems();
-			for each (var track:TrackSegment in Globals.tracks.segments) {
-				var item:NativeMenuItem = new NativeMenuItem(track.id);
-				item.addEventListener(Event.SELECT, onSelectTrackSegment); 
-				selectTrackSegmentMenu.addItem(item);
-			}
-		}
-
 		public function onSelectTrackSegment(event:Event):void {
-			var overlay:TrackOverlay = Globals.tracks.getTrackOverlay(event.target.label);
-			// Change the location and zoom to center on the piece
-			var bounds:LatLngBounds = overlay.getLatLngBounds();
-			Globals.map.setCenter(bounds.getCenter());
-			var zoom:Number = Globals.map.getBoundsZoomLevel(bounds);
-			Globals.map.setZoom(zoom);
-			overlay.onSelect(event);
-		}
-
-		// TODO: Replace with a prompt with a Numeric Stepper. This doesn't scale.
-		public function onSelectTrackOverlayDisplay(event:Event):void {
-		}
-
-		public function onSelectStationDisplay(event:Event):void {
-			selectStationMenu.removeAllItems();
-			for each (var sOverlay:StationOverlay in Globals.stations.overlays) {
-				var item:NativeMenuItem = new NativeMenuItem(sOverlay.station.id);
-				item.addEventListener(Event.SELECT, sOverlay.onSelect);
-				selectStationMenu.addItem(item);
-			}	
-		}
-
-		// TODO: Replace with a prompt with a Numeric Stepper. This doesn't scale.
-		public function onSelectVehicleDisplay(event:Event):void {
-			selectVehicleMenu.removeAllItems();
-			for each (var vOverlay:VehicleOverlay in Globals.vehicles.overlays) {
-				var item:NativeMenuItem = new NativeMenuItem(vOverlay.vehicle.id);
-				item.addEventListener(Event.SELECT, vOverlay.onSelect);
-				selectVehicleMenu.addItem(item);
+			var trackCount:int = 0;
+			for (var key:String in Globals.tracks.segments) {
+				trackCount += 1;
 			}
+			if (trackCount > 0) { 
+				var selectTrackGui:SelectTrack = new SelectTrack();
+				PopUpManager.addPopUp(selectTrackGui, Globals.map, true);
+		        PopUpManager.centerPopUp(selectTrackGui);
+		    } else {
+		    	Alert.show("No Track segments created.");
+		    }
+		}
+
+		public function onSelectStation(event:Event):void {
+			if (Globals.stations.stations.length > 0) {					
+				var selectStationGui:SelectStation = new SelectStation();
+				PopUpManager.addPopUp(selectStationGui, Globals.map, true);
+		        PopUpManager.centerPopUp(selectStationGui);
+		    } else {
+		    	Alert.show("No Stations created.");
+		    }				
+		}
+
+		public function onSelectVehicle(event:Event):void {
+			if (Globals.vehicles.vehicles.length > 0) {
+				var selectVehicleGui:SelectVehicle = new SelectVehicle();
+				PopUpManager.addPopUp(selectVehicleGui, Globals.map, true);
+		        PopUpManager.centerPopUp(selectVehicleGui);
+		    } else {
+		    	Alert.show("No vehicles created.");
+		    }		        
 		}
 		
 //		public function onShowKml(event:Event):void {

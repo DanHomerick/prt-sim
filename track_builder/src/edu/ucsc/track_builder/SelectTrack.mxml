@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="600" height="300"
+	 			title="Select Track..."	 			
+	            showCloseButton="true"
+	            initialize="initData()"
+	            close="PopUpManager.removePopUp(this);" >
+
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ListEvent;
+			import mx.controls.DataGrid;
+			import com.google.maps.LatLngBounds;
+			import mx.collections.SortField;
+			import mx.collections.Sort;
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			import edu.ucsc.track_builder.Globals;
+			
+			[Bindable]
+			public var tracksArray:ArrayCollection;
+			
+			public function initData():void {
+				tracksArray = new ArrayCollection();
+				for each (var seg:TrackSegment in Globals.tracks.segments) { 
+					tracksArray.addItem({id:seg.id,										 
+					                     length:Utility.truncateTo(seg.length, 1),
+					                     bidir:true ? seg.parallel_ids.length > 0 : false,
+					                     connected:true ? seg.prev_ids.length > 0 && seg.next_ids.length > 0 : false,
+					                     grade:Utility.truncateTo(seg.getGrade(), 2),
+					                     label:seg.label,
+					                     data:seg});
+				}
+				var sort:Sort = new Sort();
+				var idSortField:SortField = new SortField("id")
+				idSortField.compareFunction = Utility.compareIds;					                           
+				sort.fields = [idSortField]
+				tracksArray.sort = sort
+				tracksArray.refresh();
+			}
+			
+			public function onClick(event:ListEvent):void {
+				try {
+					var overlay:TrackOverlay = Globals.tracks.getTrackOverlay(tracksArray[event.rowIndex].id);
+					// Change the location and zoom to center on the piece
+					var bounds:LatLngBounds = overlay.getLatLngBounds();
+					Globals.map.setCenter(bounds.getCenter());
+					var zoom:Number = Globals.map.getBoundsZoomLevel(bounds);
+					Globals.map.setZoom(zoom);
+					overlay.onSelect(null);
+				} catch (e:TypeError) {
+					trace(e);
+				}
+			}
+			
+		]]>
+	</mx:Script>
+
+	<mx:DataGrid width="100%" height="100%" dataProvider="{this.tracksArray}" itemClick="this.onClick(event)" >
+        <mx:columns>
+            <mx:DataGridColumn dataField="id" headerText="ID" width="200" sortCompareFunction="Utility.compareIds"/>  
+            <mx:DataGridColumn dataField="length" headerText="Length" width="80"/>
+            <mx:DataGridColumn dataField="bidir" headerText="Bidirectional" width="50"/>
+            <mx:DataGridColumn dataField="connected" headerText="Connected" width="50"/>
+            <mx:DataGridColumn dataField="grade" headerText="Grade" width="50"/>
+            <mx:DataGridColumn dataField="label" headerText="Label" width="100"/>            
+        </mx:columns>
+	</mx:DataGrid>
+	
+	
+		
+	
+</mx:TitleWindow>
