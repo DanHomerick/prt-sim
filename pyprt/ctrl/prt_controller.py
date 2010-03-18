@@ -145,6 +145,9 @@ class PrtController(BaseController):
                                 v.trip = self.manager.deadhead(v, (station,))
                                 if v.trip is not None:
                                     v.state = self.LAUNCH_WAITING
+                                    self.log.info("%5.3f Vehicle %d deadheading from station %d. Going to station %d.",
+                                                  self.current_time, v.id, station.id, v.trip.dest_station.id)
+
 
                     elif v.state is self.EXIT_WAITING:
                         if station.is_launch_berth(v.berth_id, v.platform_id):
@@ -214,31 +217,6 @@ class PrtController(BaseController):
 
         # ... wait for the v_status update from the sim to do the movement
         vehicle._advance_begun = False
-
-    def wave_off(self, vehicle):
-        """Sends a vehicle around in a loop so as to come back and try entering the
-        station later, or sends it to a different station if empty."""
-        if vehicle.trip.passengers:
-            prev_tses = self.manager.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of choice ts
-            best_loop_length, best_loop_path = float('inf'), None
-            for prev_ts in prev_tses:
-                loop_length, loop_path = self.manager.get_path(vehicle.ts_id, prev_ts)
-                if loop_length < best_loop_length:
-                    best_loop_length = loop_length
-                    best_loop_path = loop_path
-
-            # concatenate that path with a path to the station's unload
-            entry_length, entry_path = self.manager.get_path(prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
-
-            dist = best_loop_length + entry_length - vehicle.pos # vehicle.pos should be zero, but this code may get moved...
-            path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
-
-            vehicle.run(dist, path, vehicle.trip.dest_station.SPEED_LIMIT - 0.1, self.LINE_SPEED, clear=True)
-
-        else:
-            old_dest_station = vehicle.trip.dest_station
-            vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest_station,))
-            vehicle.run_trip()
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
@@ -312,6 +290,9 @@ class PrtController(BaseController):
                     vehicle.station = station
                     vehicle.trip = self.manager.deadhead(vehicle)
                     vehicle.run_trip()
+                    self.log.info("%5.3f Vehicle %d deadheading to station %d.",
+                                  self.current_time, vehicle.id, vehicle.trip.dest_station.id)
+
 
         # Make a second pass through the vehicles, handling the remaining vehicles.
         for vehicle in v_list:
@@ -334,7 +315,11 @@ class PrtController(BaseController):
                     station.request_berth(vehicle, Station.UNLOAD_PLATFORM) # raises an exception if fails.
                     vehicle.run_trip()
                 except NoBerthAvailableError:
-                    self.wave_off(vehicle)
+                    old_dest = vehicle.trip.dest_station
+                    vehicle.trip = self.manager.wave_off(vehicle)
+                    vehicle.run_trip()
+                    self.log.info("%5.3f Empty vehicle %d waved off from dest_station %d because NoBerthAvailable. Going to station %d instead.",
+                                  self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
             # Not inside a station's boundaries, or outbound from a station
             else:
@@ -475,21 +460,29 @@ class PrtController(BaseController):
         # TODO: Try to move the decision process closer to the switch to improve efficiency.
         # Vehicle needs to make choice to enter station or bypass.
         # Note: Some track networks will have one station's ON_RAMP_II lead straight into
-        #       another station's "choice" track seg.
+        #       another station's "choice" track seg, thus LAUNCHING is a viable state.
         elif vehicle.state in (self.RUNNING, self.LAUNCHING) and msg.trackID == vehicle.trip.dest_station.choice:
             try:   # Reserve an unload berth
                 vehicle.trip.dest_station.request_berth(vehicle, Station.UNLOAD_PLATFORM)
                 assert vehicle.berth_id is not None
             except NoBerthAvailableError: # none available, circle around and try again
                 # plan a path to the ts prior from current (that is, loop around)
-                self.wave_off(vehicle)
+                old_dest = vehicle.trip.dest_station
+                vehicle.trip = self.manager.wave_off(vehicle)
+                vehicle.run_trip()
+                self.log.info("%5.3f Vehicle %d waved off from dest_station %d because NoBerthAvailable. Going to station %d instead.",
+                               self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
             if not vehicle.pax and vehicle.berth_id: # if empty vehicle, and received a berth
                 if vehicle.platform_id == Station.UNLOAD_PLATFORM and \
                                                        vehicle.berth_id == 0:
                     # Don't clog up the station entrance with an empty vehicle
-                    vehicle.station.release_berth(vehicle)
-                    self.wave_off(vehicle)
+                    vehicle.trip.dest_station.release_berth(vehicle)
+                    vehicle.trip = self.manager.deadhead(vehicle, exclude=tuple(vehicle.trip.dest_station))
+                    vehicle.run_trip()
+                    self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d to avoid clogging entrance berth. Going to station %d instead.",
+                                  self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
+
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
@@ -735,6 +728,32 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                 return None
             else: # on the main line, really need someplace to go
                 return Trip(closest_station, closest_dist - vehicle.pos, paths[closest_station.ts_ids[Station.UNLOAD]], tuple())
+
+    def wave_off(self, vehicle):
+        """Sends a vehicle around in a loop so as to come back and try entering the
+        station later, or sends it to a different station if empty."""
+        # vehicle has passengers, so must go to this particular station
+        if vehicle.trip.passengers:
+            prev_tses = self.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of choice ts
+            best_loop_length, best_loop_path = float('inf'), None
+            for prev_ts in prev_tses:
+                loop_length, loop_path = self.get_path(vehicle.ts_id, prev_ts)
+                if loop_length < best_loop_length:
+                    best_prev_ts = prev_ts
+                    best_loop_length = loop_length
+                    best_loop_path = loop_path
+
+            # concatenate that path with a path to the station's unload
+            entry_length, entry_path = self.get_path(best_prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
+
+            dist = best_loop_length + entry_length - vehicle.pos # vehicle.pos should be zero, but this code may get moved...
+            path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
+
+            return Trip(vehicle.trip.dest_station, dist, path, vehicle.trip.passengers)
+
+        # Vehicle is empty, so any station will do.
+        else:
+            return self.deadhead(vehicle, exclude=(vehicle.trip.dest_station,))
 
     def get_path(self, ts_1, ts_2):
         """Returns a two tuple. The first element is the path length (in meters),
@@ -1252,6 +1271,7 @@ class Trip(object):
               of the trip.
         passengers: a tuple of passenger ids.
         """
+        assert isinstance(dest_station, Station)
         self.dest_station = dest_station
         self.dist = dist
         self.path = path
