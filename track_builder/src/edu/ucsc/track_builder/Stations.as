@@ -398,7 +398,7 @@ package edu.ucsc.track_builder
 							max_speed="3.5"
 							bidirectional="0"
 							lateral_offset="10"
-							accel_length="40"
+							accel_length="42.5"
 							slot_length="5"
 							queue_slots="5"
 							unload_slots="5"

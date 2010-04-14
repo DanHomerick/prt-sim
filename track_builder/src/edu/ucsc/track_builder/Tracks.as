@@ -558,7 +558,7 @@ package edu.ucsc.track_builder
 			
 			// remove vehicles on the track 
 			for each (var vo:VehicleOverlay in Globals.vehicles.overlays) {
-				if (vo.parentOverlay == overlay) {
+				if (vo.getTrackOverlay() == overlay) {
 					// Surprised that I can alter a vector as I iterate through it, but seems to work fine.
 					Globals.vehicles.removeVehicleOverlay(vo);
 				}
@@ -872,6 +872,68 @@ package edu.ucsc.track_builder
 				bounds.union(overlay.getLatLngBounds());
 			}
 			return bounds;
+		}
+		
+		public function validate():Array {
+			var errors:Array = new Array();
+			var track:TrackSegment;					
+			/* TODO: Push some of the checks down to the Track class */	
+			/* Do checks on individual segments */
+			for each (track in this.segments) {
+				if (isNaN(track.startElev)) {
+					errors.push("BUG:" + track.id +  " start elevation is invalid.");					
+				}
+						
+				if (isNaN(track.endElev)) {
+					errors.push("BUG:" + track.id +  " end elevation is invalid.");
+				}
+				
+				if (track.prev_ids.length == 0) {
+					errors.push("The start point for " + track.id + " has no connections."); 
+				}
+				if (track.next_ids.length == 0) {
+					errors.push("The end point for " + track.id + " has no connections.");
+				}
+				if (isNaN(track.length)) {
+					errors.push("BUG: " + track.id + "has NaN for it's length.");
+				}
+			} 
+
+			/* Check that the connections are mutual, and that elevations match on connected segments */
+			var next:TrackSegment;
+			var prev:TrackSegment;			
+			for each (track in Globals.tracks.segments) {				
+				for each (var nextId:String in track.next_ids) {
+					next = Globals.tracks.getTrackSegment(nextId);
+					if (next == null) {
+						errors.push("BUG:" + track.id + " has a 'next' connection to " + nextId + ", but that segment does not exist.");
+						continue;
+					}				
+					if (track.endElev.toFixed(1) != next.startElev.toFixed(1)) {
+						errors.push("BUG:" + track.id + " end elevation: " + track.endElev.toFixed(1) + " does not match " + nextId + " start elevation: " + next.startElev.toFixed(1));
+						
+					}
+					if (next.prev_ids.indexOf(track.id) == -1) {
+						errors.push("BUG:" + track.id + " has a 'next' connection to " + nextId + " but the corresponding 'prev' id is missing.");
+					}
+				}
+				
+				for each (var prevId:String in track.prev_ids) {
+					prev = Globals.tracks.getTrackSegment(prevId);
+					if (prev == null) {
+						errors.push("BUG:" + track.id + " has a 'prev' connection to " + prevId + ", but that segment does not exist.");
+						continue;
+					}
+					if (track.startElev.toFixed(1) != prev.endElev.toFixed(1)) {
+						errors.push("BUG:" + track.id + " start elevation: " + track.startElev.toFixed(1) + " does not match " + prevId + " end elevation: " + prev.endElev.toFixed(1));
+					}
+					if (prev.next_ids.indexOf(track.id) == -1) {
+						errors.push("BUG:" + track.id + " has a 'prev' connection to " + prevId + " but the corresponding 'next' id is missing.");
+					}
+					
+				}				
+			}
+			return errors;
 		}
 					
 	}

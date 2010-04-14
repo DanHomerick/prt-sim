@@ -86,6 +86,17 @@ package edu.ucsc.track_builder
 			var vOverlay:VehicleOverlay = new VehicleOverlay(vehicle, tOverlay, preview);		
 		}
 		
+		public function getVehicleOverlaysFromTrackOverlay(t_overlay:TrackOverlay):Vector.<VehicleOverlay> {
+			// Linear search over all VehicleOverlays
+			var results:Vector.<VehicleOverlay> = new Vector.<VehicleOverlay>(); 
+			for each (var v_overlay:VehicleOverlay in this.overlays) {
+				if (v_overlay.getTrackOverlay() == t_overlay) {
+					 results.push(v_overlay);
+				}
+			}
+			return results;
+		}
+		
 		public function toDataXML():XML {
 			var xml:XML = <Vehicles/>
 			for each (var v:Vehicle in vehicles) {
@@ -157,6 +168,18 @@ package edu.ucsc.track_builder
 			function removeVO (item:VehicleOverlay, index:int, vector:Vector.<VehicleOverlay>):Boolean {return item != vo;};
 			Undo.assign(this, 'overlays', overlays);
 			overlays = overlays.filter(removeVO);
+		}
+		
+		public function validate():Array {
+			return new Array();
+//			/* Check that vehicles don't overlap. Doing it brute force, so there's O(n^2) comparisons.
+//			Optimization note: segregate vehicles by their location, then compare within locations. Would need to
+//			                   handle vehicles that staddle location boundary (or boundaries, for long vehicles) */
+//			for (var v:Vehicle in this.vehicles) {
+//				for (var w:Vehicle in this.vehicles) {
+//					if v.location == w.location:
+//						if v.model.length
+//			}	
 		}
 	}
 }

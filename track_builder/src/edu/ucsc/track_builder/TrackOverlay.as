@@ -522,13 +522,53 @@ package edu.ucsc.track_builder
 		}
 		
 		public function split(latlng:LatLng, elevOffset:Number, preview_:Boolean):TrackOverlay {	
-			var newSegs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
+			var newOverlaySegs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
 			
-			for each (var seg:TrackSegment in segments) {
-				newSegs.push(seg.split(latlng, elevOffset, preview_));
+			// Forward seg
+			newOverlaySegs.push(segments[0].split(latlng, elevOffset, preview_));
+			
+			// Reverse seg
+			if (segments.length > 1) {
+				var newReverseSeg:TrackSegment = segments[1].split(latlng, elevOffset, preview_);
+				newOverlaySegs.push(segments[1]); // The new overlay gets the existing (now trimmed) reverse seg
+				segments[1] = newReverseSeg;      // The old overlay gets the newly created reverse seg
 			}
-//			update(); // force a dislay update
-			return new TrackOverlay(newSegs);
+
+			var newTrackOverlay:TrackOverlay = new TrackOverlay(newOverlaySegs); 
+
+			// Update Vehicles on 'this' with new positions and locations,
+			// Update the VehicleOverlays with the new TrackOverlay
+			// Forward direction first 
+			var v_overlays:Vector.<VehicleOverlay> = Globals.vehicles.getVehicleOverlaysFromTrackOverlay(this);
+			var newSeg:TrackSegment = newOverlaySegs[0];
+			var trimmedSeg:TrackSegment = segments[0];			 
+			for each (var v_overlay:VehicleOverlay in v_overlays) {
+				var vehicle:Vehicle = v_overlay.vehicle;					
+				if (vehicle.location == trimmedSeg && vehicle.position > trimmedSeg.h_length) {
+					Undo.assign(vehicle, 'position', vehicle.position);
+					Undo.assign(vehicle, 'location', vehicle.location);
+					vehicle.position -= trimmedSeg.h_length;
+					vehicle.location = newSeg;
+					v_overlay.setTrackOverlay(newTrackOverlay);
+				}
+			}
+			
+			// Reverse direction
+			if (segments.length > 1) {
+				newSeg = segments[1];
+				trimmedSeg = newOverlaySegs[1];
+				for each (v_overlay in v_overlays) {
+					vehicle = v_overlay.vehicle;					
+					if (vehicle.location == trimmedSeg && vehicle.position > trimmedSeg.h_length) {
+						Undo.assign(vehicle, 'position', vehicle.position);
+						Undo.assign(vehicle, 'location', vehicle.location);
+						vehicle.position -= trimmedSeg.h_length;
+						vehicle.location = newSeg;
+					}
+				}		
+			}
+
+			return newTrackOverlay;
 		}
 
 		/** Returns the latlng of position, where position is measured as meters along the

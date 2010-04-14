@@ -20,7 +20,7 @@ package edu.ucsc.track_builder
 	public class VehicleOverlay extends OverlayBase
 	{
 		public var vehicle:Vehicle;
-		public var parentOverlay:TrackOverlay;
+		protected var trackOverlay:TrackOverlay;
 
 		public static var v_hr_width:Number; // high res
 		public static var v_hr_length:Number; // high res
@@ -36,11 +36,11 @@ package edu.ucsc.track_builder
 		private var icon:Shape;
 		
 		/** Constructor */
-		public function VehicleOverlay(vehicle:Vehicle, parentOverlay:TrackOverlay, preview:Boolean=false)
+		public function VehicleOverlay(vehicle:Vehicle, trackOverlay:TrackOverlay, preview:Boolean=false)
 		{	
 			super();
 			this.vehicle = vehicle;
-			this.parentOverlay = parentOverlay;
+			this.trackOverlay = trackOverlay;
 			
             addEventListener(MapEvent.OVERLAY_ADDED, onOverlayAdded, false, 0, true); // weak_ref=true
             addEventListener(MapEvent.OVERLAY_REMOVED, onOverlayRemoved, false, 0, true);
@@ -63,6 +63,15 @@ package edu.ucsc.track_builder
 				Globals.vehicles.overlays.push(this);
 			}
 		}	
+
+		public function getTrackOverlay():TrackOverlay {
+			return trackOverlay;
+		}
+
+		public function setTrackOverlay(trackOverlay:TrackOverlay):void {
+			Undo.pushMicro(this, this.setTrackOverlay, this.trackOverlay);
+			this.trackOverlay = trackOverlay;
+		}
 
 		public function getContextMenu():NativeMenu {
 			var menu:NativeMenu = new NativeMenu();
