@@ -52,6 +52,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     COLLISION = 3
     ENTER_BERTH = 4
     EXIT_BERTH = 5
+    NOTIFY_POSITION = 6
 
     # A default view for vehicles.
     traits_view =  ui.View('ID', 'length',
@@ -174,6 +175,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self._spline = cspline.CubicSpline([position, position+vel*sim_end_time],
                                            [vel, vel],
                                            [0,0],
+                                           [0],
                                            [Sim.now(), sim_end_time])
 
         self._actions_queue = [] # contains 3-tuples: (time, action, data)
@@ -354,9 +356,12 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         doesn't require knowledge of the vehicle's true state. The other
         coefficients are checked against "reality" and the discrepencies are
         logged for debugging purposes."""
-        t_initial = spline_msg.times[0]
-        self._spline.clear(t_initial)
+        t_initial = max(spline_msg.times[0], Sim.now())
+        self._spline = self._spline.copy_left(t_initial)
         for poly_msg, (t_initial, t_final) in zip(spline_msg.polys, pairwise(spline_msg.times)):
+            if t_final <= Sim.now(): # can occur if the spline_msg has some old info
+                continue
+            t_initial = max(t_initial, Sim.now())
             last_knot = cspline.Knot(self._spline.q[-1], self._spline.v[-1], self._spline.a[-1], self._spline.t[-1])
 
             # calculate forward using only the duration and jerk
@@ -384,7 +389,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 ##                new_knot.accel = 0
 ##                # TODO: Send NOTIFY_STOPPED_MSG
 
-            self._spline.append(new_knot)
+            self._spline.append(new_knot, jerk)
 
             if __debug__:
                 errors = [received-true for (received, true) in zip(reversed(poly_msg.coeffs), reversed(self._spline.coeffs[-1]))]
@@ -403,7 +408,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             warnings.warn("Spline extended to sim_end_time by simulator.")
             vel = self._spline.v[-1]
             pos = self._spline.q[-1] + vel*(sim_end_time-self._spline.t[-1])
-            self._spline.append(cspline.Knot(pos, vel, 0, sim_end_time))
+            self._spline.append(cspline.Knot(pos, vel, 0, sim_end_time), 0)
 
 ##            ## DEBUG
 ##            from pyprt.shared.cspline_plotter import CSplinePlotter
@@ -433,6 +438,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         else:
             return True
 
+    def notify_position(self, ctrl_setnotify_msg, msg_id):
+        t = self._spline.get_time_from_dist(ctrl_setnotify_msg.pos - self.pos, Sim.now())
+        assert t is not None and t >= Sim.now()
+        heapq.heappush(self._actions_queue, (t, self.NOTIFY_POSITION, (ctrl_setnotify_msg, msg_id)))
+
     def ctrl_loop(self):
         self._traverse()
         self._collision_check()
@@ -448,11 +458,16 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             while self.interrupted():
                 # Note: If more than one interruption occurs, the older interruption
                 #       never gets handled. So, this needs to handle the interruption
-                #       in the most generic way.
+                #       in the most generic way. Assume trajectory was changed.
+                old_actions_queue = self._actions_queue
                 self._actions_queue = []
                 self._traverse()
                 self._collision_check()
                 self._add_tail_release()
+
+                for time, action, data in old_actions_queue:
+                    if action == self.NOTIFY_POSITION:
+                        self.notify_position(data[0], data[1])
 
                 delay = self._actions_queue[0][0] - Sim.now()
                 assert delay >= 0, delay
@@ -470,11 +485,15 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
             elif action == self.COLLISION:
                 self._collision_handler(data)
+
+            elif action == self.NOTIFY_POSITION:
+                self._notify_position_handler(*data) # data is a 2-tuple
+
             else:
                 raise Exception("Unknown action type: %d for vehicle %d" % (action, self.ID))
 
     def crash(self, other_vehicle):
-        raise UnimplementedError
+        raise NotImplementedError
 
     def _traverse(self):
         # Queue up next TrackSegment boundary
@@ -574,6 +593,17 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
 #        FIXME: Do SOMETHING with the vehicles afterward. Also, notify GUI of crash.
         warnings.warn("Handling of vehicles after a crash is unimplemented.")
+
+    def _notify_position_handler(self, ctrl_setnotify_msg, msg_id):
+        """Sends an api.SimNotifyPosition message."""
+        assert isinstance(msg_id, int)
+        assert isinstance(ctrl_setnotify_msg, api.CtrlSetnotifyVehiclePosition)
+        assert utility.dist_eql(self.pos, ctrl_setnotify_msg.pos)
+        sim_msg = api.SimNotifyVehiclePosition()
+        sim_msg.msgID = ctrl_setnotify_msg.msg_id
+        sim_msg.time = Sim.now()
+        self.fill_VehicleStatus(sim_msg.v_status)
+        common.interface.send(api.SIM_NOTIFY_VEHICLE_POSITION, sim_msg)
 
     def _collision_check(self):
         lv, dist = self.find_leading_vehicle(current_loc_only=True)

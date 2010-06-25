@@ -1,6 +1,7 @@
 package edu.ucsc.track_builder
 {
 	import com.google.maps.LatLng;
+	import com.google.maps.MapType;
 	
 	import edu.ucsc.track_builder.gtf_import.GtfImportError;
 	import edu.ucsc.track_builder.gtf_import.GtfImportUI;
@@ -253,9 +254,13 @@ package edu.ucsc.track_builder
 			var debugFindDuplicateOverlays:NativeMenuItem = new NativeMenuItem("Find Duplicate Overlays");
 			debugFindDuplicateOverlays.addEventListener(Event.SELECT, onFindDuplicateOverlays);
 				
+			var debugZoomIn:NativeMenuItem = new NativeMenuItem("Zoom In");
+			debugZoomIn.addEventListener(Event.SELECT, onZoomIn);
+				
 //			debugMenu.addItem(debugShowKml);
 			debugMenu.addItem(debugShowXml);
 			debugMenu.addItem(debugFindDuplicateOverlays);
+			debugMenu.addItem(debugZoomIn);
 			baseMenu.addSubmenu(debugMenu, "Debug");
 			
 			/* Help Menu */
@@ -652,6 +657,18 @@ package edu.ucsc.track_builder
 				
 			}
 			trace("Done.");
+		}
+
+		public function onZoomIn(event:Event):void {
+			var curr_max_zoom:Number = Globals.map.getMaxZoomLevel(Globals.map.getCurrentMapType());					
+			if (Globals.map.getZoom() == curr_max_zoom) {
+				if (Globals.map.getMaxZoomLevel(MapType.SATELLITE_MAP_TYPE) > curr_max_zoom) {
+					Globals.map.setMapType(MapType.SATELLITE_MAP_TYPE); // TODO: Need to update the toolbar, or change the MapType via the toolbar.
+					Globals.map.zoomIn();
+				}
+			} else {
+				Globals.map.zoomIn();
+			}
 		}
 
 		public function onDoc(event:Event):void {

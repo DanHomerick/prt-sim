@@ -398,7 +398,7 @@ class MainWindow(wx.Frame):
             total_wait = 0
             max_wait = 0
             for stat in common.station_list: # collected in 'seconds'
-                for pax in stat.passengers:
+                for pax in stat._passengers:
                     pax_waiting += 1
                     pax_wait = pax.wait_time # don't force it to calc the wait time twice
                     total_wait += pax_wait
@@ -753,9 +753,9 @@ class Visualizer(object):
 #            print "Point:", point
             stat = common.station_list[select]
             stat_name = stat.label
-            num_pax = len(stat.passengers)
+            num_pax = len(stat._passengers)
             now = SimPy.now()
-            wait_times = [pax.wait_time for pax in stat.passengers]
+            wait_times = [pax.wait_time for pax in stat._passengers]
             if wait_times:
                 max_wait = utility.sec_to_hms(max(wait_times))
                 avg_wait = utility.sec_to_hms(sum(wait_times) / len(wait_times))
@@ -1109,8 +1109,8 @@ class VisDataCollector(SimPy.Process):
         while True:
             changed = False
             for idx, stat in enumerate(common.station_list):
-                if len(stat.passengers) != data[idx]:
-                    data[idx] = len(stat.passengers)
+                if len(stat._passengers) != data[idx]:
+                    data[idx] = len(stat._passengers)
                     changed = True
             if changed:
                 self.queue.put( data )

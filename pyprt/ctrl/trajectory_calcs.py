@@ -257,7 +257,82 @@ def prob5():
 #    pprint(ans)
 #    print ans
 
+def prob6():
+    """Finding a trajectory that targets a final postition, velocity, accel, and TIME.
+    Vary max velocity to achieve this."""
 
+    ax, an, jx, jn, vx, a0, a7, v0, v7, q0, q7, t0, t7 = symbols(['ax','an','jx','jn','vx','a0','a7','v0','v7','q0','q7', 't0', 't7'], real=True)
+
+    # Accel
+    t01 = (ax-a0)/jx
+    v01 = powsimp(expand(jx*t01**2/2 + a0*t01))
+    v1 =  v0 + v01
+    q01 = powsimp(expand(jx*t01**3/6 + a0*t01**2/2 + v0*t01))
+
+    a2 = ax
+    t23 = -a2/jn
+    v23 = powsimp(expand(jn*t23**2/2 + a2*t23))
+    v2 =  vx - v23
+    q23 = powsimp(expand(jn*t23**3/6 + a2*t23**2/2 + v2*t23))
+
+    v12 = powsimp(expand(v2 - v1))
+    a1 = ax
+    t12 = v12/a1
+    q12 = powsimp(expand(a1*t12**2/2 + v1*t12)) # jerk is 0
+
+    q03 = powsimp(expand(q01 + q12 + q23))
+    t03 = powsimp(expand(t01 + t12 + t23))
+
+    # Decel
+    a6 = an
+    a67 = a7 - a6
+    t67 = powsimp(expand(a67/jx))
+    v67 = powsimp(expand(jx*t67**2/2 + a6*t67))
+    v6 = v7 - v67
+    q67 = powsimp(expand(jx*t67**3/6 + a6*t67**2/2 + v6*t67))
+
+    a4 = 0
+    a5 = an
+    a45 = a5 - a4
+    t45 = a45/jn
+    v45 = powsimp(expand(jn*t45**2/2 + a4*t45)) # a4 is 0
+    v5 = vx + v45
+    q45 = powsimp(expand(jn*t45**3/6 + a4*t45**2/2 + vx*t45)) # a4 is 0
+
+    v56 = powsimp(expand(v6 - v5))
+    t56 = v56/an
+    q56 = powsimp(expand(an*t56**2/2 + v5*t56)) # 0 jerk
+
+    q47 = powsimp(expand(q45 + q56 + q67))
+    t47 = powsimp(expand(t45 + t56 + t67))
+
+    # Cruise
+    q34 = powsimp(expand(q7 - q0 - q03 - q47))
+    t34 = powsimp(expand(t7 - t0 - t03 - t47))
+#    answer = solve(vx*t34/q34 - 1, vx)
+#    pprint(answer)
+
+#    pprint(together(expand(vx*t34/q34 - 1)))
+    print "+++++++++++++++"
+    print "S1:"
+    s1 = together(expand(vx*t34/q34 - 1))
+    print s1
+    print "++++++++++++++"
+    print "S2:"
+    s2 = apart(s1, jx)
+    pprint(s2)
+    print "++++++++++++++"
+    print "S3:"
+    s3 = apart(s2, jn)
+    pprint(s3)
+    print "++++++++++++++"
+    print "S4:"
+    s4 = apart(s3, ax)
+    pprint(s4)
+    print "++++++++++++++"
+    print "S5:"
+    s5 = apart(s4, ax)
+    pprint(s5)
 
 if __name__ == '__main__':
-    prob5()
+    prob6()

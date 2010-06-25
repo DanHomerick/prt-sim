@@ -260,7 +260,10 @@ class BaseController(object):
         """May be overridden by a subclass. Using a dictionary containing
         message handling functions is merely a suggested approach.
         Note that this implementation reuses the message objects, and is not
-        reentrant."""
+        reentrant.
+        Updates self.current_time with the new (floating point) time whenever
+        a message is received that contains time stamp info.
+        """
         msg = self.messages[msg_type]
         msg.ParseFromString(msg_str) # clear old data, and deserialize string into msg
         self.log_rcvd_msg(msg_type, msgID, msg_time, msg)

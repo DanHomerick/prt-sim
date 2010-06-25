@@ -10,6 +10,7 @@ import common
 from pyprt.shared.utility import sec_to_hms
 from events import Passenger
 from vehicle import BaseVehicle
+from station import Station
 
 class Report(traits.HasTraits):
     """A base class for detailed reports."""
@@ -95,7 +96,10 @@ class SummaryReport(Report):
         lines.append("Pax carried per vehicle (Min/Mean/Max):\t%9d\t%9.3f\t%9d" % (min_pax, mean_pax, max_pax))
         lines.append("")
 
-        # TODO: Station summary statistics
+        # Station summary statistics
+        lines.append("Station statistics")
+        lines.append("Number of stations:\t%d" % len(common.station_list))
+
 
         self._lines = lines
 
@@ -204,9 +208,8 @@ class VehicleReport(Report):
             extrema_velocities = v._spline.get_extrema_velocity()
             max_vel = max(extrema_velocities)
             min_vel = min(extrema_velocities)
-            jerks = v._spline.find_jerks()
-            max_jerk = max(jerks)
-            min_jerk = min(jerks)
+            max_jerk = max(v._spline.j)
+            min_jerk = min(v._spline.j)
             lines.append([str(v.ID),
                           v.label,
                           str(v.loc.ID),
@@ -238,6 +241,80 @@ class VehicleReport(Report):
             line_strings.append(line_str)
         return self.LINE_DELIMETER.join(line_strings)
 
+class StationReport(Report):
+    def __init__(self, station_dict):
+        super(StationReport, self).__init__(title='Stations')
+        self.station_dict = station_dict
+        self._header = ["id",
+                       "Label",
+                       "Platforms",
+                       "Berths",
+                       "Unload",
+                       "Load",
+                       "Load|Unload",
+                       "Queue",
+                       "Current Pax",
+                       "Pax Created",
+                       "Pax Arrived",
+                       "Pax Departed",
+                       "Min Pax Wait",
+                       "Mean Pax Wait",
+                       "Max Pax Wait",
+                       "Vehicles Arrived",
+                       "Min Vehicle Dwell",
+                       "Mean Vehicle Dwell",
+                       "Max Vehicle Dwell"] # TODO: Berth specific stats?
+        self._lines = []
+
+    def update(self):
+        s_list = self.station_dict.values()
+        s_list.sort()
+
+        lines = []
+        for s in s_list:
+            assert isinstance(s, Station)
+            berths, unload, load, unload_load, queue = 0, 0, 0, 0, 0
+            for platform in s.platforms:
+                for berth in platform.berths:
+                    berths += 1
+                    if berth.unloading and berth.loading:
+                        unload_load += 1
+                    elif berth.unloading:
+                        unload += 1
+                    elif berth.loading:
+                        load += 1
+                    else: # no loading or unloading capability
+                        queue += 1
+            pax_wait_times = s.all_pax_wait_times()
+            lines.append(["%d" % s.ID,
+                         s.label,
+                         "%d" % len(s.platforms),
+                         "%d" % berths,
+                         "%d" % unload,
+                         "%d" % load,
+                         "%d" % unload_load,
+                         "%d" % queue,
+                         "%d" % len(s._passengers),
+                         "%d" % sum(1 for pax in s._all_passengers if pax.src_station is s),
+                         "%d" % s._pax_arrivals_count,
+                         "%d" % s._pax_departures_count,
+                         sec_to_hms(min(pax_wait_times)),
+                         sec_to_hms(sum(pax_wait_times)/len(pax_wait_times)),
+                         sec_to_hms(max(pax_wait_times)),
+                         "inc", # TODO: Vehicle-related stats
+                         "inc",
+                         "inc",
+                         "inc"])
+        self._lines = lines
+
+    def __str__(self):
+        line_strings = [self.title,
+                        self.FIELD_DELIMITER.join(self._header)]
+        for line in self._lines:
+            line_str = self.FIELD_DELIMITER.join(line)
+            line_strings.append(line_str)
+        return self.LINE_DELIMETER.join(line_strings)
+
 class Reports(traits.HasTraits):
     """A user interface that displays all the reports in a tabbed notebook."""
 
@@ -252,12 +329,16 @@ class Reports(traits.HasTraits):
     def vehicles(self):
         return self.vehicle_dict.values()
 
+    @property
+    def stations(self):
+        return self.station_dict.values()
+
     view = ui.View(
                ui.Tabbed(
                    ui.Item('summary_report', label='Summary', style='readonly', editor=ui.TextEditor() ),
                    ui.Item('passengers@', style='custom', editor=Passenger.table_editor),
                    ui.Item('vehicles@', style='custom', editor=BaseVehicle.table_editor),
-##                   ui.Item('pax_report', style='custom', editor=ui.InstanceEditor())),
+                   ui.Item('stations@', style='custom', editor=Station.table_editor),
                    show_labels=False,
                 ),
                title = 'Simulation Reports',
@@ -272,11 +353,13 @@ class Reports(traits.HasTraits):
         self.summary_report = SummaryReport()
         self.pax_report = PaxReport(self.pax_dict)
         self.vehicle_report = VehicleReport(vehicle_dict)
+        self.station_report = StationReport(station_dict)
 
     def update(self):
         self.summary_report.update()
         self.pax_report.update()
         self.vehicle_report.update()
+        self.station_report.update()
 
     def display(self):
         self.summary_report.update()
@@ -298,6 +381,8 @@ class Reports(traits.HasTraits):
         out.write(str(self.pax_report))
         out.write('\n\n')
         out.write(str(self.vehicle_report))
+        out.write('\n\n')
+        out.write(str(self.station_report))
 
 
 

@@ -1,6 +1,7 @@
 """General purpose functions, applicable across different projects"""
 
 import itertools
+import collections
 
 def pairwise(iterable):
     """s -> (s0,s1), (s1,s2), (s2, s3), ...
@@ -16,6 +17,34 @@ DIST_RES = 0.1   # 10 cm
 DIST_RND = 2
 TIME_RES = 0.001
 TIME_RND = 3
+
+class deque(collections.deque):
+    """An extension of the deque class which includes an insert method."""
+
+    def insert(self, index, item):
+        self.rotate(-index)
+        self.appendleft(item)
+        if index >= 0:
+            self.rotate(index)
+        else: # negative index used
+            self.rotate(index-1)
+
+    def index(self, item):
+        # Implementation ASSUMES that deque is implimented as a linked-list,
+        # and that rotations are cheap, and that indexing is cheaper when close
+        # to 0. Didn't bother timing it.
+        index = 0
+        while index < len(self):
+            if item == self[0]:
+                self.rotate(index)
+                return index
+            else:
+                index += 1
+                self.rotate(-1)
+
+        self.rotate(index)
+        raise ValueError("deque.index(item): item not in deque")
+
 
 ##def find_distant_segs_forward(graph, initial_node, start_dist, end_dist,
 ##                              nodes=[], starts=[], ends=[]):

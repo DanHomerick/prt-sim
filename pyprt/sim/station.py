@@ -3,6 +3,7 @@ import logging
 
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
+import enthought.traits.ui.table_column as ui_tc
 import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
@@ -17,8 +18,6 @@ class Berth(Sim.Process, traits.HasTraits):
     end_pos = traits.Float
     unloading = traits.Bool
     loading = traits.Bool
-
-    _busy = traits.Bool
 
     _embark_pax = traits.List(traits.Instance('events.Passenger'))
     _embark_vehicle = traits.Instance('vehicle.BaseVehicle')
@@ -45,8 +44,15 @@ class Berth(Sim.Process, traits.HasTraits):
         self.unloading = unloading
         self.loading = loading
 
+        self._vehicles = []
+
+        # Record keeping for statistics
+        self._occupied_times = [Sim.now(), self._vehicles[:]] # elements are (time, list_of_occupying_vehicle_refs)
+        self._busy_times = [] # elements are: (time, busy_state)
+        self._all_passengers = [] # record of all passengers, including those who have departed
+
         # Control flags/settings for the run loop
-        self._busy = False
+        self._busy = False # use the self._busy property to enable record gathering
 
     def __str__(self):
         return self.name
@@ -75,8 +81,15 @@ class Berth(Sim.Process, traits.HasTraits):
         if self.passive:
             Sim.reactivate(self, prior=True)
 
+    def get_busy(self):
+        return self.__busy
+    def set_busy(self, value):
+        self._busy_times.append( (Sim.now(), value) )
+        self.__busy = value
+    _busy = property(get_busy, set_busy)
+
     def is_busy(self):
-        return self._busy
+        return self.__busy
 
     def run(self):
         while True:
@@ -143,10 +156,14 @@ class Berth(Sim.Process, traits.HasTraits):
                     pax.trip_end = Sim.now()
                     pax.trip_success = True
                     common.delivered_pax.add(pax)
+                    self.station._pax_arrivals_count += 1
+                    self.station._all_passengers.append(pax)
                     logging.info("T=%4.3f %s delivered to platform %s in %s by %s (%d out of %d), disembarked in berth %s",
                                  Sim.now(), pax, self.platform.ID, self.station.ID, self._disembark_vehicle.ID, self._disembark_vehicle.get_pax_count(), self._disembark_vehicle.max_pax_capacity,  self.ID)
                 else:
-                    self.station.passengers.append(pax)
+                    self.station.add_passenger(pax)
+                    self.station._arrivals_count += 1
+
 
                 # Notify that disembark of this passenger is complete
                 dis_end_msg = api.SimNotifyPassengerDisembarkEnd()
@@ -197,7 +214,7 @@ class Berth(Sim.Process, traits.HasTraits):
                 pax = self._embark_pax.pop()
 
                 # Error if pax not at the station
-                if pax not in self.station.passengers:
+                if pax not in self.station._passengers:
                     logging.info("T=%4.3f Embarking passenger not at station. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
                                  Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
                     error_msg = api.SimMsgBodyInvalidId()
@@ -247,7 +264,8 @@ class Berth(Sim.Process, traits.HasTraits):
                 # Move passenger's location to the vehicle
                 self._embark_vehicle.embark(pax)
                 pax.loc = self._embark_vehicle
-                self.station.passengers.remove(pax)
+                self.station._pax_departures_count += 1
+                self.station.remove_passenger(pax)
                 pax.trip_boarded = Sim.now()
                 logging.info("T=%4.3f %s loaded into %s (%d out of %d) at station %s, platform %s, berth %s ",
                              Sim.now(), pax, self._embark_vehicle.ID, self._embark_vehicle.get_pax_count(), self._embark_vehicle.max_pax_capacity,  self.station.ID, self.platform.ID, self.ID )
@@ -309,12 +327,12 @@ class Station(traits.HasTraits):
     track_segments = traits.Set(traits.Instance('layout.TrackSegment'))
 
     # Passengers waiting at the station.
-    passengers = traits.List(traits.Instance(Passenger))
+    _passengers = traits.List(traits.Instance(Passenger))
 
     traits_view = ui.View(ui.VGroup(
                            ui.Group(
                                 ui.Label('Waiting Passengers'),
-                                ui.Item(name='passengers',
+                                ui.Item(name='_passengers',
                                         show_label = False,
                                         editor=Passenger.table_editor
                                         ),
@@ -327,12 +345,37 @@ class Station(traits.HasTraits):
                        width = 470
                        )
 
+    table_editor = ui.TableEditor(
+        columns = [ui_tc.ObjectColumn(name='ID', label='ID', tooltip='Station ID'),
+                   ui_tc.ObjectColumn(name='label', label='Label', tooltip='Non-unique identifier'),
+                   ui_tc.ExpressionColumn(label='Current Pax', format='%d',
+                                          expression='len(object._passengers)',
+                                          tooltip='Number of passengers currently at station.')
+                   # TODO: The rest...
+                   ],
+        deletable = False,
+        editable=False,
+        sortable = True,
+        sort_model = False,
+        auto_size = True,
+        orientation = 'vertical',
+        show_toolbar = True,
+        reorderable = False,
+        rows = 15,
+        row_factory = traits.This)
+
+
     def __init__(self, ID, label, track_segments):
         traits.HasTraits.__init__(self)
         self.ID = ID
         self.label = label
         self.platforms = []
         self.track_segments = track_segments
+
+        self._pax_arrivals_count = 0
+        self._pax_departures_count = 0
+        self._pax_times = [(Sim.now(), len(self._passengers))] # elements are (time, num_pax)
+        self._all_passengers = []
 
     def __str__(self):
         if self.label:
@@ -366,5 +409,25 @@ class Station(traits.HasTraits):
 
     def add_passenger(self, pax):
         """Add a passenger to this station."""
-        assert pax not in self.passengers
-        self.passengers.append(pax)
+        assert pax not in self._passengers
+        self._passengers.append(pax)
+        self._all_passengers.append(pax)
+        self._pax_times.append( (Sim.now(), len(self._passengers)) )
+
+    def remove_passenger(self, pax):
+        """Remove a passenger from this station, such as when they load into a
+        vehicle, or when they storm off in disgust..."""
+        self._passengers.remove(pax)
+        self._pax_times.append( (Sim.now(), len(self._passengers)) )
+
+    def all_pax_wait_times(self):
+        """Returns a list of wait times for all passengers, not just the current ones."""
+        times = []
+        for pax in self._all_passengers:
+            for start, end, loc in pax._wait_times:
+                if loc is self:
+                    if end is None:
+                        times.append(Sim.now() - start)
+                    else:
+                        times.append(end - start)
+        return times

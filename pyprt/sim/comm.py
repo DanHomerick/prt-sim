@@ -386,35 +386,19 @@ class ControlInterface(Sim.Process):
                     resp.time = msg.time
                     alarm = common.AlarmClock(msg.time, self.send, api.SIM_NOTIFY_TIME, resp)
 
-#                # Works, but spams the log with erroneous RCVD messages
-#                # TODO: Move to a vehicle co-routine, which waits on
-#                # end_segment and end_duration signals.
-#                elif msg_type == api.CTRL_SETNOTIFY_VEHICLE_POSITION:
-#                    msg = api.CtrlSetnotifyVehiclePosition()
-#                    msg.ParseFromString(msg_str)
-#                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
-#                    v = self.get_vehicle(msg.vID)
-#                    loc = self.get_trackSeg(msg.eID)
-#                    if v.loc is loc and utility.dist_eql(v.pos, msg.pos/100): # convert from cm to meters
-#                        resp = api.SimNotifyVehiclePosition()
-#                        resp.msgID = msgID
-#                        resp.vID = self.ID
-#                        resp.eID = self.loc.ID
-#                        resp.pos = int(self.pos*100) # meters to cm
-#                        self.send(api.SIM_NOTIFY_VEHICLE_POSITION, resp)
-#
-#                    # Target position ahead of vehicle on current edge
-#                    if v.loc is loc and msg.pos/100 > v.pos:
-#                        time = v.calc_time_to_pos(msg.pos/100)
-#                    # Target position on another edge, or behind current pos
-#                    else:
-#                        time = v.calc_time_to_pos(v.loc.length)
-#                    print "Time to notification pos, or end of seg:", time
-#                    if not time: # pos eqn expires first
-#                        time = v.pos_eqn_duration
-#                    common.AlarmClock(time, AlarmClock.delayed_msg, None)
-#                    time_ms = int(round(time,3)*1000) # ??? Remove?
-#                    self.waitQ.append( (msg_type, msgID, msg_time, msg_str) )
+                elif msg_type == api.CTRL_SETNOTIFY_VEHICLE_POSITION:
+                    msg = api.CtrlSetnotifyVehiclePosition()
+                    msg.ParseFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    v = self.get_vehicle(msg.vID)
+                    # send error message if vehicle has already passed the notification pos
+                    # or if pos is beyond the end of the track
+                    if utility.dist_lt(v.pos, msg.pos) or utility.dist_gt(msg.pos, v.loc.length):
+                        err_resp = api.SimMsgBodyInvalid()
+                        err_resp.msgID = msgID
+                        self.send(api.SIM_MSG_BODY_INVALID, err_resp)
+                    else:
+                        v.notify_position(msg, msgID)
 
                 else:
                     resp = api.SimUnimplemented()
@@ -596,15 +580,10 @@ class ControlInterface(Sim.Process):
 
     def validate_spline(self, spline):
         assert isinstance(spline, api.Spline)
-        # Check that the times for the spline are valid, meaning that the first
-        # time is not in the past, and that they are in non-decreasing order
+        # Check that the times for the spline are in non-decreasing order
         if len(spline.times) == 0:
             raise common.MsgError
 
-        if utility.time_lt(spline.times[0], Sim.now()):
-            logging.info("T=%4.3f First spline time %s is in the past.",
-                         Sim.now(), spline.times[0])
-            raise common.MsgError
         for t1, t2 in pairwise(spline.times):
             if t2 < t1:
                 logging.info("T=%4.3f Spline times are not in non-decreasing order: %s",

@@ -1,8 +1,7 @@
 from __future__ import division # use floating point division unless explicitly otherwise
 from math import isnan, isinf   # requires Python 2.6
-import warnings
 
-from numpy import roots, polysub, polyval
+from numpy import roots, polysub
 
 from utility import pairwise
 
@@ -29,15 +28,28 @@ class Knot(object):
     def to_tuple(self):
         return (self.pos, self.vel, self.accel, self.time)
 
+    def __eq__(self, other):
+        """Exact equality of floating point values. In other words, they were
+        created with the same inputs. Not just calculated to be essentially the
+        same. THE SAME. Mostly useless."""
+        return self.pos == other.pos and self.vel == other.vel \
+               and self.accel == other.accel and self.time == other.time
+
+class SplineError(Exception):
+    pass
+
 class CubicSpline(object):
     """Knots is a list of Knot instances. acceleration_min should be negative."""
     TIME_EPSILON = 0.0001
     DIST_EPSILON = 0.001
 
-    def __init__(self, positions, velocities, accelerations, times):
+    def __init__(self, positions, velocities, accelerations, jerks, times):
+        assert len(positions) == len(velocities) == len(accelerations) == len(times)
+        assert len(jerks) == 0 if len(positions) == 0 else len(jerks) == len(positions)-1
         self.q = positions
         self.v = velocities
         self.a = accelerations
+        self.j = jerks
         self.t = times
         self.h = self.make_intervals()
 
@@ -47,8 +59,8 @@ class CubicSpline(object):
 
     def __str__(self):
         coeffs_str = ''.join('\n\t\t' + str(c) for c in self.coeffs)
-        return "CubicSpline:\n\tq: %s\n\tv: %s\n\ta: %s\n\tt: %s\n\th: %s\n\tCoeffs:%s" \
-               % (self.q, self.v, self.a, self.t, self.h, coeffs_str)
+        return "CubicSpline:\n\tq: %s\n\tv: %s\n\ta: %s\n\tt: %s\n\tj: %s\n\th: %s\n\tCoeffs:%s" \
+               % (self.q, self.v, self.a, self.t, self.j, self.h, coeffs_str)
 
     def __len__(self):
         return len(self.t)
@@ -56,28 +68,48 @@ class CubicSpline(object):
     def __getitem__(self, key):
         return Knot(self.q[key], self.v[key], self.a[key], self.t[key])
 
-    def insert(self, index, knot):
-        self.q.insert(index, knot.pos)
-        self.v.insert(index, knot.vel)
-        self.a.insert(index, knot.accel)
-        self.t.insert(index, knot.time)
-        self.h = self.make_intervals()
+    def copy(self):
+        # OPTIMIZATION: Test if efficiency gained from copying the intervals and
+        # coeffs, rather than recalculating them, would be worth the extra effort
+        return CubicSpline(self.q[:], self.v[:], self.a[:], self.j[:], self.t[:])
 
-        del self.coeffs[index]
-        self.coeffs.insert(index, self.make_coeffs(index))
-        self.coeffs.insert(index+1, self.make_coeffs(index))
+    def append(self, knot, jerk):
+        """Append a new knot to the end of the spline. A SplineError is raised
+        if knot.time < the spline's last time. If the spline is currently
+        empty, then jerk is ignored, and may be None."""
+        if self.t and knot.time < self.t[-1]:
+            raise SplineError
 
-    def append(self, knot):
         self.q.append(knot.pos)
         self.v.append(knot.vel)
         self.a.append(knot.accel)
         self.t.append(knot.time)
         if len(self.t) >= 2:
-            self.h.append(knot.time - self.t[-2])
+            self.j.append(jerk)
+            self.h.append(self.t[-1] - self.t[-2])
             self.coeffs.append(self.make_coeffs(len(self.h)-1))
 
     def make_intervals(self):
         return [(tf - ti) for ti, tf in pairwise(self.t)]
+
+    def concat(self, other):
+        """Returns a new spline, which is a concatenation of this spline and the
+        spline 'other'. The last time, pos, etc of self must exactly coincide
+        with other's first time, pos, etc, otherwise a SplineError will be raised.
+        Neither self nor other is altered by this function."""
+        if abs(self.t[-1] - other.t[0]) > 0.001 or abs(self.q[-1] - other.q[0]) > 0.001 \
+           or abs(self.v[-1] - other.v[0]) > 0.001 or abs(self.a[-1] - other.a[0]) > 0.001:
+            raise SplineError
+
+        try:
+            return CubicSpline(self.q + other.q[1:], # + operator returns a new list.
+                               self.v + other.v[1:], # contents of lists are primatives
+                               self.a + other.a[1:], # so copies are made.
+                               self.j + other.j,
+                               self.t + other.t[1:])
+        except IndexError:
+            # other has < 2 elements
+            return self.copy()
 
     def get_max_acceleration(self):
         return max(self.a)
@@ -93,14 +125,14 @@ class CubicSpline(object):
         extreama = []
         extreama.extend(self.v) # append all knots
 
-        for i in range(len(self.q)-1):
+        for i in range(len(self.t)-1):
             # check if there's a zero crossing in acceleration
-            if self.h[i]:
-                jerk = (self.a[i+1]-self.a[i])/self.h[i]
-                if jerk:
-                    t = -self.a[i]/jerk + self.t[i]
-                    if self.t[i] < t < self.t[i+1]:
-                        extreama.append(self.evaluate(t).vel)
+            jerk = self.j[i]
+            if jerk != 0:
+                crossing_t = -self.a[i]/jerk + self.t[i]
+                if self.t[i] < crossing_t < self.t[i+1]:
+                    extreama.append(self.evaluate(crossing_t).vel)
+
         extreama.append(self.v[-1])
         return extreama
 
@@ -111,16 +143,6 @@ class CubicSpline(object):
     def get_min_velocity(self):
         """Returns the value of the minimum velocity over the whole spline."""
         return min(self.get_extrema_velocity())
-
-    def find_jerks(self):
-        """Returns the jerks that occur in each part of the whole spline"""
-        jerks = []
-
-        # interval, knot_initial, knot_final
-        for hi, (ai, af) in zip(self.h, pairwise(self.a)):
-            if hi: # guard against zero duration polys
-                jerks.append((af - ai)/hi)
-        return jerks
 
     def evaluate(self, time):
         """Returns a Knot instance. Raises an OutOfBoundsError if time is not
@@ -133,6 +155,12 @@ class CubicSpline(object):
             raise OutOfBoundsError(t[0], t[-1], time)
 
         i = self._get_idx_from_time(time)
+
+        # Time is almost exactly on a knot. Also captures case where spline has only one time.
+        if abs(self.t[i] - time) < 1E-6:
+            return Knot(self.q[i], self.v[i], self.a[i], time)
+
+        j = self.j[i]
         a = self.a[i]
         v = self.v[i]
         q = self.q[i]
@@ -140,11 +168,10 @@ class CubicSpline(object):
         delta_t = time - t[i]
         delta_t__2 = delta_t * delta_t
         delta_t__3 = delta_t__2 * delta_t
-        jerk = (self.a[i+1]-a)/self.h[i] if self.h[i] else 0 # guard against zero time segments
 
-        at = jerk*delta_t + a
-        vt = jerk*delta_t__2/2 + a*delta_t + v
-        qt = delta_t__3*(jerk/6) + delta_t__2*(a/2) + v*delta_t + q
+        at = j*delta_t + a
+        vt = j*delta_t__2/2 + a*delta_t + v
+        qt = delta_t__3*(j/6) + delta_t__2*(a/2) + v*delta_t + q
 
         return Knot(qt, vt, at, time)
 
@@ -196,7 +223,7 @@ class CubicSpline(object):
         # TODO: use the bisect algo to find roots instead. I don't see a way
         # around the precision loss that occurs in finding the poly's coefficents
         # when time is very large. If it worked out to 86400 seconds (24 hours),
-        # it would be okay, but it doesn't.s
+        # it would be okay, but it doesn't.
 
 ##        assert abs(polyval(self.coeffs[idx], pts[0]) - target_pos) < self.DIST_EPSILON
         return pts[0]
@@ -206,9 +233,6 @@ class CubicSpline(object):
         The ordering of the coefficients matches that used by scipy.poly1d, the
         highest degree polynomial first. Returns a 4-tuple.
         """
-        # Note: The math in this function is correct, but when t1 and t2 are large,
-        # but close to each other, there may be significant precision loss.
-
         # Find poly coefficients for the poly between each pair of knots.
         right_idx = left_idx+1
         t1 = self.t[left_idx]
@@ -219,7 +243,7 @@ class CubicSpline(object):
         v2 = self.v[right_idx]
         a1 = self.a[left_idx]
         a2 = self.a[right_idx]
-        j = (a2-a1)/self.h[left_idx] if self.h[left_idx] != 0 else 0
+        j = self.j[left_idx]
 
         # Only calc the exponents once
         t1_2 = t1*t1
@@ -240,7 +264,7 @@ class CubicSpline(object):
             ca = a1 - j*t1
         try:
 ##            cv = (t2_2*(v1-ca*t1) - t1_2*(v2-ca*t2)) / (t2_2 - t1_2) # original form
-            cv = ((t2_2*v1 - t1_2*v2) + ca*t1*t2*(t1-t2)) / ((t2+t1)*(t2-t1)) # carefully crafted to reduce rounding error
+            cv = ((t2_2*v1 - t1_2*v2) + ca*t1*t2*(t1-t2)) / ((t2+t1)*(t2-t1)) # crafted to reduce rounding error
             if isnan(cv) or isinf(cv):
                 raise ZeroDivisionError
         except ZeroDivisionError:
@@ -268,29 +292,31 @@ class CubicSpline(object):
 
         return coeffs
 
-    def clear(self, time=0):
-        """The spline is cleared from time onwards, and a new knot is created at time.
+    def copy_left(self, time):
+        """Returns a new spline that only contains the data to the "left"
+        (i.e. earlier) than 'time'.
         """
-        if not time:
-            idx = 1 # don't delete the initial spline
-        else:
-            knot = self.evaluate(time)
-            idx = self._get_idx_from_time(time)
-            idx += 1
+        knot = self.evaluate(time)
+        idx = self._get_idx_from_time(time) + 1 # right idx
 
-        del self.t[idx:] # deletes the element at idx and beyond
-        del self.q[idx:]
-        del self.v[idx:]
-        del self.a[idx:]
-        if idx > 0:
-            del self.h[idx-1:]
-            del self.coeffs[idx-1:]
-        else:
-            del self.h[0:]
-            del self.coeffs[0:]
+        spline = CubicSpline(self.q[:idx] + [knot.pos],
+                             self.v[:idx] + [knot.vel],
+                             self.a[:idx] + [knot.accel],
+                             self.j[:idx],
+                             self.t[:idx] + [knot.time])
+        return spline
 
-        if time:
-            self.append(knot)
+    def copy_right(self, time):
+        """Returns a new spline that only contains the data to the "right"
+        (i.e. later) than 'time'."""
+        knot = self.evaluate(time)
+        idx = self._get_idx_from_time(time) + 1 # right idx
+        spline = CubicSpline([knot.pos] + self.q[idx:],
+                             [knot.vel] + self.v[idx:],
+                             [knot.accel] + self.a[idx:],
+                             self.j[idx-1:],
+                             [knot.time] + self.t[idx:])
+        return spline
 
 ##    def extend(self, spline):
 ##        """Merges a CubicSpline instance with this. If there is overlap in the
@@ -390,6 +416,7 @@ class CubicSpline(object):
                 return None # <------- failure exit point
 
     def test_3(self):
+        from numpy import poly1d
         for i1, i2 in pairwise(range(len(self.t))):
             t1 = self.t[i1]
             t2 = self.t[i2]

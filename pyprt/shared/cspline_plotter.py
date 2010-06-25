@@ -15,7 +15,9 @@ class CSplinePlotter(traits.HasTraits):
         ui.Item('container',editor=ComponentEditor(), show_label=False),
         width=500, height=500, resizable=True, title='CubicSpline Plot')
 
-    def __init__(self, cubic_spline, velocity_max=0, acceleration_max=0, jerk_max=0, velocity_min=None, acceleration_min=None, jerk_min=None, title=""):
+    def __init__(self, cubic_spline, velocity_max=0, acceleration_max=0, jerk_max=0,
+                 velocity_min=None, acceleration_min=None, jerk_min=None, title="",
+                 start_idx=0, end_idx=-1):
 
         super(CSplinePlotter, self).__init__()
         self.cspline = cubic_spline
@@ -30,13 +32,16 @@ class CSplinePlotter(traits.HasTraits):
         self.title = title
 
         self.container = chaco.OverlayPlotContainer(padding=50, fill_padding=True, bgcolor="lightgray")
-        self.make_plotdata()
+        self.make_plotdata(start_idx, end_idx)
         self.make_plots()
 
-    def make_plotdata(self):
-        knot_times = self.cspline.t
-        sample_times = numpy.linspace(self.cspline.t[0], self.cspline.t[-1], 50)
-        endpoint_times = numpy.array([self.cspline.t[0], self.cspline.t[-1]])
+    def make_plotdata(self, start_idx, end_idx):
+        if end_idx < 0:
+            end_idx = len(self.cspline.t) + end_idx # convert to absolute index
+
+        knot_times = self.cspline.t[start_idx:end_idx]
+        sample_times = numpy.linspace(self.cspline.t[start_idx], self.cspline.t[end_idx], 50)
+        endpoint_times = numpy.array([self.cspline.t[start_idx], self.cspline.t[end_idx]])
 
         positions = []
         velocities = []
@@ -44,10 +49,8 @@ class CSplinePlotter(traits.HasTraits):
             sample = self.cspline.evaluate(t)
             positions.append(sample.pos)
             velocities.append(sample.vel)
-        accelerations = self.cspline.a
-        jerks = numpy.array([((af-ai)/hi if hi else 0) for ai, af, hi in zip(self.cspline.a[:-1],
-                                                              self.cspline.a[1:],
-                                                              self.cspline.h)] + [0])
+        accelerations = self.cspline.a[start_idx:end_idx]
+        jerks = numpy.array(self.cspline.j[start_idx:end_idx-1] + [self.cspline.j[end_idx-1]])
 
         max_vel = numpy.array([self.v_max for t in endpoint_times])
         min_vel = numpy.array([self.v_min for t in endpoint_times])
@@ -109,6 +112,7 @@ class CSplinePlotter(traits.HasTraits):
         # Add title, if any
         if self.title:
             main_plot.title = self.title
+            main_plot.title_position = "inside top"
 
     def display_plot(self):
         self.configure_traits()

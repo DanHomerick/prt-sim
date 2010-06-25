@@ -186,11 +186,14 @@ message CtrlRequestTrackSegmentStatus {
 message CtrlRequestTotalStatus {
 }
 
-
+// Requests that a SimNotifyVehiclePosition message be sent
+// when the vehicle's nose reaches pos on the current track
+// segment (as defined by nose_locID).
+// If pos has already been passed, a SimMsgBodyInvalid message
+// is sent in response.
 message CtrlSetnotifyVehiclePosition {
-    required int32         vID = 2;
-    required int32         trackID = 3;
-    required int32         pos = 4;
+    required int32         vID = 1;
+    required float         pos = 2;
 }
 
 message CtrlSetnotifyTime {
@@ -345,9 +348,7 @@ message SimResponseTotalStatus {
 message SimNotifyVehiclePosition {
     optional int32             msgID   = 1; // Ctrl msg that requested notify
     required double            time    = 2; // time of event
-    required int32             vID     = 3;
-    required int32             trackID = 4;
-    required int32             pos     = 5;
+    required VehicleStatus     v_status = 3;
 }
 
 message SimNotifyTime {
