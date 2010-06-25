@@ -39,7 +39,7 @@ class CSplinePlotter(traits.HasTraits):
         if end_idx < 0:
             end_idx = len(self.cspline.t) + end_idx # convert to absolute index
 
-        knot_times = self.cspline.t[start_idx:end_idx]
+        knot_times = self.cspline.t[start_idx:end_idx+1]
         sample_times = numpy.linspace(self.cspline.t[start_idx], self.cspline.t[end_idx], 50)
         endpoint_times = numpy.array([self.cspline.t[start_idx], self.cspline.t[end_idx]])
 
@@ -49,8 +49,8 @@ class CSplinePlotter(traits.HasTraits):
             sample = self.cspline.evaluate(t)
             positions.append(sample.pos)
             velocities.append(sample.vel)
-        accelerations = self.cspline.a[start_idx:end_idx]
-        jerks = numpy.array(self.cspline.j[start_idx:end_idx-1] + [self.cspline.j[end_idx-1]])
+        accelerations = numpy.array(self.cspline.a[start_idx:end_idx+1])
+        jerks = numpy.array(self.cspline.j[start_idx:end_idx] + [self.cspline.j[end_idx-1]])
 
         max_vel = numpy.array([self.v_max for t in endpoint_times])
         min_vel = numpy.array([self.v_min for t in endpoint_times])
