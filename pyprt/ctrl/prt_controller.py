@@ -289,7 +289,7 @@ class PrtController(BaseController):
                     # Reserve a berth for the vehicle
                     station.request_load_berth(vehicle) # raises an exception if fails.
                     vehicle.station = station
-                    vehicle.send_path(path)
+                    vehicle.send_path()
                     vehicle.run(speed_limit=station.SPEED_LIMIT, dist=dist, final_speed=0)
 
                 # Case 4.
@@ -449,7 +449,7 @@ class PrtController(BaseController):
                 blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
                 if not blocked_time:
                     vehicle.state = self.LAUNCHING
-                    vehicle.send_path(vehicle.trip.path)
+                    vehicle.send_path()
                     vehicle.run(speed_limit=self.LINE_SPEED)
                     vehicle._launch_begun = True
                     vehicle.station.release_berth(vehicle)
