@@ -286,6 +286,14 @@ class StationReport(Report):
                     else: # no loading or unloading capability
                         queue += 1
             pax_wait_times = s.all_pax_wait_times()
+            if pax_wait_times:
+                min_pax_wait = sec_to_hms(min(pax_wait_times))
+                mean_pax_wait = sec_to_hms(sum(pax_wait_times)/len(pax_wait_times))
+                max_pax_wait = sec_to_hms(max(pax_wait_times))
+            else:
+                min_pax_wait = "N/A"
+                mean_pax_wait = "N/A"
+                max_pax_wait = "N/A"
             lines.append(["%d" % s.ID,
                          s.label,
                          "%d" % len(s.platforms),
@@ -298,9 +306,9 @@ class StationReport(Report):
                          "%d" % sum(1 for pax in s._all_passengers if pax.src_station is s),
                          "%d" % s._pax_arrivals_count,
                          "%d" % s._pax_departures_count,
-                         sec_to_hms(min(pax_wait_times)),
-                         sec_to_hms(sum(pax_wait_times)/len(pax_wait_times)),
-                         sec_to_hms(max(pax_wait_times)),
+                         min_pax_wait,
+                         mean_pax_wait,
+                         max_pax_wait,
                          "inc", # TODO: Vehicle-related stats
                          "inc",
                          "inc",
