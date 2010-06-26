@@ -21,7 +21,7 @@ from collections import defaultdict
 import warnings
 
 optpar = OptionParser(usage="usage: %prog [options] input-file")
-optpar.add_option("-t", "--time-dist", action="store", nargs=2, dest="beta",
+optpar.add_option("-t", "--time-distribution", action="store", nargs=2, dest="beta",
                   default=(1,1), type='float',
                   help = "Two shape parameters for a beta distribution "\
                   "controlling the passenger start times. Default is 1 1 "\

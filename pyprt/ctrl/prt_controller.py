@@ -225,117 +225,110 @@ class PrtController(BaseController):
 
     def on_SIM_START(self, msg, msgID, msg_time):
         """This function is responsible for getting all the vehicles moving at
-        the start of the simulation. It needs to deal with 6 cases:
+        the start of the simulation. It needs to deal with 5 cases:
 
-        Case 1: Vehicle is on a station's platform, and is fully within a berth.
-        Case 2: Vehicle is on a station's platform, but it not fully within a berth.
-        Case 3: Vehicle is on a station's OFFRAMP or DECEL segments and must
-                be given a berth reservation.
-        Case 4: Vehicle is on a station's ONRAMP or ACCEL segments and must
-                be merged with main-line traffic.
-        Case 5: Vehicle is outside of a Merge's zone of control and must be brought
+        Case 1: Vehicle is on a station's platform and must be given a reservation.
+        Case 2: Vehicle is on a station's OFFRAMP or DECEL segments. Must
+                be given a berth reservation and travel to the platform.
+        Case 3: Vehicle is on a station's ONRAMP or ACCEL segments. Rather than
+                trying to merge a vehicle with mainline traffic when it's
+                starting from halfway down the acceleration ramp, we're just
+                going to take a pass on this case. Not allowed.
+        Case 4: Vehicle is outside of a Merge's zone of control and must be brought
                 up to LINE_SPEED.
-        Case 6: Vehicle is within a Merge's zone of control, and must be brought
+        Case 5: Vehicle is within a Merge's zone of control, and must be brought
                 up to LINE_SPEED and granted a MergeSlot.
 
         """
         self.log.info("Sim Start message received.")
 
-        for station in self.manager.stations.itervalues():
-            # Work from the 2nd to last berth backward, initializing vehicles in order.
-            for v in reversed(station.reservations[Station.LOAD_PLATFORM]):
-                if v is not None:
-                    v.state = self.LOAD_WAITING
-
-            for v in reversed(station.reservations[Station.QUEUE_PLATFORM]):
-                if v is not None:
-                    v.state = self.QUEUE_WAITING
-
-            for v in reversed(station.reservations[Station.UNLOAD_PLATFORM]):
-                if v is not None:
-                    v.state = self.QUEUE_WAITING # Assuming vehicles don't start with passengers on board
-
         v_list = self.manager.vehicles.values()
         # Sort based on location, secondarily sorted by position -- both in descending order.
         v_list.sort(cmp=lambda x,y: cmp(y.ts_id, x.ts_id) if x.ts_id != y.ts_id else cmp(y.pos, x.pos))
+
+        merge2vehicles = defaultdict(list)
 
         # Make a first pass through the vehicles, setting up the vehicles which
         # are committed to a particular station.
         for vehicle in v_list:
             assert isinstance(vehicle, Vehicle)
-            # skip already handled vehicles
-            if vehicle.state is not None:
-                continue
+            assert vehicle.state is None
 
             station = self.manager.track2station.get(vehicle.ts_id)
 
-            if station is not None:
+            if station:
                 assert isinstance(station, Station)
 
-                # Case 3.
-                # Approaching station. Taking advantage of the fact that DECEL will have
-                # a higher ts_id than OFF_RAMP_I, thus vehicles on DECEL will be handled
-                # first and the berth reservation ordering will be correct.
-                if vehicle.ts_id in (station.ts_ids[Station.OFF_RAMP_I],
-                                     station.ts_ids[Station.OFF_RAMP_II],
-                                     station.ts_ids[Station.DECEL]):
-                    vehicle.state = self.SLOWING
+                # Take advantage of the fact the ts_ids for a station are in
+                # ascending order. Due to the sorting of the vehicles, the
+                # berth reservation ordering will be correct.
 
-                    # Set up a trip for reaching the station's UNLOAD platform.
-                    path_length, path = self.manager.get_path(vehicle.ts_id, station.ts_ids[Station.UNLOAD])
-                    dist = path_length - vehicle.pos
-                    vehicle.trip = Trip(station, path, tuple())
-
-                    # Reserve a berth for the vehicle
-                    station.request_load_berth(vehicle) # raises an exception if fails.
+                # Case 1. Vehicle already on a UNLOAD/QUEUE/LOAD platform.
+                if vehicle.ts_id in (station.ts_ids[Station.UNLOAD],
+                                     station.ts_ids[Station.QUEUE],
+                                     station.ts_ids[Station.LOAD]):
+                    vehicle.state = self.LOAD_ADVANCING
                     vehicle.station = station
-                    vehicle.send_path()
-                    vehicle.run(speed_limit=station.SPEED_LIMIT, dist=dist, final_speed=0)
+                    station.request_load_berth(vehicle)
+                    berth_dist, berth_path = self.manager.get_path(vehicle.ts_id, vehicle.plat_ts)
+                    initial = vehicle.estimate_pose(self.current_time)
+                    berth_knot = Knot(berth_dist + vehicle.berth_pos - vehicle.BERTH_GAP, 0, 0, None)
+                    try:
+                        spline = vehicle.traj_solver.target_position(initial, berth_knot, max_speed=station.SPEED_LIMIT)
+                        stop_time = spline.t[-1]
+                        vehicle.set_spline(spline)
+                        vehicle.set_path(berth_path)
+                        self.set_v_notification(vehicle, stop_time)
+                    except FatalTrajectoryError: # may occur if vehicles cannot reverse and are too closely spaced.
+                        raise Exception("Unable to reserve a reachable berth for vehicle: %s" % str(vehicle))
 
-                # Case 4.
-                # Outbound from a station.
-                # TODO: Setup a merge_slot!
+                # Case 2. Approaching station.
+                elif vehicle.ts_id in (station.ts_ids[Station.OFF_RAMP_I],
+                                       station.ts_ids[Station.OFF_RAMP_II],
+                                       station.ts_ids[Station.DECEL]):
+                    vehicle.state = self.LOAD_ADVANCING
+                    station.request_load_berth(vehicle)
+                    stop_time = vehicle.enter_station(station)
+                    self.set_v_notification(vehicle, stop_time)
+
+                # Case 3. Outbound from a station.
+                elif vehicle.ts_id in (station.ts_ids[Station.ACCEL],
+                                       station.ts_ids[Station.ON_RAMP_I],
+                                       station.ts_ids[Station.ON_RAMP_II]):
+                    raise Exception("Unable to handle a vehicle starting on the "
+                                    "ACCEL or ONRAMP portions of the station. Please "
+                                    "relocate vehicle: %s" % str(vehicle))
+
                 else:
-                    assert vehicle.ts_id in (station.ts_ids[Station.ACCEL],
-                                             station.ts_ids[Station.ON_RAMP_I],
-                                             station.ts_ids[Station.ON_RAMP_II])
-                    vehicle.state = self.LAUNCHING
-                    vehicle._launch_begun = True
-                    vehicle.station = station
+                    raise Exception("Unexpected case: vehicle.ts_id: %d" % vehicle.ts_id)
+
+            else: # Not in a station.
+                vehicle.state = self.RUNNING
+
+                # Assign trips to vehicles. Don't travel to a station when you
+                # are on it's "split" segment, since the vehicle is already
+                # past the enter/wave off decision point.
+                station = self.manager.split2station.get(vehicle.ts_id)
+                if station is None:
                     vehicle.trip = self.manager.deadhead(vehicle)
-                    vehicle.set_path(vehicle.trip.path)
+                else: # vehicle is on the station's "split" trackseg
+                    assert vehicle.ts_id == station.split
+                    vehicle.trip = self.manager.deadhead(vehicle, exclude=(station, ))
+
+                vehicle.set_path(vehicle.trip.path)
+
+                # Handle all the vehicles that are in a Merge's zone of control
+                # together at a later time. If not in a zone of control, just
+                # run at LINE_SPEED.
+                try:
+                    merge = self.manager.track2merge[vehicle.ts_id]
+                    merge2vehicles[merge].append(vehicle)
+                except KeyError:
+                    # Case 4. Not in a Merge's zone of control.
                     vehicle.run(speed_limit=self.LINE_SPEED)
-                    self.log.info("%5.3f Vehicle %d deadheading to station %d.",
-                                  self.current_time, vehicle.id, vehicle.trip.dest_station.id)
 
-        # Make a second pass through the vehicles, handling the remaining vehicles.
-        merge2vehicles = defaultdict(list)
-        for vehicle in v_list:
-            if vehicle.state is not None: # has already been handled
-                continue
 
-            vehicle.state = self.RUNNING
-
-            station = self.manager.split2station.get(vehicle.ts_id)
-            if station is None:
-                vehicle.trip = self.manager.deadhead(vehicle)
-            else: # vehicle is on the station's "split" trackseg
-                assert vehicle.ts_id == station.split
-                # Don't allow a vehicle that starts on a station's 'split'
-                # tracksegment to enter the station
-                vehicle.trip = self.manager.deadhead(vehicle, exclude=(station, ))
-
-            vehicle.set_path(vehicle.trip.path)
-
-            try:
-                merge = self.manager.track2merge[vehicle.ts_id]
-                merge2vehicles[merge].append(vehicle)
-            except KeyError:
-                # Case 5.
-                vehicle.run(speed_limit=self.LINE_SPEED)
-
-        # Case 6.
-        # Merge the vehicles so that they don't collide at merge point
+        # Case 5. Within a Merge's zone of control.
         for m, v_list in merge2vehicles.items():
             # Redefine the function each time, using closures to easily access the
             # merge's offset values.
@@ -347,7 +340,7 @@ class PrtController(BaseController):
                 return cmp(v2_pos, v1_pos)
             v_list.sort(cmp=sort_by_pos)
             for v in v_list:
-                v.run(speed_limit=self.LINE_SPEED)
+                v.run(speed_limit=self.LINE_SPEED) # do_merge expects the vehicle to already have a spline.
                 v.do_merge(m, 0.0)
 
         # station's heartbeats are all synchronized for now. Change that in the future?
@@ -553,8 +546,8 @@ class PrtController(BaseController):
                 else:
                     vehicle.state = self.LOAD_ADVANCING
 
-                vehicle.station = station
-                vehicle.enter_station()
+                stop_time = vehicle.enter_station(station)
+                self.set_v_notification(vehicle, stop_time)
 
         elif vehicle.state is self.LAUNCHING:
             station = self.manager.track2station.get(msg.trackID)
@@ -565,31 +558,21 @@ class PrtController(BaseController):
 
         # Check if just entered a merge's zone of control.
         if vehicle.state is self.RUNNING: # may have been LAUNCHING at beginning of function
+            # TODO: Rethink whether I should have dictionaries containing both
+            # merges and switches.
+
             # manage the vehicle through a merge
-            try:
-                obj = self.manager.inlets[vehicle.ts_id]
-                if isinstance(obj, Merge):
-                    vehicle.do_merge(obj, self.current_time)
-            except KeyError:
-                pass
+            obj = self.manager.inlets.get(vehicle.ts_id)
+            if obj and isinstance(obj, Merge):
+                vehicle.do_merge(obj, self.current_time)
 
-            try:
-                obj = self.manager.outlets[vehicle.ts_id]
-                # Vehicle just left a merge's zone of control
-                if isinstance(obj, Merge):
-                    # A MergeSlot may go unused if a vehicle enters a station
-                    # rather than going to the merge point. Discard reservations
-                    # until the correct one is found.
-                    while True:
-                        merge_slot = obj.reservations.pop(0)
-                        assert isinstance(merge_slot, MergeSlot)
-                        if merge_slot.vehicle is vehicle:
-                            assert vehicle.merge_slot is merge_slot
-                            vehicle.set_merge_slot(None)
-                            break
+            obj = self.manager.outlets.get(vehicle.ts_id)
+            # Vehicle just left a merge's zone of control
+            if obj and isinstance(obj, Merge):
+                merge_slot = obj.reservations.pop(0)
+                assert vehicle.merge_slot is merge_slot
+                vehicle.set_merge_slot(None)
 
-            except KeyError:
-                pass
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
@@ -668,29 +651,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         self.track2merge = dict((ts, m) for m in self.merges for ts in m.zone_ids[0] + m.zone_ids[1])
 
-        # For vehicles that are currently parked in berths, reserve those berths for them.
-        for vehicle in self.vehicles.itervalues():
-            station = self.track2station.get(vehicle.ts_id)
-            if station is not None:
-                if vehicle.ts_id == station.ts_ids[Station.UNLOAD]:
-                    platform = Station.UNLOAD_PLATFORM
-                elif vehicle.ts_id == station.ts_ids[Station.QUEUE]:
-                    platform = Station.QUEUE_PLATFORM
-                elif vehicle.ts_id == station.ts_ids[Station.LOAD]:
-                    platform = Station.LOAD_PLATFORM
-                else:
-                    platform = None
-
-                if platform is not None:
-                    for idx, berth_pos in enumerate(station.berth_positions[platform]):
-                        if abs(berth_pos - vehicle.pos) < 2: # within 2 meters of the target position
-                            station.reservations[platform][idx] = vehicle
-                            vehicle.station = station
-                            vehicle.berth_pos = berth_pos
-                            vehicle.berth_id = idx
-                            vehicle.platform_id = platform
-                            vehicle.plat_ts = vehicle.ts_id
-                            break
         doc.unlink() # facilitates garbage collection
 
         # Check that the merge zones are large enough to accomodate a vehicle stopping and starting
@@ -704,9 +664,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                 raise Exception("Insufficient track distance from ts %d to ts %d for pre-merge manuevering." % (m.inlets[1], m.outlet))
             else:
                 pass
-
-        # keys are station ids, values are lists of waiting (empty) vehicles at station
-        self.idle = defaultdict(list) # idle vehicles
 
         # Precalculate common trips.
         self._dist_path_dict = self._build_station_tables()
@@ -779,10 +736,8 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                     bypass = ts
                     break
 
-            # Calculate the total onramp length
-            post_merge = graph.successors(ts_ids[Station.ON_RAMP_II])[0]
             onramp_length = networkx.dijkstra_path_length(self.graph,
-                                            ts_ids[Station.ACCEL], post_merge)
+                                            ts_ids[Station.ACCEL], merge)
 
             stations[station_int_id] = Station(station_int_id, ts_ids, split, bypass, merge, onramp_length,
                                                unload_positions, queue_positions, load_positions)
@@ -1353,23 +1308,27 @@ class Vehicle(object):
 
         self.pax = []
 
+        end_time = self.controller.sim_end_time + 1
+
         # The spline's coordinate frame is always the first element of the path.
         self._path = [ts_id]
         self._current_path_index = 0
 
-        end_time = self.controller.sim_end_time + 1
         self._spline = CubicSpline([pos, pos+vel*end_time], [vel, vel], [0, 0], [0], [0.0, end_time])
         self._spline_ts_id = ts_id
+
+        self._merge_slot = None
 
         self.traj_solver = TrajectorySolver(self.v_max, self.a_max, self.j_max,
                                             0, self.a_min, self.j_min)
         self.last_update = 0.0
         self.trip = None
         self.state = None
-        self.station = None
-        self._merge_slot = None
 
-        # Info for the reserved berth, not the current berth!!
+        # Station that the vehicle is currently in.
+        self.station = None
+
+        # Info for a reserved berth, not the current berth!!
         self.platform_id = None
         self.berth_pos = None
         self.berth_id = None
@@ -1389,6 +1348,10 @@ class Vehicle(object):
                              Knot(None,0,0,None))
         self._dist_to_stop = decel_spline.q[-1]
         self._time_to_stop = decel_spline.t[-1]
+
+    def __str__(self):
+        return "id:%d, ts_id:%d, pos:%.3f, vel:%.3f, accel:%.3f, last_update:%.3f, model:%s, length:%.3f" \
+               % (self.id, self.ts_id, self.pos, self.vel, self.accel, self.last_update, self.model, self.length)
 
     def get_ts_id(self):
         return self._path[self._current_path_index]
@@ -1518,22 +1481,30 @@ class Vehicle(object):
         if dist is not None:
             return spline.t[-2]
 
-    def enter_station(self):
-        """Slows the vehicle to the station's speed limit and brings the vehicle
-        to a halt at it's reserved berth/platform. Changes the trajectory, but
-        does not alter the vehicle's path."""
+    def enter_station(self, station):
+        """Assumes that vehicle has a reserved berth already.
+        Slows the vehicle to the station's speed limit then brings the vehicle
+        to a halt at its reserved berth/platform. Will change the vehicle's
+        spline and path to accomplish this.
+
+        Returns: The time at which the vehicle will come to a halt within its
+                 reserved berth."""
         # If vehicle has a merge_slot, revoke it.
         if self.merge_slot:
             self.merge_slot.merge.cancel_merge_slot(self.merge_slot)
             self.set_merge_slot(None)
 
-        station = self.trip.dest_station
+        self.station = station
         current_knot = self.estimate_pose(self.controller.current_time)
 
         # Slow to station speed limit at the start of the UNLOAD segment
         unload_dist, unload_path = self.manager.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
         unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
-        to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
+        try:
+            to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
+        except FatalTrajectoryError: # When used during sim startup, the vehicle is not decelerating.
+            assert current_knot.vel == 0
+            to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=station.SPEED_LIMIT)
         unload_knot.time = to_unload_spline.t[-1]
 
         # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
@@ -1542,10 +1513,12 @@ class Vehicle(object):
         to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
 
         spline = to_unload_spline.concat(to_berth_spline)
-        self.controller.set_v_notification(self, spline.t[-1])
+        stop_time = spline.t[-1]
 
         self.set_spline(spline)
         self.set_path(unload_path + berth_path[1:]) # don't duplicate the UNLOAD ts_id
+
+        return stop_time
 
     def send_spline(self):
         """Sends a the current vehicle spline to the sim."""
