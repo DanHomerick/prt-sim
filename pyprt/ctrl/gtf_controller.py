@@ -590,6 +590,17 @@ class Vehicle(object):
         self._spline.fill_spline_msg(traj_msg.spline)
         self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
 
+    def send_path(self):
+        """Sends the path to the sim. Path is a sequence of tracksegment ids,
+        where the first element is expected to be the vehicle's current
+        tracksegment."""
+        if len(self.path) > 1: # only send the itinerary msg if it contains information
+            itinerary_msg = api.CtrlCmdVehicleItinerary()
+            itinerary_msg.vID = self.id
+            itinerary_msg.trackIDs.extend(self.path[1:]) # don't include the segment self is currently on
+            itinerary_msg.clear = False
+            self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
+
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
         assert v_status.vID == self.id
@@ -614,12 +625,7 @@ class Vehicle(object):
         # Note that path_length does not take into account the self's position along the path.
         path_length, path = self.manager.get_path(self.ts_id, leg.dest_ts)
         self.path = path
-
-        itinerary_msg = api.CtrlCmdVehicleItinerary()
-        itinerary_msg.vID = self.id
-        itinerary_msg.trackIDs.extend(path[1:]) # don't include the segment self is currently on
-        itinerary_msg.clear = False
-        self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
+        self.send_path()
 
         departure_time = max(leg.depart, self.controller.current_time) # in seconds
         trip_dist = path_length - self.pos
@@ -639,11 +645,7 @@ class Vehicle(object):
         constraint, if supplied. Assumes that the vehicle's pose is up to date
         and accurate. Returns the scheduled arrival time."""
         self.path = path
-        itinerary_msg = api.CtrlCmdVehicleItinerary()
-        itinerary_msg.vID = self.id
-        itinerary_msg.trackIDs.extend(path[1:]) # don't include the segment self is currently on
-        itinerary_msg.clear = False
-        self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
+        self.send_path()
 
         if speed_limit:
             solver = TrajectorySolver(min(speed_limit, self.v_max), self.a_max, self.j_max, -5, self.a_min, self.j_min)
@@ -654,16 +656,7 @@ class Vehicle(object):
                                         Knot(dist + self.pos, final_speed, 0, None))
 
         final_time = spline.t[-1]
-        # Append a last knot which extends the spline until past the end of the simulation.
-        if spline.t[-1] <= self.controller.sim_end_time:
-            spline.append(Knot(dist+self.pos+final_speed*(self.controller.sim_end_time+1-final_time),
-                               	final_speed, 0, self.controller.sim_end_time+1))
-
-        traj_msg = api.CtrlCmdVehicleTrajectory()
-        traj_msg.vID = self.id
-        spline.fill_spline_msg(traj_msg.spline)
-        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
-
+        self.set_spline(spline)
         return final_time
 
     def park(self, berth_pos, berth_id, ts_id):
@@ -746,27 +739,15 @@ class Vehicle(object):
 
         else: # advancing to the next platform
             path_length, path = self.manager.get_path(self.ts_id, ts_id)
-
-            itinerary_msg = api.CtrlCmdVehicleItinerary()
-            itinerary_msg.vID = self.id
-            itinerary_msg.trackIDs.extend(path[1:])
-            itinerary_msg.clear = False
-            self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
+            self.path = path
+            self.send_path()
 
             final_pos = self.pos + path_length - 0.1 # stop 10 cm short of the end
             spline = self.traj_solver.target_position(Knot(self.pos, self.vel, self.accel, self.manager.current_time),
                                                       Knot(final_pos, 0, 0, None))
 
         finish_time = spline.t[-1]
-
-        # Append a last knot which extends the spline until past the end of the simulation.
-        if spline.t[-1] <= self.controller.sim_end_time:
-            spline.append(Knot(final_pos, 0, 0, self.controller.sim_end_time+1))
-
-        traj_msg = api.CtrlCmdVehicleTrajectory()
-        traj_msg.vID = self.id
-        spline.fill_spline_msg(traj_msg.spline)
-        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
+        self.set_spline(spline)
 
         self.next_berth_pos = berth_position
         self.next_berth_id = berth_id
