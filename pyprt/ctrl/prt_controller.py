@@ -61,8 +61,6 @@ class PrtController(BaseController):
     UNLOAD_ADVANCING = "UNLOAD_ADVANCING"   # Have passengers to unload, on unload platform.
     UNLOAD_WAITING = "UNLOAD_WAITING"       # Capable of immediately disembarking passengers.
     DISEMBARKING = "DISEMBARKING"           # Parked in berth, currently unloading passengers.
-    QUEUE_WAITING = "QUEUE_WAITING"         # No passengers to unload. Waiting to reach load platform.
-    QUEUE_ADVANCING = "QUEUE_ADVANCING"     # No passengers to unload. May be on either the Unload or Queue platform.
     LOAD_WAITING = "LOAD_WAITING"           # Capable of immediately embarking passengers.
     LOAD_ADVANCING = "LOAD_ADVANCING"       # On the load platform.
     EMBARKING = "EMBARKING"                 # Parked in berth, loading passengers
@@ -341,7 +339,10 @@ class PrtController(BaseController):
             v_list.sort(cmp=sort_by_pos)
             for v in v_list:
                 v.run(speed_limit=self.LINE_SPEED) # do_merge expects the vehicle to already have a spline.
-                v.do_merge(m, 0.0)
+                try:
+                    v.do_merge(m, 0.0)
+                except NotAtDecisionPoint as err:
+                    self.set_fnc_notification(v.do_merge, (m, err.time), err.time) # call create_merge again later
 
         # station's heartbeats are all synchronized for now. Change that in the future?
         for station in self.manager.stations.itervalues():
@@ -357,12 +358,11 @@ class PrtController(BaseController):
                     vehicle.state = self.UNLOAD_ADVANCING
                 else:
                     # Skip disembarking entirely
-                    vehicle.state = self.QUEUE_ADVANCING
+                    vehicle.state = self.LOAD_ADVANCING
                     vehicle.trip = None
 
             # Note that this is a separate if/else chain than above
-            if vehicle.state in (self.UNLOAD_ADVANCING, self.QUEUE_ADVANCING,
-                                 self.LOAD_ADVANCING, self.EXIT_ADVANCING):
+            if vehicle.state in (self.UNLOAD_ADVANCING, self.LOAD_ADVANCING, self.EXIT_ADVANCING):
                 # vehicle should be done parking or advancing. Get a status update to make sure.
                 req_v_status = api.CtrlRequestVehicleStatus()
                 req_v_status.vID = vehicle.id
@@ -376,8 +376,7 @@ class PrtController(BaseController):
                     vehicle.station.release_berth(vehicle)
                     self.log.info("t:%5.3f Launched vehicle %d from station %d.",
                                   self.current_time, vehicle.id, vehicle.station.id)
-                    # Note: berth is released when tail of vehicle exits the platform.
-                    #
+
                 else:
                     self.set_v_notification(vehicle, blocked_time)
                     self.log.info("t:%5.3f Delaying launch of vehicle %d from station %d until %.3f (%.3f delay)",
@@ -400,8 +399,7 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
-        if vehicle.state in (self.UNLOAD_ADVANCING, self.QUEUE_ADVANCING,
-                             self.LOAD_ADVANCING, self.EXIT_ADVANCING):
+        if vehicle.state in (self.UNLOAD_ADVANCING, self.LOAD_ADVANCING, self.EXIT_ADVANCING):
             # TODO: Move to on_NOTIFY_VEHICLE_STOPPED when message is implemented
             if abs(vehicle.vel) < 0.01 and abs(vehicle.accel) < 0.01: # check that we're stopped
 
@@ -414,8 +412,6 @@ class PrtController(BaseController):
                     if abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1 and vehicle.ts_id == vehicle.plat_ts and vehicle.vel < 0.001:
                         if vehicle.state is self.UNLOAD_ADVANCING:
                             vehicle.state = self.UNLOAD_WAITING
-                        elif vehicle.state is self.QUEUE_ADVANCING:
-                            vehicle.state = self.QUEUE_WAITING
                         elif vehicle.state is self.LOAD_ADVANCING:
                             vehicle.state = self.LOAD_WAITING
                         elif vehicle.state is self.EXIT_ADVANCING:
@@ -427,9 +423,9 @@ class PrtController(BaseController):
                     raise Exception("Unexpected case: %s" % vehicle._advance_begun)
 
         elif vehicle.state is self.LAUNCH_WAITING:
-            vehicle.state = self.LAUNCHING
             merge = self.manager.track2merge.get(vehicle.station.bypass)
-            if merge:
+            if merge and vehicle.station in merge.stations:
+                vehicle.state = self.LAUNCHING
                 slot, launch_time = merge.create_station_merge_slot(vehicle.station, vehicle, self.current_time)
                 vehicle.set_merge_slot(slot)
                 vehicle.set_spline(vehicle.merge_slot.spline)
@@ -564,7 +560,10 @@ class PrtController(BaseController):
             # manage the vehicle through a merge
             obj = self.manager.inlets.get(vehicle.ts_id)
             if obj and isinstance(obj, Merge):
-                vehicle.do_merge(obj, self.current_time)
+                try:
+                    vehicle.do_merge(obj, self.current_time)
+                except NotAtDecisionPoint as err:
+                    self.set_fnc_notification(vehicle.do_merge, (obj, err.time), err.time) # call create_merge again later
 
             obj = self.manager.outlets.get(vehicle.ts_id)
             # Vehicle just left a merge's zone of control
@@ -1596,10 +1595,19 @@ class Vehicle(object):
         return self.run(speed_limit=speed_limit, dist=dist, final_speed=0)
 
     def do_merge(self, merge, now):
+        """Aquire a MergeSlot from the Merge and use the MergeSlot's spline.
+
+        Raises: Does not catch a NotAtDecisionPoint exception that may be emitted
+                from Merge.create_merge_slot.
+        Returns: A MergeSlot in the normal case. Returns None if a vehicle is bound
+                for a station within the Merge's zone of control and is guaranteed
+                to enter the station (vehicle has already aquired a berth reservation).
+        """
+
         assert isinstance(merge, Merge)
         merge_slot = merge.create_merge_slot(self, now)
         self.set_merge_slot(merge_slot)
-        if self.merge_slot is not None: # Will be None if the vehicle is not yet at decision point
+        if self.merge_slot: # May be None
             self.set_spline(self.merge_slot.spline)
 
     def get_dist_to_line_speed(self, initial_knot=None):
@@ -1659,6 +1667,14 @@ class Trip(object):
         return "dest_station: %d, dest_ts: %d, passengers: %s" % \
                (self.dest_station.id, self.dest_ts, str(self.passengers))
 
+class MergeError(Exception):
+    """Base class for exceptions emenating from the Merge class"""
+
+class NotAtDecisionPoint(MergeError):
+    def __init__(self, time):
+        super(NotAtDecisionPoint, self).__init__()
+        self.time = time # Time at which the vehicle will be at the decision point
+
 class Merge(object):
     """Responsible for zippering vehicles together at the merge point. The
     zone of control extends up both arms of the merging track. The zone of
@@ -1702,10 +1718,11 @@ class Merge(object):
         self.outlet = merge_node
 
         # maps station id's to distances from the station merge to the main merge
-        self.station_dists = {}
         self.stations = []
 
-        # set of ids, mainly for associating vehicles with a merge controller at startup
+        # A list of ts_ids for each zone. Each list is ordered from the zone's
+        # entry point to the merge point (i.e. in order from the inlet to the
+        # outlet).
         self.zone_ids = [[], []]
 
         # Walk upstream for both zones
@@ -1739,7 +1756,6 @@ class Merge(object):
                         down_node = up_node
                         up_node = predecessors[1]
                         station = tracks2station[predecessors[0]]
-                        self.station_dists[station.id] = offset
                         self.stations.append(station)
                         is_station = True
                     elif predecessors[1] in tracks2station:
@@ -1747,7 +1763,6 @@ class Merge(object):
                         up_node = predecessors[0]
                         station = tracks2station[predecessors[1]]
                         self.stations.append(station)
-                        self.station_dists[station.id] = offset
                         is_station = True
 
                     # if the just encountered merge is not due to a station, stop walking
@@ -1769,11 +1784,46 @@ class Merge(object):
                         self.inlets[zone_num] = down_node
                         break # TODO: Notify PRT controller that I'm associated with switch. May need to implement Switches sooner, rather than later
 
+        # Force vehicles to be synched up and ready to merge 'cutoff' meters before the merge.
         self.cutoff = cutoff
-        self._decision_point = max(self.zone_lengths) # max because numbers are negative
 
-        for path in self.zone_ids:
-            path.reverse() # zone_ids are now in the correct order to be a path through the merge.
+        # Distance from the merge by which the Merge's zone of control extends.
+        # Expressed as a negative number. The decision point is normally found
+        # as the length of the shortest leg. If the point would land between
+        # a station's mergepoint and an "onramp's length" upstream of the
+        # station's merge, then the decision point is moved downstream to coincide
+        # with the station's merge point, and the station is not considered to
+        # be in the merge's zone of control.
+        self._decision_point = max(self.zone_lengths) # max because numbers are negative
+        i = 0
+        while i < len(self.stations):
+            s = self.stations[i]
+            station_merge_offset = self.offsets[s.merge]
+            if station_merge_offset - s.onramp_length < self._decision_point < station_merge_offset:
+                self._decision_point = station_merge_offset
+                # restart the loop, to ensure that the decision_point didn't
+                # get moved into a no-mans-land on the other leg of the merge.
+                i = 0
+                continue
+            i += 1
+
+        # Only keep stations that are within the
+        # zone of control (as determined by the decision_point).
+        self.stations[:] = [s for s in self.stations if self._decision_point < self.offsets[s.merge]]
+
+        # Only keep track segs that are within the zone of control.
+        for zone_num in range(len(self.zone_ids)):
+            path = []
+            for ts_id in self.zone_ids[zone_num]:
+                if self.offsets[ts_id] > self._decision_point: # ts_id is downstream of decision point
+                    path.append(ts_id)
+                else:
+                    path.append(ts_id)
+                    break
+
+            self.inlets[zone_num] = path[-1]
+            path.reverse() # ts_ids are now in the correct order to be a path through the merge.
+            self.zone_ids[zone_num] = path
 
     def create_merge_slot(self, vehicle, now):
         """Creates a non-conflicting MergeSlot for a vehicle that is entering
@@ -1801,12 +1851,13 @@ class Merge(object):
         v_rear_pos = v_pos - vehicle.length
         dist = -v_pos
 
-        # If the vehicle isn't to the decision point yet, then delay managing it
+        # If the vehicle isn't to the decision point yet, then delay managing it.
+        # Don't require that the vehicle not be past the decision point, so that
+        # the code can be reused during simulation startup.
         if v_rear_pos < self._decision_point - 0.0001:
             decision_time = vehicle.spline.get_time_from_dist(self._decision_point - v_rear_pos, now)
             assert decision_time >= now, (decision_time, now)
-            self.controller.set_fnc_notification(vehicle.do_merge, (self, decision_time), decision_time) # call manage again
-            return None
+            raise NotAtDecisionPoint(decision_time)
 
         # decide which zone the vehicle is in.
         if vehicle.ts_id in self.zone_ids[0]:
@@ -2060,7 +2111,7 @@ class Merge(object):
         except ValueError:
             # Rear slot wasn't in self.reservations; it was a dummy slot.
             if __debug__ and self.reservations:
-                assert self.reservations[-1].end_time <= slot.start_time
+                assert slot.start_time - self.reservations[-1].end_time > -1E-6
             self.reservations.append(slot)
         return slot, launch_time
 
