@@ -15,8 +15,8 @@ from numpy import zeros
 
 import pyprt.shared.api_pb2 as api
 from base_controller import BaseController
-from trajectory_solver import TrajectorySolver
-from pyprt.shared.cubic_spline import Knot
+from trajectory_solver import TrajectorySolver, FatalTrajectoryError
+from pyprt.shared.cubic_spline import Knot, CubicSpline
 from pyprt.shared.utility import pairwise
 
 def main():
@@ -524,6 +524,13 @@ class Station(object):
 class Vehicle(object):
     SPEED_INCREMENT = 2.77777  # 10 km/hr
 
+    # To prevent a vehicle's trajectory from being undefined, splines are extended
+    # so as to reach to the end of the simulation (and a little further). This
+    # constant controls the 'little further'. Needs to be long enough that no algorithm
+    # tries to predict a vehicle trajectory beyond this length. The incintive to keep
+    # it somewhat small is that rounding errors are excacerbated if it is very large.
+    SPLINE_TIME_EXTENSION = 3600     # in seconds
+
     controller = None # interfaces with the sim
     manager = None # high level planner
 
@@ -544,7 +551,7 @@ class Vehicle(object):
         self.pax = []
         self.path = []
         self.leg = None
-        self.spline = None
+        self._spline = None
         self.traj_solver = TrajectorySolver(self.v_max, self.a_max, self.j_max,
                                             -5, self.a_min, self.j_min)
 
@@ -557,6 +564,32 @@ class Vehicle(object):
         self.next_berth_pos = None
         self.next_berth_id = None
 
+    def get_spline(self):
+        return self._spline
+    def set_spline(self, spline, send=True):
+        """Side Effect Warning: If the spline does not continue until the end of
+                             the sim, then it is extended.
+        """
+        assert isinstance(spline, CubicSpline)
+
+        sim_end_time = self.controller.sim_end_time
+        if spline.t[-1] < sim_end_time:
+            assert abs(spline.a[-1]) < 1E-6
+            delta_q = spline.v[-1]*(sim_end_time + self.SPLINE_TIME_EXTENSION - spline.t[-1])
+            spline.append(Knot(spline.q[-1]+delta_q, spline.v[-1], 0, sim_end_time+self.SPLINE_TIME_EXTENSION), 0)
+
+        self._spline = spline
+        if send:
+            self.send_spline()
+    spline = property(get_spline, doc="""A vehicle's planned trajectory represented by a cubic_spline.CubicSpline object.""")
+
+    def send_spline(self):
+        """Sends a the current vehicle spline to the sim."""
+        traj_msg = api.CtrlCmdVehicleTrajectory()
+        traj_msg.vID = self.id
+        self._spline.fill_spline_msg(traj_msg.spline)
+        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
+
     def update_vehicle(self, v_status):
         """Updates the relevant vehicle data."""
         assert v_status.vID == self.id
@@ -568,72 +601,6 @@ class Vehicle(object):
 
         if self.vel != 0:
             assert self.state in (self.controller.RUNNING_LEG, self.controller.PARKING)
-
-    def make_timed_trajectory(self, dist, start_time, end_time):
-        """Returns a cubic_spline.CubicSpline containing a trajectory that moves
-        the vehicle dist meters and comes to a stop.
-        'start_time' and 'end_time' are both measured in seconds, with the
-        beginning of the simulation as 0.
-        'end_time' is unusual in that it is a target, not a dictate. The
-        vehicle will not exceed its velocity/accel/jerk limits, and so it may
-        arrive late. In most cases, the vehicle will actually arrive a little
-        early. It will be rare for it to arrive at exactly end_time.
-        """
-        total_time = end_time - start_time
-
-        # In principle, the vehicle should travel as slow as possible while still
-        # arriving before end_time. This keeps us closer to the schedule, and
-        # helps make up for the fact that we don't have any knowledge about speed
-        # limits. To do this, we choose a v_max which may be lower than the
-        # vehicle's v_max, while still being sufficient to arrive on time or
-        # early.
-
-        # An initial estimate of v_max assumes infinite jerk, which will make
-        # the vehicle arrive slightly too late. The max_speed is rounded up to
-        # the nearest 10 km/hr increment, and then increased in 10 km/hr
-        # increments until the vehicle arrives on-time or better.
-        if total_time <= 0 or dist/total_time > self.v_max:
-            v_max = self.v_max # go as quick as we can
-        else:
-            # SEE: trajectory_calcs.py, prob4. Assuming symmetry of jerk, accel!
-            # FIXME: Assumption is generally bad, since more braking power than
-            #        accel. Results in too low of a v_max, which is acceptable, but wastes CPU time
-            A = (1/(2*self.a_max) - 1/(2*self.a_min))  # (1/(2*an) - 1/(2*ax))
-            B = (total_time)                           # (t_total)
-            C = -(dist)                         # -(q_total)
-            v_max = max(TrajectorySolver.nonnegative_roots(A, B, C))
-            v_max = (v_max//self.SPEED_INCREMENT + 1)*self.SPEED_INCREMENT  # Round up
-
-        final_pos = dist + self.pos
-
-        # Keep bumping up the target v_max until we arrive on time, or reach
-        # the vehicle's max speed. If the initial guess at v_max is good, the
-        # trajectory is only calculated once. (Yes, this is linear search.)
-        initial_knot = Knot(self.pos, self.vel, self.accel, start_time)
-        final_knot = Knot(final_pos, 0, 0, None)
-        while True:
-            cspline, fnc = self.traj_solver.target_position(initial_knot,
-                                                            final_knot,
-                                                            fnc_info=True)
-
-            # target_position_none ignores v_max, so raising v_max doesn't help
-            if fnc == self.traj_solver.target_position_none:
-                break
-            if cspline.t[-1] - cspline.t[0] <= total_time: # staying on or ahead of schedule
-                break
-            elif v_max >= self.v_max:
-                break # vehicle will fall behind schedule, but oh well.
-            else:
-                # bump up the top speed, but not above vehicle's max
-                v_max = min(self.v_max, v_max + self.SPEED_INCREMENT)
-
-        assert abs((cspline.q[-1] - cspline.q[0]) -(final_pos - self.pos)) < 0.01
-
-        # Append a last knot which extends the spline until past the end of the simulation.
-        if cspline.t[-1] <= self.controller.sim_end_time:
-            cspline.append(Knot(final_pos, 0, 0, self.controller.sim_end_time+1))
-
-        return cspline
 
     def run_leg(self):
         """Plans an itinerary and trajectory for the vehicle to do the next leg
@@ -657,12 +624,15 @@ class Vehicle(object):
         departure_time = max(leg.depart, self.controller.current_time) # in seconds
         trip_dist = path_length - self.pos
         assert trip_dist >= 0
-        spline = self.make_timed_trajectory(trip_dist, departure_time, leg.arrive)
 
-        traj_msg = api.CtrlCmdVehicleTrajectory()
-        traj_msg.vID = self.id
-        spline.fill_spline_msg(traj_msg.spline)
-        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
+        initial = Knot(self.pos, self.vel, self.accel, departure_time)
+        final = Knot(path_length, 0, 0, leg.arrive)
+        try:
+            spline = self.traj_solver.target_time(initial, final)
+        except FatalTrajectoryError:
+            spline = self.traj_solver.target_position(initial, final) # Falling behind on the schedule. Go as fast as possible.
+
+        self.set_spline(spline)
 
     def run(self, path, dist, final_speed=0, speed_limit=None):
         """Commands the vehicle's path and trajectory. Obeys the speed_limit
@@ -709,16 +679,16 @@ class Vehicle(object):
         dist = self.berth_pos + path_length - self.pos
         assert dist >= 0
 
-        # make the trajectory
-        self.spline = self.make_timed_trajectory(dist, self.controller.current_time, self.leg.arrive)
-
-        # send the trajectory
-        traj_msg = api.CtrlCmdVehicleTrajectory()
-        traj_msg.vID = self.id
-        self.spline.fill_spline_msg(traj_msg.spline)
-        self.controller.send(api.CTRL_CMD_VEHICLE_TRAJECTORY, traj_msg)
-
-        return self.spline.t[-2]
+        initial = Knot(self.pos, self.vel, self.accel, self.controller.current_time)
+        final = Knot(path_length + self.berth_pos, 0, 0, None)
+        if initial.accel <= 0:
+            # Computation is faster if we can limit the max velocity.
+            spline = self.traj_solver.target_position(initial, final, max_speed=self.vel)
+        else:
+            spline = self.traj_solver.target_position(initial, final)
+        time = spline.t[-1]
+        self.set_spline(spline)
+        return time
 
     def is_full(self):
         assert len(self.pax) <= self.capacity
@@ -770,7 +740,7 @@ class Vehicle(object):
         """Sets the vehicle on a itenarary and trajectory for advancing to the
         next berth. Returns the time at which the vehicle will arrive."""
         if platform_id == self.platform_id: # staying on the same platform
-            final_pos = berth_pos - 0.1 # stop 10 cm short of the end
+            final_pos = berth_position - 0.1 # stop 10 cm short of the end
             spline = self.traj_solver.target_position(Knot(self.pos, self.vel, self.accel, self.manager.current_time),
                                                       Knot(final_pos, 0, 0, None))
 
