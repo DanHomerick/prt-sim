@@ -34,10 +34,10 @@ package edu.ucsc.track_builder
 		}
 		
 		public function onMapClick(event:MapMouseEvent):void {
-//			trace("Vehicles.onMapClick");
+			var marker:SnappingMarker = Globals.getActiveMarker();
 			try {
 				Undo.startCommand(Undo.USER);
-				addVehicle(Globals.destMarker.getLatLng(), Globals.destMarker.overlay, false);
+				addVehicle(marker.getLatLng(), marker.getSnapOverlay(), false);
 				Undo.endCommand();
 			} catch (err:VehicleError) {
 				Undo.endCommand();
@@ -53,17 +53,22 @@ package edu.ucsc.track_builder
 
 		public function makePreview():void {
 			Undo.undo(Undo.PREVIEW); // get rid of the old 'live preview', if one exists
-			if (Globals.destMarker.overlay) {
-				try {
-					Undo.startCommand(Undo.PREVIEW);
-					addVehicle(Globals.destMarker.getLatLng(), Globals.destMarker.overlay, true);
-					Undo.endCommand();
-				} catch (err:VehicleError) {
-					// undo any side effects from before the error
-					Undo.endCommand();
-					Undo.undo(Undo.PREVIEW);
-				}				
+			var marker:SnappingMarker = Globals.getActiveMarker();
+			
+			if (marker.getSnapOverlay() == null) { // active marker isn't attached to an overlay.
+				return; // do nothing
 			}
+							
+			try {
+				Undo.startCommand(Undo.PREVIEW);
+				addVehicle(marker.getLatLng(), marker.getSnapOverlay(), true);
+				Undo.endCommand();
+			} catch (err:VehicleError) {
+				// undo any side effects from before the error
+				Undo.endCommand();
+				Undo.undo(Undo.PREVIEW);
+			}				
+
 		}
 
 		public function addVehicle(latlng:LatLng, tOverlay:TrackOverlay, preview:Boolean):void {

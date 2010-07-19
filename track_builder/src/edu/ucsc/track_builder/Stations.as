@@ -6,7 +6,6 @@ package edu.ucsc.track_builder
 	import com.google.maps.MapMouseEvent;
 	
 	import flash.events.MouseEvent;
-	import flash.geom.Matrix3D;
 	import flash.geom.Vector3D;
 	
 	import mx.controls.Alert;
@@ -14,11 +13,11 @@ package edu.ucsc.track_builder
 	/** Acts as a factory for Stations and StationOverlays.
 	 * Keeps references to both of them in parallel arrays.
 	 * Contains some handlers for GUI events relating to stations. */	
-	public final class Stations
+	public class Stations
 	{			
 		[Bindable] public var maxSpeed:Number;
 		public var label:String = "";
-		public var bidirectional:Boolean;
+		public var reverse:Boolean = false;
 		[Bindable] public var lateralOffset:Number;
 		[Bindable] public var accelLength:Number;
 		[Bindable] public var slotLength:Number;		
@@ -59,15 +58,17 @@ package edu.ucsc.track_builder
 
 		public function onMapClick(event:MapMouseEvent):void {
 			Undo.undo(Undo.PREVIEW); // undo any preview stuff
-			var overlay:TrackOverlay = Globals.destMarker.overlay;
-			if (overlay == null) {
+			var marker:SnappingMarker = Globals.getActiveMarker();			
+			
+			if (marker.getSnapOverlay() == null) {
 				Alert.show("Cursor must be over a straight track segment to place a station.");
 				return;
 			}
-			try {				
-				Undo.startCommand(Undo.USER); // somewhat temporary. Splits adding a station into two undo phases, creating 'bypass' track, then adding the station.		
-				var latlng:LatLng = overlay.snapTo(null, Globals.destMarker.getLatLng()); // redundant?
-				var stat:Station = makeOfflineStation(overlay, latlng, false, false); // add the station to it, resizing it to just the right length
+			try {
+				Undo.startCommand(Undo.USER); // somewhat temporary. Splits adding a station into two undo phases, creating 'bypass' track, then adding the station.						
+				var stat:Station = makeOfflineStation(marker.getSnapOverlay(), marker.getLatLng(), false); // add the station to it, resizing it to just the right length
+				Undo.assign(Globals, 'dirty', Globals.dirty);
+				Globals.dirty = true; // mark that changes have occured since last save
 				Undo.endCommand();
 			} catch (err:StationLengthError) {
 				Undo.endCommand();
@@ -87,61 +88,61 @@ package edu.ucsc.track_builder
 		public function makePreview():void {
 			// make a 'live preview', that is, a temporary station
 			Undo.undo(Undo.PREVIEW); // get rid of the old 'live preview', if one exists
-			if (Globals.destMarker.overlay) {
-				var overlay:TrackOverlay = Globals.destMarker.overlay;
-				var latlng:LatLng = Globals.destMarker.getLatLng();			
-				
-				try {				
-					Undo.startCommand(Undo.PREVIEW);	
-					makeOfflineStation(overlay, latlng, false, true);
-					Undo.endCommand();
-				} catch (err:StationLengthError) {
-					Undo.endCommand();
-					Undo.undo(Undo.PREVIEW); // undo any side effects from before the error
-				} catch (err:TrackError) {
-					// just do minimal cleanup. The user just won't see a preview in this case.
-					Undo.endCommand();
-					Undo.undo(Undo.PREVIEW); 					
-				}
+			var marker:SnappingMarker = Globals.getActiveMarker();
+			if (marker.getSnapOverlay() == null) {
+				return; // The active marker isn't attached to an overlay. Do nothing.
+			}
+			
+			try {				
+				Undo.startCommand(Undo.PREVIEW);	
+				makeOfflineStation(marker.getSnapOverlay(), marker.getLatLng(), true);
+				Undo.endCommand();
+			} catch (err:StationLengthError) {
+				Undo.endCommand();
+				Undo.undo(Undo.PREVIEW); // undo any side effects from before the error
+			} catch (err:TrackError) {
+				// just do minimal cleanup. The user just won't see a preview in this case.
+				Undo.endCommand();
+				Undo.undo(Undo.PREVIEW); 					
 			}
 		}
 
-		public function makeOfflineStation(bypassOverlay:TrackOverlay, stationStart:LatLng, reverse:Boolean, preview:Boolean):Station {						
-			var bypass:TrackSegment;
-			bypass = reverse ? bypassOverlay.segments[1] : bypassOverlay.segments[0]; 	
+		public function makeOfflineStation(mainLineOverlay:TrackOverlay, stationStart:LatLng, preview:Boolean):Station {
+			if (stationStart == null) {
+				throw new StationLengthError();
+			}
 
-			if (stationStart != null && !stationStart.equals(bypassOverlay.getStart())) {
-				bypassOverlay = bypassOverlay.split(stationStart, bypass.getStartOffset(), preview);
-				bypass = reverse ? bypassOverlay.segments[1] : bypassOverlay.segments[0]; 
-			} else {
-				trace("Hmm");
+			var stationBundle:TrackBundle = new TrackBundle();
+			
+			// Shadow Stations.reverse with a local reverse. Only true when the overlay is bidirectional.
+			var reverse:Boolean = this.reverse && mainLineOverlay.bidirectional;
+									
+			var bypass:TrackSegment;
+			if (!reverse) {
+				bypass = mainLineOverlay.segments[0];
+			} else { // reverse == true
+				bypass = mainLineOverlay.segments[1];
 			}
 
 			// make the off ramp (squiggle + decel run)
-			var segs:Vector.<TrackSegment> = makeRamp(bypass, accelLength, lateralOffset , Globals.tracks.radius, OFF_RAMP, preview);
+			var bypassVec:Vector3D = Utility.calcVectorFromLatLngs(bypass.getStart(), bypass.getEnd());
+			bypassVec.normalize();
+			var offRamp:TrackBundle = makeRamp(bypassVec, stationStart, this.accelLength, this.lateralOffset,
+					Globals.tracks.radius, Globals.tracks.driveSide, this.OFF_RAMP, Globals.tracks.maxSpeed, 
+					bypass.getStartOffset(), bypass.getEndOffset(), preview);
 			
-			// make the main station line 
-			var stationDir:Vector3D = Utility.calcVectorFromLatLngs(bypass.getStart(), bypass.getEnd()); // parallel to bypass
-			
+			/* Make the main station line */ 			
 			// make a TrackSegment for each Platform, then make the Platform
 			var platforms:Vector.<Platform> = new Vector.<Platform>();
 			var num_slots:Vector.<Number> = Vector.<Number>([unloadSlots, queueSlots, loadSlots]);
+			var platformStart:LatLng = offRamp.connectNewLatLng.clone();
+			var platformOverlay:TrackOverlay;
 			for (var i:uint=0; i < num_slots.length; ++i) {
-				stationDir.scaleBy(slotLength*num_slots[i] / stationDir.length); // rescale to slotLength*slots
-				var platformSegStart:LatLng = segs[segs.length-1].getEnd();
-				var platformSegEnd:LatLng = Utility.calcLatLngFromVector(platformSegStart, stationDir);			
-				segs.push(new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
-				                           label,
-				                           platformSegStart,
-				                           platformSegEnd,
-				                           maxSpeed,
-				                           Globals.tracks.offset,
-				                           Globals.tracks.offset,
-				                           0,
-				                           0,
-				                           null,
-				                           preview)); // creates the station main line
-				var platform:Platform = new Platform(segs[segs.length-1].id, i)
+				var platformEnd:LatLng = Utility.calcLatLngFromVector(platformStart, bypassVec, slotLength*num_slots[i]);
+				platformOverlay = Globals.tracks.makeStraight( // creates the station main line
+						platformStart, platformEnd, false, preview, this.maxSpeed);
+				stationBundle.addOverlay(platformOverlay);
+				var platform:Platform = new Platform(platformOverlay.segments[0].id, i)
 				for (var j:uint=0; j < num_slots[i]; ++j) {
 					if (i == 0) {
 						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, true, false))
@@ -153,204 +154,232 @@ package edu.ucsc.track_builder
 						throw new Error("Whoops. Bug.")
 					}
 				}
-				platforms.push(platform);
-				
+				platforms.push(platform);				
+				platformStart = platformOverlay.getEnd();								
 			}
 
-			// make the on ramp (accel run + squiggle)			                           
-			segs = segs.concat(makeRamp(segs[segs.length-1], accelLength, lateralOffset , Globals.tracks.radius, ON_RAMP, preview)); 
+			// make the on ramp (accel run + squiggle)
+			var onRamp:TrackBundle = makeRamp(bypassVec, platformEnd.clone(), this.accelLength, this.lateralOffset,
+					Globals.tracks.radius, Globals.tracks.driveSide, this.ON_RAMP, Globals.tracks.maxSpeed, 
+					bypass.getEndOffset(), bypass.getEndOffset(), preview); 
 
-			// adjust the main line to have the right length
-			var stationEnd:LatLng = segs[segs.length-1].getEnd();
-			var stationLength:Number = stationStart.distanceFrom(stationEnd);			
-			if (bypass.getStart().distanceFrom(bypass.getEnd()) >= stationLength) { // bypass was long enough already
-				bypassOverlay.split(stationEnd, bypass.getEndOffset(), preview);			
-			} else if (bypassOverlay.isEndExposed()) { // bypass too short, but it's end is exposed, so it may be modified
-				bypassOverlay.setEnd(stationEnd);
-			} else {				
-				throw new StationLengthError("Station needs a longer straight section.");	
-			}
-
-			// connect the segments
-			for (i=0; i < segs.length-1; ++i) {
-				segs[i].connect(segs[i+1]);
-			}
-
-			// create overlays for the segments
-			var segOverlays:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
-			for each (var ts:TrackSegment in segs) {
-				var tsVec:Vector.<TrackSegment> = new Vector.<TrackSegment>();
-				tsVec.push(ts);
-				segOverlays.push(new TrackOverlay(tsVec));
+			// Check that the resulting station will fit in the desired location.
+			var availableTrackLength:Number;
+			if (!reverse) {
+				availableTrackLength = stationStart.distanceFrom(mainLineOverlay.getEnd());	
+			} else { // reverse == true
+				availableTrackLength = stationStart.distanceFrom(mainLineOverlay.getStart());
 			}
 			
-			// connect the beginning and ending segments to the main track
+			var stationLength:Number = stationStart.distanceFrom(onRamp.connectNewLatLng);
+			
+			if (stationLength > availableTrackLength) {
+				throw new StationLengthError("Station needs a longer straight section.");
+			}
+			
+			// Skip some steps when just generating a preview
 			if (!preview) {
-				for each (var prevId:String in bypass.prev_ids) {
-					var prev:TrackOverlay = Globals.tracks.getTrackOverlay(prevId);
-					prev.connect(segOverlays[0]);
+				// connect together all the parts of the station
+				for (i=0; i < stationBundle.overlays.length - 1; ++i) {
+					stationBundle.overlays[i].connect(stationBundle.overlays[i+1]);	
+				} 
+				offRamp.connectNewOverlays[0].connect(stationBundle.overlays[0]);
+				stationBundle.overlays[stationBundle.overlays.length-1].connect(onRamp.connectExistingOverlays[0]);
+				
+				// split the main line and connect the ramps to it.				
+				var bypassOverlay:TrackOverlay;
+				var preStationOverlay:TrackOverlay;
+				var postStationOverlay:TrackOverlay;
+								
+				if (!reverse) {				
+					if (!stationStart.equals(mainLineOverlay.getStart())) { // Normal case.
+						preStationOverlay = mainLineOverlay;
+						bypassOverlay = mainLineOverlay.split(stationStart, mainLineOverlay.segments[0].getStartOffset(), preview);						
+					} else { // Station is starting on mainLineOverlay's start. Don't split it. 
+						if (mainLineOverlay.segments[0].prev_ids.length > 1) {
+							throw new StationLengthError("The starting point for a station cannot be directly on a merge point.");	
+						} else if (mainLineOverlay.segments[0].prev_ids.length == 1) {
+							preStationOverlay = Globals.tracks.getTrackOverlay(mainLineOverlay.segments[0].prev_ids[0]);
+						} else {
+							preStationOverlay = null;
+						}
+						bypassOverlay = mainLineOverlay;
+					}
+
+					if (!onRamp.connectNewLatLng.equals(bypassOverlay.getEnd())) { // Normal case.
+						postStationOverlay = bypassOverlay.split(onRamp.connectNewLatLng, bypassOverlay.segments[0].getStartOffset(), preview);	
+					} else { // Station is ending on mainLineOverlay's end.
+						if (bypassOverlay.segments[0].next_ids.length > 1) {
+							throw new StationLengthError("The ending point for a station cannot be directly on a switch point.");
+						} else if (bypassOverlay.segments[0].next_ids.length == 1) {
+							postStationOverlay = Globals.tracks.getTrackOverlay(bypassOverlay.segments[0].next_ids[0]);
+						} else {
+							postStationOverlay = null;
+						}
+					}
+				
+				} else { // reverse == true					
+					if (!onRamp.connectNewLatLng.equals(mainLineOverlay.getStart())) { // Normal case
+						postStationOverlay = mainLineOverlay;
+						bypassOverlay = mainLineOverlay.split(onRamp.connectNewLatLng, mainLineOverlay.segments[1].getEndOffset(), preview);
+					} else { // Station ends on mainLineOverlay's start.
+						bypassOverlay = mainLineOverlay;
+						if (bypassOverlay.segments[1].next_ids.length > 1) {
+							throw new StationLengthError("The ending point for a station cannot be directly on a switch point.");
+						} else if (bypassOverlay.segments[0].next_ids.length == 1) {
+							postStationOverlay = Globals.tracks.getTrackOverlay(bypassOverlay.segments[0].next_ids[0]);	
+						} else {
+							postStationOverlay = null;
+						}
+					}
+													
+					if (!stationStart.equals(mainLineOverlay.getEnd())) { // Normal case
+						preStationOverlay = bypassOverlay.split(stationStart, mainLineOverlay.segments[1].getStartOffset(), preview);						
+					} else { // Station is starting on reversed mainLineOverlay's end. Don't split it.
+						if (mainLineOverlay.segments[1].prev_ids.length > 1) {
+							throw new StationLengthError("The starting point for a station cannot be directly on a merge point.");
+						} else if (bypassOverlay.segments[1].prev_ids.length == 1) { 						
+							preStationOverlay = Globals.tracks.getTrackOverlay(bypassOverlay.segments[1].prev_ids[0]);
+						} else {
+							preStationOverlay = null;
+						}					
+					}
 				}
-				for each (var nextId:String in bypass.next_ids) {
-					var next:TrackOverlay = Globals.tracks.getTrackOverlay(nextId);
-					next.connect(segOverlays[segOverlays.length-1]);
+				
+				if (preStationOverlay != null) {
+					preStationOverlay.connect(offRamp.connectExistingOverlays[0]);
+				}
+				if (postStationOverlay != null) {
+					postStationOverlay.connect(onRamp.connectNewOverlays[0]);
 				}
 			}
-
+			
+			// Make the Station instance
 			var id:String = IdGenerator.getStationId();
-			var station:Station = new Station(id, label, segs, platforms, coverageRadius, peakHour, daily);			
+			var segs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
+			for each (var bundle:TrackBundle in [offRamp, stationBundle, onRamp]) {						
+				for each (var olay:TrackOverlay in bundle.overlays) {
+					segs.push(olay.segments[0]);
+				}
+			}
+			var station:Station = new Station(id, this.label, segs, platforms, this.coverageRadius, this.peakHour, this.daily);			
 			var overlay:StationOverlay = new StationOverlay(station);
-			
-			Undo.assign(Globals, 'dirty', Globals.dirty);
-			Globals.dirty = true; // mark that changes have occured since last save
-			
+						
 			return station;
 		}
 
-		/** seg: the straight track segment that the ramp begins from.
-		 *  length: the amount of track required to decelerate to station entry speed.
-		 *  offset: the minimum perpendicular seperation between the main line and the station track.
-		 *  radius: minimum radius circle, as determined by lateral acceleration limits.
+		/** Makes a station ramp consisting of two curved segments (the 'squiggle') and a straight segment.
+		 * The squiggle moves the track <code>lateralOffset</code> meters away from vec and leaves it parallel to vec.
+		 * The straight segment is <code>length - squiggle_length</code> meters long. If the ramp would exceed
+		 * <code>length</code> meters, then a StationLengthError is thrown.
 		 * 
-		 * Uses two arcsegments of equal length to bring the station line away from the main line by amount 'offset'.
-		 * Then uses a straight segment of whatever length is required to finish the deceleration.
+		 * @param vec A unit vector that points in the direction of the bypass. Must have length 1.
+		 * @param latlng Starting location for the ramp.
+		 * @param length Total track length for the entire ramp (including decel segment). Measured in meters.
+		 * @param lateralOffset Desired distance from the bypass and the station line. Measured in meters.
+		 * @param radius Desired radius for the two curve segments which make up the squiggle. The actual radius used
+		 * will be: <code>max(radius, lateralOffset/2.0)</code>. Measured in meters.
+		 * @param side One of Tracks.LEFT or Tracks.RIGHT, which may be thought of as counterclockwise and clockwise
+		 * respectively.
+		 * @param rampType One of OFF_RAMP or ON_RAMP. 
+		 * @param maxSpeed Measured in meters/second.
+		 * @param startOffset Vertical distance from the ground of the start point. Measured in meters.
+		 * @param endOffset Vertical distance from the ground of the end point. Measured in meters.
+		 * @param preview Whether or not this function has been called as part of the live preview system.
 		 * 
-		 * For SkyTran San Jose Demo: offset=2, length=40
-		 */ 		
-		public function makeRamp(seg:TrackSegment, length:Number, offset:Number, radius:Number, type:uint, preview:Boolean):Vector.<TrackSegment> { 									
-			var trackSegVec:Vector3D = Utility.calcVectorFromLatLngs(seg.getStart(), seg.getEnd()); // points along the main track 
-			trackSegVec.normalize(); // make it a unit vector
+		 * @return A TrackBundle containing the TrackOverlays for the ramp. For an OFF_RAMP,
+		 * the bundle's only connectExisting element refers to where the ramp connects to the main line and 
+		 * the bundle's connectNew refers to where the ramp connects to the station line. For an ON_RAMP,
+		 * connectExisting refers to the where the ramp connects to the station line, and connectNew refers to where
+		 * the ramp connects to the main line. 
+		 */ 
+		public function makeRamp(
+				vec:Vector3D, latlng:LatLng, length:Number, lateralOffset:Number, radius:Number, side:String,
+				rampType:uint, maxSpeed:Number, startOffset:Number, endOffset:Number, preview:Boolean 
+				):TrackBundle
+		{
+			var bundle:TrackBundle = new TrackBundle();
+					
+			// If the radius is less than the lateral offset, we would need to introduce a straight segment in the
+			// 'squiggle'. Rather than doing this, just increase the radius.
+			radius = Math.max(radius, lateralOffset/2.0);
+			var angle:Number = Math.acos((radius - lateralOffset/2.0)/radius);
 			
-			var newSegs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
-
-			var arcAngle:Number = Math.acos((radius - offset/2) / radius);
-			var squiggleLen:Number = 2*radius*arcAngle;
+			// Assumes both curves in the squiggle are the same length.
+			var squiggleLength:Number = 2*angle*radius
+			var straightLength:Number = length - squiggleLength;
+			if (straightLength < 0.001) {
+				throw new StationLengthError("The requested station ramp length is too short, given the requested lateral offset and curve radius.");
+			} 
 			
-			var startLatLng:LatLng;
-			if (type == OFF_RAMP) {
-				startLatLng = seg.getStart();
-			} else { // if (type == ON_RAMP) {
-				// make acceleration run
-				var accelVec:Vector3D = trackSegVec.clone();
-				var accelLen:Number = length - squiggleLen;
-				if (accelLen > 0) { // normal case
-					accelVec.scaleBy(accelLen);
-				} // otherwise we just have a 1 meter accel segment (easier than ommitting entirely).
-				var accelEnd:LatLng = Utility.calcLatLngFromVector(seg.getEnd(), accelVec);
-				newSegs.push(new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
-				                              label,
-				                              seg.getEnd(),
-				                              accelEnd,
-				                              Globals.tracks.maxSpeed,
-				                              Globals.tracks.offset,
-				                              Globals.tracks.offset,
-				                              0,
-				                              0,
-				                              null,
-				                              preview)); 
-				startLatLng = accelEnd.clone();
+			if (rampType == ON_RAMP) {
+				var straightEnd:LatLng = Utility.calcLatLngFromVector(latlng, vec, straightLength);
+				var straight:TrackOverlay = Globals.tracks.makeStraight(latlng, straightEnd, false, preview, maxSpeed, startOffset, endOffset);
+				bundle.addOverlay(straight);
+				bundle.setConnectExisting(latlng, straight);				
+				latlng = straight.getEnd(); // start the squiggle at latlng, regardless of whether an ON_RAMP or OFF_RAMP
 			}
 			
-			// make a vector that points to the center of the first curve
-			var centerVec:Vector3D;
-			if (type == OFF_RAMP) {
-				centerVec = new Vector3D(trackSegVec.y, -trackSegVec.x); // CW perpindicular
-			} else { // if (type == ON_RAMP)
-				centerVec = new Vector3D(-trackSegVec.y, trackSegVec.x); // CCW perpindicular
+			var squiggleIntersectDist:Number = Math.tan(angle/2.0)*radius;
+			var curveOneIntersect:LatLng = Utility.calcLatLngFromVector(latlng, vec, squiggleIntersectDist);
+			var curveOneV1:Vector3D = vec.clone();
+			curveOneV1.negate();
+			var curveOneV2:Vector3D = vec.clone();						
+			if ((side == Tracks.LEFT && rampType == OFF_RAMP) || (side == Tracks.RIGHT && rampType == ON_RAMP)) { // rotate vector CCW
+				Utility.rotate(curveOneV2, angle);
+			} else { // (side == Tracks.LEFT && ON_RAMP) || (side == Tracks.RIGHT && OFF_RAMP) // rotate vector CW
+				Utility.rotate(curveOneV2, -angle);
 			}
-			centerVec.scaleBy(radius);
-			var centerLatLng:LatLng = Utility.calcLatLngFromVector(startLatLng, centerVec);
+						 
+			var curveOne:TrackOverlay = Globals.tracks.makeTangentCurve(
+					curveOneIntersect, curveOneV1, curveOneV2, maxSpeed, startOffset, endOffset, radius, false, preview);
+			bundle.addOverlay(curveOne);
+			
+			// use a couple vectors while finding the intersect point for curve 2
+			var curveTwoIntersectVec:Vector3D = curveOneV2.clone();
+			curveTwoIntersectVec.scaleBy(lateralOffset / Math.cos( Math.PI/2.0 - angle ));
+			var curveTwoIntersect:LatLng = Utility.calcLatLngFromVector(curveOneIntersect, curveTwoIntersectVec);
+			var curveTwoV1:Vector3D = curveOneV2.clone();
+			curveTwoV1.negate();
+			var curveTwoV2:Vector3D = curveOneV1.clone();
+			curveTwoV2.negate();
 						
-			var chordLen:Number = Math.SQRT2*radius*Math.sqrt(1-Math.cos(arcAngle)); // from law of cosines
-			var chordAngle:Number = Math.sin( (offset/2) / chordLen); // actually, 90 deg - chordangle
-						
-			// make a vector that points to the midpoint of the squiggle
-			var midpoint:Vector3D = trackSegVec.clone();		
-			var matrix:Matrix3D = new Matrix3D();
-			if (type == OFF_RAMP) {
-				matrix.appendRotation(-chordAngle * (180/Math.PI), Vector3D.Z_AXIS); // rotate CW. Convert to degrees
-			} else { // if (type == ON_RAMP) {
-				matrix.appendRotation(chordAngle * (180/Math.PI), Vector3D.Z_AXIS); // rotate CCW. Convert to degrees
+			var curveTwo:TrackOverlay = Globals.tracks.makeTangentCurve(
+						curveTwoIntersect, curveTwoV1, curveTwoV2, maxSpeed, startOffset, endOffset, radius, false, preview);
+			bundle.addOverlay(curveTwo);
+			
+			if (rampType == OFF_RAMP) {
+				var straightStart:LatLng = curveTwo.getEnd();
+				var straightEnd:LatLng = Utility.calcLatLngFromVector(straightStart, vec, straightLength);
+				var straight:TrackOverlay = Globals.tracks.makeStraight(straightStart, straightEnd, false, preview);
+				bundle.addOverlay(straight);
+				bundle.setConnectNewLatLng(straightEnd);
+				bundle.markAsConnectNew(straight);
 			}
-			midpoint = matrix.transformVector(midpoint);			
-			midpoint.scaleBy(chordLen);
-			var midpointLatLng:LatLng = Utility.calcLatLngFromVector(startLatLng, midpoint);
-
-			// make control point. Know the arc angle, the control point is the bisect angle, along the seg seg.
-			var controlLen:Number = Math.tan(arcAngle/2) * radius;
-			var controlVec:Vector3D = trackSegVec.clone();			
-			controlVec.scaleBy(controlLen);
-			var controlLatLng:LatLng = Utility.calcLatLngFromVector(startLatLng, controlVec);						
 			
-			// create the endpoint for the second curve in the squiggle.
-			var endSquiggle:LatLng = Utility.calcLatLngFromVector(midpointLatLng, midpoint); 
-
-			// create the center point for the second curve
-			centerVec.negate();
-			var centerTwoLatLng:LatLng = Utility.calcLatLngFromVector(endSquiggle, centerVec);
-
-			// create the control point for the second curve in the squiggle. Same logic as the first.
-			controlVec.negate();			
-			var controlTwoLatLng:LatLng = Utility.calcLatLngFromVector(endSquiggle, controlVec);
-
-			// create the first curve
-			if (type == ON_RAMP) {
-				arcAngle *= -1;
-			}								
-			newSegs.push(new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
-			                              label,
-			                              startLatLng,
-			                              midpointLatLng,
-			                              Globals.tracks.maxSpeed,
-			                              Globals.tracks.offset,
-			                              Globals.tracks.offset,
-			                              radius,
-			                              -arcAngle,			                              
-			                              centerLatLng,
-			                              preview));
-			                              
-			// create the second curve			                              
-			newSegs.push(new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
-			                              label,
-			                              midpointLatLng,
-			                              endSquiggle,
-			                              Globals.tracks.maxSpeed,
-			                              Globals.tracks.offset,
-			                              Globals.tracks.offset,
-			                              radius,
-			                              arcAngle,
-			                              centerTwoLatLng,
-			                              preview));
-
-			if (type == OFF_RAMP) {						
-				// create the straight, deceleration segment. Begins decelereation in the squiggle.
-				var decelVec:Vector3D = trackSegVec.clone();
-				var decelLen:Number = length-squiggleLen;
-				if (decelLen > 0) { // normal case. Requires some straight segment to finish deceleration.
-					decelVec.scaleBy(decelLen);	
-				} // otherwise, use a 1 meter decel seg. Easier than ommitting entirely.				
-				var decelEndLatLng:LatLng = Utility.calcLatLngFromVector(endSquiggle, decelVec);
-				newSegs.push(new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
-				                              label,
-				                              endSquiggle,
-				                              decelEndLatLng,
-				                              Globals.tracks.maxSpeed,
-				                              Globals.tracks.offset,
-				                              Globals.tracks.offset,
-				                              0, 0, null, preview));
-			}					
-			
-//			trace("ArcAngle: ", arcAngle * 180/Math.PI);
-//			trace("Chordlen: ", chordLen);
-//			trace("Start: ", startLatLng);
-//			trace("Midpoint: ", midpointLatLng);
-//			trace("Control1: ", controlLatLng);
-//			trace("Control2: ", controlTwoLatLng);
-//			trace("Endpoint: ", endSquiggle);
-//			trace("len start -> end: ", Utility.calcVectorFromLatLngs(seg.getStart(), endSquiggle).length);
-			
-			return newSegs;
+			/* Make connections within the bundle and set data for external connections. */ 
+			trace("curveOne:", curveOne.getStart().toString(), " : ", curveOne.getEnd().toString());
+			trace("curveTwo:", curveTwo.getStart().toString(), " : ", curveTwo.getEnd().toString());
+			trace("distances:", curveOne.getStart().distanceFrom(curveTwo.getStart()),
+			                    curveOne.getStart().distanceFrom(curveTwo.getEnd()),
+			                    curveOne.getEnd().distanceFrom(curveTwo.getStart()),
+			                    curveOne.getEnd().distanceFrom(curveTwo.getEnd()));
+			curveOne.connect(curveTwo);
+			if (rampType == OFF_RAMP) {
+				bundle.setConnectExisting(latlng, curveOne);
+				trace("curveTwo, straight:", curveTwo.getEnd().toString(), straight.getStart().toString(), curveTwo.getEnd().distanceFrom(straight.getStart()));
+				curveTwo.connect(straight);
+				trace("straight & vec:", Utility.angleBetween(Utility.calcVectorFromLatLngs(straight.getStart(), straight.getEnd()), vec));
+				trace("curveTwo & vec:", Utility.angleBetween(Utility.calcVectorFromLatLngs(curveTwo.getCenter(), curveTwo.getEnd()), vec)); 
+			} else { // rampType == ON_RAMP
+				bundle.setConnectNewLatLng(curveTwo.getEnd());
+				bundle.markAsConnectNew(curveTwo);
+				straight.connect(curveOne);
+				trace(straight.getEnd(), curveOne.getStart(), straight.getEnd().distanceFrom(curveOne.getStart()));
+			}
+						
+			return bundle;
 		}
-
 		
 		public function onMouseMove(event:MouseEvent):void {			
 //			var start:LatLng = Globals.originMarker.getLatLng();
@@ -377,7 +406,7 @@ package edu.ucsc.track_builder
 		/** Generate xml from current preferences */
 		public function toPrefsXML():XML {
 			var xml:XML = <Stations max_speed={maxSpeed}
-			                        bidirectional={bidirectional}
+			                        reverse={reverse}
 			                        lateral_offset={lateralOffset}
 			                        accel_length={accelLength}
 			                        slot_length={slotLength}
@@ -396,13 +425,13 @@ package edu.ucsc.track_builder
 		public function toDefaultPrefsXML():XML {
 			var xml:XML = <Stations
 							max_speed="3.5"
-							bidirectional="0"
-							lateral_offset="10"
+							reverse="0"
+							lateral_offset="5"
 							accel_length="42.5"
 							slot_length="5"
-							queue_slots="5"
-							unload_slots="5"
-							load_slots="5"
+							queue_slots="2"
+							unload_slots="3"
+							load_slots="2"
 							storage_slots="0"
 							coverage_radius="500"
 							peak_hour="0"
@@ -413,7 +442,7 @@ package edu.ucsc.track_builder
 		
 		public function fromPrefsXML(xml:XMLList):void {
 			maxSpeed = xml.@max_speed;
-			bidirectional = xml.@bidirectional == 'false' || xml.@bidirectional == '0' ? false : true;
+			reverse = xml.@reverse == 'false' || xml.@reverse == '0' ? false : true;
 			lateralOffset = xml.@lateral_offset;
 			accelLength = xml.@accel_length;
 			slotLength = xml.@slot_length;

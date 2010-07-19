@@ -130,7 +130,7 @@ package edu.ucsc.track_builder
 				var dv:Vector3D = Utility.calcVectorFromLatLngs(vehicle.location.getCenter(), vehicle.latlng);
 				var perp_dv:Vector3D = new Vector3D(dv.y, -dv.x);
 				var se:Vector3D = Utility.calcVectorFromLatLngs(vehicle.location.getStart(), vehicle.location.getEnd()); // start->end
-				if (Vector3D.angleBetween(perp_dv, se) < Math.PI/2) { // facing the right dir
+				if (Utility.angleBetween(perp_dv, se) < Math.PI/2) { // facing the right dir
 					angle = Math.atan2(-perp_dv.y, perp_dv.x); // invert y direction due to y-down screen coordinates
 				} else { // wrong dir
 					angle = Math.atan2(-perp_dv.y, perp_dv.x) + Math.PI; // flip direction, and invert y direction due to y-down screen coordinates

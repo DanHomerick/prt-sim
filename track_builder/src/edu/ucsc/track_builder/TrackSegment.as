@@ -46,6 +46,9 @@ package edu.ucsc.track_builder
 		/** The id of anti-parallel tracksegment in a bidirectional layout.*/
 		public var parallel_ids:Vector.<String>; 
 		
+		/** Which overlay, if any, the segment is associated with. */
+		public var overlay:TrackOverlay;
+		
 		/** Fragment of id string that indicates that this segment is 'forward'. */ 
 		public static var forwardExt:String = "_forward"
 		/** Fragment of id string that indicates that this segment is 'reverse'. */
@@ -153,6 +156,45 @@ package edu.ucsc.track_builder
 		public function isCurved():Boolean {return _center != null;}
 				
 		
+		/** Find the LatLng coordinates for locations between start and end.
+		 * @param stepSize The number of meters between samples.
+		 * @return Vector of new LatLng objects. First element is always start, and the last element is end.
+		 */
+		public function getLatLngs(stepSize:Number):Vector.<LatLng> {
+			var result:Vector.<LatLng> = new Vector.<LatLng>();
+			result.push(this.getStart()); // copy of _start
+			var samples:int = int(this.h_length/stepSize);
+			var vec:Vector3D;
+			var i:int;
+			
+			if (!isCurved()) { // straight segment				
+				vec = Utility.calcVectorFromLatLngs(this._start, this._end);
+				vec.scaleBy(stepSize/vec.length);
+				
+				for (i = 0; i < samples; i++) {
+					result.push(Utility.calcLatLngFromVector(result[result.length-1], vec));
+				}
+			} else { // curved segment
+				vec = Utility.calcVectorFromLatLngs(this._center, this._start);
+				var stepAngle:Number = stepSize/this.radius;
+				if (this.arcAngle < 0) { // CW rotation
+					stepAngle = -stepAngle;
+				}
+				var x:Number = vec.x;
+				var y:Number = vec.y;
+				var cosAngle:Number = Math.cos(stepAngle);
+				var sinAngle:Number = Math.sin(stepAngle);
+				for (i = 0; i < samples; i++) {
+					// Rotate by stepAngle
+					vec.x = x*cosAngle - y*sinAngle; 
+					vec.y = x*sinAngle + y*cosAngle;
+					result.push(Utility.calcLatLngFromVector(this._center, vec)); 
+				}
+			}			
+			result.push(this.getEnd()); // copy of _end
+			return result;
+		}
+		
 		public function getStartOffset():Number {return _startOffset};
 		public function setStartOffset(offset:Number):void {			
 			Undo.assign(this, '_startOffset', _startOffset);
@@ -165,6 +207,11 @@ package edu.ucsc.track_builder
 				}
 			}
 		}
+		public function getOffset(position:Number):Number {
+		    var slope:Number = (_endOffset - _startOffset) / h_length;
+		    return slope*position + _startOffset; // y = mx + b 
+		}
+		
 		public function get startElev():Number {return startGround + _startOffset;}				
 			
 		public function getEndOffset():Number {return _endOffset};
@@ -279,10 +326,11 @@ package edu.ucsc.track_builder
 				if (!isNaN(this.radius) && !isNaN(other.radius)) { // do alignment checks if neither radius is set to NaN
 					thisVec = this.isCurved() ? Utility.calcVectorFromLatLngs(this._center, this._end) : Utility.calcVectorFromLatLngs(this._start, this._end);
 					otherVec = other.isCurved() ? Utility.calcVectorFromLatLngs(other.getCenter(), other.getStart()) : Utility.calcVectorFromLatLngs(other.getStart(), other.getEnd());
-					angle = Vector3D.angleBetween(thisVec, otherVec);
+					angle = Utility.angleBetween(thisVec, otherVec);
 					
-					if (this.isCurved() && other.isCurved()) { // Both curved. Expect to be parallel or antiparallel.
-						if (!this._center.equals(other.getCenter()) && (angle > Math.PI + 0.01 || angle < Math.PI - 0.01)) {
+					if (this.isCurved() && other.isCurved()) {  // Both curved. Expect to be parallel (angle == 0) or antiparallel (angle == Math.PI)
+						if (!this._center.equals(other.getCenter()) &&
+								!(Math.abs(angle) < 0.01 || Math.abs(angle - Math.PI) < 0.01)) {
 							trace("Two curved segments not connected due to angle beween segments: ", angle);
 							return;
 						} 
@@ -315,15 +363,16 @@ package edu.ucsc.track_builder
 				if (!isNaN(this.radius) && !isNaN(other.radius)) { // do alignment checks if neither radius is set to NaN
 					otherVec = other.isCurved() ? Utility.calcVectorFromLatLngs(other.getCenter(), other.getEnd()) : Utility.calcVectorFromLatLngs(other.getStart(), other.getEnd());
 					thisVec = this.isCurved() ? Utility.calcVectorFromLatLngs(this._start, this._center) : Utility.calcVectorFromLatLngs(this._start, this._end);
-					angle = Vector3D.angleBetween(thisVec, otherVec);
+					angle = Utility.angleBetween(thisVec, otherVec);
 					
-					if (this.isCurved() && other.isCurved()) { // Both curved. Expect to be parallel or antiparallel.
-						if (!this._center.equals(other.getCenter()) && (angle > Math.PI + 0.01 || angle < Math.PI - 0.01)) {
+					if (this.isCurved() && other.isCurved()) { // Both curved. Expect to be parallel (angle == 0) or antiparallel (angle == Math.PI)
+						if (!this._center.equals(other.getCenter()) &&
+								!(Math.abs(angle) < 0.01 || Math.abs(angle - Math.PI) < 0.01)) {
 							trace("Two curved segments not connected due to angle beween segments: ", angle);
 							return;
 						} 
 					}
-					else if (this.isCurved() || other.isCurved()) { // Just one is curved. Expect to be perpendicular
+					else if (this.isCurved() || other.isCurved()) { // Just one is curved. Expect vectors to be perpendicular
 						// if there's more than just a little bit of kink between the segments, then don't connect them.
 						if (angle > Math.PI/2 + 0.01 || angle < Math.PI/2 - 0.01) {  // if off by more than 0.6 degrees from perpendicular
 							trace("One curved, one straight not connected due to angle beween segments: ", angle);
@@ -349,19 +398,29 @@ package edu.ucsc.track_builder
 			
 		}
 
-		/** Makes latlng the new end point for the TrackSegment. Returns a new Segment that
-		 * begins at latlng. Connections are included, such that the connectivity is unchanged.
-		 * Curved segments may not be split.
+		/** Makes latlng the new end point for the TrackSegment. Connections are made, so that the connectivity is unchanged.
+		 * Curved segments may not be split. If latlng is already at this segment's end, then the track is not changed,
+		 * but the next segment is still returned. 
 		 * 
+		 * @param latlng The latlng that indicates where the TrackSegment should be split. 
+		 * @param elevOffset The vertical track offset at latlng. FIXME: Remove this?
+		 * @param preview Whether or not this function call was made for the live preview.
+		 *
+		 * @return A new TrackSegment that begins at latlng.
 		 */
 		public function split(latlng:LatLng, elevOffset:Number, preview_:Boolean):TrackSegment {
+			var nextSeg:TrackSegment;
+			var nextId:String;
+			
 			if (isCurved()) {
 				throw new TrackError("Curved trackSegments are unsplittable");
-			}
-			
+			} else if (latlng.equals(this._end) || latlng.equals(this._start)) {
+				throw new TrackError("Attempted to split at a TrackSegement's endpoint.");	
+			}			
+				
 			// make a new id with the same forward or reverse extension as original
 			var newId:String;
-			newId = id.search(TrackSegment.forwardExt) ?
+			newId = id.search(TrackSegment.forwardExt) != -1 ?
 			        IdGenerator.getTrackSegId(TrackSegment.forwardExt) :
 			        IdGenerator.getTrackSegId(TrackSegment.reverseExt);
 			
@@ -379,8 +438,8 @@ package edu.ucsc.track_builder
 			
 			// if 'this' was previously connected to one or more segments, then update the prev_id
 			// lists for those segments to use the newSeg id.
-			for each (var next_id:String in newSeg.next_ids) {
-				var nextSeg:TrackSegment = Globals.tracks.getTrackSegment(next_id);
+			for each (nextId in newSeg.next_ids) {
+				nextSeg = Globals.tracks.getTrackSegment(nextId);
 				for (var i:int=0; i < nextSeg.prev_ids.length; ++i) {
 					if (nextSeg.prev_ids[i] == this.id) {
 						Undo.assignElement(nextSeg, 'prev_ids', i, nextSeg.prev_ids[i]);
@@ -603,15 +662,26 @@ package edu.ucsc.track_builder
 			} else { // curved segment
 				var cs:Vector3D = Utility.calcVectorFromLatLngs(_center, _start);
 				var cv:Vector3D = Utility.calcVectorFromLatLngs(_center, latlng);				
-				return Vector3D.angleBetween(cs, cv) * radius;
+				return Utility.angleBetween(cs, cv) * radius;
 			} 
 		}
 
 		/** Returns the latlng of position, where position is measured as meters along the
 		 * segment, disregarding z axis distance */
 		public function getLatLng(position:Number):LatLng {
-			var vec:Vector3D = Utility.calcVectorFromLatLngs(_start, _end);
-			vec.scaleBy(position/vec.length);
+			var vec:Vector3D;
+			if (this.isCurved()) {
+				var angle:Number = position/this.h_length * this.arcAngle;
+				vec = Utility.calcVectorFromLatLngs(_center, _start);
+				var cosAngle:Number = Math.cos(angle);
+				var sinAngle:Number = Math.sin(angle);
+				// Rotate the vector
+				vec.x = vec.x*cosAngle - vec.y*sinAngle;
+				vec.y = vec.x*sinAngle + vec.y*cosAngle;
+			} else { // straight segment
+				vec = Utility.calcVectorFromLatLngs(_start, _end);
+				vec.scaleBy(position/vec.length);
+			}			
 			return Utility.calcLatLngFromVector(_start, vec);
 		}
 		

@@ -13,7 +13,7 @@ package edu.ucsc.track_builder
 	
 	import mx.controls.Alert;
 	
-	public final class XMLHandler
+	public class XMLHandler
 	{
 		/* ******** Generating & Saving Functons *************/
 		
@@ -225,11 +225,11 @@ package edu.ucsc.track_builder
 					Globals.originMarker.destroy();
 				}
 				
-				Globals.originMarker = new OriginMarker(sortedSegs[sortedSegs.length-1].getEnd());
+				Globals.originMarker = new SnappingMarker(bounds.getCenter(), SnappingMarker.makeBlueCircleIcon(), true);
 												
 				Globals.dataXMLFile = file; // Point to the new "save" file				
 				Globals.dirty = false;      // Mark the file as 'clean'
-				Globals.haveClicked = true; // 
+				Globals.setActiveMarker(Globals.originMarker);
 			} else {
 				trace(event.target);
 			}			

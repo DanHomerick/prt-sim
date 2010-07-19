@@ -8,7 +8,7 @@ package edu.ucsc.track_builder
 	import flash.geom.Vector3D;
 	import flash.utils.getQualifiedClassName;
 	
-	public final class Utility
+	public class Utility
 	{
 		public static function refreshScreen():void {
 			for each (var pane:IPane in [Globals.curvedTrackPane,
@@ -53,10 +53,23 @@ package edu.ucsc.track_builder
 			return new Vector3D(xMeters, yMeters);
 		}
 		
-		/** vec must contain the distances from src in meters. */
-		public static function calcLatLngFromVector(src:LatLng, vec:Vector3D):LatLng {
-			var latRad:Number = vec.y/LatLng.EARTH_RADIUS + src.latRadians();
-			var lngRad:Number = vec.x/(Math.cos(src.latRadians())*LatLng.EARTH_RADIUS) + src.lngRadians();
+		/** Creates a new LatLng that is located where vec is pointing, assuming that vec originates at src.
+		 * 
+		 * @param src The reference position.
+		 * @param vec Indicates distance and direction away from src for the returned latlng.
+		 * @param dist (Optional, default is 0) When non-zero, rather than using the length of vec for distance, uses dist.
+		 * @return A new LatLng at the desired point.
+		 */
+		public static function calcLatLngFromVector(src:LatLng, vec:Vector3D, dist:Number=0):LatLng {
+			var latRad:Number;
+			var lngRad:Number;
+			if (dist) {
+				latRad = (vec.y/vec.length * dist) / LatLng.EARTH_RADIUS + src.latRadians();
+				lngRad = (vec.x/vec.length * dist) / (Math.cos(src.latRadians())*LatLng.EARTH_RADIUS) + src.lngRadians()
+			} else {
+				latRad = vec.y/LatLng.EARTH_RADIUS + src.latRadians();
+				lngRad = vec.x/(Math.cos(src.latRadians())*LatLng.EARTH_RADIUS) + src.lngRadians();
+			}
 			return LatLng.fromRadians(latRad, lngRad);
 			
 		}
@@ -75,6 +88,29 @@ package edu.ucsc.track_builder
 			
 			return angle;
 		}
+
+		/** A replacement for Vector3D.angleBetween. That function returns NaN when two nearly coincident vectors are
+		 * compared. This funcion catches the problem and returns a reasonable result. 
+		 */
+		public static function angleBetween(v1:Vector3D, v2:Vector3D):Number {
+			var n:Number = v1.dotProduct(v2)/(v1.length*v2.length);
+			// Due to rounding errors, n may be just outside the valid range for acos: (-1, 1)
+			if (n > 1.0) {
+				return 0;
+			} else if (n < -1.0) {
+				return Math.PI;
+			}
+			return Math.acos(n);
+		}
+
+		/** Rotates a 2D vector by 'angle' radians counter clockwise around the z-axis. */
+		public static function rotate(vec:Vector3D, angle:Number):void {
+			var x:Number = vec.x;
+			var y:Number = vec.y;
+			vec.x = x * Math.cos(angle) - y * Math.sin(angle);
+			vec.y = x * Math.sin(angle) + y * Math.cos(angle);
+		}
+			
 
 		/** Draws an arc, starting at the current position. A positive value for radians indicates a CCW arc,
 		 * a negative value indicates CW. Steps controls how many line segements are used to approximate the circle.

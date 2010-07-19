@@ -24,7 +24,7 @@ package edu.ucsc.track_builder
 		public static var tool:int; // Which tool is being used. Uses above constants.	
 		
 		// Holds instances of the top level containers
-		public static var tracks:Tracks = new Tracks();
+		public static var tracks:Tracks = new Tracks(Tracks.RIGHT);
 		public static var stations:Stations = new Stations();
 		public static var vehicles:Vehicles = new Vehicles();
 		
@@ -49,14 +49,9 @@ package edu.ucsc.track_builder
 		
 		public static var dirty:Boolean; // has been changed since last save. 
 						
-		public static var originMarker:OriginMarker;		
-		public static var destMarker:DestMarker;
-
-//		// which, if any, TrackOverlay the mouse is currently over.
-//		public static var rollOver:TrackOverlay = null;
-		
-		// indicator that the origin has been placed for the first time.
-		public static var haveClicked:Boolean = false;
+		public static var originMarker:SnappingMarker;		
+		public static var destMarker:SnappingMarker;
+		protected static var activeMarker:SnappingMarker;
 
 		// Used to 'remind' SaveAs what it should do after asynchronously saving.
 		public static var postSave:Function = null;
@@ -146,15 +141,38 @@ package edu.ucsc.track_builder
 			map.clearOverlays();
 			Globals.map.addOverlay(Globals.originMarker);
 			Globals.map.addOverlay(Globals.destMarker);
-			Globals.originMarker.overlay = null;
-			Globals.destMarker.overlay = null;
-			originMarker.setLatLng(Globals.map.getCenter());
-			
-			haveClicked = false;
+			Globals.originMarker.setSnapOverlay(null);
+			Globals.destMarker.setSnapOverlay(null);
+			originMarker.setLatLng(Globals.map.getCenter());		
+			setActiveMarker(Globals.originMarker);
 			
 			IdGenerator.reinitialize();
 			Undo.reinitialize();
 			dirty = false;
+		}
+
+		public static function getActiveMarker():SnappingMarker {
+			return activeMarker;
+		}
+
+		public static function setActiveMarker(marker:SnappingMarker):void {
+			Undo.pushMicro(Globals, Globals.setActiveMarker, Globals.activeMarker);
+			if (activeMarker != null) {
+				Globals.map.removeEventListener(MapMouseEvent.MOUSE_MOVE, activeMarker.onMapMouseMove);
+				Globals.map.removeEventListener(MouseEvent.MOUSE_MOVE, activeMarker.onMouseMove);
+				Globals.map.removeEventListener(MapMouseEvent.ROLL_OUT, activeMarker.onMapRollOut);
+			}
+			activeMarker = marker;
+			if (activeMarker != null) {
+				Globals.map.addEventListener(MapMouseEvent.MOUSE_MOVE, activeMarker.onMapMouseMove);
+				Globals.map.addEventListener(MouseEvent.MOUSE_MOVE, activeMarker.onMouseMove);
+				Globals.map.addEventListener(MapMouseEvent.ROLL_OUT, activeMarker.onMapRollOut);
+			}
+			
+			// If switching to the originMarker, get rid of the existing 'live preview', if one exists
+			if (marker == Globals.originMarker) {
+				Undo.undo(Undo.PREVIEW); 
+			}
 		}
 
 		public static function toPrefsXML():XML {

@@ -23,7 +23,7 @@ package edu.ucsc.track_builder
 	import mx.events.ToolTipEvent;
 	import mx.managers.ToolTipManager;
 
-	public final class StationOverlay extends OverlayBase
+	public class StationOverlay extends OverlayBase
 	{
 		public var map:IMap;
 		public var station:Station;

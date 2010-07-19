@@ -27,7 +27,7 @@ package edu.ucsc.track_builder
 	import mx.events.ToolTipEvent;
 	import mx.managers.ToolTipManager;
 
-	public final class TrackOverlay extends OverlayBase
+	public class TrackOverlay extends OverlayBase
 	{
 		public static const NORMAL_MODE:uint = 0;
 		public static const GRADE_MODE:uint = 1;
@@ -84,6 +84,7 @@ package edu.ucsc.track_builder
 		public function get length():Number {return segments[0].length;}
 		public function get h_length():Number {return segments[0].h_length;} /** horizontal length, ignores vertical component */
 		public function isCurved():Boolean {return segments[0].isCurved();}
+		public function getCenter():LatLng {return segments[0].getCenter();}
 		
 		public var bidirectional:Boolean;
 		
@@ -121,10 +122,14 @@ package edu.ucsc.track_builder
 		public static var showCurveCircles:Boolean;
 		
 		/* Constructor */
-		/** segments: parallel segments that are represented on-screen by the same line. */
+		/** @param segments Parallel TrackSegments that are represented on-screen by the same line. */
 		public function TrackOverlay(segments:Vector.<TrackSegment>)
 		{
 			super();
+			
+			for each (var seg:TrackSegment in segments) {
+				seg.overlay = this;
+			} 
 			
 			this.segments = segments;
 			this.preview = segments[0].preview;
@@ -149,9 +154,9 @@ package edu.ucsc.track_builder
 
 	            toolTip = "Dummy text"; // requires some text to trigger tooltips. Text changed in onToolTip
 	            addEventListener(ToolTipEvent.TOOL_TIP_SHOW, onToolTip, false, 0, true);
-			}
-			
-			contextMenu = getContextMenu();
+			}		
+	
+			contextMenu = makeContextMenu();
 	
 //			/* Side effects */
 //			// add myself to the map display
@@ -168,7 +173,9 @@ package edu.ucsc.track_builder
 			Undo.pushMicro(Globals.tracks.overlays, Globals.tracks.overlays.pop);
 		}
 		
-		public function getContextMenu():NativeMenu {
+		public override function get contextMenu():NativeMenu {return makeContextMenu();}
+		
+		public function makeContextMenu():NativeMenu {
 			var menu:NativeMenu = new NativeMenu();
 			
 			if (segments.length == 1) { // only one segment associated with overlay
@@ -240,7 +247,9 @@ package edu.ucsc.track_builder
 			try {
 				Undo.startCommand(Undo.USER);
 				var pt:Point = new Point(mouseX, mouseY);
-				Globals.stations.makeOfflineStation(this, snapTo(pt), false, false);
+				Globals.stations.makeOfflineStation(this, snapTo(pt), false);
+				Undo.assign(Globals, 'dirty', Globals.dirty);
+				Globals.dirty = true; // mark that changes have occured since last save
 				Undo.endCommand();
 			} catch (err:StationLengthError) {
 				Undo.endCommand();
@@ -251,26 +260,23 @@ package edu.ucsc.track_builder
 		
 		public function onRollOver(event:MouseEvent):void {
 //			trace("trackOverlay.onRollOver", event.currentTarget);
+			var marker:SnappingMarker = Globals.getActiveMarker();
 			switch (Globals.tool) {
 				case Globals.TRACK_TOOL:
 				    if (!isCurved()) {
-				    	if (event.ctrlKey) {
-				    		Globals.originMarker.overlay = this;			    	
-				    	} else {
-				    		Globals.destMarker.overlay = this;
-				    		Globals.destMarker.snapTo(Globals.destMarker.getLatLng());
-				    	}
+				    	marker.setSnapOverlay(this);
+				    	marker.snapTo(marker.getLatLng());
 				    }
 					break;
 				case Globals.STATION_TOOL:
 					if (!isCurved()) {
-						Globals.destMarker.overlay = this;
-						Globals.destMarker.snapTo(Globals.destMarker.getLatLng());
+						marker.setSnapOverlay(this);
+						marker.snapTo(marker.getLatLng());
 					}
 					break;
 				case Globals.VEHICLE_TOOL:
-					Globals.destMarker.overlay = this;
-					Globals.destMarker.snapTo(Globals.destMarker.getLatLng());
+					marker.setSnapOverlay(this);
+					marker.snapTo(marker.getLatLng());
 					break;
 				case Globals.SELECT_TOOL:
 					break;
@@ -493,9 +499,9 @@ package edu.ucsc.track_builder
 				var ba:Vector3D = new Vector3D(a.x - b.x, a.y - b.y);
 				var bc:Vector3D = new Vector3D(c.x - b.x, c.y - b.y);				
 		
-				if (Vector3D.angleBetween(ab, ac) > Math.PI / 2) {
+				if (Utility.angleBetween(ab, ac) > Math.PI / 2) {
 					result = pane.fromPaneCoordsToLatLng(a);
-				} else if (Vector3D.angleBetween(ba, bc) > Math.PI / 2) {
+				} else if (Utility.angleBetween(ba, bc) > Math.PI / 2) {
 					result = pane.fromPaneCoordsToLatLng(b);
 				} else {
 					var dist:Number = ab.dotProduct(ac) / ab.lengthSquared;
@@ -521,6 +527,7 @@ package edu.ucsc.track_builder
 			}
 		}
 		
+		// FIXME: Specifying the offset should be optional or removed.
 		public function split(latlng:LatLng, elevOffset:Number, preview_:Boolean):TrackOverlay {	
 			var newOverlaySegs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
 			
@@ -531,7 +538,18 @@ package edu.ucsc.track_builder
 			if (segments.length > 1) {
 				var newReverseSeg:TrackSegment = segments[1].split(latlng, elevOffset, preview_);
 				newOverlaySegs.push(segments[1]); // The new overlay gets the existing (now trimmed) reverse seg
+				Undo.assignElement(this, 'segments', 1, this.segments[1]);
 				segments[1] = newReverseSeg;      // The old overlay gets the newly created reverse seg
+				
+				// Fix up the parallel_ids
+				Undo.assign(segments[0], 'parallel_ids', segments[0].parallel_ids);
+				Undo.assign(segments[1], 'parallel_ids', segments[1].parallel_ids);
+				Undo.assign(newOverlaySegs[0], 'parallel_ids', newOverlaySegs[0].parallel_ids);
+				Undo.assign(newOverlaySegs[1], 'parallel_ids', newOverlaySegs[1].parallel_ids);
+				segments[0].parallel_ids = Vector.<String>([segments[1].id]);
+				segments[1].parallel_ids = Vector.<String>([segments[0].id]);
+				newOverlaySegs[0].parallel_ids = Vector.<String>([newOverlaySegs[1].id]);
+				newOverlaySegs[1].parallel_ids = Vector.<String>([newOverlaySegs[0].id]);
 			}
 
 			var newTrackOverlay:TrackOverlay = new TrackOverlay(newOverlaySegs); 

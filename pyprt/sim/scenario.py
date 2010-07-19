@@ -126,18 +126,6 @@ class ScenarioManager(object):
                 connect_ts = track_segs[id]
                 graph.add_edge(ts, connect_ts, weight=ts.length)
 
-        if __debug__:
-            # do some light-weight validation
-            if not networkx.is_strongly_connected(graph):
-                print "Number of strongly connected components:", networkx.number_strongly_connected_components(graph)
-                try:
-                    import matplotlib.pyplot as plt
-                    networkx.draw(graph)
-                    plt.show()
-                except ImportError:
-                    pass
-                raise common.ConfigError("DiGraph is not strongly connected.")
-
         return graph
 
     def load_vehicles(self, vehicles_xml, vehicle_classes):

@@ -4,7 +4,7 @@ package edu.ucsc.track_builder
 	
 	import mx.controls.Alert;
 
-	public final class Station
+	public class Station
 	{	
 		public var id:String;		
 		public var label:String;

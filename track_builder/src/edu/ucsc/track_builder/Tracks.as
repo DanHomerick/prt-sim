@@ -8,7 +8,6 @@ package edu.ucsc.track_builder
 	
 	import de.polygonal.ds.Heap;
 	
-	import flash.events.MouseEvent;
 	import flash.geom.Matrix3D;
 	import flash.geom.Vector3D;
 	import flash.utils.Dictionary;
@@ -18,7 +17,7 @@ package edu.ucsc.track_builder
 	/** Acts as a factory for TrackSegments and TrackOverlays.
 	 * Keeps references to both of them.
 	 * Contains some handlers for GUI events relating to tracks. */	
-	public final class Tracks
+	public class Tracks
 	{
 		/* Values that are controlled by the GUI */
 		public var label:String = "";		
@@ -27,59 +26,90 @@ package edu.ucsc.track_builder
 		public var bidirectional:Boolean;
 		[Bindable] public var radius:Number;
 		public var minOffset:Number;
-		public var maxOffset:Number;			
+		public var maxOffset:Number;
+		public var driveSide:String;		
 
-		private const INCOMING:String = "INCOMING"
-		private const OUTGOING:String = "OUTGOING"
+		/* For bidirectional track that is not vertically stacked. Right hand side indicates that vehicles
+		 * move forward on the right hand track, as is the convention in the United States. Left hand side
+		 * would have vehicles moving forward on the left hand track, as is the convention in the U.K.
+		 */
+		public static const RIGHT:String = "Right"
+		public static const LEFT:String = "Left"
+		public static const MIN_ANGLE:Number = 0.0872664626 // 5 degrees
+		public static const MAX_ANGLE:Number = 3.05432619   // 175 degrees
 
-		// holds all TrackSegment objects in an associative array. Uses id as key, and a TrackSegment instance as the value. 
+		protected const INCOMING:String = "INCOMING"
+		protected const OUTGOING:String = "OUTGOING"
+
+		/** Holds all TrackSegment objects in an associative array. Uses id as key, and a TrackSegment 
+		 * instance as the value. */ 
 		public var segments:Dictionary;
 
-		// holds all TrackOverlay objects.		
+		/** Holds all TrackOverlay objects. */		
 		public var overlays:Vector.<TrackOverlay>; // displays the track segments on the map
 
 
-		/* Constructor */
-		public function Tracks() {
+		/** Tracks Constructor
+		 * @param driveSide Indicates which side of bidirectional track vehicles drive on.
+		 *                  Should be one of Tracks.RHS or Tracks.LHS.
+		 */
+		public function Tracks(driveSide:String) {
 			 segments = new Dictionary();
-			 overlays = new Vector.<TrackOverlay>();			
+			 overlays = new Vector.<TrackOverlay>();
+			 if (driveSide == Tracks.RIGHT || driveSide == Tracks.LEFT) {
+			 	this.driveSide = driveSide;
+			 } else {
+			 	throw new Error("Side must equal one of: Tracks.RIGHT, Tracks.LEFT");
+			 }			
 		}
 
 		public function onMapClick(event:MapMouseEvent):void {
 			Undo.undo(Undo.PREVIEW); // destroy the 'live preview' track segment
-			Undo.startCommand(Undo.USER);			
-			if (!Globals.haveClicked) {
-				Undo.assign(Globals, 'haveClicked', Globals.haveClicked);
-				Globals.haveClicked = true;
-				Undo.endCommand();
+			
+			// Do nothing if the markers are overlapped.
+			if (Globals.originMarker.getLatLng().equals(Globals.destMarker.getLatLng())) {
 				return;
-			}								
+			}
+						
+			var marker:SnappingMarker = Globals.getActiveMarker();
+			
+			// If we're moving the origin, the first click just sets the position of it.		
+			if (marker == Globals.originMarker) {
+				Globals.setActiveMarker(Globals.destMarker);
+				return;
+			}		
+			
+			Undo.startCommand(Undo.USER);
 			
 			/* Force the markers to snap to the line (if attached to one) */
-//			trace(Globals.originMarker.overlay);
+			// trace(Globals.originMarker.overlay);
 			Globals.originMarker.snapTo();
 			Globals.destMarker.snapTo();
-			
-			try {				
+						
+			try {
+				var destOverlays:Vector.<TrackOverlay> = Globals.destMarker.getTrackOverlays();			
 				var trail:Vector.<TrackOverlay> = makeTrail(Globals.originMarker.getTrackOverlays(),
-						  									Globals.destMarker.getTrackOverlays(),
+						  									destOverlays,
 						  									Globals.originMarker.getLatLng(),
 						  									Globals.destMarker.getLatLng(),
 						  									false); // not a preview
-				// Add listeners that enable the snap-to behavior. 
-				for each (var overlay:TrackOverlay in trail) {
-					if (!overlay.isCurved()) { // for straight segments only
-						overlay.addEventListener(MouseEvent.ROLL_OVER, overlay.onRollOver, false, 0, true); // weak_ref=true
-					}
-				}
-				
-				// move the originMarker							
-				Globals.originMarker.overlay = trail[trail.length-1];
-				Globals.originMarker.snapTo(trail[trail.length-1].getEnd());
-				
-			
+								
+				// indicate that we should prompt for save on quit
 				Undo.assign(Globals, 'dirty', Globals.dirty);
 				Globals.dirty = true;
+				
+				// After an undo, the user will want the origin marker in the same state as when she clicked.
+				Undo.pushMicro(Globals.originMarker, Globals.originMarker.setSnapOverlay, Globals.originMarker.getSnapOverlay());
+				Undo.pushMicro(Globals.originMarker, Globals.originMarker.setLatLng, Globals.originMarker.getLatLng());					
+				
+				// if the newly created track connects to some existing track, go back to using a freely moving originMarker.
+				if (destOverlays.length > 0) {					
+					Globals.setActiveMarker(Globals.originMarker); // undo is handled internally		
+					Globals.originMarker.setSnapOverlay(null); // cut it loose from whatever overlay it's attached to.
+				} else { // else move the originMarker to the exposed end of the new track.					
+					Globals.originMarker.setSnapOverlay(trail[trail.length-1]);
+					Globals.originMarker.snapTo(trail[trail.length-1].getEnd());
+				}
 				
 				Undo.endCommand();
 			} catch (err:TrackError) { // error thrown from makeTrail
@@ -90,9 +120,9 @@ package edu.ucsc.track_builder
 		} 
 
 		public function onMapMouseMove(event:MapMouseEvent):void {
-//			trace("Tracks.onMapMouseMove", event.currentTarget);
-			if (event.ctrlKey) { // moving the originMarker
-				Undo.undo(Undo.PREVIEW); // get rid of the old 'live preview', if one exists
+			var marker:SnappingMarker = Globals.getActiveMarker();
+			if (marker == Globals.originMarker) { // moving the originMarker
+				
 			} else { // normal case
 				makePreview();
 			}
@@ -100,8 +130,15 @@ package edu.ucsc.track_builder
 
 		/** Makes a temporary trail showing where the track will go if the user clicks. */
 		public function makePreview():void {			
-			Undo.undo(Undo.PREVIEW); // get rid of the old 'live preview', if one exists			
-			if (Globals.haveClicked && !Globals.originMarker.getLatLng().equals(Globals.destMarker.getLatLng())) {				
+			Undo.undo(Undo.PREVIEW); // get rid of the old 'live preview', if one exists
+			
+			// Do nothing if the markers are overlapped.
+			if (Globals.originMarker.getLatLng().equals(Globals.destMarker.getLatLng())) {
+				return;
+			}
+			
+			var marker:SnappingMarker = Globals.getActiveMarker();
+			if (marker == Globals.destMarker) {				
 				Undo.startCommand(Undo.PREVIEW);
 				try {
 					var originOverlays:Vector.<TrackOverlay>;
@@ -111,21 +148,21 @@ package edu.ucsc.track_builder
 					 * affiliated to it. This can be caused by the user placing a marker near
 					 * a trackSegment, then zooming out.
 					 */			
-					if (Globals.originMarker.overlay == null) {
+					if (Globals.originMarker.getSnapOverlay() == null) {
 						originOverlays = new Vector.<TrackOverlay>();
 					} else {
 						originOverlays = Globals.originMarker.getTrackOverlays(); 
 					}
 					
-					if (Globals.destMarker.overlay == null) {
+					if (Globals.destMarker.getSnapOverlay() == null) {
 						destOverlays = new Vector.<TrackOverlay>();
 					} else {
 						destOverlays = Globals.destMarker.getTrackOverlays();
 					}
 					makeTrail(originOverlays,
 							  destOverlays,
-							  Globals.originMarker.getLatLng(),
-							  Globals.destMarker.getLatLng(),
+							  Globals.originMarker.getLatLng().clone(),
+							  Globals.destMarker.getLatLng().clone(),
 							  true);
 					Undo.endCommand();
 				} catch (err:TrackError) {
@@ -144,68 +181,242 @@ package edu.ucsc.track_builder
 		                          destOverlays:Vector.<TrackOverlay>,
 		                          originLatLng:LatLng,
 		                          destLatLng:LatLng,
-		                          preview:Boolean):Vector.<TrackOverlay> {		                          	
+		                          preview:Boolean):Vector.<TrackOverlay> {
+		                          			                          	
+			if (originLatLng.equals(destLatLng)) {
+				throw new TrackError("destLatLng equals originLatLng");
+			} else if (isNaN(originLatLng.lat()) || isNaN(destLatLng.lat())) {
+				throw new TrackError("originLatLng or destLatLng has an invalid value.");
+			} else if (originOverlays.length >= 1 && destOverlays.length >= 1 && originOverlays[0] == destOverlays[0]) {
+				throw new TrackError("originOverlay equals destOverlays");
+			}
 			
 			var curveOverlays:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
+			var returnOverlays:Vector.<TrackOverlay>;
 			var overlay:TrackOverlay; // for iterating through Vectors.
+			if (!bidirectional) {
+				returnOverlays = makeUnidirectionalTrail(originOverlays, destOverlays, originLatLng, destLatLng, preview);
+			} else {
+				returnOverlays = makeBidirectionalTrail(originOverlays, destOverlays, originLatLng, destLatLng, preview);
+			}		
 
-			// Create outgoing curved segment
-			if (originOverlays.length >= 1) {
-				// TEMP: bidirectional should not be blindly passed through
-				curveOverlays.push(makeCurve(originOverlays, originLatLng.clone(), destLatLng.clone(), OUTGOING, bidirectional, preview));
-				originLatLng = curveOverlays[0].getEnd();				
-			}
-			
-			// reserve any ids needed for the straight section connecting the two curves, so that the ids will be in sequential order
-			var straightIds:Vector.<String> = new Vector.<String>();
-			straightIds.push(IdGenerator.getTrackSegId(TrackSegment.forwardExt));
-			if (bidirectional) {
-				straightIds.push(IdGenerator.getTrackSegId(TrackSegment.reverseExt));
-			} 
-			
-			// Create incoming curved segment
-			if (destOverlays.length >= 1) {
-				// TEMP: bidirectional should not be blindly passed through
-				curveOverlays.push(makeCurve(destOverlays, originLatLng.clone(), destLatLng.clone(), INCOMING, bidirectional, preview));
-				destLatLng = curveOverlays[curveOverlays.length-1].getStart();
-			}
-
-			// If any curved overlays were required, they've been created, and the origin/dest moved appropriately.
-			// Now add a straight seg/overlay that connects the current origin/dest.
-			var straightSegs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
-			straightSegs.push(makeStraightSeg(originLatLng.clone(), destLatLng.clone(), preview, straightIds[0]));
-			if (bidirectional) {
-				straightSegs.push(straightSegs[0].clone(true, straightIds[1]));
-			}
-			var straightOverlay:TrackOverlay = new TrackOverlay(straightSegs);
-			
-			// connect the straight seg/overlay
-			for each (overlay in curveOverlays) {
-				straightOverlay.connect(overlay);
-			}				
-
-			// collect all the overlays, and sort them in connected order
-			var returnOverlays:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
-			for each (overlay in curveOverlays) {
-				returnOverlays.push(overlay);				
-			}				
-			returnOverlays.push(straightOverlay);
-			returnOverlays = returnOverlays.sort(TrackOverlay.compareById); 
-			
-			// validate that the trail is properly connected within itself (possible todo: fix the causes of any errors)
-			if (returnOverlays.length > 1) {
-				for (var i:int=0; i < returnOverlays.length; i++) {
-					overlay = returnOverlays[i];
-					if ( (i > 0 && overlay.isStartExposed()) || (i < returnOverlays.length-1 && overlay.isEndExposed()) ) {
-						throw new TrackError("Can not create a correct connection for this placement.");
-					}
-				}
-			}
 			return returnOverlays;
         }
 
+		protected function makeUnidirectionalTrail(originOverlays:Vector.<TrackOverlay>,
+		                          				 destOverlays:Vector.<TrackOverlay>,
+		                          				 originLatLng:LatLng,
+		                          				 destLatLng:LatLng,
+		                          				 preview:Boolean):Vector.<TrackOverlay> {
+			var resultOverlays:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();						
+			
+			// Create outgoing curved segment
+			if (originOverlays.length >= 1) {
+				var originCurve:TrackOverlay = makeCurve(originOverlays, originLatLng.clone(), destLatLng.clone(), OUTGOING, false, preview); 
+				resultOverlays.push(originCurve);
+				originLatLng = originCurve.getEnd();				
+			}
+
+			// reserve a id for the straight section connecting the two curves (created later), so that the ids will be in sequential order
+			var straightId:String = IdGenerator.getTrackSegId(TrackSegment.forwardExt);
+			
+			// Create incoming curved segment
+			if (destOverlays.length >= 1) {
+				var destCurve:TrackOverlay = makeCurve(destOverlays, originLatLng.clone(), destLatLng.clone(), INCOMING, false, preview); 
+				resultOverlays.push(destCurve);
+				destLatLng = destCurve.getStart();
+			}
+
+			// If any curved overlays were required, they've been created, and the origin/dest moved appropriately.
+			// Now add a straight seg/overlay that connects the current origin/dest.			
+			var straightOverlay:TrackOverlay = makeStraight(originLatLng.clone(), destLatLng.clone(), false, preview,
+			                                                NaN, NaN, NaN, straightId); 
+		
+			// connect the straight seg/overlay
+			var overlay:TrackOverlay;
+			for each (overlay in resultOverlays) {
+				straightOverlay.connect(overlay);
+			}
+
+			// collect all the overlays, and sort them in connected order
+			resultOverlays.push(straightOverlay);					
+			resultOverlays = resultOverlays.sort(TrackOverlay.compareById);
+			return resultOverlays;
+		}
+
+		protected function makeBidirectionalTrail(originOverlays:Vector.<TrackOverlay>,
+					                           destOverlays:Vector.<TrackOverlay>,
+											   originLatLng:LatLng,
+		                          			   destLatLng:LatLng,
+		                          			   preview:Boolean):Vector.<TrackOverlay> {
+		                          			   	
+			var resultOverlays:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
+			var newVec:Vector3D;
+	        var overlay:TrackOverlay; // for general iteration
+			
+			// Track Overlays that should be connectd to the straight overlay.
+			var toConnect:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
+				
+			/* Starting from an existing track */
+			if (originOverlays.length >= 1) {
+				newVec = Utility.calcVectorFromLatLngs(originLatLng, destLatLng);
+				// At one end or the other, and the end is exposed.
+				if ((originLatLng.equals(originOverlays[0].getStart()) && originOverlays[0].isStartExposed()) ||
+				    	(originLatLng.equals(originOverlays[0].getEnd()) && originOverlays[0].isEndExposed())) {
+					var originCurve:TrackOverlay = makeCurve(originOverlays, originLatLng.clone(), destLatLng.clone(), this.OUTGOING, true, preview);
+					resultOverlays.push(originCurve);
+					toConnect.push(originCurve);
+					originLatLng = originCurve.getEnd();
+			    }
+			    // Starting from the middle of an unidirectional track.
+				else if (!originOverlays[0].bidirectional) {
+					var originBundle:TrackBundle;
+					var existingVec:Vector3D = Utility.calcVectorFromLatLngs(originOverlays[0].getStart(), originOverlays[0].getEnd());					
+					var crossProd:Vector3D = existingVec.crossProduct(newVec);					
+					
+					// Decide whether to use a trumpet or a Y interchange based on which side we're approaching
+					// the existing track from, and which side of the bidirectional track vehicles travel forward on.					
+					if ((crossProd.z > 0 && this.driveSide == Tracks.RIGHT) ||
+								(crossProd.z < 0 && this.driveSide == Tracks.LEFT)) {
+						try {
+							originBundle = makeHalfTrumpetInterchange(originLatLng, originOverlays[0].segments[0], destLatLng, newVec, this.radius, Tracks.LEFT, 10, 0.5, preview);
+						} catch (err:TrackError) {
+							if (err.errorID == TrackError.INSUFFICIENT_TRACK) {
+								originBundle = makeHalfTrumpetInterchange(originLatLng, originOverlays[0].segments[0], destLatLng, newVec, this.radius, Tracks.RIGHT, 10, 0.5, preview);
+							} else {
+								throw err;
+							}
+						}
+					} else {
+						originBundle = makeHalfYInterchange(originLatLng, originOverlays[0].segments[0], destLatLng, newVec, this.radius, preview);
+					}
+					
+					originLatLng = originBundle.connectNewLatLng; // move the origin point.
+					if (!preview) { // don't split the track if it's just a preview.						
+						toConnect = toConnect.concat(originBundle.connectNewOverlays);
+						resultOverlays = resultOverlays.concat(originBundle.overlays);
+						
+						// Split the originOverlay and connect the ramps					
+						var toSplitOverlay:TrackOverlay = originOverlays[0];
+						var nextSplitOverlay:TrackOverlay;
+						originBundle.sortConnectExistingArrays(toSplitOverlay.getStart()); // sort by distance
+						for (var i:int = 0; i < originBundle.connectExistingLatLngs.length; ++i) {
+							try {
+								nextSplitOverlay = toSplitOverlay.split(originBundle.connectExistingLatLngs[i], this.offset, preview);
+							} catch (err:TrackError) {
+								// Has already been split here. No need to do anything.
+							}
+							// Info about direction of the connection isn't retained. Use a wee bit of brute force and try
+							// connecting to either side of the split point.
+							originBundle.connectExistingOverlays[i].connect(toSplitOverlay);
+							originBundle.connectExistingOverlays[i].connect(nextSplitOverlay);
+							
+							toSplitOverlay = nextSplitOverlay;
+						}
+					}
+				}
+				// Starting from the middle of a bidirectinal track.
+				else if (originOverlays[0].bidirectional) { // If starting from a bidirectional track					
+					originBundle = makeFullTrumpetInterchange(originLatLng, originOverlays[0], destLatLng, newVec, this.radius, Tracks.LEFT, 10, 0.5, preview);					
+					originLatLng = originBundle.connectNewLatLng; // move the origin point
+					toConnect = toConnect.concat(originBundle.connectNewOverlays);
+					resultOverlays = resultOverlays.concat(originBundle.overlays);
+					
+				}
+				// Starting at an unexposed end (other cases too?)
+				else {
+					throw new TrackError("Cannot create a bidirectional track at this location.");
+				}
+			}
+	        
+	        /* Ending on an existing track */
+	        if (destOverlays.length >=1) {
+				newVec = Utility.calcVectorFromLatLngs(destLatLng, originLatLng);
+				if (isNaN(newVec.length)) {
+					trace("destLatLng:", destLatLng.toString());
+					trace("originLatLng:", originLatLng.toString());
+					trace(newVec.toString());
+					throw new TrackError("Unknown problem.");
+				}
+				// At one end or the other, and the end is exposed.
+				if ((destLatLng.equals(destOverlays[0].getStart()) && destOverlays[0].isStartExposed()) ||
+				    	(destLatLng.equals(destOverlays[0].getEnd()) && destOverlays[0].isEndExposed())) {
+					var destCurve:TrackOverlay = makeCurve(destOverlays, originLatLng.clone(), destLatLng.clone(), this.INCOMING, true, preview);
+					resultOverlays.push(destCurve);
+					toConnect.push(destCurve);
+					destLatLng = destCurve.getStart();
+		    	}
+			    // Ending in the middle of an unidirectional track.
+				else if (!destOverlays[0].bidirectional) {
+					var destBundle:TrackBundle;
+
+					var existingVec:Vector3D = Utility.calcVectorFromLatLngs(destOverlays[0].getStart(), destOverlays[0].getEnd());
+					var crossProd:Vector3D = existingVec.crossProduct(newVec);
+					
+					// Decide whether to use a trumpet or a Y interchange based on which side we're approaching
+					// the existing track from, and which side of the bidirectional track vehicles travel forward on.					
+					if ((crossProd.z > 0 && this.driveSide == Tracks.RIGHT) ||
+								(crossProd.z < 0 && this.driveSide == Tracks.LEFT)) {
+						try {
+							destBundle = makeHalfTrumpetInterchange(destLatLng, destOverlays[0].segments[0], originLatLng, newVec, this.radius, Tracks.LEFT, 10, 0.5, preview);
+						} catch (err:TrackError) {
+							if (err.errorID == TrackError.INSUFFICIENT_TRACK) {
+								destBundle = makeHalfTrumpetInterchange(destLatLng, destOverlays[0].segments[0], originLatLng, newVec, this.radius, Tracks.RIGHT, 10, 0.5, preview);
+							} else {
+								throw err;
+							}
+						}
+					} else {
+						destBundle = makeHalfYInterchange(destLatLng, destOverlays[0].segments[0], originLatLng, newVec, this.radius, preview);
+					}
+					
+					destLatLng = destBundle.connectNewLatLng; // move the dest point.
+					if (!preview) {  // don't split the track if it's just a preview.						
+						toConnect = toConnect.concat(destBundle.connectNewOverlays);
+						resultOverlays = resultOverlays.concat(destBundle.overlays);
+						
+						// Split the destOverlay and connect the ramps					
+						var toSplitOverlay:TrackOverlay = destOverlays[0];
+						var nextSplitOverlay:TrackOverlay;
+						destBundle.sortConnectExistingArrays(toSplitOverlay.getStart());
+						for (var i:int = 0; i < destBundle.connectExistingLatLngs.length; ++i) {
+							nextSplitOverlay = toSplitOverlay.split(destBundle.connectExistingLatLngs[i], this.offset, preview);
+							// Info about direction of the connection isn't retained. Use a wee bit of brute force and try
+							// connecting to either side of the split point.
+							destBundle.connectExistingOverlays[i].connect(toSplitOverlay);
+							destBundle.connectExistingOverlays[i].connect(nextSplitOverlay);
+							
+							toSplitOverlay = nextSplitOverlay;
+						}
+					}				
+				}
+				
+				// Ending in the middle of a bidirectional track.
+				else if (destOverlays[0].bidirectional) {				
+					destBundle = makeFullTrumpetInterchange(destLatLng, destOverlays[0], originLatLng, newVec, this.radius, Tracks.LEFT, 10, 0.5, preview);					
+					destLatLng = destBundle.connectNewLatLng; // move the origin point
+					toConnect = toConnect.concat(destBundle.connectNewOverlays);
+					resultOverlays = resultOverlays.concat(destBundle.overlays);
+					
+				}
+				// Starting at an unexposed end (other cases too?)
+				else {
+					throw new TrackError("Cannot create a bidirectional track at this location.");
+				}
+	        }
+       
+	        var straightOverlay:TrackOverlay = makeStraight(originLatLng, destLatLng, true, preview);
+	        resultOverlays.push(straightOverlay);	       
+
+	        for each (overlay in toConnect) {
+	        	straightOverlay.connect(overlay);	
+	        }
+	        	        
+			return resultOverlays;
+		}
+
 		/** Creates a single curve segment and wraps it in an overlay.*/
-		public function makeCurve(targetOverlays:Vector.<TrackOverlay>,
+		protected function makeCurve(targetOverlays:Vector.<TrackOverlay>,
 		                          srcLatLng:LatLng,
 		                          destLatLng:LatLng,
 		                          type:String, // OUTGOING or INCOMING. Affects the sense of 'start' and 'end' of an overlay.
@@ -341,23 +552,43 @@ package edu.ucsc.track_builder
    			return curveOverlay;		
 		}
 		
-		public function makeStraightSeg(origin:LatLng, dest:LatLng, preview:Boolean, id:String=null):TrackSegment {
+		/** Creates straight track segment(s) and wraps it in an overlay.
+		 * @param origin The start of the segment.
+		 * @param dest The end of the segment.
+		 * @param bidirectional If true, a reversed segment is also created and added to the overlay.
+		 * @param maxSpeed (Optional) Defaults to this.maxSpeed if not specified. Use NaN to leave at default.
+		 * @param startOffset (Optional) Defaults to this.Offset if not specified. Use NaN to leave at default.
+		 * @param endOffset (Optional) Defaults to this.Offset if not specified. Use NaN to leave at default.
+		 * @param id (Optional) Uses a particular id. Otherwise gets an id from the IdGenerator. Use null to leave at default.
+		 * @param id2 (Optional) A second id for a bidirectional segment. Use null to leave at default.
+		 */
+		public function makeStraight(origin:LatLng, dest:LatLng, bidirectional:Boolean, preview:Boolean,
+		                             maxSpeed:Number=NaN, startOffset:Number=NaN, endOffset:Number=NaN,
+		                             id:String=null, id2:String=null):TrackOverlay {
 			if (id == null) {
 				id = IdGenerator.getTrackSegId(TrackSegment.forwardExt);
 			}
-			return new TrackSegment(id, label, origin, dest, maxSpeed, offset, offset, 0, 0, null, preview);
+			if (isNaN(maxSpeed)) maxSpeed = this.maxSpeed;
+			if (isNaN(startOffset)) startOffset = this.offset;
+			if (isNaN(endOffset)) endOffset = this.offset;
+			var segs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
+			segs.push(new TrackSegment(id, label, origin, dest, maxSpeed, startOffset, endOffset, 0, 0, null, preview));
+			if (bidirectional) { 
+				segs.push(segs[0].clone(true, id2)); // if id2 is null, clone fetches a new id from IdGenerator.
+			}
+			return new TrackOverlay(segs); 
 		}
 
-		public function canCut(a:LatLng, b:LatLng, c:LatLng, radius:Number):Boolean {
+		protected function canCut(a:LatLng, b:LatLng, c:LatLng, radius:Number):Boolean {
 			var ba:Vector3D = Utility.calcVectorFromLatLngs(b, a);
 			var bc:Vector3D = Utility.calcVectorFromLatLngs(b, c);
-			var abcAngle:Number = Vector3D.angleBetween(ba, bc);
+			var abcAngle:Number = Utility.angleBetween(ba, bc);
 			var dist:Number = radius / Math.tan(abcAngle/2);
 			return dist < ba.length && dist < bc.length;
 		}
 		
 		/** Does not alter the parameters. */
-		public function makeCurveSeg_Cut(anchor1:LatLng, control:LatLng, anchor2:LatLng, radius:Number, maxLength:Number, preview:Boolean):TrackSegment {
+		protected function makeCurveSeg_Cut(anchor1:LatLng, control:LatLng, anchor2:LatLng, radius:Number, maxLength:Number, preview:Boolean):TrackSegment {
 			// alias the inputs to short names, and make copies
 			var a:LatLng = anchor1.clone();
 			var b:LatLng = control.clone();
@@ -412,7 +643,7 @@ package edu.ucsc.track_builder
 		 *  be tangent to it.
 		 *  If reverse is True, then direction of the line segment is reversed, but the endpoints remain the same.
 		 */
-		public function makeCurveSeg_NoCut(anchor:LatLng, originVec:Vector3D, dest:LatLng, radius:Number, reverse:Boolean, preview:Boolean):TrackSegment {				
+		protected function makeCurveSeg_NoCut(anchor:LatLng, originVec:Vector3D, dest:LatLng, radius:Number, reverse:Boolean, preview:Boolean):TrackSegment {				
 			originVec.normalize();			
 			var destVec:Vector3D = Utility.calcVectorFromLatLngs(anchor, dest);
 			var destAngle:Number = Utility.signedAngleBetween(originVec, destVec);			
@@ -503,7 +734,455 @@ package edu.ucsc.track_builder
 										center,
 										preview);
 		}
+
+		/** Creates a 'trumpet' interchange between an existing unidirectional TrackSegment and a
+		 * in-the-process-of-being-created bidirectional track. The trumpet created by this
+		 * function consists of the following segments, where each segment continues from the end
+		 * of the previous segment unless otherwise noted:
+		 * <ul>
+		 *   <li><em>Approach:</em> A straight piece of bidir track that is aligned with newVec and which raises
+		 * the track from <code>this.offset</code> meters above the ground to <code>clearance</code>
+		 * meters above the existing track. Ends at <code>intersection</code>. FIXME: Specify where it begins.</li>
+		 *   <li><em>Extend:</em> A straight piece of bidir track that is aligned with newVec and which travels
+		 * some distance beyond <code>intersection</code>. The exact distance depends on
+		 * the convergance angle, but is equal to <code>radius</code> in the case where the tracks
+		 * intersect at 90 degrees.</li>
+		 *   <li><em>Trumpet:</em> A curved piece of bidir track that curves around so as to end perpendicular 
+		 * to <code>existing</code> and <code>radius</code> radius meters away. The radius of curvature is 
+		 * <code>radius</code> and whether it curves to the left or to the right is determined by <code>side</code>.</li>
+		 *   <li><em>Inside:</em> A curved piece of unidirectional track that connects <code>existing</code> with
+		 * the end of <em>Trumpet</em>. The direction of the piece depends on <code>Tracks.driveSide</code> and
+		 * <code>side</code>, but if you consider it to start at the end of the <em>Trumpet</em> then it curves towards
+		 * <code>side</code>. Its radius is <code>radius</code>.</li>
+		 *   <li><em>Outside:</em> A curved piece of unidirectional track that also connects <code>existing</code> with
+		 * the end of <em>Trumpet</em>. This piece travels in the opposite direction as <em>Inside</em>, and curves
+		 * towards the opposite side.
+		 * </ul>
+		 * 
+		 * The interchange TrackSegments are not connected to <code>existing</code>. The returned TrackBundle contains
+		 * information about which segments need to be connected and where. Making the connections is deferred
+		 * in order to avoid complications that arise with bidirectional track -- splitting one segment of a bidir
+		 * track splits the parallel track too.
+		 * 
+		 * @param intersection LatLng at which the <code>existing</code> track and the new track intersect.
+		 * @param existing The existing unidirectional track that is being connected to.
+		 * @param newLatLng LatLng which is indicated by <code>newVec</code>.
+		 * @param newVec A Vector3D which the new track is to be aligned with. It points to <code>newLatLng</code>
+		 * when originating at intersection.
+		 * @param radius The radius of curvature for all curved segments in the interchange. Measured in radians.
+		 * @param side One of <code>Tracks.LEFT</code> or <code>Tracks.RIGHT</code>. It indicates which direction the
+		 * trumpet will curve towards.
+		 * @param clearance The vertical distance by which the new track should rise above the existing track at
+		 * <code>intersection</code>. Measured in meters.
+		 * @param slope The slope used by the <em>Approach</em> segment when climbing. 
+		 * @param preview Whether this function is called as part of the live track placement preview, or as the result
+		 *  of a user click. Some work is ommitted if it is only part of a preview.
+		 * 
+		 * @return a <code>TrackBundle</code> containing all of the new segments, wrapped in <code>TrackOverlays</code>.
+		 */
+		protected function makeHalfTrumpetInterchange(
+				intersection:LatLng, existing:TrackSegment, newLatLng:LatLng, newVec:Vector3D, 
+				radius:Number, side:String, clearance:Number, slope:Number, preview:Boolean):TrackBundle {
+			var bundle:TrackBundle = new TrackBundle();
+			
+			var nVec:Vector3D = newVec.clone(); // n indicates that it is aligned with 'newVec'
+			nVec.normalize();
+			
+		 	 /* Establish the convention that the trumpet should always curve in the same direction as eVec. */			
+			var eVec:Vector3D;  // e indicates that it is aligned with the 'existing' segment.
+            if (side == this.driveSide) { // both are Tracks.LEFT or Tracks.RIGHT
+            	// trumpet curves in opposite direction as existing.
+            	eVec = Utility.calcVectorFromLatLngs(existing.getEnd(), existing.getStart());
+		 	} else { // one is Tracks.LEFT, the other is Tracks.RIGHT
+            	// trumpet curves in same direction as existing. 
+		 		eVec = Utility.calcVectorFromLatLngs(existing.getStart(), existing.getEnd());
+		 	}
+		 	eVec.normalize();
+		 			 	
+		 	var angle:Number = Math.PI - Utility.angleBetween(eVec, nVec);
+		 	if (angle < Tracks.MIN_ANGLE || angle > Tracks.MAX_ANGLE) {
+				throw new TrackError("Vectors are too nearly parallel.");
+			}
+		 	var tanHalfAngle:Number = Math.tan(angle/2);
+		 	
+			// Check that the ramps will fit on 'existing'
+			var tStartCurveDist:Number = radius/tanHalfAngle; // dist at which the new bidir track begins curving to form the trumpet
+			if (side == this.driveSide) {
+				if (tStartCurveDist + 2*radius > existing.getStart().distanceFrom(intersection)) {
+			    	throw new TrackError("Trumpet interchange does not fit.", TrackError.INSUFFICIENT_TRACK);
+			 	}
+	        } else {
+	        	if (tStartCurveDist + 2*radius > existing.getEnd().distanceFrom(intersection)) {
+	        		throw new TrackError("Trumpet interchange does not fit.", TrackError.INSUFFICIENT_TRACK);
+	        	}
+	        }
+
+			// Create a bunch of vectors to calculate LatLngs with.
+			// 'a' refers the length of the segment in the diagram: prt-sim/docs/TrumpetInterchange 
+		 	var nAVector:Vector3D = nVec.clone();
+ 		 	var eAVector:Vector3D = eVec.clone();
+		 	var eRadiusVector:Vector3D = eVec.clone();
+
+			// Scale them to useful lengths.
+ 		 	nAVector.negate(); // point towards the trumpet start
+		 	nAVector.scaleBy(tStartCurveDist);
+ 		 	eRadiusVector.scaleBy(radius);
+		 	eAVector.scaleBy(tStartCurveDist);
+
+			// Create a vector that is perpendicular to eVec, and which points towards the trumpet side.		 	
+  		 	var ePerpRadiusVector:Vector3D; 
+ 		 	var zVec:Vector3D = nVec.crossProduct(eVec);
+ 		 	ePerpRadiusVector = zVec.crossProduct(eVec); 		 	
+		 	ePerpRadiusVector.scaleBy(radius/ePerpRadiusVector.length);
+		 		        
+		 	/* Create TrackSegments and TrackOverlays */
+		 	var tArcAngle:Number =  Math.PI/2 + angle // 2*Math.PI - (Math.PI - angle + rampArcAngle)
+			var tArcLength:Number = tArcAngle*radius;	 	
+ 		 	var rampArcLength:Number = radius*Math.PI/2; // ramps are always 90 degrees
+	
+		 	// approach seg
+		 	var approachLength:Number = clearance / slope;
+		 	var approachVector:Vector3D = nVec.clone();
+		 	approachVector.scaleBy(approachLength);
+		 	var approachStart:LatLng = Utility.calcLatLngFromVector(intersection, approachVector); 
+		 	var approachOverlay:TrackOverlay = makeStraight(approachStart, intersection, true, preview, NaN,
+		 	                                                this.offset, this.offset + clearance);
+			bundle.addOverlay(approachOverlay);
+			bundle.markAsConnectNew(approachOverlay);
+			bundle.setConnectNewLatLng(approachStart);
+		 	
+            // extend seg (from intersection to trumpet start)
+            var extendSegHLength:Number = tStartCurveDist;
+            var totalTrumpetHLength:Number = extendSegHLength + tArcLength + rampArcLength;
+            var tStartCurveOffset:Number = this.offset + clearance * (totalTrumpetHLength - extendSegHLength)/totalTrumpetHLength;
+		 	var tStartCurveLatLng:LatLng = Utility.calcLatLngFromVector(intersection, nAVector);
+            var extendOverlay:TrackOverlay = makeStraight(intersection, tStartCurveLatLng, true, preview, NaN,
+                                                          this.offset + clearance, tStartCurveOffset);
+			bundle.addOverlay(extendOverlay);
+			approachOverlay.connect(extendOverlay);
+			
+			// outside and inside ramps
+			var eRampsIntersectVector:Vector3D = eAVector.add(eRadiusVector);
+			var eRampsIntersectLatLng:LatLng = Utility.calcLatLngFromVector(intersection, eRampsIntersectVector);
+			var insideRampOverlay:TrackOverlay;
+			var outsideRampOverlay:TrackOverlay;
+		 	var trueEVec:Vector3D = Utility.calcVectorFromLatLngs(existing.getStart(), existing.getEnd()); 
+		 	trueEVec.normalize(); // unit vector that points along the true direction of existing
+		 	var trueNegEVec:Vector3D = trueEVec.clone();
+			trueNegEVec.negate();
+		 	var ePerpUnitVector:Vector3D = ePerpRadiusVector.clone();
+		 	ePerpUnitVector.normalize();
+ 			var tSplitLatLng:LatLng; //where the trumpet loop splits into two unidirectional tracks.
+ 		 	var tSplitOffset:Number = this.offset + clearance * (totalTrumpetHLength - extendSegHLength - tArcLength)/(totalTrumpetHLength);
+			if (side == this.driveSide) {
+				insideRampOverlay = makeTangentCurve( // trumpet -> existing 
+						eRampsIntersectLatLng, ePerpUnitVector, trueEVec, maxSpeed,  
+						this.offset + tSplitOffset, this.offset, radius, false, preview);
+				outsideRampOverlay = makeTangentCurve( // existing -> trumpet
+						eRampsIntersectLatLng, trueNegEVec, ePerpUnitVector, maxSpeed,
+						this.offset + tSplitOffset, this.offset, radius, false, preview);
+				tSplitLatLng = insideRampOverlay.getStart();
+			} else { // side != this.driveSide
+				insideRampOverlay = makeTangentCurve( // existing -> trumpet
+						eRampsIntersectLatLng, trueNegEVec, ePerpUnitVector, maxSpeed,
+						this.offset + tSplitOffset, this.offset, radius, false, preview);
+				outsideRampOverlay = makeTangentCurve( // trumpet -> existing
+						eRampsIntersectLatLng, ePerpUnitVector, trueEVec, maxSpeed,
+						this.offset + tSplitOffset, this.offset, radius, false, preview);
+				tSplitLatLng = insideRampOverlay.getEnd();
+			}
+			bundle.addOverlay(insideRampOverlay);
+			bundle.addOverlay(outsideRampOverlay);		
+
+			// Making the ramps' connections to "existing" is deferred to the calling function. 			
+			if (side == this.driveSide) { // the outside ramp occurs first when travelling along existing.
+				bundle.setConnectExisting(outsideRampOverlay.getStart(), outsideRampOverlay);
+				bundle.setConnectExisting(insideRampOverlay.getEnd(), insideRampOverlay);				
+			} else { // side != this.driveSide  -- the inside ramp occurs first
+				bundle.setConnectExisting(insideRampOverlay.getStart(), insideRampOverlay);
+				bundle.setConnectExisting(outsideRampOverlay.getEnd(), outsideRampOverlay);
+			}
+
+			// trumpet loop
+ 		 	var tCenterLatLng:LatLng = Utility.calcLatLngFromVector(intersection, eAVector.add(ePerpRadiusVector));			
+			var trumpetSegFwd:TrackSegment;
+			var signedArcAngle:Number;
+		 	if (side == Tracks.RIGHT) { // Trumpet curves to the right, or Clockwise. Use negative arcAngle.
+		 		signedArcAngle = -Math.abs(tArcAngle);
+			} else { // side == Tracks.LEFT   Trumpet curves to the left, or CounterClockwise. Use positive arcAngle.
+				signedArcAngle = Math.abs(tArcAngle);
+			}
+			trumpetSegFwd = new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
+			            this.label, tStartCurveLatLng, tSplitLatLng, this.maxSpeed, this.offset + tStartCurveOffset,
+				        this.offset + tSplitOffset, radius, signedArcAngle,	tCenterLatLng, preview);			
+			var trumpetSegRev:TrackSegment = trumpetSegFwd.clone(true);
+			var trumpetSegs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
+			trumpetSegs.push(trumpetSegFwd);
+			trumpetSegs.push(trumpetSegRev);
+			var trumpetOverlay:TrackOverlay = new TrackOverlay(trumpetSegs);
+			bundle.addOverlay(trumpetOverlay);
+			extendOverlay.connect(trumpetOverlay);
+			trumpetOverlay.connect(insideRampOverlay);
+			trumpetOverlay.connect(outsideRampOverlay);
+
+			return bundle;
+	 	}
+		 			
+		/** Creates a Y interchange between an existing unidirectional track and a new bidirectional track.
+		 * Note that this function should only be used when the bidirectional track is approaching the
+		 * unidirectional track from the same side as Tracks.driveSide. That is, if the vehicles travel
+		 * forward on the right side of bidirectional track, then this function should only be used when
+		 * the bidirectional track is approaching unidirectional track from the right. Otherwise, use
+		 * a trumpet interchange.
+		 * 
+		 * Each ramp is a single curved segment that is tangent to both the existing track
+		 * and the new track. If the minDist parameter is used, and its value is such that a ramp would
+		 * naturally merge with the track closer than minDist, then the ramp's radius is increased
+		 * so that the ramp will merge minDist meters away from the intersection.
+		 *
+		 * @param intersection The point at which the new track would intersect the existing, if it were to continue on straight.  
+		 * @param existing The existing unidirectional TrackSegment that we are connecting to.
+		 * @param newVec A vector which points along the new track, originating at intersection.
+		 * @param radius The curvature radius for the ramps, in meters.
+		 * @param preview Whether the interchange is being created as part of the live track placement preview, or as the result of a user click.
+		 * @param interiorConnection (Optional) Default is false. When true, the piece of straight connecting track on
+		 * newVec is bidirectional rather than unidirectional. This provides an interior connection point.
+		 * @param minDist (Optional) Forces the ramp to intersect the new track at least minDist meters away from the intersection.
+		 * @see #makeHalfTrumpetInterchange
+		 * @return The TrackBundle's connection point falls on newVec, at the start/end of the furthest ramp.
+		 * If interiorConnection is true, then the TrackBundle's altConnectLatLng and altConnectOverlays fields are used
+		 * to return information about the interior connection point. 
+		 */		
+		protected function makeHalfYInterchange(
+				intersection:LatLng, existing:TrackSegment, newLatLng:LatLng, newVec:Vector3D, radius:Number,
+				preview:Boolean, interiorConnection:Boolean=false, minDist:Number=0):TrackBundle {
+			var bundle:TrackBundle = new TrackBundle();
+			var nVec:Vector3D = newVec.clone();
+			var eVec:Vector3D = Utility.calcVectorFromLatLngs(existing.getStart(), existing.getEnd());						
+			nVec.normalize();
+			eVec.normalize();
+
+			// ramp from new to existing
+			var neRamp:TrackOverlay = makeTangentCurve(
+					intersection, nVec, eVec, this.maxSpeed, this.offset, this.offset, this.radius, false, preview, minDist);			
+			bundle.addOverlay(neRamp);
+			
+			if (neRamp.getEnd().distanceFrom(intersection) > existing.getEnd().distanceFrom(intersection)) {
+				throw new TrackError("New to Existing ramp extends beyond the end of Existing.", TrackError.INSUFFICIENT_TRACK);
+			}
+			if (neRamp.getStart().distanceFrom(intersection) > newLatLng.distanceFrom(intersection)) {
+				throw new TrackError("New to Existing ramp extends beyond newLatLng", TrackError.INSUFFICIENT_TRACK);
+			}
+			
+			// ramp from existing to new
+			eVec.negate();
+			var enRamp:TrackOverlay = makeTangentCurve(
+					intersection, eVec, nVec, this.maxSpeed, this.offset, this.offset, this.radius, false, preview, minDist);
+			bundle.addOverlay(enRamp);
+			
+			if (enRamp.getStart().distanceFrom(intersection) > existing.getStart().distanceFrom(intersection)) {
+				throw new TrackError("Existing to New ramp extends beyond the start of Existing.", TrackError.INSUFFICIENT_TRACK);
+			}
+			if (enRamp.getEnd().distanceFrom(intersection) > newLatLng.distanceFrom(intersection)) {
+				throw new TrackError("Existing to New ramp extends beyond newLatLng", TrackError.INSUFFICIENT_TRACK);
+			}
+
+			// The ramps split/merge from the main line at approx the same spot.
+			if (neRamp.getStart().distanceFrom(enRamp.getEnd()) < 0.0001) { // FIXME: Somewhat arbitrary distance threshold.
+				bundle.markAsConnectNew(neRamp);
+				bundle.markAsConnectNew(enRamp);
+				bundle.setConnectNewLatLng(neRamp.getStart());
+				
+				if (interiorConnection) {
+					bundle.markAsConnectAlt(neRamp);
+					bundle.markAsConnectAlt(enRamp);
+					bundle.setConnectAltLatLng(neRamp.getStart());
+				}
+			} else {
+				/* Create a straight connecting segment between the two curves. */
+				var straight:TrackOverlay;
+				if (!interiorConnection) {
+					straight = makeStraight(enRamp.getEnd(), neRamp.getStart(), false, preview);
+				} else { // interiorConnection == true
+					straight = makeStraight(enRamp.getEnd(), neRamp.getStart(), true, preview);
+					bundle.markAsConnectAlt(straight);
+				} 
+				bundle.addOverlay(straight);
+				bundle.markAsConnectNew(straight);
+					
+				// new->existing splits closer to the intersection. Connect straight to it.	
+				if (neRamp.getStart().distanceFrom(intersection) < enRamp.getEnd().distanceFrom(intersection)) {
+					straight.connect(neRamp);
+					bundle.markAsConnectNew(enRamp);
+					bundle.setConnectNewLatLng(enRamp.getEnd());
+					
+					if (interiorConnection) {
+						bundle.markAsConnectAlt(neRamp);
+						bundle.setConnectAltLatLng(neRamp.getStart());	
+					}
+				} else { // existing->new merges closer to the intersection. Connect straight to it.
+					straight.connect(enRamp);
+					bundle.markAsConnectNew(neRamp);
+					bundle.setConnectNewLatLng(neRamp.getStart());
+					
+					if (interiorConnection) {
+						bundle.markAsConnectAlt(enRamp);
+						bundle.setConnectAltLatLng(enRamp.getEnd());
+					}
+				}			
+			}
+			
+			// Delay altering 'existing' until the calling function is ready to do it.
+			bundle.setConnectExisting(enRamp.getStart(), enRamp);
+			bundle.setConnectExisting(neRamp.getEnd(), neRamp);
+									 
+			return bundle;
+		}		
+
+		/** Makes an interchange between two bidirectional tracks. The interchange is comprised of a Half-Trumpet and
+		 * a Half-Y interchange.
+		 */
+		protected function makeFullTrumpetInterchange(
+				intersection:LatLng, existing:TrackOverlay, newLatLng:LatLng, newVec:Vector3D, 
+				radius:Number, side:String, clearance:Number, maxSlope:Number, preview:Boolean):TrackBundle {
+					
+			var minDist:Number = Math.max(clearance/maxSlope, radius);
+			var slope:Number = Math.min(maxSlope, clearance/minDist);
+			var ySeg:TrackSegment;
+			var trumpetSeg:TrackSegment;
+			
+			// Figure out which segment should be connected via a Y and which should be connected via a Trumpet.
+			var eVec:Vector3D = Utility.calcVectorFromLatLngs(existing.getStart(), existing.getEnd());
+			var zVec:Vector3D = eVec.crossProduct(newVec);
+			if ((zVec.z < 0 && this.driveSide == Tracks.RIGHT) || (zVec.z > 0 && this.driveSide == Tracks.LEFT)) {
+				ySeg = existing.segments[0];
+				trumpetSeg = existing.segments[1];
+			} else {
+				ySeg = existing.segments[1];
+				trumpetSeg = existing.segments[0];
+			}
+				
+			var yBundle:TrackBundle = makeHalfYInterchange(
+					intersection, ySeg, newLatLng, newVec, radius, preview, true, minDist);
+			try {
+				var trumpetBundle:TrackBundle = makeHalfTrumpetInterchange(
+						intersection, trumpetSeg, newLatLng, newVec, radius, side, clearance, slope, preview);
+			} catch (err:TrackError) {
+				if (err.errorID == TrackError.INSUFFICIENT_TRACK) {
+					var otherSide:String = side==Tracks.LEFT ? Tracks.RIGHT : Tracks.LEFT; // toggle the side
+					trumpetBundle = makeHalfTrumpetInterchange(intersection, trumpetSeg, newLatLng, newVec, radius, otherSide, clearance, slope, preview);
+				} else {
+					throw err;
+				}
+			}
+
+			
+			for each (var overlay:TrackOverlay in yBundle.connectAltOverlays) {
+				for each (var otherOverlay:TrackOverlay in trumpetBundle.connectNewOverlays) {
+					overlay.connect(otherOverlay);
+				}
+			}
+
+			var resultBundle:TrackBundle = new TrackBundle();
+			resultBundle.overlays = yBundle.overlays.concat(trumpetBundle.overlays);
+			resultBundle.connectNewOverlays = yBundle.connectNewOverlays.concat(trumpetBundle.connectNewOverlays);
+			resultBundle.setConnectNewLatLng(yBundle.connectNewLatLng);
+			resultBundle.connectExistingLatLngs = yBundle.connectExistingLatLngs.concat(trumpetBundle.connectExistingLatLngs);
+			resultBundle.connectExistingOverlays = yBundle.connectExistingOverlays.concat(trumpetBundle.connectExistingOverlays);						
+			
+			if (!preview) { // don't bother with splitting if just a preview								
+				// Split 'existing' and connect the ramps					
+				var toSplitOverlay:TrackOverlay = existing;
+				var nextSplitOverlay:TrackOverlay;
+				resultBundle.sortConnectExistingArrays(toSplitOverlay.getStart()); // sort by proximity to start
+				for (var i:int = 0; i < resultBundle.connectExistingLatLngs.length; ++i) {
+					try {
+						nextSplitOverlay = toSplitOverlay.split(resultBundle.connectExistingLatLngs[i], this.offset, preview);
+					} catch (err:TrackError) {
+						// Has already been split here. No need to do anything.
+					}
+					// Info about direction of the connection isn't retained. Use a wee bit of brute force and try
+					// connecting to either side of the split point.
+					resultBundle.connectExistingOverlays[i].connect(toSplitOverlay);
+					resultBundle.connectExistingOverlays[i].connect(nextSplitOverlay);
+					
+					toSplitOverlay = nextSplitOverlay;
+				}
+			}
+
+			return resultBundle;	
+		}
 		
+		/** Makes a curved TrackSegment that is tangent to both v1 and v2 with the given radius. If minDist is supplied,
+		 * the tangent points will be at least minDist meters from the intersection and the radius may be larger.
+		 * This function has no information about the actual TrackSegments involved. It is up to the calling function
+		 * to check that the returned curve is compatible with the relevant segment.
+		 * 
+		 * @param intersection The common origin for v1 and v2.
+		 * @param v1 A unit vector which eminates from the intersection and points along the origin TrackSegment.
+		 * @param v2 A unit vector which eminates from the intersection and points along the destination TrackSegment.
+		 * @param maxSpeed The desired maximum vehicle speed for the TrackSegment.
+		 * @param startOffset The desired distance between the track and the ground at the segment's start.
+		 * @param endOffset The desired distance between the track and the ground at the segment's end.
+		 * @param radius The ramp radius, in meters. A larger radius may be used if the optional minDist parameter is supplied.
+		 * @param bidirectional If true, then a reverse track segment will also be created.
+		 * @param preview Whether the interchange is being created as part of the live track placement preview, or as the result of a user click.
+		 * @param minDist Optional parameter that forces the tangent points to be at least minDist meters away from the intersection.
+		 * 
+		 * @return A TrackOverlay which starts on v1 and curves to v2. No connections are made.
+		 */
+		public function makeTangentCurve(intersection:LatLng, v1:Vector3D, v2:Vector3D, maxSpeed:Number,
+										  startOffset:Number, endOffset:Number, radius:Number,
+		                                  bidirectional:Boolean, preview:Boolean, minDist:Number=0):TrackOverlay {
+			var angle:Number = Utility.angleBetween(v1, v2);
+			if (angle < Tracks.MIN_ANGLE || angle > Tracks.MAX_ANGLE) {
+				throw new TrackError("Vectors are too nearly parallel.");
+			} 
+			var tanHalfAngle:Number = Math.tan(angle/2);
+			var dist:Number = radius/tanHalfAngle;
+			if (dist < minDist) {
+				radius = tanHalfAngle * minDist;
+				dist = minDist;
+			}
+
+			// Make a vector that is perpendicular with v1, and which faces the same side as v2. Of length 'radius'.
+			var zVec:Vector3D = v1.crossProduct(v2);
+			var v1PerpVec:Vector3D = zVec.crossProduct(v1);			
+			v1PerpVec.scaleBy(radius/v1PerpVec.length);
+						
+			var v1DistVec:Vector3D = v1.clone();
+			var v2DistVec:Vector3D = v2.clone();			
+			v1DistVec.scaleBy(dist);
+			v2DistVec.scaleBy(dist);
+			
+			var centerVec:Vector3D = v1DistVec.add(v1PerpVec);
+			
+			var v1LatLng:LatLng = Utility.calcLatLngFromVector(intersection, v1DistVec);
+			var v2LatLng:LatLng = Utility.calcLatLngFromVector(intersection, v2DistVec);
+			var centerLatLng:LatLng = Utility.calcLatLngFromVector(intersection, centerVec);
+			
+			/* Find magnitude and sign of arcAngle. */
+			var arcAngle:Number;
+			if ((zVec.z > 0 && this.driveSide == Tracks.RIGHT) || (zVec.z < 0 && this.driveSide == Tracks.LEFT)) {
+				arcAngle = (Math.PI - angle) * -1; // Clockwise rotation
+			} else if ((zVec.z < 0 && this.driveSide == Tracks.RIGHT) || (zVec.z > 0 && this.driveSide == Tracks.LEFT)) {
+				arcAngle = (Math.PI - angle); // CounterClockwise rotation
+			} else {
+				throw new Error("Unknown error.");
+			}
+
+			/* Create the TrackSegments */			
+			var segs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
+			segs.push(new TrackSegment(
+					IdGenerator.getTrackSegId(TrackSegment.forwardExt), this.label, v1LatLng, v2LatLng,
+					maxSpeed, startOffset, endOffset, radius, arcAngle, centerLatLng, preview));
+			if (bidirectional) {
+				segs.push(segs[0].clone(true));
+			}
+			var overlay:TrackOverlay = new TrackOverlay(segs);
+			return overlay;			 
+		}		
+
 		/** Removes a segment from the global store. Does not remove segment from any overlays! */
         public function removeTrackSegment(seg:TrackSegment):void {
         	var otherId:String;
@@ -782,7 +1461,7 @@ package edu.ucsc.track_builder
 							max_speed="15"
 							offset="3"
 							bidirectional="false"
-							radius="20"
+							radius="65"
 							minOffset="1"
 							maxOffset="9"
 						  />

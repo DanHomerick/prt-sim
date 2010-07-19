@@ -1,8 +1,8 @@
 package edu.ucsc.track_builder
 {	
-	/** An all-static class that handles undos. Stores a series of 'micro' function/argument pairs to undo a command. In general, whenever
-	 * a function causes a side-effect, it should pushMicro a function + params to undo the effect. Keeps two separate undo stacks, one to
-	 * undo user commands, and another for programatic use.
+	/** An all-static class that handles undos. Stores a series of 'micro' function/argument pairs to undo a command.
+	 * In general, whenever a function causes a side-effect, it should pushMicro a function + params to undo the effect.
+	 * Keeps two separate undo stacks, one to undo user commands, and another that is dedicated to undoing the preview.
 	 */	
 	public class Undo
 	{
@@ -37,9 +37,9 @@ package edu.ucsc.track_builder
 		}
 
 		/** Add the micro undo to the latest command undo.
-		 * thisArg: The object to which the function should be applied
-		 * fnc: A function that undoes a particular action
-		 * args: arguments to fnc
+		 * @param thisArg The object to which the function should be applied
+		 * @param fnc A function that undoes a particular action
+		 * @param args arguments to fnc
 		 */
 		public static function pushMicro(thisArg:*, fnc:Function, ... args):void {
 			if (recording == NONE) {
@@ -88,7 +88,7 @@ package edu.ucsc.track_builder
 	}
 }
 
-/** Just a data holding class. A micro step in the undoing of a USER or PROG command. */
+/** Just a data holding class. A micro step in the undoing of a USER or PREVIEW command. */
 internal class Micro
 {
 	public var thisArg:*

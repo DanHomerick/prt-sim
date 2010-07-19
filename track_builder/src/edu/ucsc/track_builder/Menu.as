@@ -192,25 +192,25 @@ package edu.ucsc.track_builder
 			
 			var selectToolMenu:NativeMenuItem = new NativeMenuItem("Select");
 			selectToolMenu.mnemonicIndex = 0;
-			selectToolMenu.keyEquivalent = 'esc'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
+			selectToolMenu.keyEquivalent = 'f1'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
 			selectToolMenu.keyEquivalentModifiers = []; // no ctrl key required
 			selectToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.SELECT_TOOL); Globals.toolBar.selectedIndex = Globals.SELECT_TOOL});
 			
 			var trackToolMenu:NativeMenuItem = new NativeMenuItem("Tracks");
 			trackToolMenu.mnemonicIndex = 0;
-			trackToolMenu.keyEquivalent = 'f1'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
+			trackToolMenu.keyEquivalent = 'f2'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
 			trackToolMenu.keyEquivalentModifiers = [];
 			trackToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.TRACK_TOOL); Globals.toolBar.selectedIndex = Globals.TRACK_TOOL});
 			
 			var stationToolMenu:NativeMenuItem = new NativeMenuItem("Stations");
 			stationToolMenu.mnemonicIndex = 0;
-			stationToolMenu.keyEquivalent = 'f2'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
+			stationToolMenu.keyEquivalent = 'f3'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
 			stationToolMenu.keyEquivalentModifiers = [];
 			stationToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.STATION_TOOL); Globals.toolBar.selectedIndex = Globals.STATION_TOOL});
  
 			var vehicleToolMenu:NativeMenuItem = new NativeMenuItem("Vehicles");
 			vehicleToolMenu.mnemonicIndex = 0;
-			vehicleToolMenu.keyEquivalent = 'f3'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
+			vehicleToolMenu.keyEquivalent = 'f4'; // this is for user documentation only. Key equivalents only 'automagically' work for single letters.
 			vehicleToolMenu.keyEquivalentModifiers = [];
 			vehicleToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.VEHICLE_TOOL); Globals.toolBar.selectedIndex = Globals.VEHICLE_TOOL});			
 			
@@ -551,6 +551,7 @@ package edu.ucsc.track_builder
 
 
 		public function onUndo(event:Event):void {
+			Undo.undo(Undo.PREVIEW); // When undoing the last action, the preview will likely become stale.
 			Undo.undo(Undo.USER);
 			Utility.refreshScreen();
 		}

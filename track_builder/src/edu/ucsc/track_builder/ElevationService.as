@@ -86,6 +86,20 @@ package edu.ucsc.track_builder
 			return new URLRequest(url);
 		}
 		
+		public function makeGoogleElevationUrlRequest(latlngs:Vector.<LatLng>):URLRequest {
+			/* Capable of using path= with a set number of samples. Since I need to calculate
+			 * individual LatLngs for curved segments however, I'm just using the location=
+			 * query for all cases.
+			 */
+			var baseUrl:String = "http://maps.google.com/maps/api/elevation/xml?"
+			var params:Array = new Array();
+			for each (var latlng:LatLng in latlngs) {
+				params.push(latlng.toString());
+			}
+			var url:String = baseUrl + params.join("|");
+			return new URLRequest(url);
+		}
+		
 		public static function addToCache(latlng:LatLng, elevation:Number):void {
 			elevation_cache[latlng.toUrlValue(PRECISION)] = elevation;
 		}

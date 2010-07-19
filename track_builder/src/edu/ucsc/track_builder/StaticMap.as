@@ -14,7 +14,7 @@ package edu.ucsc.track_builder
 	import mx.controls.Alert;
 	import mx.graphics.ImageSnapshot;
 	
-	public final class StaticMap
+	public class StaticMap
 	{
 		public static var apiKey:String = "ABQIAAAADtK5P0wYyZFDmjzoanxE5xSDTED1dMqBzm1PMihRGvUygQO1OxTN4Ia2w7lhdfpkzT5dOtexVdW8eQ"
 		public static var baseUrl:String = "http://maps.google.com/staticmap?"

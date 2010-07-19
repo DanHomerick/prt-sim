@@ -815,7 +815,10 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             if station in exclude:
                 continue
             station_ts = station.ts_ids[Station.UNLOAD]
-            dist = dists[station_ts]
+            try:
+                dist = dists[station_ts]
+            except: # Not all stations are must be reachable
+                continue
             demand = station.get_demand()
             value = max_dist/dist * demand
             if value >= best_value:
@@ -1830,18 +1833,11 @@ class Merge(object):
         the Merge's zone of control. The slot is added to the Merge's
         reservation queue.
 
-        If this function is called prior to the vehicle reaching the Merge's
-        zone of control, then the call is rescheduled using the controller's
-        set_fnc_notification function.
-
         Returns: MergeSlot or None
 
         It is up to the vehicle to alter its trajectory so as to hit the
         MergeSlot, but the slot is guaranteed to be achievable by using the
         included spline.
-
-        TODO: Rather than having the function reschedule itself, raise an
-        exception or return None then have the calling function reschedule.
         """
         assert isinstance(vehicle, Vehicle)
         offset = self.offsets[vehicle.ts_id]

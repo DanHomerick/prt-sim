@@ -2,7 +2,7 @@ package edu.ucsc.track_builder
 {
 	import com.google.maps.LatLng;
 	
-	public final class Vehicle
+	public class Vehicle
 	{		
 		public var id:String;
 		public var position:Number; // distance (in meters) from the start of the segment

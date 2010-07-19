@@ -109,10 +109,10 @@
                     	change="Globals.stations.label = stationLabel.text;"
                     	initialize="stationLabel.text = Globals.stations.label;"/>
                 </mx:FormItem>
-                <mx:FormItem label="Bidirectional:" toolTip="Two tracks along the same corridor.">
-                	<mx:CheckBox id="stationBidirectional"
-                		change="Globals.stations.bidirectional = stationBidirectional.selected;"
-                		initialize="stationBidirectional.selected = Globals.stations.bidirectional;"/>
+                <mx:FormItem label="Reverse:" toolTip="Connect to the 'reverse' segment of a bidirectional track.">
+                	<mx:CheckBox id="stationReverse"
+                		change="Globals.stations.reverse = stationReverse.selected;"
+                		initialize="stationReverse.selected = Globals.stations.reverse;"/>
                 </mx:FormItem>
                 <mx:FormItem label="Lateral Offset:" toolTip="How far away from the main line the station lies.">
                 	<mx:NumericStepper id="stationLateralOffset" minimum="2" maximum="50" stepSize="0.5"

@@ -9,11 +9,10 @@ import com.google.maps.controls.ZoomControl;
 import com.google.maps.controls.ZoomControlOptions;
 import com.google.maps.interfaces.IPaneManager;
 
-import edu.ucsc.track_builder.DestMarker;
 import edu.ucsc.track_builder.ElevationService;
 import edu.ucsc.track_builder.Globals;
 import edu.ucsc.track_builder.Menu;
-import edu.ucsc.track_builder.OriginMarker;
+import edu.ucsc.track_builder.SnappingMarker;
 import edu.ucsc.track_builder.XMLHandler;
 
 import flash.desktop.NativeApplication;
@@ -68,11 +67,11 @@ internal function initApp(event:FlexEvent):void {
 	elevationTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onElevationTimerComplete);
 	
 	NativeApplication.nativeApplication.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
-	NativeApplication.nativeApplication.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);	
 }
 
-internal function onMapReady(event:Event):void {	
-    map.setCenter(new LatLng(37.0,-122.06), 14, MapType.NORMAL_MAP_TYPE);
+internal function onMapReady(event:Event):void {
+	var defaultLatLng:LatLng = new LatLng(37.0,-122.06); // UC Santa Cruz (Has to go somewhere...)
+    map.setCenter(defaultLatLng, 14, MapType.NORMAL_MAP_TYPE);
     map.enableScrollWheelZoom();
     var zoomPosition:ControlPosition = new ControlPosition(ControlPosition.ANCHOR_BOTTOM_RIGHT, 3, 20);
     Globals.zoomControl = new ZoomControl(new ZoomControlOptions({position:zoomPosition}));
@@ -90,10 +89,9 @@ internal function onMapReady(event:Event):void {
 	Globals.markerPane = pm.getPaneById(PaneId.PANE_MARKER);
 	
 	/* Setup the markers */
-	Globals.originMarker = new OriginMarker(new LatLng(0,0));
-	Globals.destMarker = new DestMarker(new LatLng(0,0));
-	Globals.map.addEventListener(MapMouseEvent.MOUSE_MOVE, Globals.originMarker.onMapMouseMove);
-	Globals.map.addEventListener(MapMouseEvent.MOUSE_MOVE, Globals.destMarker.onMapMouseMove);
+	Globals.originMarker = new SnappingMarker(defaultLatLng, SnappingMarker.makeBlueCircleIcon(), true);
+	Globals.destMarker = new SnappingMarker(defaultLatLng, SnappingMarker.makeBlueCircleIcon(), false);
+	Globals.setActiveMarker(Globals.originMarker);
 
 	/* initialize the default tool */
 	Globals.tool = Globals.TRACK_TOOL;
@@ -163,19 +161,22 @@ internal function onMapStyleChooser(event:ItemClickEvent):void {
 
 
 internal function onKeyDown(event:KeyboardEvent):void
-{	
+{		
 	var tool:int = -1;
 	switch (event.keyCode) {
 		case Keyboard.ESCAPE:
-			tool = Globals.SELECT_TOOL;
+			Globals.setActiveMarker(Globals.originMarker);
 			break;
 		case Keyboard.F1:
-			tool = Globals.TRACK_TOOL;
+			tool = Globals.SELECT_TOOL;
 			break;
 		case Keyboard.F2:
-			tool = Globals.STATION_TOOL;
+			tool = Globals.TRACK_TOOL;
 			break;
 		case Keyboard.F3:
+			tool = Globals.STATION_TOOL;
+			break;
+		case Keyboard.F4:
 			tool = Globals.VEHICLE_TOOL;
 			break;
 		default:
@@ -187,12 +188,3 @@ internal function onKeyDown(event:KeyboardEvent):void
 		Globals.onToolChange(tool);
 	}
 }
-
-/* Unfinished */
-internal function onKeyUp(event:KeyboardEvent):void
-{
-//	if (event.ctrlKey) {
-//		ctrlKeyDown = false;
-//	}
-}
-

@@ -1,7 +1,7 @@
 package edu.ucsc.track_builder
 {	
 	/** Creates unique string-based Id's for various types. Increments by one each time. */
-	public final class IdGenerator
+	public class IdGenerator
 	{
 		private static var trackSeg:uint = 0;
 		private static var station:uint = 0;
