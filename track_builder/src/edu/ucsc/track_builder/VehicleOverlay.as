@@ -121,8 +121,6 @@ package edu.ucsc.track_builder
 						
 			var angle:Number;
 			if (!vehicle.location.isCurved()) { // a straight segment
-				trace("vehicle.location", vehicle.location.id);
-				trace("vehicle.location.getStart()", vehicle.location.getStart());
 				var startPt:Point = pane.fromLatLngToPaneCoords(vehicle.location.getStart());
 				var endPt:Point = pane.fromLatLngToPaneCoords(vehicle.location.getEnd());
 				angle = Math.atan2(endPt.y - startPt.y, endPt.x - startPt.x);
@@ -166,10 +164,6 @@ package edu.ucsc.track_builder
 			g.lineTo(leftBackPt.x, leftBackPt.y);
 			g.lineTo(rightBackPt.x, rightBackPt.y);
 			g.lineTo(rightFrontPt.x, rightFrontPt.y);
-			
-			trace(Utility.getClassName(icon.parent),
-			      Utility.getClassName(icon.parent.parent),
-			      Utility.getClassName(icon.parent.parent.parent));
 		}		
 
 		private function drawLowResIcon():void {

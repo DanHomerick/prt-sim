@@ -1,5 +1,7 @@
 package edu.ucsc.track_builder
 {
+	import __AS3__.vec.Vector;
+	
 	import com.google.maps.LatLng;
 	import com.google.maps.interfaces.IPane;
 	
@@ -70,9 +72,46 @@ package edu.ucsc.track_builder
 				latRad = vec.y/LatLng.EARTH_RADIUS + src.latRadians();
 				lngRad = vec.x/(Math.cos(src.latRadians())*LatLng.EARTH_RADIUS) + src.lngRadians();
 			}
-			return LatLng.fromRadians(latRad, lngRad);
-			
+			return LatLng.fromRadians(latRad, lngRad);		
 		}
+	
+	
+//      /** A higher precision version. Appears to be unnecessary. */
+//		public static function calcLatLngFromVector(src:LatLng, vec:Vector3D, dist:Number=0):LatLng
+//		{
+//			/* From: http://williams.best.vwh.net/avform.htm#LL
+//			 *
+//			 *  lat=asin(sin(lat1)*cos(d)+cos(lat1)*sin(d)*cos(tc))
+//     		 *	IF (cos(lat)=0)
+//        	 *		lon=lon1      // endpoint a pole
+//     		 *	ELSE
+//        	 *		lon=mod(lon1-asin(sin(tc)*sin(d)/cos(lat))+pi,2*pi)-pi
+//			 *  ENDIF
+//			 */
+//			 
+//			 var distRad:Number; // Distance in radians. Also, it's just rad.
+//			 if (!dist) {
+//			 	distRad = vec.length / LatLng.EARTH_RADIUS; // meters * (pi / (radius*pi))
+//			 } else {
+//			 	distRad = dist / LatLng.EARTH_RADIUS;
+//			 }			 
+//
+//			 // "True course is defined as usual, as the angle between the course line and the local meridian measured clockwise."
+//			 var tc:Number = Utility.signedAngleBetween(Vector3D.Y_AXIS, vec); 
+//			 
+//			 var latRad:Number = Math.asin(Math.sin(src.latRadians()) * Math.cos(distRad) + Math.cos(src.latRadians()) * Math.sin(distRad) * Math.cos(tc));
+//			 var lngRad:Number;
+//			 if (Math.cos(latRad) == 0) {
+//			 	lngRad = src.lngRadians();
+//			 } else {
+//			 	lngRad = ((src.lngRadians() - Math.asin(Math.sin(tc) * Math.sin(distRad) / Math.cos(latRad)) + Math.PI) % (2*Math.PI)) - Math.PI
+//			 }
+//			 
+//			 var result:LatLng = LatLng.fromRadians(latRad, lngRad);
+//			 var cmp_result:LatLng = _calcLatLngFromVector(src, vec, dist);
+//			 trace("Comparison:", result, cmp_result, result.distanceFrom(cmp_result)); 
+//			 return result;
+//		}
 	
 		/** Returns the angle by which vec1 would need to rotate in order to overlap vec2.
 		 *  A positive number indicates a CCW rotation. A negative number indicates a CW rotation.

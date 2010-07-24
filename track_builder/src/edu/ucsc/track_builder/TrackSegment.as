@@ -53,6 +53,12 @@ package edu.ucsc.track_builder
 		public static var forwardExt:String = "_forward"
 		/** Fragment of id string that indicates that this segment is 'reverse'. */
 		public static var reverseExt:String = "_reverse"
+		
+		/** Maximum error that is allowed in the angle between two TrackSegments while still making a connection.*/
+		public static const MAX_CONNECTION_ANGLE:Number = 0.0872664626; // 5 degrees
+		
+		/** Maximum error that is allowed in the distance between two TrackSegments while still making a connection.*/
+		public static const MAX_CONNECTION_DISTANCE:Number = 0.1; // 10 cm
 
 		/**
 		 * Constructor for a TrackSegment object. Adds itself to the vector at Globals.tracks.segments,
@@ -313,79 +319,105 @@ package edu.ucsc.track_builder
 		}
 
 		/** Checks for a viable connection between the trackSegments, and if found adds the appropriate
-		 * id's to prev_ids and next_ids on each segment. A viable connection is one in which the endpoints
+		 * ids to prev_ids and next_ids on each segment. A viable connection is one in which the endpoints
 		 * overlap appropriately, and in which a curve smoothly flows into a straight segment (or vice versa).
+		 * 
+		 * FIXME: Does not check for elevation mismatches.
 		 */
 		public function connect(other:TrackSegment):void {
-			// if either one is curved, check that the curvature smoothly mates with the other.
-			var thisVec:Vector3D;
-			var otherVec:Vector3D;
-			var angle:Number;		
-			
-			if (this.getEnd().equals(other.getStart())) {  // this -->.--> other
-				if (!isNaN(this.radius) && !isNaN(other.radius)) { // do alignment checks if neither radius is set to NaN
-					thisVec = this.isCurved() ? Utility.calcVectorFromLatLngs(this._center, this._end) : Utility.calcVectorFromLatLngs(this._start, this._end);
-					otherVec = other.isCurved() ? Utility.calcVectorFromLatLngs(other.getCenter(), other.getStart()) : Utility.calcVectorFromLatLngs(other.getStart(), other.getEnd());
-					angle = Utility.angleBetween(thisVec, otherVec);
-					
-					if (this.isCurved() && other.isCurved()) {  // Both curved. Expect to be parallel (angle == 0) or antiparallel (angle == Math.PI)
-						if (!this._center.equals(other.getCenter()) &&
-								!(Math.abs(angle) < 0.01 || Math.abs(angle - Math.PI) < 0.01)) {
-							trace("Two curved segments not connected due to angle beween segments: ", angle);
-							return;
-						} 
-					}
-					else if (this.isCurved() || other.isCurved()) { // Just one is curved. Expect to be perpendicular
-						// if there's more than just a little bit of kink between the segments, then don't connect them.
-						if (angle > Math.PI/2 + 0.01 || angle < Math.PI/2 - 0.01) {  // if off by more than 0.6 degrees from perpendicular
-							trace("One curved, one straight not connected due to angle beween segments: ", angle);
-							return;
-						}
-					} else { // neither curved. Must be aligned.					
-						if (angle > 0.01) {
-							trace("Two straight segments not connected due to angle between segments: ", angle);
-							return;
-						}
-					}
-				}
-				// Add the id, but only if it's not duplicating an existing connection
-				if (this.next_ids.indexOf(other.id) == -1) {
-					this.next_ids.push(other.id);
-					Undo.pushMicro(this.next_ids, this.next_ids.pop);
-				}
-				if (other.prev_ids.indexOf(this.id) == -1) {
-					other.prev_ids.push(this.id);
-					Undo.pushMicro(other.prev_ids, other.prev_ids.pop);
-				}
+			/* Find a shared endpoint, if one exists. Shared is defined as the endpoints being within 
+		     * MAX_CONNECTION_DISTANCE of each other and in a nose->tail configuration.
+		     */
+		    var shared:LatLng;
+			if (this._end.distanceFrom(other._start) < MAX_CONNECTION_DISTANCE) {
+				shared = this.getEnd();
+			} else if (other._end.distanceFrom(this._start) < MAX_CONNECTION_DISTANCE) {
+				shared = other.getEnd();
+			} else {
+				return; // no shared endpoints
 			}
 			
-			if (other.getEnd().equals(this.getStart())) {   // other -->.--> this
-				if (!isNaN(this.radius) && !isNaN(other.radius)) { // do alignment checks if neither radius is set to NaN
-					otherVec = other.isCurved() ? Utility.calcVectorFromLatLngs(other.getCenter(), other.getEnd()) : Utility.calcVectorFromLatLngs(other.getStart(), other.getEnd());
-					thisVec = this.isCurved() ? Utility.calcVectorFromLatLngs(this._start, this._center) : Utility.calcVectorFromLatLngs(this._start, this._end);
-					angle = Utility.angleBetween(thisVec, otherVec);
+			// Only check that the angles are compatible if neither radius is set to NaN.
+			if (!isNaN(this.radius) && !isNaN(other.radius)) {
+				/* Both segments are curved. */
+				if (this.isCurved() && other.isCurved()) { 
+					var curveAVec:Vector3D = Utility.calcVectorFromLatLngs(this._center, shared);
+					var curveBVec:Vector3D = Utility.calcVectorFromLatLngs(other._center, shared);
 					
-					if (this.isCurved() && other.isCurved()) { // Both curved. Expect to be parallel (angle == 0) or antiparallel (angle == Math.PI)
-						if (!this._center.equals(other.getCenter()) &&
-								!(Math.abs(angle) < 0.01 || Math.abs(angle - Math.PI) < 0.01)) {
-							trace("Two curved segments not connected due to angle beween segments: ", angle);
-							return;
-						} 
-					}
-					else if (this.isCurved() || other.isCurved()) { // Just one is curved. Expect vectors to be perpendicular
-						// if there's more than just a little bit of kink between the segments, then don't connect them.
-						if (angle > Math.PI/2 + 0.01 || angle < Math.PI/2 - 0.01) {  // if off by more than 0.6 degrees from perpendicular
-							trace("One curved, one straight not connected due to angle beween segments: ", angle);
-							return;
-						}
-					} else { // neither curved. Must be aligned.					
-						if (angle > 0.01) {
-							trace("Two straight segments not connected due to angle between segments: ", angle);
+					// Tangent test. Check that the vectors are parallel or antiparallel. 
+					var angle:Number = Utility.angleBetween(curveAVec, curveBVec);
+					if (Math.abs(angle) < MAX_CONNECTION_ANGLE) { // angle ~ 0. Parallel.
+						// Direction of the curves must match.
+						if ((this.arcAngle > 0 && other.arcAngle < 0) || (this.arcAngle < 0 && other.arcAngle > 0)) {
+							trace("Two curved segments not connected due to incompatible directions.");
 							return;
 						}
 					}
-				}				
-				// Add the id, but only if it's not duplicating an existing connection
+					else if (Math.abs(angle - Math.PI) < MAX_CONNECTION_ANGLE) { // angle ~ pi. Antiparallel.
+						// Directions of the curves must be opposite.
+						if ((this.arcAngle > 0 && other.arcAngle > 0) || (this.arcAngle < 0 && other.arcAngle < 0)) {
+							trace("Two curved segments not connected due to incompatible directions.");
+							return;
+						}
+					}
+					else { // Neither parallel or antiparallel.
+						trace("Two curved segments not connected due to incompatible angle:", angle);
+						return;
+					}
+				}
+				
+				/* One segment is curved. */
+				else if (this.isCurved() || other.isCurved()) {
+					var curve:TrackSegment = this.isCurved() ? this : other;
+					var straight:TrackSegment = !this.isCurved() ? this : other;
+					var curveVec:Vector3D = Utility.calcVectorFromLatLngs(curve._center, shared);
+					var straightVec:Vector3D = Utility.calcVectorFromLatLngs(straight._start, straight._end);
+					
+					// Angle between a straight and curved piece must be pi/2 (perpendicular).
+					angle = Utility.angleBetween(curveVec, straightVec);					
+					if (Math.abs(angle - Math.PI/2.0) > MAX_CONNECTION_ANGLE) {
+						trace("One curved and one straight segment not connected due to incompatible angle:", angle);
+						return;
+					}
+					
+					// Check that the direction of the curve does not form an acute angle.
+					var crossProd:Vector3D = straightVec.crossProduct(curveVec);
+					if (crossProd.z > 0 && curve.arcAngle > 0) {
+						trace("One curved and one straight segment not connected due to incompatible directions.");
+						return;
+					} else if (crossProd.z < 0 && curve.arcAngle < 0) {
+						trace("One curved and one straight segment not connected due to incompatible directions.");
+						return;
+					}
+				}
+								
+				/* Both segments are straight. */
+				else { 
+					var straightAVec:Vector3D = Utility.calcVectorFromLatLngs(this._start, this._end);
+					var straightBVec:Vector3D = Utility.calcVectorFromLatLngs(other._start, other._end);
+				
+					// Just need to check that the angle is ~0.
+					angle = Utility.angleBetween(straightAVec, straightBVec);
+					if (Math.abs(angle) > MAX_CONNECTION_ANGLE) {
+						trace("Two straight segments not connected due to incompatible angle:", angle);
+						return;
+					}
+				}
+			}
+
+			/* If we've made it past all the gates then add the id, but only if it's not duplicating
+			 * an existing connection.
+			 */ 			
+			if (this._end.distanceFrom(shared) < this._start.distanceFrom(shared)) { // this -> other				
+				if (this.next_ids.indexOf(other.id) == -1) {
+					Undo.pushMicro(this.next_ids, this.next_ids.pop);
+					this.next_ids.push(other.id);					
+				}
+				if (other.prev_ids.indexOf(this.id) == -1) {
+					Undo.pushMicro(other.prev_ids, other.prev_ids.pop);
+					other.prev_ids.push(this.id);					
+				}
+			} else { // other -> this
 				if (other.next_ids.indexOf(this.id) == -1) {
 					other.next_ids.push(this.id);
 					Undo.pushMicro(other.next_ids, other.next_ids.pop);
@@ -394,9 +426,8 @@ package edu.ucsc.track_builder
 					this.prev_ids.push(other.id);
 					Undo.pushMicro(this.prev_ids, this.prev_ids.pop);	
 				}
-			}						
-			
-		}
+			}
+		}				
 
 		/** Makes latlng the new end point for the TrackSegment. Connections are made, so that the connectivity is unchanged.
 		 * Curved segments may not be split. If latlng is already at this segment's end, then the track is not changed,

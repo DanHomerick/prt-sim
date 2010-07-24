@@ -213,10 +213,6 @@ package edu.ucsc.track_builder
 			var gotoAddress:NativeMenuItem = new NativeMenuItem("Goto Address...");
 			gotoAddress.mnemonicIndex = 0;
 			gotoAddress.addEventListener(Event.SELECT, onAddress);
-			
-			var autoLevel:NativeMenuItem = new NativeMenuItem("AutoLevel");
-			autoLevel.mnemonicIndex = 4;
-			autoLevel.addEventListener(Event.SELECT, onAutoLevel); 
 
 			var validate:NativeMenuItem = new NativeMenuItem("Validate");
 			validate.mnemonicIndex = 0;
@@ -234,7 +230,6 @@ package edu.ucsc.track_builder
 			toolsMenu.addItem(vehicleToolMenu);
 			toolsMenu.addItem(new NativeMenuItem("", true)); // separator
 			toolsMenu.addItem(gotoAddress);
-			toolsMenu.addItem(autoLevel);
 			toolsMenu.addItem(validate);
 			baseMenu.addSubmenu(toolsMenu, "Tools");
 			
@@ -252,11 +247,16 @@ package edu.ucsc.track_builder
 				
 			var debugZoomIn:NativeMenuItem = new NativeMenuItem("Zoom In");
 			debugZoomIn.addEventListener(Event.SELECT, onZoomIn);
+
+			var autoLevel:NativeMenuItem = new NativeMenuItem("AutoLevel");
+			autoLevel.mnemonicIndex = 4;
+			autoLevel.addEventListener(Event.SELECT, onAutoLevel); 
 				
 //			debugMenu.addItem(debugShowKml);
 			debugMenu.addItem(debugShowXml);
 			debugMenu.addItem(debugFindDuplicateOverlays);
 			debugMenu.addItem(debugZoomIn);
+			debugMenu.addItem(autoLevel);
 			baseMenu.addSubmenu(debugMenu, "Debug");
 			
 			/* Help Menu */

@@ -21,6 +21,7 @@ import flash.events.Event;
 import flash.events.KeyboardEvent;
 import flash.events.TimerEvent;
 import flash.ui.Keyboard;
+import flash.ui.MouseCursor;
 import flash.utils.Timer;
 
 import mx.core.Application;
@@ -66,14 +67,14 @@ internal function initApp(event:FlexEvent):void {
 	// Add listeners	
 	elevationTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onElevationTimerComplete);
 	
-	NativeApplication.nativeApplication.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+	NativeApplication.nativeApplication.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);	
 }
 
 internal function onMapReady(event:Event):void {
 	var defaultLatLng:LatLng = new LatLng(37.0,-122.06); // UC Santa Cruz (Has to go somewhere...)
     map.setCenter(defaultLatLng, 14, MapType.NORMAL_MAP_TYPE);
     map.enableScrollWheelZoom();
-    var zoomPosition:ControlPosition = new ControlPosition(ControlPosition.ANCHOR_BOTTOM_RIGHT, 3, 20);
+    var zoomPosition:ControlPosition = new ControlPosition(ControlPosition.ANCHOR_BOTTOM_RIGHT, 3, 35);
     Globals.zoomControl = new ZoomControl(new ZoomControlOptions({position:zoomPosition}));
     map.addControl(Globals.zoomControl);
     var scalePosition:ControlPosition = new ControlPosition(ControlPosition.ANCHOR_BOTTOM_LEFT, 100, 5);

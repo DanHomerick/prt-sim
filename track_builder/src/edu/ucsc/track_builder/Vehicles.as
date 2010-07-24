@@ -42,7 +42,7 @@ package edu.ucsc.track_builder
 			} catch (err:VehicleError) {
 				Undo.endCommand();
 				Undo.undo(Undo.USER);
-				Alert.show(err.message);
+//				Alert.show(err.message); // Really don't need to take over the screen whenever a user clicks off of the track.
 			}
 		}	
 	
@@ -75,7 +75,7 @@ package edu.ucsc.track_builder
 			if (tOverlay == null) {
 				throw new VehicleError("Cursor must be over a track segment to place a vehicle");
 			}
-			location = reverseDir ? tOverlay.segments[0] : tOverlay.segments[tOverlay.segments.length-1];
+			location = reverseDir ? tOverlay.segments[tOverlay.segments.length-1] : tOverlay.segments[0];
 			position = location.getPosition(latlng);  // update to provide user feedback
 			var id:String = preview ? 'previewVehicle' : IdGenerator.getVehicleId();
 			var vehicle:Vehicle = new Vehicle(id,

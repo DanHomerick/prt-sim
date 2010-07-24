@@ -9,10 +9,11 @@
 
 	<mx:TabNavigator id="tn" color="0x323232" width="100%" height="100%">
 		<mx:VBox label="Track">
-            <mx:Form id="trackForm" >
+            <mx:Form id="trackForm">            
             	<mx:HBox>
-	                <mx:FormItem id="trackMaxSpeedForm" label="Max Speed:" toolTip="Track speed limit" enabled="true">
-	                    <mx:NumericStepper id="trackMaxSpeed" minimum="0" maximum="150" stepSize="2.5"
+	                <mx:FormItem id="trackMaxSpeedForm" label="Max Speed:"
+	                	toolTip="Track speed limit." enabled="true">
+	                    <mx:NumericStepper id="trackMaxSpeed" minimum="0" maximum="150" stepSize="0.5"
 	                    	change="Globals.tracks.maxSpeed = trackMaxSpeed.value;"
 	                    	initialize="trackMaxSpeed.value = Globals.tracks.maxSpeed;"/>
 	                </mx:FormItem>
@@ -36,7 +37,7 @@
                 		change="Globals.tracks.bidirectional = trackBidirectional.selected;"
                 		initialize="trackBidirectional.selected = Globals.tracks.bidirectional;"/>
                 </mx:FormItem>
-        		<mx:FormItem label="Offset: ">
+        		<mx:FormItem label="Offset: " toolTip="Height of the track above ground level.">
             		<mx:NumericStepper id="trackOffset" minimum="-100" maximum="100" stepSize="0.5"
             		                   change="Globals.tracks.offset = trackOffset.value"
 	        		                   initialize="trackOffset.value = Globals.tracks.offset;" />
@@ -74,16 +75,63 @@
                 	</mx:Form>            	                		                	
                 </mx:FormItem>
 -->                
-				<mx:FormItem label="Radius:" toolTip="Radius of the curve">
+				<mx:FormItem label="Radius:" toolTip="Radius of the curve.">
 					<mx:NumericStepper id="curveRadius" minimum="0" maximum="1000" stepSize="5"
 									   change="Globals.tracks.radius = curveRadius.value"
 									   initialize="curveRadius.value = Globals.tracks.radius;"/>					
 				</mx:FormItem>
-				<mx:FormItem label="Max Lateral:" toolTip="a = v^2 / r">
+				<mx:FormItem label="Max Lateral:" toolTip="a = v^2 / r   Assumes no superelevation. Recommended to not exceed 0.35g for passenger comfort.">
 					<mx:Label text="{(Globals.tracks.maxSpeed * Globals.tracks.maxSpeed / Globals.tracks.radius).toFixed(2) + ' m/s^2   (' + (Globals.tracks.maxSpeed * Globals.tracks.maxSpeed / Globals.tracks.radius / 9.8).toFixed(2) + ' g)'}" />
 				</mx:FormItem>
 				
             </mx:Form>
+		</mx:VBox>
+		
+		<mx:VBox label="Interchange">
+			<mx:Form>				
+				<mx:FormItem label="Deceleration Length:"
+							 toolTip="Length of the straight, deceleration segment of a connecting ramp.">
+					<mx:NumericStepper id="decelStepper" minimum="0" maximum="1000" stepSize="1"
+									   change="Globals.tracks.decelLength = decelStepper.value;"
+									   initialize="decelStepper.value = Globals.tracks.decelLength;"/>
+				</mx:FormItem>
+
+				<mx:FormItem label="Acceleration Length:"
+							 toolTip="Length of the straight, acceleration segment of a connecting ramp.">
+					<mx:NumericStepper id="accelStepper" minimum="0" maximum="1000" stepSize="1"
+									   change="Globals.tracks.accelLength = accelStepper.value;"
+									   initialize="accelStepper.value = Globals.tracks.accelLength;"/>
+				</mx:FormItem>
+
+				<mx:FormItem label="S-curve Radius:"
+				             toolTip="Radius for the two curves that form the S-curve. Should be large enough
+				    that a vehicle may navigate the S-curve at full speed without excessive lateral acceleration." >
+					<mx:NumericStepper id="sCurveRadiusStepper" minimum="1" maximum="1000" stepSize="1"
+									   change="Globals.tracks.sCurveRadius = sCurveRadiusStepper.value;"
+									   initialize="sCurveRadiusStepper.value = Globals.tracks.sCurveRadius;" />
+				</mx:FormItem>								
+				
+				<mx:FormItem label="Turn Radius:"
+							 toolTip="Radius for the turn segment of a connecting ramp." >
+					<mx:NumericStepper id="turnRadiusStepper" minimum="1" maximum="1000" stepSize="1" 
+									   change="Globals.tracks.turnRadius = turnRadiusStepper.value;"
+									   initialize="turnRadiusStepper.value = Globals.tracks.turnRadius;" />
+				</mx:FormItem>
+					
+				<mx:FormItem label="Max Turn Speed:"
+				             toolTip="Maximum speed in turn segment." >
+					<mx:NumericStepper id="turnSpeedStepper" minimum="0.5" maximum="200" stepSize="0.5"
+					                   change="Globals.tracks.maxTurnSpeed = turnSpeedStepper.value;"
+					                   initialize="turnSpeedStepper.value = Globals.tracks.maxTurnSpeed;" />
+				</mx:FormItem>
+
+				<mx:FormItem label="Ramp Offset:" toolTip="Distance separating an offramp from the main line.">					
+					<mx:NumericStepper id="rampOffsetStepper" minimum="0.5" maximum="50" stepSize="0.5"
+									   change="Globals.tracks.rampOffset = rampOffsetStepper.value;"
+									   initialize="rampOffsetStepper.value = Globals.tracks.rampOffset;"/>						 
+				</mx:FormItem>
+
+			</mx:Form>
 		</mx:VBox>
 		
 		<mx:VBox label="Stations">

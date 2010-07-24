@@ -27,19 +27,35 @@ package edu.ucsc.track_builder
 		[Bindable] public var radius:Number;
 		public var minOffset:Number;
 		public var maxOffset:Number;
-		public var driveSide:String;		
+		/** For bidirectional track. Indicates which side vehicles move forward on. One of: Tracks.LEFT or Tracks.RIGHT. */ 
+		public var driveSide:String;
+		/** Distance separating the connecting ramp from the main line. */
+		public var rampOffset:Number;
+		/** Length of the decel segment of a connecting ramp. */
+		public var decelLength:Number;
+		/** Length of the accel segment of a connecting ramp. */
+		public var accelLength:Number;
+		/** Radius for the turn segment of a connecting ramp. */
+		public var turnRadius:Number;
+		/** Radius for the curved segments in an S-curve. */		
+		public var sCurveRadius:Number;
+		/** Max speed on the turn segment of a connecting ramp. */
+		public var maxTurnSpeed:Number;
+		
 
 		/* For bidirectional track that is not vertically stacked. Right hand side indicates that vehicles
 		 * move forward on the right hand track, as is the convention in the United States. Left hand side
 		 * would have vehicles moving forward on the left hand track, as is the convention in the U.K.
 		 */
-		public static const RIGHT:String = "Right"
-		public static const LEFT:String = "Left"
-		public static const MIN_ANGLE:Number = 0.0872664626 // 5 degrees
-		public static const MAX_ANGLE:Number = 3.05432619   // 175 degrees
+		public static const RIGHT:String = "Right";
+		public static const LEFT:String = "Left";
+		public static const OFF_RAMP:String = "OffRamp";
+		public static const ON_RAMP:String = "OnRamp";
+		public static const MIN_ANGLE:Number = 0.0872664626; // 5 degrees
+		public static const MAX_ANGLE:Number = 3.05432619;   // 175 degrees
 
-		protected const INCOMING:String = "INCOMING"
-		protected const OUTGOING:String = "OUTGOING"
+		protected const INCOMING:String = "INCOMING";
+		protected const OUTGOING:String = "OUTGOING";
 
 		/** Holds all TrackSegment objects in an associative array. Uses id as key, and a TrackSegment 
 		 * instance as the value. */ 
@@ -842,9 +858,7 @@ package edu.ucsc.track_builder
 	
 		 	// approach seg
 		 	var approachLength:Number = clearance / slope;
-		 	var approachVector:Vector3D = nVec.clone();
-		 	approachVector.scaleBy(approachLength);
-		 	var approachStart:LatLng = Utility.calcLatLngFromVector(intersection, approachVector); 
+		 	var approachStart:LatLng = Utility.calcLatLngFromVector(intersection, nVec, approachLength); 
 		 	var approachOverlay:TrackOverlay = makeStraight(approachStart, intersection, true, preview, NaN,
 		 	                                                this.offset, this.offset + clearance);
 			bundle.addOverlay(approachOverlay);
@@ -935,106 +949,118 @@ package edu.ucsc.track_builder
 		 * the bidirectional track is approaching unidirectional track from the right. Otherwise, use
 		 * a trumpet interchange.
 		 * 
-		 * Each ramp is a single curved segment that is tangent to both the existing track
-		 * and the new track. If the minDist parameter is used, and its value is such that a ramp would
-		 * naturally merge with the track closer than minDist, then the ramp's radius is increased
-		 * so that the ramp will merge minDist meters away from the intersection.
+		 * The interchange consists of two connecting ramps, and a straight section connecting them.
+		 * If interiorConnection is true, then the straight segment is made bidirectional, otherwise it is unidirectional.
 		 *
 		 * @param intersection The point at which the new track would intersect the existing, if it were to continue on straight.  
 		 * @param existing The existing unidirectional TrackSegment that we are connecting to.
-		 * @param newVec A vector which points along the new track, originating at intersection.
+		 * @param newVec A Vector3D which the new track is to be aligned with. It points towards the origin
+		 * when originating at intersection.
 		 * @param radius The curvature radius for the ramps, in meters.
 		 * @param preview Whether the interchange is being created as part of the live track placement preview, or as the result of a user click.
 		 * @param interiorConnection (Optional) Default is false. When true, the piece of straight connecting track on
 		 * newVec is bidirectional rather than unidirectional. This provides an interior connection point.
-		 * @param minDist (Optional) Forces the ramp to intersect the new track at least minDist meters away from the intersection.
 		 * @see #makeHalfTrumpetInterchange
+		 * @see #makeConnectingRamp
 		 * @return The TrackBundle's connection point falls on newVec, at the start/end of the furthest ramp.
 		 * If interiorConnection is true, then the TrackBundle's altConnectLatLng and altConnectOverlays fields are used
 		 * to return information about the interior connection point. 
 		 */		
 		protected function makeHalfYInterchange(
 				intersection:LatLng, existing:TrackSegment, newLatLng:LatLng, newVec:Vector3D, radius:Number,
-				preview:Boolean, interiorConnection:Boolean=false, minDist:Number=0):TrackBundle {
+				preview:Boolean, interiorConnection:Boolean=false):TrackBundle {
 			var bundle:TrackBundle = new TrackBundle();
 			var nVec:Vector3D = newVec.clone();
 			var eVec:Vector3D = Utility.calcVectorFromLatLngs(existing.getStart(), existing.getEnd());						
 			nVec.normalize();
 			eVec.normalize();
+			var negEVec:Vector3D = eVec.clone();
+			negEVec.negate();
 
 			// ramp from new to existing
-			var neRamp:TrackOverlay = makeTangentCurve(
-					intersection, nVec, eVec, this.maxSpeed, this.offset, this.offset, this.radius, false, preview, minDist);			
-			bundle.addOverlay(neRamp);
+			var neRamp:TrackBundle = makeConnectingRamp(intersection, nVec, eVec, this.sCurveRadius, this.maxSpeed,
+					this.turnRadius, this.maxTurnSpeed, this.rampOffset, this.decelLength, this.accelLength, preview);
+			var neRampStart:LatLng = neRamp.overlays[0].getStart();
+			var neRampEnd:LatLng = neRamp.overlays[neRamp.overlays.length-1].getEnd();
 			
-			if (neRamp.getEnd().distanceFrom(intersection) > existing.getEnd().distanceFrom(intersection)) {
+			var iterOverlay:TrackOverlay;					
+			for each (iterOverlay in neRamp.overlays) {
+				bundle.addOverlay(iterOverlay);
+			}
+			
+			if (neRampEnd.distanceFrom(intersection) > existing.getEnd().distanceFrom(intersection)) {
 				throw new TrackError("New to Existing ramp extends beyond the end of Existing.", TrackError.INSUFFICIENT_TRACK);
 			}
-			if (neRamp.getStart().distanceFrom(intersection) > newLatLng.distanceFrom(intersection)) {
+			if (neRampStart.distanceFrom(intersection) > newLatLng.distanceFrom(intersection)) {
 				throw new TrackError("New to Existing ramp extends beyond newLatLng", TrackError.INSUFFICIENT_TRACK);
 			}
 			
 			// ramp from existing to new
 			eVec.negate();
-			var enRamp:TrackOverlay = makeTangentCurve(
-					intersection, eVec, nVec, this.maxSpeed, this.offset, this.offset, this.radius, false, preview, minDist);
-			bundle.addOverlay(enRamp);
+			var enRamp:TrackBundle = makeConnectingRamp(intersection, eVec, nVec, this.sCurveRadius, this.maxSpeed,
+					this.turnRadius, this.maxTurnSpeed, this.rampOffset, this.decelLength, this.accelLength, preview);
+			var enRampStart:LatLng = enRamp.overlays[0].getStart();
+			var enRampEnd:LatLng = enRamp.overlays[enRamp.overlays.length-1].getEnd();			
 			
-			if (enRamp.getStart().distanceFrom(intersection) > existing.getStart().distanceFrom(intersection)) {
+			for each (iterOverlay in enRamp.overlays) {
+				bundle.addOverlay(iterOverlay);
+			}
+			
+			if (enRampStart.distanceFrom(intersection) > existing.getStart().distanceFrom(intersection)) {
 				throw new TrackError("Existing to New ramp extends beyond the start of Existing.", TrackError.INSUFFICIENT_TRACK);
 			}
-			if (enRamp.getEnd().distanceFrom(intersection) > newLatLng.distanceFrom(intersection)) {
+			if (enRampEnd.distanceFrom(intersection) > newLatLng.distanceFrom(intersection)) {
 				throw new TrackError("Existing to New ramp extends beyond newLatLng", TrackError.INSUFFICIENT_TRACK);
 			}
 
 			// The ramps split/merge from the main line at approx the same spot.
-			if (neRamp.getStart().distanceFrom(enRamp.getEnd()) < 0.0001) { // FIXME: Somewhat arbitrary distance threshold.
-				bundle.markAsConnectNew(neRamp);
-				bundle.markAsConnectNew(enRamp);
-				bundle.setConnectNewLatLng(neRamp.getStart());
+			if (neRampStart.distanceFrom(enRampEnd) < 0.0001) { // FIXME: Somewhat arbitrary distance threshold.
+				bundle.markAsConnectNew(neRamp.overlays[0]);
+				bundle.markAsConnectNew(enRamp.overlays[enRamp.overlays.length-1]);
+				bundle.setConnectNewLatLng(neRampStart);
 				
 				if (interiorConnection) {
-					bundle.markAsConnectAlt(neRamp);
-					bundle.markAsConnectAlt(enRamp);
-					bundle.setConnectAltLatLng(neRamp.getStart());
+					bundle.markAsConnectAlt(neRamp.overlays[0]);
+					bundle.markAsConnectAlt(enRamp.overlays[enRamp.overlays.length-1]);
+					bundle.setConnectAltLatLng(neRampStart);
 				}
 			} else {
-				/* Create a straight connecting segment between the two curves. */
+				/* Create a straight connecting segment between the two ramp endpoints. */
 				var straight:TrackOverlay;
 				if (!interiorConnection) {
-					straight = makeStraight(enRamp.getEnd(), neRamp.getStart(), false, preview);
+					straight = makeStraight(enRampEnd, neRampStart, false, preview);
 				} else { // interiorConnection == true
-					straight = makeStraight(enRamp.getEnd(), neRamp.getStart(), true, preview);
+					straight = makeStraight(enRampEnd, neRampStart, true, preview);
 					bundle.markAsConnectAlt(straight);
 				} 
 				bundle.addOverlay(straight);
 				bundle.markAsConnectNew(straight);
 					
 				// new->existing splits closer to the intersection. Connect straight to it.	
-				if (neRamp.getStart().distanceFrom(intersection) < enRamp.getEnd().distanceFrom(intersection)) {
-					straight.connect(neRamp);
-					bundle.markAsConnectNew(enRamp);
-					bundle.setConnectNewLatLng(enRamp.getEnd());
+				if (neRampStart.distanceFrom(intersection) < enRampEnd.distanceFrom(intersection)) {
+					straight.connect(neRamp.overlays[0]);
+					bundle.markAsConnectNew(enRamp.overlays[enRamp.overlays.length-1]);
+					bundle.setConnectNewLatLng(enRampEnd);
 					
 					if (interiorConnection) {
-						bundle.markAsConnectAlt(neRamp);
-						bundle.setConnectAltLatLng(neRamp.getStart());	
+						bundle.markAsConnectAlt(neRamp.overlays[0]);
+						bundle.setConnectAltLatLng(neRampStart);	
 					}
 				} else { // existing->new merges closer to the intersection. Connect straight to it.
-					straight.connect(enRamp);
-					bundle.markAsConnectNew(neRamp);
-					bundle.setConnectNewLatLng(neRamp.getStart());
+					straight.connect(enRamp.overlays[enRamp.overlays.length-1]);
+					bundle.markAsConnectNew(neRamp.overlays[0]);
+					bundle.setConnectNewLatLng(neRampStart);
 					
 					if (interiorConnection) {
-						bundle.markAsConnectAlt(enRamp);
-						bundle.setConnectAltLatLng(enRamp.getEnd());
+						bundle.markAsConnectAlt(enRamp.overlays[enRamp.overlays.length-1]);
+						bundle.setConnectAltLatLng(enRampEnd);
 					}
 				}			
 			}
 			
 			// Delay altering 'existing' until the calling function is ready to do it.
-			bundle.setConnectExisting(enRamp.getStart(), enRamp);
-			bundle.setConnectExisting(neRamp.getEnd(), neRamp);
+			bundle.setConnectExisting(enRampStart, enRamp.overlays[0]);
+			bundle.setConnectExisting(neRampEnd, neRamp.overlays[neRamp.overlays.length-1]);
 									 
 			return bundle;
 		}		
@@ -1046,8 +1072,7 @@ package edu.ucsc.track_builder
 				intersection:LatLng, existing:TrackOverlay, newLatLng:LatLng, newVec:Vector3D, 
 				radius:Number, side:String, clearance:Number, maxSlope:Number, preview:Boolean):TrackBundle {
 					
-			var minDist:Number = Math.max(clearance/maxSlope, radius);
-			var slope:Number = Math.min(maxSlope, clearance/minDist);
+			
 			var ySeg:TrackSegment;
 			var trumpetSeg:TrackSegment;
 			
@@ -1063,7 +1088,13 @@ package edu.ucsc.track_builder
 			}
 				
 			var yBundle:TrackBundle = makeHalfYInterchange(
-					intersection, ySeg, newLatLng, newVec, radius, preview, true, minDist);
+					intersection, ySeg, newLatLng, newVec, radius, preview, true);
+			
+			var slope:Number = clearance / yBundle.connectAltLatLng.distanceFrom(intersection);
+			if (slope > maxSlope) {
+				throw new TrackError("Insufficient distance between the intersection point and the nearest offramp from the new track. With the supplied maximum slope, the vertical clearance will not be met.");
+			}			
+					
 			try {
 				var trumpetBundle:TrackBundle = makeHalfTrumpetInterchange(
 						intersection, trumpetSeg, newLatLng, newVec, radius, side, clearance, slope, preview);
@@ -1111,6 +1142,301 @@ package edu.ucsc.track_builder
 			}
 
 			return resultBundle;	
+		}
+
+		/** Creates an S-Curve which consists of two curved TrackOverlays of equal length which curve in opposite
+		 * directions. Only supply one of startLatLng or endLatLng.
+		 * 
+		 * @param vec A unit vector that indicates the direction of the start of the S-curve. Must be length one. 
+		 * @param lateralOffset Amount of lateral travel in the S-curve. Measured in meters.
+		 * @param radius The radius for both curved segments. Must be >= lateralOffset/2.0, or a TrackError will be thrown. 
+		 * @param side One of Tracks.LEFT or TRACKS.RIGHT. Indicates the direction of the initial curvature when 
+		 * starting at the start of the S-curve.
+		 * @param bidirectional Whether the S-Curve should have bidirectional track.
+		 * @param maxSpeed The max speed rating. Measured in meters per second.
+		 * @param startOffset The vertical offset from ground level at startLatLng.
+		 * @param endOffset The vertical offset from ground level at endLatLng.
+		 * @param preview Whether the Overlays are being created for the live preview or not.
+		 * @param startLatLng The starting point for the S-curve. Only supply this or endLatLng, not both.
+		 * @param endLatLng The ending point for the S-curve. Only supply this or startLatLng, not both.
+		 */
+		public function makeSCurve(vec:Vector3D, lateralOffset:Number, radius:Number, side:String,
+				bidirectional:Boolean, maxSpeed:Number, startOffset:Number, endOffset:Number, preview:Boolean,
+				startLatLng:LatLng=null, endLatLng:LatLng=null):TrackBundle
+		{
+			// Defend against incorrect parameters.
+			if ((startLatLng == null && endLatLng == null) || (startLatLng != null && endLatLng != null)) {
+				throw new Error("Must provide exactly one of: startLatLng, endLatLng");
+			}			
+			if (radius < lateralOffset/2.0) {
+				throw new TrackError("The S-Curve radius must be greater than or equal to lateralOffset/2.0");
+			}
+			
+			// Calc some useful values.
+			var angle:Number = Math.acos((radius - lateralOffset/2.0)/radius); // arc angle
+			var len:Number = 2*Math.sin(angle)*radius; // length along vec, from startLatLng to endLatLng
+			var curveIntersectDist:Number = Math.tan(angle/2.0)*radius; // distance from endpoint along vec
+			
+			// make a vector that is perpendicular to vec, and which points towards side.
+			var perpVec:Vector3D;
+			if (side == Tracks.LEFT) {
+				perpVec = Vector3D.Z_AXIS.crossProduct(vec);
+			} else if (side == Tracks.RIGHT) {
+				perpVec = vec.crossProduct(Vector3D.Z_AXIS);
+			}
+			perpVec.scaleBy(lateralOffset);
+
+			// Find the missing endpoint.
+			var lenVec:Vector3D = vec.clone();
+			var diagVec:Vector3D;		 
+			if (endLatLng == null) {
+				lenVec.scaleBy(len);
+				diagVec = lenVec.add(perpVec);
+				endLatLng = Utility.calcLatLngFromVector(startLatLng, diagVec);
+			} else { // startLatLng == null
+				lenVec.scaleBy(-len);
+				perpVec.negate();
+				diagVec = lenVec.add(perpVec);
+				startLatLng = Utility.calcLatLngFromVector(endLatLng, diagVec);						
+			}						
+
+			var negVec:Vector3D = vec.clone();
+			negVec.negate();
+			var middleOffset:Number = (startOffset + endOffset)/2.0;
+			var signedAngle:Number = (side == Tracks.RIGHT) ? -angle : angle;
+
+			// create the first Curve overlay
+			var curveOneIntersect:LatLng = Utility.calcLatLngFromVector(startLatLng, vec, curveIntersectDist); 
+			var curveOneV2:Vector3D = vec.clone();
+			Utility.rotate(curveOneV2, signedAngle);
+			var curveOne:TrackOverlay = makeTangentCurve(
+					curveOneIntersect, negVec, curveOneV2, maxSpeed, startOffset, middleOffset, radius,
+					bidirectional, preview);
+			
+			// create the second Curve overlay
+			var curveTwoIntersect:LatLng = Utility.calcLatLngFromVector(endLatLng, negVec, curveIntersectDist); 
+			var curveTwoV1:Vector3D = negVec.clone();
+			Utility.rotate(curveTwoV1, signedAngle);
+			var curveTwo:TrackOverlay = makeTangentCurve(
+					curveTwoIntersect, curveTwoV1, vec, maxSpeed, middleOffset, endOffset, radius,
+					bidirectional, preview);
+
+			var result:TrackBundle = new TrackBundle();
+			curveOne.connect(curveTwo);
+			result.addOverlay(curveOne);
+			result.addOverlay(curveTwo);
+			result.setConnectExisting(startLatLng, curveOne);
+			result.setConnectNewLatLng(endLatLng);
+			result.markAsConnectNew(curveTwo);
+			
+			return result;			
+		}
+				 
+		/** Makes a [on|off] ramp consisting of two curved segments (the S-curve) and a straight segment.
+		 * The s_curve moves the track <code>lateralOffset</code> meters away from vec and leaves it parallel to vec.
+		 * The straight segment is <code>length - sCurveLength</code> meters long. If the ramp would exceed
+		 * <code>length</code> meters, then a StationLengthError is thrown.
+		 * 
+		 * If the sCurveLength must be known explicitly, it may be calculated as:
+		 *  alpha = acos((radius - lateralOffset/2.0) / radius)
+		 *  sCurveLength = 2*sin(alpha)*radius
+		 * 
+		 * @param vec A unit vector that points in the direction of the bypass. Must have length 1.
+		 * @param latlng Starting location for the ramp.
+		 * @param length Total track length for the entire ramp (including straight segment). Measured in meters.
+		 * @param lateralOffset Desired distance from the bypass and the station line. Measured in meters.
+		 * @param radius Desired radius for the two curve segments which make up the S-curve. The actual radius used
+		 * will be: <code>max(radius, lateralOffset/2.0)</code>. Measured in meters.
+		 * @param side One of Tracks.LEFT or Tracks.RIGHT.
+		 * @param rampType One of Tracks.OFF_RAMP or Tracks.ON_RAMP 
+		 * @param maxSpeed Measured in meters/second.
+		 * @param startOffset Vertical distance from the ground of the start point. Measured in meters.
+		 * @param endOffset Vertical distance from the ground of the end point. Measured in meters.
+		 * @param preview Whether or not this function has been called as part of the live preview system.
+		 * 
+		 * @return A TrackBundle containing the TrackOverlays for the ramp. For an OFF_RAMP,
+		 * the bundle's only connectExisting element refers to where the ramp connects to the main line and 
+		 * the bundle's connectNew refers to where the ramp connects to the station line. For an ON_RAMP,
+		 * connectExisting refers to the where the ramp connects to the station line, and connectNew refers to where
+		 * the ramp connects to the main line. 
+		 */ 
+		public function makeRamp(
+				vec:Vector3D, latlng:LatLng, length:Number, lateralOffset:Number, radius:Number, side:String,
+				rampType:String, maxSpeed:Number, startOffset:Number, endOffset:Number, preview:Boolean 
+				):TrackBundle
+		{
+			var bundle:TrackBundle = new TrackBundle();
+					
+			// If the radius is less than the lateral offset, we would need to introduce a straight segment in the
+			// S-curve. Rather than doing this, just increase the radius.
+			radius = Math.max(radius, lateralOffset/2.0);
+			var angle:Number = Math.acos((radius - lateralOffset/2.0)/radius);
+			
+			// Assumes both curves in the S-curve are the same length.
+			var sCurveLength:Number = 2*angle*radius
+			var straightLength:Number = length - sCurveLength;
+			if (straightLength < 0.001) {
+				throw new StationLengthError("The requested station ramp length is too short, given the requested lateral offset and curve radius.");
+			} 
+			
+			if (rampType == Tracks.ON_RAMP) {
+				var straightEnd:LatLng = Utility.calcLatLngFromVector(latlng, vec, straightLength);
+				var straight:TrackOverlay = Globals.tracks.makeStraight(latlng, straightEnd, false, preview, maxSpeed, startOffset, endOffset);
+				bundle.addOverlay(straight);
+				bundle.setConnectExisting(latlng, straight);				
+				latlng = straight.getEnd(); // start the S-curve at latlng, regardless of whether an ON_RAMP or OFF_RAMP
+			}
+			
+			var sCurveIntersectDist:Number = Math.tan(angle/2.0)*radius;
+			var curveOneIntersect:LatLng = Utility.calcLatLngFromVector(latlng, vec, sCurveIntersectDist);
+			var curveOneV1:Vector3D = vec.clone();
+			curveOneV1.negate();
+			var curveOneV2:Vector3D = vec.clone();						
+			if ((side == Tracks.LEFT && rampType == Tracks.OFF_RAMP) || (side == Tracks.RIGHT && rampType == Tracks.ON_RAMP)) { // rotate vector CCW
+				Utility.rotate(curveOneV2, angle);
+			} else { // (side == Tracks.LEFT && ON_RAMP) || (side == Tracks.RIGHT && OFF_RAMP) // rotate vector CW
+				Utility.rotate(curveOneV2, -angle);
+			}
+						 
+			var curveOne:TrackOverlay = Globals.tracks.makeTangentCurve(
+					curveOneIntersect, curveOneV1, curveOneV2, maxSpeed, startOffset, endOffset, radius, false, preview);
+			bundle.addOverlay(curveOne);
+			
+			// use a couple vectors while finding the intersect point for curve 2
+			var curveTwoIntersectVec:Vector3D = curveOneV2.clone();
+			curveTwoIntersectVec.scaleBy(lateralOffset / Math.cos( Math.PI/2.0 - angle ));
+			var curveTwoIntersect:LatLng = Utility.calcLatLngFromVector(curveOneIntersect, curveTwoIntersectVec);
+			var curveTwoV1:Vector3D = curveOneV2.clone();
+			curveTwoV1.negate();
+			var curveTwoV2:Vector3D = curveOneV1.clone();
+			curveTwoV2.negate();
+						
+			var curveTwo:TrackOverlay = Globals.tracks.makeTangentCurve(
+						curveTwoIntersect, curveTwoV1, curveTwoV2, maxSpeed, startOffset, endOffset, radius, false, preview);
+			bundle.addOverlay(curveTwo);
+			
+			if (rampType == Tracks.OFF_RAMP) {
+				var straightStart:LatLng = curveTwo.getEnd();
+				var straightEnd:LatLng = Utility.calcLatLngFromVector(straightStart, vec, straightLength);
+				var straight:TrackOverlay = Globals.tracks.makeStraight(straightStart, straightEnd, false, preview);
+				bundle.addOverlay(straight);
+				bundle.setConnectNewLatLng(straightEnd);
+				bundle.markAsConnectNew(straight);
+			}
+			
+			/* Make connections within the bundle and set data for external connections. */ 
+			trace("curveOne:", curveOne.getStart().toString(), " : ", curveOne.getEnd().toString());
+			trace("curveTwo:", curveTwo.getStart().toString(), " : ", curveTwo.getEnd().toString());
+			trace("distances:", curveOne.getStart().distanceFrom(curveTwo.getStart()),
+			                    curveOne.getStart().distanceFrom(curveTwo.getEnd()),
+			                    curveOne.getEnd().distanceFrom(curveTwo.getStart()),
+			                    curveOne.getEnd().distanceFrom(curveTwo.getEnd()));
+			curveOne.connect(curveTwo);
+			if (rampType == Tracks.OFF_RAMP) {
+				bundle.setConnectExisting(latlng, curveOne);
+				trace("curveTwo, straight:", curveTwo.getEnd().toString(), straight.getStart().toString(), curveTwo.getEnd().distanceFrom(straight.getStart()));
+				curveTwo.connect(straight);
+				trace("straight & vec:", Utility.angleBetween(Utility.calcVectorFromLatLngs(straight.getStart(), straight.getEnd()), vec));
+				trace("curveTwo & vec:", Utility.angleBetween(Utility.calcVectorFromLatLngs(curveTwo.getCenter(), curveTwo.getEnd()), vec)); 
+			} else { // rampType == ON_RAMP
+				bundle.setConnectNewLatLng(curveTwo.getEnd());
+				bundle.markAsConnectNew(curveTwo);
+				straight.connect(curveOne);
+				trace(straight.getEnd(), curveOne.getStart(), straight.getEnd().distanceFrom(curveOne.getStart()));
+			}
+						
+			return bundle;
+		}
+
+		/** Makes a unidirectional connecting ramp that consists of an offramp, a curved segment, and an onramp.
+		 *
+		 * @param intersection The latlng at which the two lines that are being connected intersect.
+		 * @param v1 A unit vector that points away from the intersection along the main line that will host the
+		 * offramp for this connection ramp. Must have a length of one.
+		 * @param v2 A unit vector that points away from the intersection along the main line that will host the
+		 * onramp for this connection ramp. Must have a length of one.
+		 * @param s_curveRadius The radius for the S-curves found in the off/on ramps. Must be >= lateralOffset/2.0.
+		 * Measured in meters.
+		 * @param turnRadius The radius for the turn segment. Measured in meters.
+		 * @param turnMaxSpeed Max speed rating for the turn. Measured in meters/second.
+		 * @param lateralOffset The horizontal separation between the main lines and the connecting ramp. Measured in
+		 * meters.
+		 * @param decelLength The length of the deceleration segment. Measured in meters.
+		 * @param accelLength The length of the acceleration segment. Measured in meters.
+		 * @param preview Whether this is being created for the live preview system.
+		 * 
+		 * @return Returns a TrackBundle containing, in order:
+		 * <ul>
+		 *   <li>Offramp S-curve, part one</li>
+		 *   <li>Offramp S-curve, part two</li>
+		 *   <li>deceleration (straight)</li>
+		 *   <li>turn (curved)</li>
+		 *   <li>acceleration (straight)</li>
+		 *   <li>Onramp S-curve, part one</li>
+		 *   <li>Onramp S-curve, part two</li>
+		 * </ul>
+		 * 
+		 * Since the bundle represents a linear structure in a fixed order, the TrackBundle's fields which contain 
+		 * connection information are not populated.
+		 */
+		public function makeConnectingRamp(
+				intersection:LatLng, v1:Vector3D, v2:Vector3D, s_curveRadius:Number, s_curveMaxSpeed:Number,  
+				turnRadius:Number, turnMaxSpeed:Number, lateralOffset:Number, decelLength:Number, accelLength:Number,
+				preview:Boolean):TrackBundle
+		{
+			// Find the anchor for the turn (aka intersection). It is lateralOffset meters away from both v1 and v2.
+			var angle:Number = Utility.angleBetween(v1, v2);
+			var alongV1:Vector3D = v1.clone();
+			alongV1.scaleBy(lateralOffset/Math.tan(angle/2.0));			
+			var z:Vector3D = v1.crossProduct(v2);
+			var perpV1:Vector3D = z.crossProduct(v1); // perp from v1, points towards the side v2 is on.
+			perpV1.scaleBy(lateralOffset/perpV1.length);
+			var turnAnchor:LatLng = Utility.calcLatLngFromVector(intersection, alongV1.add(perpV1));
+				
+			// Create the turn.			
+			var turnOverlay:TrackOverlay = makeTangentCurve(
+					turnAnchor, v1, v2, turnMaxSpeed, this.offset, this.offset, turnRadius, false, preview);					
+			
+			// Create the deceleration segment
+			var decelOrigin:LatLng = Utility.calcLatLngFromVector(turnOverlay.getStart(), v1, decelLength);
+			var decelOverlay:TrackOverlay = makeStraight(decelOrigin, turnOverlay.getStart(), false, preview);
+			
+			// Create the acceleration segment
+			var accelDest:LatLng = Utility.calcLatLngFromVector(turnOverlay.getEnd(), v2, accelLength);
+			var accelOverlay:TrackOverlay = makeStraight(turnOverlay.getEnd(), accelDest, false, preview);
+												
+			// Create the offramp S-curve.
+			var negV1:Vector3D = v1.clone();
+			negV1.negate();
+			var offRampSCurve:TrackBundle = makeSCurve(negV1, lateralOffset, s_curveRadius, Globals.tracks.driveSide,
+					false, s_curveMaxSpeed, this.offset, this.offset, preview, null, decelOverlay.getStart());
+			
+			// Create the onramp S-curve.
+			var onRampSide:String = Globals.tracks.driveSide == Tracks.RIGHT ? Tracks.LEFT : Tracks.RIGHT;
+			var onRampSCurve:TrackBundle = makeSCurve(v2, lateralOffset, s_curveRadius, onRampSide,
+					false, s_curveMaxSpeed, this.offset, this.offset, preview, accelOverlay.getEnd(), null);
+			
+			// Make connections
+			offRampSCurve.connectNewOverlays[0].connect(decelOverlay);
+			decelOverlay.connect(turnOverlay);
+			turnOverlay.connect(accelOverlay);
+			accelOverlay.connect(onRampSCurve.connectExistingOverlays[0]);
+			
+			// Create a result TrackBundle
+			var result:TrackBundle = new TrackBundle();
+			var iterOverlay:TrackOverlay;
+			for each (iterOverlay in offRampSCurve.overlays) {
+				result.addOverlay(iterOverlay);
+			}
+			for each (iterOverlay in [decelOverlay, turnOverlay, accelOverlay]) {
+				result.addOverlay(iterOverlay);
+			}
+			for each (iterOverlay in onRampSCurve.overlays) {
+				result.addOverlay(iterOverlay);
+			}
+			
+			return result;
+			
 		}
 		
 		/** Makes a curved TrackSegment that is tangent to both v1 and v2 with the given radius. If minDist is supplied,
@@ -1451,7 +1777,15 @@ package edu.ucsc.track_builder
 			                      bidirectional={bidirectional}
 			                      radius={radius}
 			                      min_offset={minOffset}
-			                      max_offset={maxOffset} />
+			                      max_offset={maxOffset}
+			                      drive_side={driveSide}
+			                      ramp_offset={rampOffset}
+			                      decel_length={decelLength}
+			                      accel_length={accelLength}
+			                      turn_radius={turnRadius}
+			                      s_curve_radius={sCurveRadius}
+			                      max_turn_speed={maxTurnSpeed}
+	                      />
 			return xml;
 		}
 
@@ -1462,8 +1796,15 @@ package edu.ucsc.track_builder
 							offset="3"
 							bidirectional="false"
 							radius="65"
-							minOffset="1"
-							maxOffset="9"
+							min_offset="1"
+							max_offset="9"
+							drive_side="Right"
+							ramp_offset="3"
+							decel_length="60"
+							accel_length="60"
+							turn_radius="65"
+							s_curve_radius="200" 
+							max_turn_speed="15"
 						  />
 			return xml;
 		}
@@ -1473,8 +1814,15 @@ package edu.ucsc.track_builder
 			offset = xml.@offset;
 			bidirectional = xml.@bidirectional == 'false' || xml.@bidirectional == '0' ? false : true;
 			radius=xml.@radius;
-			minOffset=xml.@minOffset;
-			maxOffset=xml.@maxOffset;
+			minOffset=xml.@min_offset;
+			maxOffset=xml.@max_offset;
+			driveSide=xml.@drive_side;
+			rampOffset=xml.@ramp_offset;
+			decelLength=xml.@decel_length;
+			accelLength=xml.@accel_length;
+			turnRadius=xml.@turn_radius;
+			sCurveRadius=xml.@s_curve_radius;
+			maxTurnSpeed=xml.@max_turn_speed;
 		}
 
 			/** Total lane km of track */

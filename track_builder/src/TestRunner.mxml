@@ -5,6 +5,7 @@
 	                    creationComplete="onCreationComplete()">
 	<mx:Script>
 		<![CDATA[
+			import edu.ucsc.track_builder.TrackSegmentTest;
 			import edu.ucsc.track_builder.gtf_import.TimeTest;
 			import edu.ucsc.graph.GraphTest;
 			import edu.ucsc.neartree.NearTreeTest;
@@ -23,7 +24,9 @@
 				testSuite.addTestSuite(ServiceTest);
 				testSuite.addTestSuite(GtfImporterTest);
 				testSuite.addTestSuite(GraphTest);
-				testSuite.addTestSuite(TimeTest);			
+				testSuite.addTestSuite(TimeTest);
+				
+				testSuite.addTestSuite(TrackSegmentTest);	// start a new test group for this?	
 				return testSuite;
 			}
 		]]>
