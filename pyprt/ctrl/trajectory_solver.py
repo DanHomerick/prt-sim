@@ -853,7 +853,7 @@ class TrajectorySolver(object):
             try:
                 numerator_b = math.sqrt(3)*math.sqrt(j_sq[0]*j_sq[2]*j_sq[4]*j_sq[6]*(3*j_sq[2]*j_sq[4]*(a_sq[1]*a[5]*j[6]+a[5]*j[6]*(a_sq[0]-2*j[0]*v[0])+a[1]*(-2*a[5]*(a[0]*j[6]+j[0]*(a[6]-a[7]-j[6]*t[0]+j[6]*t[7]))+j[0]*(a_sq[6]-a_sq[7]+2*j[6]*v[7])))**2-(a[1]-a[5])*(a_sq[1]*a_sq[1]*a[5]*j_sq[2]*j_sq[4]*j_sq[6]-6*a_sq[1]*a[5]*j_sq[2]*j_sq[4]*j_sq[6]*(a_sq[0]-2*j[0]*v[0])+3*a[5]*j_sq[4]*j_sq[6]*(a_sq[2]*a_sq[2]*j_sq[0]-j_sq[2]*(a_sq[0]-2*j[0]*v[0])**2)+a[1]*(-6*a_sq[4]*a_sq[5]*j_sq[0]*j_sq[2]*j_sq[6]+a_sq[5]*a_sq[5]*j_sq[0]*j_sq[2]*j_sq[6]-4*a[5]*(a_sq[6]*a[6]*j_sq[0]*j_sq[2]*j_sq[4]+2*a_sq[7]*a[7]*j_sq[0]*j_sq[2]*j_sq[4]+j_sq[6]*(-2*a_sq[4]*a[4]*j_sq[0]*j_sq[2]+j_sq[4]*(a_sq[2]*a[2]*j_sq[0]-2*j_sq[2]*(a_sq[0]*a[0]+3*j_sq[0]*(q[0]-q[7])-3*a[0]*j[0]*v[0])))-6*a[7]*j_sq[0]*j_sq[2]*j_sq[4]*j[6]*v[7]-3*a[6]*j_sq[0]*j_sq[2]*j_sq[4]*(a_sq[7]-2*j[6]*v[7]))+3*j_sq[0]*j_sq[2]*(-a_sq[4]*j[6]+j[4]*(a_sq[6]-a_sq[7]+2*j[6]*v[7]))*(a_sq[4]*j[6]+j[4]*(a_sq[6]-a_sq[7]+2*j[6]*v[7]))))))
             except ValueError:
-                raise ConstraintsTooTight((2,3,5,6)) # FIXME: Choose correct places to tighten?
+                raise ConstraintsTooTight((1,2,5,6)) # FIXME: Choose correct places to loosen?
             denominator = (6*(a[1]-a[5])*j_sq[0]*j_sq[2]*j_sq[4]*j_sq[6])
             potential_solutions = [(numerator_a + numerator_b) / denominator,
                                    (numerator_a - numerator_b) / denominator]

@@ -558,14 +558,14 @@ class PrtController(BaseController):
             # merges and switches.
 
             # manage the vehicle through a merge
-            obj = self.manager.inlets.get(vehicle.ts_id)
+            obj = self.manager.inlets.get(msg.v_status.tail_locID)
             if obj and isinstance(obj, Merge):
                 try:
                     vehicle.do_merge(obj, self.current_time)
                 except NotAtDecisionPoint as err:
                     self.set_fnc_notification(vehicle.do_merge, (obj, err.time), err.time) # call create_merge again later
 
-            obj = self.manager.outlets.get(vehicle.ts_id)
+            obj = self.manager.outlets.get(msg.v_status.tail_locID)
             # Vehicle just left a merge's zone of control
             if obj and isinstance(obj, Merge):
                 merge_slot = obj.reservations.pop(0)
