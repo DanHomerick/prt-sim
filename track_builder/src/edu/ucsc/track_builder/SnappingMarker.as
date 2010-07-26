@@ -2,7 +2,6 @@ package edu.ucsc.track_builder
 {
 	import __AS3__.vec.Vector;
 	
-	import com.google.maps.Color;
 	import com.google.maps.LatLng;
 	import com.google.maps.MapMouseEvent;
 	import com.google.maps.overlays.Marker;
@@ -85,15 +84,12 @@ package edu.ucsc.track_builder
 			Undo.undo(Undo.PREVIEW); // remove the preview, if it exists
 		}
 		
-		public static function makeCyanCircleIcon():Shape {
-			return makeCircleIcon(5, 3, Color.CYAN, 1);
+		public function setColor(color:uint):void {
+			var icon:Shape = makeCircleIcon(color);
+			this.setOptions(new MarkerOptions({icon:icon}));
 		}
 		
-		public static function makeBlueCircleIcon():Shape {
-			return makeCircleIcon(5, 3, Color.BLUE, 0.7);	
-		}
-		
-		public static function makeCircleIcon(radius:Number, thickness:Number, color:uint, alpha:Number):Shape {
+		public static function makeCircleIcon(color:uint, radius:Number=5, thickness:Number=3, alpha:Number=0.85):Shape {
 			var icon:Shape = new Shape();
 			icon.graphics.lineStyle(thickness, color, alpha);
 			icon.graphics.drawCircle(0,0,radius);

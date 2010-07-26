@@ -21,9 +21,9 @@ package edu.ucsc.track_builder
 	{
 		/* Values that are controlled by the GUI */
 		public var label:String = "";		
-		[Bindable] public var maxSpeed:Number;
-		[Bindable] public var offset:Number = 0; 
-		public var bidirectional:Boolean;
+		[Bindable] public var straightMaxSpeed:Number;
+		[Bindable] public var curveMaxSpeed:Number;
+		[Bindable] public var offset:Number = 0; 		
 		[Bindable] public var radius:Number;
 		public var minOffset:Number;
 		public var maxOffset:Number;
@@ -35,13 +35,24 @@ package edu.ucsc.track_builder
 		public var decelLength:Number;
 		/** Length of the accel segment of a connecting ramp. */
 		public var accelLength:Number;
-		/** Radius for the turn segment of a connecting ramp. */
-		public var turnRadius:Number;
-		/** Radius for the curved segments in an S-curve. */		
-		public var sCurveRadius:Number;
 		/** Max speed on the turn segment of a connecting ramp. */
-		public var maxTurnSpeed:Number;
+		[Bindable] public var turnMaxSpeed:Number;
+		/** Radius for the turn segment of a connecting ramp. */
+		[Bindable] public var turnRadius:Number;
+		/** Max speed on the s-curve segment of a connecting ramp. */
+		[Bindable] public var sCurveMaxSpeed:Number;
+		/** Radius for the curved segments in an S-curve. */		
+		[Bindable] public var sCurveRadius:Number;
 		
+		public var _bidirectional:Boolean;
+		public function get bidirectional():Boolean {return _bidirectional;}
+		public function set bidirectional(value:Boolean):void {
+			if (value != this._bidirectional) {
+				this._bidirectional = value;
+				var color:uint = value ? TrackOverlay.bidirLineColor : TrackOverlay.unidirLineColor;
+				Globals.originMarker.setColor(color);
+			}
+		}		
 
 		/* For bidirectional track that is not vertically stacked. Right hand side indicates that vehicles
 		 * move forward on the right hand track, as is the convention in the United States. Left hand side
@@ -572,7 +583,7 @@ package edu.ucsc.track_builder
 		 * @param origin The start of the segment.
 		 * @param dest The end of the segment.
 		 * @param bidirectional If true, a reversed segment is also created and added to the overlay.
-		 * @param maxSpeed (Optional) Defaults to this.maxSpeed if not specified. Use NaN to leave at default.
+		 * @param maxSpeed (Optional) Defaults to this.straightMaxSpeed if not specified. Use NaN to leave at default.
 		 * @param startOffset (Optional) Defaults to this.Offset if not specified. Use NaN to leave at default.
 		 * @param endOffset (Optional) Defaults to this.Offset if not specified. Use NaN to leave at default.
 		 * @param id (Optional) Uses a particular id. Otherwise gets an id from the IdGenerator. Use null to leave at default.
@@ -584,7 +595,7 @@ package edu.ucsc.track_builder
 			if (id == null) {
 				id = IdGenerator.getTrackSegId(TrackSegment.forwardExt);
 			}
-			if (isNaN(maxSpeed)) maxSpeed = this.maxSpeed;
+			if (isNaN(maxSpeed)) maxSpeed = this.straightMaxSpeed;
 			if (isNaN(startOffset)) startOffset = this.offset;
 			if (isNaN(endOffset)) endOffset = this.offset;
 			var segs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
@@ -651,7 +662,7 @@ package edu.ucsc.track_builder
 			var end:LatLng;
 			start = abNewLatLng;
 			end = bcNewLatLng;
-			return new TrackSegment(id, label, start, end, maxSpeed, offset, offset, radius, arcAngle, centerLatLng, preview);
+			return new TrackSegment(id, label, start, end, this.curveMaxSpeed, offset, offset, radius, arcAngle, centerLatLng, preview);
 		}
 		
 		/** Returns a single curved Tracksegment which originates at anchor, and is tangent to originVec.
@@ -742,7 +753,7 @@ package edu.ucsc.track_builder
 										label,
 										start,
 										end,
-										maxSpeed,
+										this.curveMaxSpeed,
 										offset,
 										offset,
 										radius,
@@ -890,18 +901,18 @@ package edu.ucsc.track_builder
  		 	var tSplitOffset:Number = this.offset + clearance * (totalTrumpetHLength - extendSegHLength - tArcLength)/(totalTrumpetHLength);
 			if (side == this.driveSide) {
 				insideRampOverlay = makeTangentCurve( // trumpet -> existing 
-						eRampsIntersectLatLng, ePerpUnitVector, trueEVec, maxSpeed,  
+						eRampsIntersectLatLng, ePerpUnitVector, trueEVec, this.curveMaxSpeed,  
 						this.offset + tSplitOffset, this.offset, radius, false, preview);
 				outsideRampOverlay = makeTangentCurve( // existing -> trumpet
-						eRampsIntersectLatLng, trueNegEVec, ePerpUnitVector, maxSpeed,
+						eRampsIntersectLatLng, trueNegEVec, ePerpUnitVector, this.curveMaxSpeed,
 						this.offset + tSplitOffset, this.offset, radius, false, preview);
 				tSplitLatLng = insideRampOverlay.getStart();
 			} else { // side != this.driveSide
 				insideRampOverlay = makeTangentCurve( // existing -> trumpet
-						eRampsIntersectLatLng, trueNegEVec, ePerpUnitVector, maxSpeed,
+						eRampsIntersectLatLng, trueNegEVec, ePerpUnitVector, this.curveMaxSpeed,
 						this.offset + tSplitOffset, this.offset, radius, false, preview);
 				outsideRampOverlay = makeTangentCurve( // trumpet -> existing
-						eRampsIntersectLatLng, ePerpUnitVector, trueEVec, maxSpeed,
+						eRampsIntersectLatLng, ePerpUnitVector, trueEVec, this.curveMaxSpeed,
 						this.offset + tSplitOffset, this.offset, radius, false, preview);
 				tSplitLatLng = insideRampOverlay.getEnd();
 			}
@@ -927,7 +938,7 @@ package edu.ucsc.track_builder
 				signedArcAngle = Math.abs(tArcAngle);
 			}
 			trumpetSegFwd = new TrackSegment(IdGenerator.getTrackSegId(TrackSegment.forwardExt),
-			            this.label, tStartCurveLatLng, tSplitLatLng, this.maxSpeed, this.offset + tStartCurveOffset,
+			            this.label, tStartCurveLatLng, tSplitLatLng, this.curveMaxSpeed, this.offset + tStartCurveOffset,
 				        this.offset + tSplitOffset, radius, signedArcAngle,	tCenterLatLng, preview);			
 			var trumpetSegRev:TrackSegment = trumpetSegFwd.clone(true);
 			var trumpetSegs:Vector.<TrackSegment> = new Vector.<TrackSegment>();
@@ -978,8 +989,8 @@ package edu.ucsc.track_builder
 			negEVec.negate();
 
 			// ramp from new to existing
-			var neRamp:TrackBundle = makeConnectingRamp(intersection, nVec, eVec, this.sCurveRadius, this.maxSpeed,
-					this.turnRadius, this.maxTurnSpeed, this.rampOffset, this.decelLength, this.accelLength, preview);
+			var neRamp:TrackBundle = makeConnectingRamp(intersection, nVec, eVec, this.sCurveRadius, this.sCurveMaxSpeed,
+					this.turnRadius, this.turnMaxSpeed, this.rampOffset, this.decelLength, this.accelLength, preview);
 			var neRampStart:LatLng = neRamp.overlays[0].getStart();
 			var neRampEnd:LatLng = neRamp.overlays[neRamp.overlays.length-1].getEnd();
 			
@@ -997,8 +1008,8 @@ package edu.ucsc.track_builder
 			
 			// ramp from existing to new
 			eVec.negate();
-			var enRamp:TrackBundle = makeConnectingRamp(intersection, eVec, nVec, this.sCurveRadius, this.maxSpeed,
-					this.turnRadius, this.maxTurnSpeed, this.rampOffset, this.decelLength, this.accelLength, preview);
+			var enRamp:TrackBundle = makeConnectingRamp(intersection, eVec, nVec, this.sCurveRadius, this.sCurveMaxSpeed,
+					this.turnRadius, this.turnMaxSpeed, this.rampOffset, this.decelLength, this.accelLength, preview);
 			var enRampStart:LatLng = enRamp.overlays[0].getStart();
 			var enRampEnd:LatLng = enRamp.overlays[enRamp.overlays.length-1].getEnd();			
 			
@@ -1772,9 +1783,10 @@ package edu.ucsc.track_builder
 
 		/** Generate xml from current preferences */
 		public function toPrefsXML():XML {
-			var xml:XML = <Tracks max_speed={maxSpeed}
+			var xml:XML = <Tracks straight_max_speed={straightMaxSpeed}
 			                      offset={offset}
 			                      bidirectional={bidirectional}
+			                      curve_max_speed={curveMaxSpeed}
 			                      radius={radius}
 			                      min_offset={minOffset}
 			                      max_offset={maxOffset}
@@ -1782,9 +1794,11 @@ package edu.ucsc.track_builder
 			                      ramp_offset={rampOffset}
 			                      decel_length={decelLength}
 			                      accel_length={accelLength}
+			                      turn_max_speed={turnMaxSpeed}
 			                      turn_radius={turnRadius}
+			                      s_curve_max_speed={sCurveMaxSpeed}
 			                      s_curve_radius={sCurveRadius}
-			                      max_turn_speed={maxTurnSpeed}
+			                      
 	                      />
 			return xml;
 		}
@@ -1792,9 +1806,10 @@ package edu.ucsc.track_builder
 		/** Generate xml from hard-coded default preferences */
 		public function toDefaultPrefsXML():XML {
 			var xml:XML = <Tracks
-							max_speed="15"
+							straight_max_speed="15"
 							offset="3"
 							bidirectional="false"
+							curve_max_speed="15"
 							radius="65"
 							min_offset="1"
 							max_offset="9"
@@ -1802,27 +1817,31 @@ package edu.ucsc.track_builder
 							ramp_offset="3"
 							decel_length="60"
 							accel_length="60"
+							turn_max_speed="15"
 							turn_radius="65"
-							s_curve_radius="200" 
-							max_turn_speed="15"
+							s_curve_max_speed="15"
+							s_curve_radius="200"
 						  />
 			return xml;
 		}
 		
 		public function fromPrefsXML(xml:XMLList):void {
-			maxSpeed = xml.@max_speed;
+			straightMaxSpeed = xml.@straight_max_speed;
 			offset = xml.@offset;
 			bidirectional = xml.@bidirectional == 'false' || xml.@bidirectional == '0' ? false : true;
-			radius=xml.@radius;
-			minOffset=xml.@min_offset;
-			maxOffset=xml.@max_offset;
-			driveSide=xml.@drive_side;
-			rampOffset=xml.@ramp_offset;
-			decelLength=xml.@decel_length;
-			accelLength=xml.@accel_length;
-			turnRadius=xml.@turn_radius;
-			sCurveRadius=xml.@s_curve_radius;
-			maxTurnSpeed=xml.@max_turn_speed;
+			curveMaxSpeed = xml.@curve_max_speed;
+			radius = xml.@radius;
+			minOffset = xml.@min_offset;
+			maxOffset = xml.@max_offset;
+			driveSide = xml.@drive_side;
+			rampOffset = xml.@ramp_offset;
+			decelLength = xml.@decel_length;
+			accelLength = xml.@accel_length;
+			turnMaxSpeed = xml.@turn_max_speed;
+			turnRadius = xml.@turn_radius;
+			sCurveMaxSpeed = xml.@s_curve_max_speed;
+			sCurveRadius = xml.@s_curve_radius;
+
 		}
 
 			/** Total lane km of track */

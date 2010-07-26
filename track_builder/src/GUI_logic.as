@@ -13,6 +13,7 @@ import edu.ucsc.track_builder.ElevationService;
 import edu.ucsc.track_builder.Globals;
 import edu.ucsc.track_builder.Menu;
 import edu.ucsc.track_builder.SnappingMarker;
+import edu.ucsc.track_builder.TrackOverlay;
 import edu.ucsc.track_builder.XMLHandler;
 
 import flash.desktop.NativeApplication;
@@ -21,7 +22,6 @@ import flash.events.Event;
 import flash.events.KeyboardEvent;
 import flash.events.TimerEvent;
 import flash.ui.Keyboard;
-import flash.ui.MouseCursor;
 import flash.utils.Timer;
 
 import mx.core.Application;
@@ -90,8 +90,9 @@ internal function onMapReady(event:Event):void {
 	Globals.markerPane = pm.getPaneById(PaneId.PANE_MARKER);
 	
 	/* Setup the markers */
-	Globals.originMarker = new SnappingMarker(defaultLatLng, SnappingMarker.makeBlueCircleIcon(), true);
-	Globals.destMarker = new SnappingMarker(defaultLatLng, SnappingMarker.makeBlueCircleIcon(), false);
+	var markerColor:uint = Globals.tracks.bidirectional ? TrackOverlay.bidirLineColor : TrackOverlay.unidirLineColor;
+	Globals.originMarker = new SnappingMarker(defaultLatLng, SnappingMarker.makeCircleIcon(markerColor), true);
+	Globals.destMarker = new SnappingMarker(defaultLatLng, SnappingMarker.makeCircleIcon(markerColor), false);
 	Globals.setActiveMarker(Globals.originMarker);
 
 	/* initialize the default tool */

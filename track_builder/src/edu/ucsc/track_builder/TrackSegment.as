@@ -30,7 +30,7 @@ package edu.ucsc.track_builder
 
 		/** Linear length, taking into account vertical distance and curvature */
 		public var length:Number;
-		/** Maximum speed imposed by the track. */
+		/** Maximum speed for segment. */
 		public var maxSpeed:Number;
 		/** If a curved segment, the radius of the curvature. 0 if straight. Use NaN to allow straight segments to directly connect to each other. */
 		public var radius:Number;

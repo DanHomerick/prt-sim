@@ -96,7 +96,8 @@ package edu.ucsc.track_builder
         /* Set by preferences file */
         public static var line_thickness:uint; // in pixels
         public static var hitLineThickness:uint; // in pixels
-        public static var normalLineColor:uint;
+        public static var unidirLineColor:uint; // unidirectional track	
+        public static var bidirLineColor:uint;  // bidirectional track
         public static var line_alpha:uint;            
         public static var head_thickness:Number; // width of the line used to draw the head, in pixels
         public static var head_color:uint;
@@ -158,8 +159,8 @@ package edu.ucsc.track_builder
 	
 			contextMenu = makeContextMenu();
 	
-//			/* Side effects */
-//			// add myself to the map display
+			/* Side effects */
+			// add myself to the map display
 			if (isCurved()) {
             	Globals.curvedTrackPane.addOverlay(this);
             	Undo.pushMicro(Globals.curvedTrackPane, Globals.curvedTrackPane.removeOverlay, this);
@@ -402,12 +403,20 @@ package edu.ucsc.track_builder
 			/* draw the line */
 			switch (displayMode) {
 				case NORMAL_MODE:
-					line.graphics.lineStyle(line_thickness, normalLineColor, line_alpha);
+					if (!bidirectional) {
+						line.graphics.lineStyle(line_thickness, unidirLineColor, line_alpha);
+					} else { // bidirectional == true
+						line.graphics.lineStyle(line_thickness, bidirLineColor, line_alpha);
+					}
 					break;
 				case GRADE_MODE:
 					var grade:Number = Math.abs(getGrade());
 					if (isNaN(grade)) { // no elevation info
-						line.graphics.lineStyle(line_thickness, normalLineColor, line_alpha);
+						if (!bidirectional) {
+							line.graphics.lineStyle(line_thickness, unidirLineColor, line_alpha);
+						} else { // bidirectional == true
+							line.graphics.lineStyle(line_thickness, bidirLineColor, line_alpha);
+						}
 					} else { // normal case
 						line.graphics.lineStyle(line_thickness, gradeColorMap.valueToColor(Math.abs(getGrade())), line_alpha);
 					}						
@@ -427,7 +436,7 @@ package edu.ucsc.track_builder
         	}
 
 			// if single directional, draw an arrowhead indicating direction.
-			if ((segments.length == 1) && (Point.distance(startPt, endPt) > head_length)) { 
+			if (!bidirectional && (Point.distance(startPt, endPt) > head_length*2.0)) { // don't draw arrowheads if bidir or track segment is rendered too short. 
                 line.graphics.lineStyle(head_thickness, head_color, head_alpha);
                 
                 if (!centerPt) {// a straight line segment
@@ -459,7 +468,7 @@ package edu.ucsc.track_builder
 			// Draw a light circle to indicate the true shape of the track curvature
 			if (TrackOverlay.showCurveCircles && seg.isCurved()) {
 				circle.graphics.clear(); // clear the old
-				circle.graphics.lineStyle(1, normalLineColor, 0.3, true);								
+				circle.graphics.lineStyle(1, unidirLineColor, 0.3, true);								
 				circle.graphics.drawCircle(centerPt.x, centerPt.y, radiusDrawDist);
 			} else {
 				circle.graphics.clear();
@@ -642,7 +651,8 @@ package edu.ucsc.track_builder
 			var xml:XML = <TrackOverlay
 							line_thickness={line_thickness}
 							hit_line_thickness={hitLineThickness}
-							line_color={normalLineColor}
+							unidir_line_color={unidirLineColor}
+							bidir_line_color={bidirLineColor}
 							line_alpha={line_alpha}
 							highlight_color={highlightColor}
 							head_thickness={head_thickness}
@@ -659,7 +669,8 @@ package edu.ucsc.track_builder
 		public static function fromPrefsXML(xml:XMLList):void {
 			line_thickness=xml.@line_thickness;
 			hitLineThickness=xml.@hit_line_thickness;
-			normalLineColor=xml.@line_color;
+			unidirLineColor=xml.@unidir_line_color;
+			bidirLineColor=xml.@bidir_line_color;
 			line_alpha=xml.@line_alpha;
 			highlightColor=xml.@highlight_color;
 			head_thickness=xml.@head_thickness;
@@ -676,14 +687,15 @@ package edu.ucsc.track_builder
 			var xml:XML = <TrackOverlay
 							line_thickness="3"
 							hit_line_thickness="30"
-							line_color="0x6060FF"							
+							unidir_line_color="0xA0A0FF" // light blue
+							bidir_line_color="0x6060FF"  // darker blue
 							line_alpha="1"
 							highlight_color="0xFFFF00"
-							head_thickness="2"
+							head_thickness="4"
 							head_color="0x6060FF"
-							head_alpha="0.7"
+							head_alpha="0.8"
 							head_angle="0.523598776"
-							head_length="12"
+							head_length="10"
 							show_hitline="false"
 							show_curve_circles="false"
 														

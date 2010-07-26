@@ -128,7 +128,7 @@ package edu.ucsc.track_builder
 			var bypassVec:Vector3D = Utility.calcVectorFromLatLngs(bypass.getStart(), bypass.getEnd());
 			bypassVec.normalize();
 			var offRamp:TrackBundle = Globals.tracks.makeRamp(bypassVec, stationStart, this.accelLength, this.lateralOffset,
-					Globals.tracks.radius, Globals.tracks.driveSide, Tracks.OFF_RAMP, Globals.tracks.maxSpeed, 
+					Globals.tracks.radius, Globals.tracks.driveSide, Tracks.OFF_RAMP, Globals.tracks.sCurveMaxSpeed, 
 					bypass.getStartOffset(), bypass.getEndOffset(), preview);
 			
 			/* Make the main station line */ 			
@@ -160,7 +160,7 @@ package edu.ucsc.track_builder
 
 			// make the on ramp (accel run + squiggle)
 			var onRamp:TrackBundle = Globals.tracks.makeRamp(bypassVec, platformEnd.clone(), this.accelLength, this.lateralOffset,
-					Globals.tracks.radius, Globals.tracks.driveSide, Tracks.ON_RAMP, Globals.tracks.maxSpeed, 
+					Globals.tracks.radius, Globals.tracks.driveSide, Tracks.ON_RAMP, Globals.tracks.sCurveMaxSpeed, 
 					bypass.getEndOffset(), bypass.getEndOffset(), preview); 
 
 			// Check that the resulting station will fit in the desired location.

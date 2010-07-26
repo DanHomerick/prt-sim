@@ -2,9 +2,8 @@ package edu.ucsc.track_builder
 {
 	import __AS3__.vec.Vector;
 	
+	import com.google.maps.LatLng;
 	import com.google.maps.LatLngBounds;
-	
-	import edu.ucsc.track_builder.gtf_import.GtfImporter;
 	
 	import flash.events.Event;
 	import flash.filesystem.File;
@@ -216,16 +215,17 @@ package edu.ucsc.track_builder
 				
 				// Change the location and zoom to show the entire track.
 				var bounds:LatLngBounds = Globals.tracks.getLatLngBounds();
-				Globals.map.setCenter(bounds.getCenter());
+				var center:LatLng = bounds.getCenter();
+				Globals.map.setCenter(center);
 				var zoom:Number = Globals.map.getBoundsZoomLevel(bounds);
 				Globals.map.setZoom(zoom-1); // -1 to account for a station's coverage area not being considered
 				
-				// move the origin marker to an arbitrary segment
-				if (Globals.originMarker) {
-					Globals.originMarker.destroy();
-				}
-				
-				Globals.originMarker = new SnappingMarker(bounds.getCenter(), SnappingMarker.makeBlueCircleIcon(), true);
+				// Reset the markers
+				Globals.originMarker.setSnapOverlay(null);
+				Globals.originMarker.setLatLng(center);
+				Globals.destMarker.setSnapOverlay(null);
+				Globals.destMarker.setLatLng(center);
+				Globals.setActiveMarker(Globals.originMarker);				
 												
 				Globals.dataXMLFile = file; // Point to the new "save" file				
 				Globals.dirty = false;      // Mark the file as 'clean'

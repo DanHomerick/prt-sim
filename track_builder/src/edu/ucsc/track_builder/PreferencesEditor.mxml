@@ -39,23 +39,24 @@
 		<mx:VBox label="Display">
 			<mx:Form>
 				<mx:FormHeading label="Tracks" />
-				<mx:FormItem label="Line" toolTip="Choose the color of the track segments.">
-					<mx:ColorPicker id="track_cp"
-						initialize="track_cp.selectedColor = TrackOverlay.normalLineColor;"
-						change="TrackOverlay.normalLineColor = track_cp.selectedColor;
-						        Utility.refreshScreen()"/>		
+				<mx:FormItem label="One-Way Track" toolTip="Choose the color for one-way track segments." >
+					<mx:ColorPicker id="oneWay_cp"
+						initialize="oneWay_cp.selectedColor = TrackOverlay.unidirLineColor;"
+						change="TrackOverlay.unidirLineColor = oneWay_cp.selectedColor;
+						        Utility.refreshScreen()" />		
 				</mx:FormItem>
-				<mx:FormItem label="Arrowhead" toolTip="Choose the color of the arrowheads.">
-					<mx:ColorPicker id="arrowhead_cp"
-						 initialize="arrowhead_cp.selectedColor = TrackOverlay.head_color;"
-						 change="TrackOverlay.head_color = arrowhead_cp.selectedColor;
-						         Utility.refreshScreen();"/>
-				</mx:FormItem>
-			
+				
+				<mx:FormItem label="Bidirectional Track" toolTip="Choose the color for bidirectional track segments." >
+					<mx:ColorPicker id="bidir_cp"
+						initialize="bidir_cp.selectedColor = TrackOverlay.bidirLineColor;"
+						change="TrackOverlay.bidirLineColor = bidir_cp.selectedColor;
+						        Utility.refreshScreen()" />
+				</mx:FormItem>		        
+					
 				<mx:HRule width="100%"/>					
 			
 				<mx:FormHeading label="Stations" />
-				<mx:FormItem label="Coverage" toolTip="Choose how the coverage area is displayed.">
+				<mx:FormItem label="Coverage" toolTip="Choose how the coverage area is displayed." >
 					<components:GradientEditor id="station_gradient"
 						width="200"
 						height="50"						
