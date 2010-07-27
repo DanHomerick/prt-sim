@@ -25,6 +25,7 @@ import flash.ui.Keyboard;
 import flash.utils.Timer;
 
 import mx.core.Application;
+import mx.core.WindowedApplication;
 import mx.events.FlexEvent;
 import mx.events.ItemClickEvent;
 
@@ -46,7 +47,6 @@ internal function initApp(event:FlexEvent):void {
 	Globals.toolBar = toolBar; 
 	Globals.menu = new Menu();
 	Globals.dirty = false;
-	Globals.status = status;
 	stage.addEventListener(Event.CLOSING, Globals.menu.onExiting);
 	NativeApplication.nativeApplication.addEventListener(Event.EXITING, Globals.menu.onExiting);		
 	
@@ -105,8 +105,9 @@ internal function onMapReady(event:Event):void {
 
 internal function onMapMouseMove(event:MapMouseEvent):void {
 	// update status bar
-	this.status = "Distance: " + Math.round(Globals.originMarker.getLatLng().distanceFrom(event.latLng)) + " meters\t\tAltitude: " + "??? meters" +
-	              "\t\tLat: " + event.latLng.lat().toFixed(5) + ", Lng: " + event.latLng.lng().toFixed(5);
+	this.status = "Distance: " + Math.round(Globals.originMarker.getLatLng().distanceFrom(event.latLng)) + " meters" +
+	              "\t\tLat: " + event.latLng.lat().toFixed(5) + ", Lng: " + event.latLng.lng().toFixed(5) +
+	              "\t\tAltitude: ???? meters";
 	              
 	/* So that the app doesn't spam the elevation webservice providers with requests
  	 * we wait for the mouse to stop moving for a moment before sending.
@@ -120,9 +121,10 @@ internal function onMapMouseMove(event:MapMouseEvent):void {
 internal function onElevationTimerComplete(event:TimerEvent):void {
 	var latlng:LatLng = lastMouseMoveEvent.latLng;
 	/* Updates the elevation in the status bar once the data comes in. */
-	Globals.elevationService.requestElevation(latlng, function(elevation:Number, ll:LatLng):void {																	
-																	Globals.status = Globals.status.replace("???", elevation.toFixed(2));																	
-															});		
+	Globals.elevationService.requestElevations(Vector.<LatLng>([latlng]),
+											   function(latlngs:Vector.<LatLng>, elevations:Vector.<Number>):void {																	
+											       status = status.replace("????", elevations[0].toString());																	
+											   });		
 }
 
 ///** Updates the elevation in the status bar once the data comes in. */ 

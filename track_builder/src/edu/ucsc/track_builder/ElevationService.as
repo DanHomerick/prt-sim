@@ -15,6 +15,8 @@ package edu.ucsc.track_builder
 
 	public class ElevationService
 	{
+		public static const MAX_SIMULTANEOUS_REQUESTS:uint = 1;
+		
 		/* Shared between all instances */
 		public static var elevation_cache:Object = new Object();
 		public static const cacheName:String = 'elevation.dat';
@@ -26,9 +28,9 @@ package edu.ucsc.track_builder
 	
 		public var loaders:Vector.<ElevationLoader>; 
 		
-		public function ElevationService(maxParallelRequests:uint)
+		public function ElevationService()
 		{
-			loaders = new Vector.<ElevationLoader>(maxParallelRequests);
+			loaders = new Vector.<ElevationLoader>(MAX_SIMULTANEOUS_REQUESTS);
 			for (var i:int=0; i < loaders.length; ++i) {
 				loaders[i] = new ElevationLoader();
 				loaders[i].addEventListener(Event.COMPLETE, loaders[i].onComplete);
@@ -37,33 +39,50 @@ package edu.ucsc.track_builder
 			}
 		}
 		
-		/** Requests an elevation. All elevations are in meters.
-		 * @param latlng The point for which an elevation is requested.
+		/** Requests elevations. All elevations are in meters.
+		 * @param latlngs The points for which elevations are requested.
 		 * @param callback A function has parameters of:
-		 *                     elevation:Number
-		 *                     latlng:LatLng
+		 *                     latlngs:Vector.<LatLng>
+		 *                     elevations:Vector.<Number>
+		 *                 where latlngs and elevations are parallel arrays.
+		 * The latlngs parameter is passed to the callback function, in addition to a new Vector containing the elevations.
+		 * The callback function takes ownership of the elevations vector; it is not reused. 
 		 */
-		public function requestElevation(latlng:LatLng, callback:Function):void {
-			/* Check the cache first */
-			var elevation:Number = NaN;
-			elevation = elevation_cache[latlng.toUrlValue(PRECISION)];
-			if (!isNaN(elevation)) { // cache hit
-				callback(elevation, latlng);
+		public function requestElevations(latlngs:Vector.<LatLng>, callback:Function):void {
+			/* Check the cache first. Use an all-or-nothing approach: if any latlngs miss the cache, request all of them. */
+			var latlngsLength:Number = latlngs.length;
+			var elevation:Number;
+			var elevations:Vector.<Number> = new Vector.<Number>(latlngsLength);
+			var foundAll:Boolean = true;
+			for (var i:int=0; i < latlngsLength; ++i) {
+				elevation = NaN; // necessary? What value is used in a cache miss?
+				elevation = elevation_cache[latlngs[i].toUrlValue(PRECISION)];
+				if (!isNaN(elevation)) { // cache hit
+					elevations[i] = elevation;				
+				} else { // cache miss
+					foundAll = false;
+					break;
+				}
 			} 
 			
-			/* On a cache miss, put it in the work queue */
-			var request:ElevationRequest = new ElevationRequest(makeUsgsUrlRequest(latlng), latlng, callback);
-			/* Give the reques to the loader with the shorter work queue */
-			var minLength:Number = Number.POSITIVE_INFINITY;
-			var minIndex:int;
-			for (var i:int=0; i < loaders.length; ++i) {
-				if (loaders[i].queue.length < minLength) {
-					minLength = loaders[i].queue.length;
-					minIndex = i;
+			if (foundAll) { // every latlng was found in the elevation cache
+				callback(latlngs, elevations); // call the callback function immediately.
+				return;
+			} else {				
+				/* On a cache miss, put it in the work queue */
+				var request:ElevationRequest = new ElevationRequest(makeGoogleUrlRequest(latlngs), latlngs, callback);
+				/* Give the request to the loader with the shortest work queue */
+				var minLength:Number = Number.POSITIVE_INFINITY;
+				var minIndex:int;
+				for (i=0; i < loaders.length; ++i) {
+					if (loaders[i].queue.length < minLength) {
+						minLength = loaders[i].queue.length;
+						minIndex = i;
+					}
 				}
+				loaders[minIndex].addRequest(request);
+//				trace('Added', request.toString(), 'to loader', minIndex, 'with queue length', minLength);
 			}
-			loaders[minIndex].addRequest(request);
-//			trace('Added', request.toString(), 'to loader', minIndex, 'with queue length', minLength);
 		}		
 		
 		/** Uses srtm3 data for geonames.org */ 
@@ -86,17 +105,19 @@ package edu.ucsc.track_builder
 			return new URLRequest(url);
 		}
 		
-		public function makeGoogleElevationUrlRequest(latlngs:Vector.<LatLng>):URLRequest {
+		/** Uses Google's Elevation API. See: http://code.google.com/apis/maps/documentation/elevation/ */
+		public function makeGoogleUrlRequest(latlngs:Vector.<LatLng>):URLRequest {
 			/* Capable of using path= with a set number of samples. Since I need to calculate
 			 * individual LatLngs for curved segments however, I'm just using the location=
 			 * query for all cases.
 			 */
-			var baseUrl:String = "http://maps.google.com/maps/api/elevation/xml?"
+			var baseUrl:String = "http://maps.google.com/maps/api/elevation/xml?sensor=false&locations="
 			var params:Array = new Array();
 			for each (var latlng:LatLng in latlngs) {
-				params.push(latlng.toString());
+				params.push(latlng.toUrlValue(PRECISION));
 			}
 			var url:String = baseUrl + params.join("|");
+			trace("request url:", url);
 			return new URLRequest(url);
 		}
 		

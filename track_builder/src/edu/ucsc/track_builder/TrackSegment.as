@@ -133,9 +133,10 @@ package edu.ucsc.track_builder
 			if (!bypassUndo) {Undo.assign(this, '_start', _start);}
 			_start = latlng;
 			if (!preview) {
-				Globals.elevationService.requestElevation(latlng.clone(), function(elevation:Number, latlng:LatLng):void {
+				Globals.elevationService.requestElevations(Vector.<LatLng>([latlng.clone()]),
+														   function(latlngs:Vector.<LatLng>, elevation:Number):void {
 																// check that the latlng wasn't moved again before a response arrived
-			                                                     if (_start.equals(latlng)) { 
+			                                                     if (_start.equals(latlngs[0])) { 
 			                                                     	startGround = elevation;
 			                                                     	updateLength();
 			                                                     }
@@ -147,9 +148,10 @@ package edu.ucsc.track_builder
 			if (!bypassUndo) {Undo.assign(this, '_end', _end);}
 			_end = latlng;
 			if (!preview) {
-				Globals.elevationService.requestElevation(latlng.clone(), function(elevation:Number, latlng:LatLng):void {
+				Globals.elevationService.requestElevations(Vector.<LatLng>([latlng.clone()]),
+														  function(latlngs:Vector.<LatLng>, elevation:Number):void {
 			                                                     // check that the latlng wasn't moved again before a response arrived
-			                                                     if (_end.equals(latlng)) {
+			                                                     if (_end.equals(latlngs[0])) {
 			                                                     	endGround = elevation;
 			                                                     	updateLength();
 			                                                     }
