@@ -50,7 +50,9 @@ package edu.ucsc.track_builder
 			if (value != this._bidirectional) {
 				this._bidirectional = value;
 				var color:uint = value ? TrackOverlay.bidirLineColor : TrackOverlay.unidirLineColor;
-				Globals.originMarker.setColor(color);
+				if (Globals.originMarker != null) {
+					Globals.originMarker.setColor(color);
+				}
 			}
 		}		
 
@@ -156,7 +158,7 @@ package edu.ucsc.track_builder
 		} 				
 
 		/** Makes a temporary trail showing where the track will go if the user clicks. */
-		public function makePreview():void {			
+		public function makePreview():void {
 			Undo.undo(Undo.PREVIEW); // get rid of the old 'live preview', if one exists
 			
 			// Do nothing if the markers are overlapped.
@@ -276,7 +278,6 @@ package edu.ucsc.track_builder
 											   originLatLng:LatLng,
 		                          			   destLatLng:LatLng,
 		                          			   preview:Boolean):Vector.<TrackOverlay> {
-		                          			   	
 			var resultOverlays:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
 			var newVec:Vector3D;
 	        var overlay:TrackOverlay; // for general iteration
@@ -360,9 +361,6 @@ package edu.ucsc.track_builder
 	        if (destOverlays.length >=1) {
 				newVec = Utility.calcVectorFromLatLngs(destLatLng, originLatLng);
 				if (isNaN(newVec.length)) {
-					trace("destLatLng:", destLatLng.toString());
-					trace("originLatLng:", originLatLng.toString());
-					trace(newVec.toString());
 					throw new TrackError("Unknown problem.");
 				}
 				// At one end or the other, and the end is exposed.
@@ -1336,24 +1334,14 @@ package edu.ucsc.track_builder
 			}
 			
 			/* Make connections within the bundle and set data for external connections. */ 
-			trace("curveOne:", curveOne.getStart().toString(), " : ", curveOne.getEnd().toString());
-			trace("curveTwo:", curveTwo.getStart().toString(), " : ", curveTwo.getEnd().toString());
-			trace("distances:", curveOne.getStart().distanceFrom(curveTwo.getStart()),
-			                    curveOne.getStart().distanceFrom(curveTwo.getEnd()),
-			                    curveOne.getEnd().distanceFrom(curveTwo.getStart()),
-			                    curveOne.getEnd().distanceFrom(curveTwo.getEnd()));
 			curveOne.connect(curveTwo);
 			if (rampType == Tracks.OFF_RAMP) {
-				bundle.setConnectExisting(latlng, curveOne);
-				trace("curveTwo, straight:", curveTwo.getEnd().toString(), straight.getStart().toString(), curveTwo.getEnd().distanceFrom(straight.getStart()));
-				curveTwo.connect(straight);
-				trace("straight & vec:", Utility.angleBetween(Utility.calcVectorFromLatLngs(straight.getStart(), straight.getEnd()), vec));
-				trace("curveTwo & vec:", Utility.angleBetween(Utility.calcVectorFromLatLngs(curveTwo.getCenter(), curveTwo.getEnd()), vec)); 
+				bundle.setConnectExisting(latlng, curveOne);				
+				curveTwo.connect(straight); 
 			} else { // rampType == ON_RAMP
 				bundle.setConnectNewLatLng(curveTwo.getEnd());
 				bundle.markAsConnectNew(curveTwo);
 				straight.connect(curveOne);
-				trace(straight.getEnd(), curveOne.getStart(), straight.getEnd().distanceFrom(curveOne.getStart()));
 			}
 						
 			return bundle;
@@ -1397,6 +1385,9 @@ package edu.ucsc.track_builder
 		{
 			// Find the anchor for the turn (aka intersection). It is lateralOffset meters away from both v1 and v2.
 			var angle:Number = Utility.angleBetween(v1, v2);
+			if (angle < 1E-4) {
+				throw new TrackError("Angle between v1 and v2 is too small"); // FIXME: Why wasn't this caught higher up in the call stack?
+			}
 			var alongV1:Vector3D = v1.clone();
 			alongV1.scaleBy(lateralOffset/Math.tan(angle/2.0));			
 			var z:Vector3D = v1.crossProduct(v2);
