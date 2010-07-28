@@ -36,10 +36,10 @@ class TestWeightedPath:
         self.MXG4=nx.MultiGraph(self.XG4)
         self.MXG4.add_edge(0,1,weight=3)
         self.G=nx.DiGraph()  # no weights
-        self.G.add_edges_from([('s','u'), ('s','x'), 
-                          ('u','v'), ('u','x'), 
-                          ('v','y'), ('x','u'), 
-                          ('x','v'), ('x','y'), 
+        self.G.add_edges_from([('s','u'), ('s','x'),
+                          ('u','v'), ('u','x'),
+                          ('v','y'), ('x','u'),
+                          ('x','v'), ('x','y'),
                           ('y','s'), ('y','v')])
 
     def test_dijkstra(self):
@@ -47,15 +47,23 @@ class TestWeightedPath:
         assert_equal(P['v'], ['s', 'x', 'u', 'v'])
         assert_equal(D['v'],9)
 
-        assert_equal(nx.single_source_dijkstra_path(self.XG,'s')['v'], 
+        assert_equal(nx.single_source_dijkstra_path(self.XG,'s')['v'],
                      ['s', 'x', 'u', 'v'])
         assert_equal(nx.single_source_dijkstra_path_length(self.XG,'s')['v'],9)
-        
+
         assert_equal(nx.single_source_dijkstra(self.XG,'s')[1]['v'],
                      ['s', 'x', 'u', 'v'])
 
         assert_equal(nx.single_source_dijkstra_path(self.MXG,'s')['v'],
                      ['s', 'x', 'u', 'v'])
+
+        assert_equal(nx.single_source_dijkstra_path(
+                     self.XG,'s',weight_fnc=lambda u,v,ed: ed['weight']*2)['v'],
+                     ['s', 'x', 'u', 'v'])
+
+        assert_equal(nx.single_source_dijkstra_path_length(
+                     self.XG,'s',weight_fnc=lambda u,v,ed: ed['weight']*2)['v'],
+                     18)
 
         GG=self.XG.to_undirected()
         (D,P)= nx.single_source_dijkstra(GG,'s')
@@ -101,6 +109,10 @@ class TestWeightedPath:
         assert_equal(nx.bidirectional_dijkstra(self.XG4,0,2),
                      (4, [0, 1, 2]))
 
+        assert_equal(nx.bidirectional_dijkstra(
+                     self.XG,'s','v',weight_fnc=lambda u,v,ed: ed['weight']*2),
+                     (18, ['s', 'x', 'u', 'v']))
+
         # need more tests here
         assert_equal(nx.dijkstra_path(self.XG,'s','v'),
                      nx.single_source_dijkstra_path(self.XG,'s')['v'])
@@ -112,7 +124,7 @@ class TestWeightedPath:
         G=nx.grid_2d_graph(2,2)
         pred,dist=nx.dijkstra_predecessor_and_distance(G,(0,0))
         assert_equal(sorted(pred.items()),
-                     [((0, 0), []), ((0, 1), [(0, 0)]), 
+                     [((0, 0), []), ((0, 1), [(0, 0)]),
                       ((1, 0), [(0, 0)]), ((1, 1), [(0, 1), (1, 0)])])
         assert_equal(sorted(dist.items()),
                      [((0, 0), 0), ((0, 1), 1), ((1, 0), 1), ((1, 1), 2)])
@@ -126,6 +138,11 @@ class TestWeightedPath:
         (P,D)= nx.dijkstra_predecessor_and_distance(XG,'s')
         assert_equal(P['v'],['u'])
         assert_equal(D['v'],9)
+
+        (P2,D2)=nx.dijkstra_predecessor_and_distance(
+                     XG,'s',weight_fnc=lambda u,v,ed: ed['weight']*2)
+        assert_equal(P2['v'],['u'])
+        assert_equal(D2['v'],18)
 
 
 
