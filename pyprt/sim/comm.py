@@ -185,8 +185,7 @@ class ControlInterface(Sim.Process):
         self.TCP_server_socket.close()
         self.TCP_server_socket = None
 
-        greeting = api.SimGreeting()
-        greeting.sim_end_time = common.config_manager.get_sim_end_time()
+        greeting = self.make_SimGreeting()
         self.send(api.SIM_GREETING, greeting)
 
     def disconnect(self):
@@ -627,6 +626,15 @@ class ControlInterface(Sim.Process):
             s_status = api.StationStatus()
             station.fill_StationStatus(s_status)
             ts.s_statuses.append(s_status)
+
+    def make_SimGreeting(self):
+        greeting = api.SimGreeting()
+        greeting.sim_end_time = common.config_manager.get_sim_end_time()
+        scenario_file = open(common.config_manager.get_scenario_path())
+        scenario_xml = scenario_file.read()
+        scenario_file.close()
+        greeting.scenario_xml = scenario_xml;
+        return greeting
 
 def ms_now():
     """Return Sim.now() in integer form, rounded to milliseconds. This is the

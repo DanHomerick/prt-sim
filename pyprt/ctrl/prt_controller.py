@@ -39,10 +39,10 @@ def main():
     Merge.HEADWAY = options.headway
     Station.SPEED_LIMIT = options.station_speed
 
-    if len(args) != 1:
-        options_parser.error("Expected one argument. Received: %s" % ' '.join(args))
+    if len(args) != 0:
+        options_parser.error("Expected zero positional arguments. Received: %s" % ' '.join(args))
 
-    ctrl = PrtController(options.logfile, options.comm_logfile, args[0])
+    ctrl = PrtController(options.logfile, options.comm_logfile)
     ctrl.connect(options.server, options.port)
 
 class NoPaxAvailableError(Exception):
@@ -73,9 +73,8 @@ class PrtController(BaseController):
     HEADWAY = None     # in sec. Measured from tip-to-tail. Set in main()
     HEARTBEAT_INTERVAL = 5.1  # in seconds. Choosen arbitrarily for testing
 
-    def __init__(self, log_path, commlog_path, scenario_path):
+    def __init__(self, log_path, commlog_path):
         super(PrtController, self).__init__(log_path, commlog_path)
-        self.scenario_path = scenario_path
         self.t_reminders = dict() # keyed by time (in integer form), values are pairs of lists
 
         # Manager is instantiated upon receipt of a SIM_GREETING msg.
@@ -219,7 +218,7 @@ class PrtController(BaseController):
         self.sim_end_time = msg.sim_end_time
         self.log.info("Sim Greeting message received. Sim end at: %f" % msg.sim_end_time)
 
-        self.manager = Manager(self.scenario_path, msg.sim_end_time, self)
+        self.manager = Manager(msg.scenario_xml, msg.sim_end_time, self)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         """This function is responsible for getting all the vehicles moving at
@@ -575,9 +574,8 @@ class PrtController(BaseController):
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
-    def __init__(self, xml_path, sim_end_time, controller):
-        """xml_path: the path (including filename) to the xml scenario file
-        created by TrackBuilder.
+    def __init__(self, scenario_xml, sim_end_time, controller):
+        """scenario_xml: the xml scenario file created by TrackBuilder, as a string.
 
         The scenario file is expected to have a GoogleTransitFeed section which
         provides vehicle scheduling and trip data, in addition to the typical
@@ -589,7 +587,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         self.controller = controller
         import xml.dom.minidom
-        doc = xml.dom.minidom.parse(xml_path)
+        doc = xml.dom.minidom.parseString(scenario_xml)
 
         self.graph = self.build_graph(doc.getElementsByTagName('TrackSegments')[0])
         self.stations = self.load_stations(doc.getElementsByTagName('Stations')[0], self.graph)

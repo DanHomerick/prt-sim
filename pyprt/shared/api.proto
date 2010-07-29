@@ -265,6 +265,7 @@ enum SimMsgType {
 
 message SimGreeting {
     required double         sim_end_time = 1;  // planned end of the simulation, in seconds, where 0 is the start time.
+    optional string         scenario_xml = 2;  // the contents of the scenario file. See prt-sim/schema/track_builder.xsd
 }
 
 message SimStart {

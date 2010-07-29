@@ -33,10 +33,10 @@ def main():
                               help="Speed, in meters/sec, at which passengers will walk to a neighboring station. A value of 0 will disable passenger walking entirely.")
     options, args = options_parser.parse_args()
 
-    if len(args) != 1:
-        options_parser.error("Expected one argument. Received: %s" % ' '.join(args))
+    if len(args) != 0:
+        options_parser.error("Expected zero positional arguments. Received: %s" % ' '.join(args))
 
-    ctrl = GtfController(options.logfile, options.comm_logfile, options.walk_speed, args[0])
+    ctrl = GtfController(options.logfile, options.comm_logfile, options.walk_speed)
     ctrl.connect(options.server, options.port)
 
 def to_seconds(time_str):
@@ -56,9 +56,8 @@ class GtfController(BaseController):
     LAST_CALL = "LAST_CALL"                 # Parked in berth, loading last round of passengers.
     READY_TO_DEPART = "READY_TO_DEPART"     # Parked in berth, waiting for departure time, ready to go immediately
 
-    def __init__(self, log_path, commlog_path, walk_speed, scenario_path):
+    def __init__(self, log_path, commlog_path, walk_speed):
         super(GtfController, self).__init__(log_path, commlog_path)
-        self.scenario_path = scenario_path
         self.t_reminders = defaultdict(list) # keyed by time, values are lists of vehicle ids
         self._walk_speed = walk_speed
 
@@ -93,11 +92,11 @@ class GtfController(BaseController):
         self.sim_end_time = msg.sim_end_time
         self.log.info("Sim Greeting message received. Sim end at: %f" % msg.sim_end_time)
 
-        self.v_manager = VehicleManager(self.scenario_path, msg.sim_end_time, self)
+        self.v_manager = VehicleManager(msg.scenario_xml, msg.sim_end_time, self)
         Vehicle.manager = self.v_manager
         Vehicle.controller = self
 
-        self.p_manager = PassengerManager(self.scenario_path, msg.sim_end_time, self._walk_speed, self)
+        self.p_manager = PassengerManager(msg.scenario_xml, msg.sim_end_time, self._walk_speed, self)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         self.log.info("Sim Start message received.")
@@ -263,9 +262,8 @@ class VehicleManager(object):
     """Reads schedule information from the gtf information in the scenario.
     Provides pathing information for the vehicles."""
 
-    def __init__(self, xml_path, sim_end_time, controller):
-        """xml_path: the path (including filename) to the xml scenario file
-        created by TrackBuilder.
+    def __init__(self, scenario_xml, sim_end_time, controller):
+        """xml_path: The xml scenario data created by TrackBuilder, in string form.
 
         The scenario file is expected to have a GoogleTransitFeed section which
         provides vehicle scheduling and trip data, in addition to the typical
@@ -273,7 +271,7 @@ class VehicleManager(object):
         self.controller = controller
 
         import xml.dom.minidom
-        doc = xml.dom.minidom.parse(xml_path)
+        doc = xml.dom.minidom.parseString(scenario_xml)
 
         self.graph = self.build_graph(doc.getElementsByTagName('TrackSegments')[0])
         self.stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
@@ -806,14 +804,13 @@ class PassengerManager(object):
 
     WALK_ID = -100
 
-    def __init__(self, xml_path, sim_end_time, walk_speed, controller):
-        """xml_path: the path (including filename) to the xml scenario file
-        created by TrackBuilder."""
+    def __init__(self, scenario_xml, sim_end_time, walk_speed, controller):
+        """scenario_xml: The xml scenario data created by TrackBuilder, in string form."""
         self._walk_speed = walk_speed
         self.controller = controller
 
         import xml.dom.minidom
-        doc = xml.dom.minidom.parse(xml_path)
+        doc = xml.dom.minidom.parseString(scenario_xml)
 
         self.graph, self.node_dict = self._build_graph(doc.getElementsByTagName('GoogleTransitFeed')[0], sim_end_time)
         self.paths = self._make_paths(self.graph, self.node_dict)
