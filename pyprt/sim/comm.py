@@ -51,7 +51,7 @@ def receive(sock, queue, comm_idx):
         hdr = ''.join(hdr) # concatenate strings
 
         msg_sep, msg_type, msgID, msg_time, msg_size \
-                = struct.unpack('>hhiih', hdr)
+                = struct.unpack('>hhiii', hdr)
         # TODO: Subtype Exception,  and handle
         if msg_sep != api.MSG_SEP:
             err_msg = api.SimMsgHdrInvalidSeparator()
@@ -488,7 +488,7 @@ class ControlInterface(Sim.Process):
                msg type: 2 bytes, signed
                msg ID: 4 bytes, signed
                msg time: 4 bytes, signed
-               msg size: 2 bytes, signed (max msg size of 32768 bytes)
+               msg size: 4 bytes, signed
         The message seperator is always -32123
         The msg type is one of the values found in CtrlMsgType or SimMsgType
         The msg size is the length (in bytes) of the serialized message.
@@ -500,9 +500,9 @@ class ControlInterface(Sim.Process):
         msg_time = ms_now()
         msg_str = msg.SerializeToString()
         msg_size = len(msg_str)
-        # big_endian, *std size* and align: short, short, int, int, short
+        # big_endian, *std size* and align: short, short, int, int, int
         # short = 2 bytes, int = 4 bytes
-        header = struct.pack('>hhiih', api.MSG_SEP, msg_type, msgID,
+        header = struct.pack('>hhiii', api.MSG_SEP, msg_type, msgID,
                              msg_time, msg_size)
         message = header + msg_str
 

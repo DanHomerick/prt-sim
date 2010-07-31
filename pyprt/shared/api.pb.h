@@ -103,7 +103,7 @@ class TrackStatus;
 
 enum Misc {
   MSG_SEP = -32123,
-  MSG_HEADER_SIZE = 14,
+  MSG_HEADER_SIZE = 16,
   NONE_ID = -1
 };
 bool Misc_IsValid(int value);

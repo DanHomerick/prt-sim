@@ -186,7 +186,7 @@ class BaseController(object):
 
         # unpack header
         msg_sep, msg_type, msgID, msg_time, msg_size \
-                = struct.unpack('>hhiih', header)
+                = struct.unpack('>hhiii', header)
 
         # TODO: Subtype Exception,  and handle
         if msg_sep != api.MSG_SEP:
@@ -213,7 +213,7 @@ class BaseController(object):
                msg type: 2 bytes, signed
                msg ID: 4 bytes, signed
                msg time: 4 bytes, signed
-               msg size: 2 bytes, signed (max msg size of 32768 bytes)
+               msg size: 4 bytes, signed
         The message seperator is always -32123
         The msg type is one of the values found in CtrlMsgType or SimMsgType
         The msg size is the length (in bytes) of the serialized message.
@@ -224,7 +224,7 @@ class BaseController(object):
             self.next_msgID += 1
             msg_str = msg.SerializeToString()
             msg_size = len(msg_str)
-            header = struct.pack('>hhiih', api.MSG_SEP, msg_type, msgID,
+            header = struct.pack('>hhiii', api.MSG_SEP, msg_type, msgID,
                                  self.last_sim_timestamp, msg_size)
             self.sock.sendall(header + msg_str)
             self.comm_log.info("SENT, %s, %d, %d, %d\n" %\

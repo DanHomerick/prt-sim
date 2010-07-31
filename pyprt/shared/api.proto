@@ -5,7 +5,7 @@ package prt;
 //       msg type: 2 bytes, signed
 //       msg ID: 4 bytes, signed
 //       msg sim_time: 4 bytes, signed
-//       msg size: 2 bytes, signed (max msg size of 32768 bytes)
+//       msg size: 4 bytes, signed
 // The message seperator is always -32123
 // The msg type is one of the values found in CtrlMsgType or SimMsgType
 // The msg size is the length (in bytes) of the serialized message.
@@ -17,7 +17,7 @@ package prt;
 
 enum Misc {
     MSG_SEP = -32123;
-    MSG_HEADER_SIZE = 14;
+    MSG_HEADER_SIZE = 16;
     NONE_ID = -1;   // For those cases when a real ID isn't applicable.
 }
 
