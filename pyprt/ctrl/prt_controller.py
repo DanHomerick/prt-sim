@@ -15,7 +15,7 @@ from pyprt.shared.utility import pairwise
 ##from pyprt.shared.utility import deque # extension of collections.deque which includes 'insert' method
 
 def main():
-    options_parser = optparse.OptionParser(usage="usage: %prog [options] FILE\nFILE is a path to to the scenario file.")
+    options_parser = optparse.OptionParser(usage="usage: %prog [options]")
     options_parser.add_option("--logfile", dest="logfile", default="./ctrl.log",
                 metavar="FILE", help="Log events to FILE.")
     options_parser.add_option("--comm_logfile", dest="comm_logfile", default="./ctrl_comm.log",
