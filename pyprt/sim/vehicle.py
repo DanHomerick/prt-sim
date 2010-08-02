@@ -16,6 +16,7 @@ import pyprt.shared.utility as utility
 from pyprt.shared.utility import pairwise
 import common
 import pyprt.shared.cubic_spline as cspline
+from visual import NoWritebackOnCloseHandler
 
 class BaseVehicle(Sim.Process, traits.HasTraits):
     """SimPy has several important features/limitations which have affected the
@@ -55,8 +56,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     NOTIFY_POSITION = 6
 
     # A default view for vehicles.
-    traits_view =  ui.View('ID', 'length',
-                           ui.Item(name='pos', label='Position', ),
+    trait_view =  ui.View('ID', 'length',
+                           ui.Item(name='pos', label='Position'),
                            ui.Item(name='vel'),
                            ui.Item(name='v_mass'),
                            ui.Item(name='passenger_mass'),
@@ -67,8 +68,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                                                            deletable    = False,
                                                            export       = 'DockShellWindow',
                                                            page_name    = '.label' )),
+                           title='Vehicle Stats',
                            kind='nonmodal',
-                           style='readonly'
+                           style='readonly',
+                           resizable=True,
+                           handler=NoWritebackOnCloseHandler()
                            )
 
     table_editor = ui.TableEditor(

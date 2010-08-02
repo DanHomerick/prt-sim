@@ -5,8 +5,8 @@ import SimPy.SimulationRT as Sim
 scenario_manager = None
 config_manager = None
 
-digraph = None
-interface = None
+digraph = None # set to a networkx.DiGraph object
+interface = None # set to a comm.ControlInterface object
 stations = dict()
 platforms = dict()
 track_segments = dict()
@@ -14,7 +14,7 @@ vehicle_models = dict()
 vehicles = dict()
 passengers = dict()
 delivered_pax = set()
-wxApp = None
+gui = None # set to a gui.GUI_App object
 event_manager = None # Event Manager
 sim_ended = False
 vehicle_viz_data_collector = None
@@ -49,7 +49,7 @@ errors = 0
 #    common.vehicles = dict()
 #    common.passengers = dict()
 #    common.delivered_pax = set()
-#    common.wxApp = None
+#    common.gui = None
 #    common.event_manager = None
 #    common.sim_ended = False
 

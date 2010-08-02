@@ -369,7 +369,7 @@ class Reports(traits.HasTraits):
         self.vehicle_report.update()
         self.station_report.update()
 
-    def display(self):
+    def display(self, evt=None):
         self.summary_report.update()
         self.edit_traits()
 

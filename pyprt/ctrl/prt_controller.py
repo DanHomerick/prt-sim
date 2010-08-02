@@ -342,6 +342,15 @@ class PrtController(BaseController):
                     v.do_merge(m, 0.0)
                 except NotAtDecisionPoint as err:
                     self.set_fnc_notification(v.do_merge, (m, err.time), err.time) # call create_merge again later
+                except FatalTrajectoryError:
+                    # TODO: Write a function dedicated to validating the scenario when it's received.
+                    msg = api.CtrlScenarioError()
+##                  msg.mergeID = m.id # TODO: merge ID's are not in the current version. Will be introduced when a dev branch is merged.
+                    msg.vehicleID = v.id
+                    msg.trackID = v.ts_id
+                    msg.error_message = "Vehicle %s on track segment %s is too close to a merge to reach full speed." % \
+                                        (v.id, v.ts_id)
+                    self.send(api.CTRL_SCENARIO_ERROR, msg)
 
         # station's heartbeats are all synchronized for now. Change that in the future?
         for station in self.manager.stations.itervalues():
@@ -1600,6 +1609,8 @@ class Vehicle(object):
 
         Raises: Does not catch a NotAtDecisionPoint exception that may be emitted
                 from Merge.create_merge_slot.
+                Does not catch a FatalTrajectory exception that may be emitted
+                from Merge.create_merge_slot.
         Returns: A MergeSlot in the normal case. Returns None if a vehicle is bound
                 for a station within the Merge's zone of control and is guaranteed
                 to enter the station (vehicle has already aquired a berth reservation).
@@ -1842,8 +1853,14 @@ class Merge(object):
         initial_knot = vehicle.estimate_pose(now)
 
         v_pos = initial_knot.pos + offset # negative number. 0 is merge point
-        v_rear_pos = v_pos - vehicle.length
         dist = -v_pos
+        v_rear_pos = v_pos - vehicle.length
+
+        # Require that vehicles start the simulation far enough back from the
+        # merge that they can get up to full speed.
+        # TODO: Move this check to be in a function dedicated to validating the scenario as soon as it is received.
+        if now == 0.0 and vehicle.get_dist_to_line_speed() > dist:
+            raise FatalTrajectoryError
 
         # If the vehicle isn't to the decision point yet, then delay managing it.
         # Don't require that the vehicle not be past the decision point, so that

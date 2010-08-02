@@ -12,6 +12,7 @@ from pyprt.shared.utility import pairwise
 import pyprt.shared.utility as utility
 import pyprt.shared.api_pb2 as api
 import common
+import main
 
 #import pdb  # python debugger
 
@@ -398,6 +399,15 @@ class ControlInterface(Sim.Process):
                         self.send(api.SIM_MSG_BODY_INVALID, err_resp)
                     else:
                         v.notify_position(msg, msgID)
+
+                elif msg_type == api.CTRL_SCENARIO_ERROR:
+                    msg = api.CtrlScenarioError()
+                    msg.ParseFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    logging.error("Controller reports the following Scenario Error: " + str(msg))
+                    if not common.config_manager.get_disable_gui():
+                        common.gui.GetTopWindow().show_message('Controller reports the following Scenario Error:\n' + msg.error_message)
+                    main.stop_sim()
 
                 else:
                     resp = api.SimUnimplemented()

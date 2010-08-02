@@ -10,6 +10,7 @@ import common
 import pyprt.shared.api_pb2 as api
 from pyprt.shared.utility import sec_to_hms
 import SimPy.SimulationRT as Sim
+from visual import NoWritebackOnCloseHandler
 
 class EventManager(Sim.Process):
     """Primarily envisioned to create passengers as time passes, based on an
@@ -114,14 +115,16 @@ class Passenger(PrtEvent):
                           ui.Item(name='loc'),
                           ui.Item(name='mass'), # in kg
                           ui.Item(name='trip_success'),
-                          ui.Item(name='wait_time'),
-                          ui.Item(name='walk_time'),
-                          ui.Item(name='ride_time'),
+                          ui.Item(name='wait_time', format_func=sec_to_hms),
+                          ui.Item(name='walk_time', format_func=sec_to_hms),
+                          ui.Item(name='ride_time', format_func=sec_to_hms),
                           ui.Item(name='will_share'),
                           ui.Item(name='src_station'),
                           ui.Item(name='dest_station'),
-                          ui.Item(name='load_delay'),
-                          ui.Item(name='unload_delay'),
+                          ui.Item(name='load_delay', format_func=sec_to_hms),
+                          ui.Item(name='unload_delay', format_func=sec_to_hms),
+                          style='readonly',
+                          handler=NoWritebackOnCloseHandler()
                           )
 
     # Subset of passenger data in table format.

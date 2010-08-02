@@ -125,7 +125,7 @@ class MenuBarManager(object):
         for menu in [self.savesnapshot, #self.saveconfig,# # file menu
                      self.connectcontroller, self.startsim, self.stopsim, self.pausesim, # sim menu
                      self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speedfast, # sim menu cont.
-                     self.vehicle, self.station, self.switch, self.track, self.passenger, self.legend, # view menu
+                     self.vehicle, self.station, self.switch, self.track, self.passenger, self.legend, self.reports, # view menu
                      self.record_start, self.record_stop]: # record menu
             menu.Enable(False)
 
@@ -146,7 +146,8 @@ class MenuBarManager(object):
     def sim_started(self):
         """Allow the speed to be adjusted and the sim to be stopped or paused."""
         for menu in [self.stopsim, self.pausesim, # sim menu]
-                     self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speedfast]: # sim menu cont.
+                     self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speedfast,  # sim menu cont.
+                     self.reports]: # view menu
             menu.Enable(True)
         self.startsim.Enable(False)
 

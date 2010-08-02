@@ -21,6 +21,9 @@ enum Misc {
     NONE_ID = -1;   // For those cases when a real ID isn't applicable.
 }
 
+// Protocol Buffers messages do not specify their message type within the
+// message body. A value from this enum is included in the message header
+// to indicate the message type.
 enum CtrlMsgType {
     CTRL_CMD_VEHICLE_TRAJECTORY = 1;
     CTRL_CMD_VEHICLE_ITINERARY = 2;
@@ -40,6 +43,8 @@ enum CtrlMsgType {
     CTRL_SETNOTIFY_TIME = 21;
 
     CTRL_RESUME = 30;
+
+    CTRL_SCENARIO_ERROR = 50;
 }
 
 enum LocationType {
@@ -210,8 +215,24 @@ message CtrlResume {
     required int32	last_sim_msgID = 1;
 }
 
+// A controller may not be able to handle all possible track configurations,
+// vehicle placements, station layouts, etc. This message informs the
+// simulator that the controller cannot continue.
+message CtrlScenarioError {
+    optional int32      trackID = 1   [default = -1]; // Default to NONE_ID
+    optional int32      vehicleID = 2 [default = -1];
+    optional int32      stationID = 3 [default = -1];
+    optional int32      mergeID = 4   [default = -1];
+    optional int32      switchID = 5  [default = -1];
+    optional string     error_message = 6;
+}
+
 
 // --------------- Simulator Messages ----------------
+
+// Protocol Buffers messages do not specify their message type within the
+// message body. A value from this enum is included in the message header
+// to indicate the message type.
 enum SimMsgType {
     SIM_GREETING = 1000;
     SIM_START = 1001;

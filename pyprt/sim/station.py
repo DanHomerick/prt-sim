@@ -9,6 +9,7 @@ import SimPy.SimulationRT as Sim
 import pyprt.shared.api_pb2 as api
 import common
 from events import Passenger
+from visual import NoWritebackOnCloseHandler
 
 class Berth(Sim.Process, traits.HasTraits):
     ID = traits.Int
@@ -342,7 +343,8 @@ class Station(traits.HasTraits):
 #                       scrollable = True,
                        resizable = True,
                        height = 700,
-                       width = 470
+                       width = 470,
+                       handler=NoWritebackOnCloseHandler()
                        )
 
     table_editor = ui.TableEditor(

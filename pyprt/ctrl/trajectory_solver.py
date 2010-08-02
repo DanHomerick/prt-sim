@@ -185,7 +185,7 @@ class TrajectorySolver(object):
                         spline = self.target_position_none(knot_initial, knot_final, durations)
                     except OptimizationError as err:
                         if attempts > max_attempts:
-                            raise
+                            raise FatalTrajectoryError()
                         else:
                             durations = [random.random() for h in err.durations]
                             attempts += 1

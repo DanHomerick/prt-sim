@@ -49,6 +49,7 @@ class CtrlRequestTotalStatus;
 class CtrlSetnotifyVehiclePosition;
 class CtrlSetnotifyTime;
 class CtrlResume;
+class CtrlScenarioError;
 class SimGreeting;
 class SimStart;
 class SimEnd;
@@ -136,11 +137,12 @@ enum CtrlMsgType {
   CTRL_REQUEST_TOTAL_STATUS = 15,
   CTRL_SETNOTIFY_VEHICLE_POSITION = 20,
   CTRL_SETNOTIFY_TIME = 21,
-  CTRL_RESUME = 30
+  CTRL_RESUME = 30,
+  CTRL_SCENARIO_ERROR = 50
 };
 bool CtrlMsgType_IsValid(int value);
 const CtrlMsgType CtrlMsgType_MIN = CTRL_CMD_VEHICLE_TRAJECTORY;
-const CtrlMsgType CtrlMsgType_MAX = CTRL_RESUME;
+const CtrlMsgType CtrlMsgType_MAX = CTRL_SCENARIO_ERROR;
 const int CtrlMsgType_ARRAYSIZE = CtrlMsgType_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* CtrlMsgType_descriptor();
@@ -1933,6 +1935,139 @@ class CtrlResume : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static CtrlResume* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class CtrlScenarioError : public ::google::protobuf::Message {
+ public:
+  CtrlScenarioError();
+  virtual ~CtrlScenarioError();
+  
+  CtrlScenarioError(const CtrlScenarioError& from);
+  
+  inline CtrlScenarioError& operator=(const CtrlScenarioError& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CtrlScenarioError& default_instance();
+  
+  void Swap(CtrlScenarioError* other);
+  
+  // implements Message ----------------------------------------------
+  
+  CtrlScenarioError* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const CtrlScenarioError& from);
+  void MergeFrom(const CtrlScenarioError& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // optional int32 trackID = 1 [default = -1];
+  inline bool has_trackid() const;
+  inline void clear_trackid();
+  static const int kTrackIDFieldNumber = 1;
+  inline ::google::protobuf::int32 trackid() const;
+  inline void set_trackid(::google::protobuf::int32 value);
+  
+  // optional int32 vehicleID = 2 [default = -1];
+  inline bool has_vehicleid() const;
+  inline void clear_vehicleid();
+  static const int kVehicleIDFieldNumber = 2;
+  inline ::google::protobuf::int32 vehicleid() const;
+  inline void set_vehicleid(::google::protobuf::int32 value);
+  
+  // optional int32 stationID = 3 [default = -1];
+  inline bool has_stationid() const;
+  inline void clear_stationid();
+  static const int kStationIDFieldNumber = 3;
+  inline ::google::protobuf::int32 stationid() const;
+  inline void set_stationid(::google::protobuf::int32 value);
+  
+  // optional int32 mergeID = 4 [default = -1];
+  inline bool has_mergeid() const;
+  inline void clear_mergeid();
+  static const int kMergeIDFieldNumber = 4;
+  inline ::google::protobuf::int32 mergeid() const;
+  inline void set_mergeid(::google::protobuf::int32 value);
+  
+  // optional int32 switchID = 5 [default = -1];
+  inline bool has_switchid() const;
+  inline void clear_switchid();
+  static const int kSwitchIDFieldNumber = 5;
+  inline ::google::protobuf::int32 switchid() const;
+  inline void set_switchid(::google::protobuf::int32 value);
+  
+  // optional string error_message = 6;
+  inline bool has_error_message() const;
+  inline void clear_error_message();
+  static const int kErrorMessageFieldNumber = 6;
+  inline const ::std::string& error_message() const;
+  inline void set_error_message(const ::std::string& value);
+  inline void set_error_message(const char* value);
+  inline void set_error_message(const char* value, size_t size);
+  inline ::std::string* mutable_error_message();
+  
+  // @@protoc_insertion_point(class_scope:prt.CtrlScenarioError)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 trackid_;
+  ::google::protobuf::int32 vehicleid_;
+  ::google::protobuf::int32 stationid_;
+  ::google::protobuf::int32 mergeid_;
+  ::google::protobuf::int32 switchid_;
+  ::std::string* error_message_;
+  static const ::std::string _default_error_message_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static CtrlScenarioError* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -8071,6 +8206,132 @@ inline ::google::protobuf::int32 CtrlResume::last_sim_msgid() const {
 inline void CtrlResume::set_last_sim_msgid(::google::protobuf::int32 value) {
   _set_bit(0);
   last_sim_msgid_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// CtrlScenarioError
+
+// optional int32 trackID = 1 [default = -1];
+inline bool CtrlScenarioError::has_trackid() const {
+  return _has_bit(0);
+}
+inline void CtrlScenarioError::clear_trackid() {
+  trackid_ = -1;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 CtrlScenarioError::trackid() const {
+  return trackid_;
+}
+inline void CtrlScenarioError::set_trackid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  trackid_ = value;
+}
+
+// optional int32 vehicleID = 2 [default = -1];
+inline bool CtrlScenarioError::has_vehicleid() const {
+  return _has_bit(1);
+}
+inline void CtrlScenarioError::clear_vehicleid() {
+  vehicleid_ = -1;
+  _clear_bit(1);
+}
+inline ::google::protobuf::int32 CtrlScenarioError::vehicleid() const {
+  return vehicleid_;
+}
+inline void CtrlScenarioError::set_vehicleid(::google::protobuf::int32 value) {
+  _set_bit(1);
+  vehicleid_ = value;
+}
+
+// optional int32 stationID = 3 [default = -1];
+inline bool CtrlScenarioError::has_stationid() const {
+  return _has_bit(2);
+}
+inline void CtrlScenarioError::clear_stationid() {
+  stationid_ = -1;
+  _clear_bit(2);
+}
+inline ::google::protobuf::int32 CtrlScenarioError::stationid() const {
+  return stationid_;
+}
+inline void CtrlScenarioError::set_stationid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  stationid_ = value;
+}
+
+// optional int32 mergeID = 4 [default = -1];
+inline bool CtrlScenarioError::has_mergeid() const {
+  return _has_bit(3);
+}
+inline void CtrlScenarioError::clear_mergeid() {
+  mergeid_ = -1;
+  _clear_bit(3);
+}
+inline ::google::protobuf::int32 CtrlScenarioError::mergeid() const {
+  return mergeid_;
+}
+inline void CtrlScenarioError::set_mergeid(::google::protobuf::int32 value) {
+  _set_bit(3);
+  mergeid_ = value;
+}
+
+// optional int32 switchID = 5 [default = -1];
+inline bool CtrlScenarioError::has_switchid() const {
+  return _has_bit(4);
+}
+inline void CtrlScenarioError::clear_switchid() {
+  switchid_ = -1;
+  _clear_bit(4);
+}
+inline ::google::protobuf::int32 CtrlScenarioError::switchid() const {
+  return switchid_;
+}
+inline void CtrlScenarioError::set_switchid(::google::protobuf::int32 value) {
+  _set_bit(4);
+  switchid_ = value;
+}
+
+// optional string error_message = 6;
+inline bool CtrlScenarioError::has_error_message() const {
+  return _has_bit(5);
+}
+inline void CtrlScenarioError::clear_error_message() {
+  if (error_message_ != &_default_error_message_) {
+    error_message_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& CtrlScenarioError::error_message() const {
+  return *error_message_;
+}
+inline void CtrlScenarioError::set_error_message(const ::std::string& value) {
+  _set_bit(5);
+  if (error_message_ == &_default_error_message_) {
+    error_message_ = new ::std::string;
+  }
+  error_message_->assign(value);
+}
+inline void CtrlScenarioError::set_error_message(const char* value) {
+  _set_bit(5);
+  if (error_message_ == &_default_error_message_) {
+    error_message_ = new ::std::string;
+  }
+  error_message_->assign(value);
+}
+inline void CtrlScenarioError::set_error_message(const char* value, size_t size) {
+  _set_bit(5);
+  if (error_message_ == &_default_error_message_) {
+    error_message_ = new ::std::string;
+  }
+  error_message_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CtrlScenarioError::mutable_error_message() {
+  _set_bit(5);
+  if (error_message_ == &_default_error_message_) {
+    error_message_ = new ::std::string;
+  }
+  return error_message_;
 }
 
 // -------------------------------------------------------------------
