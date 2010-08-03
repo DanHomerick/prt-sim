@@ -2,6 +2,7 @@ from __future__ import division
 import optparse
 from collections import defaultdict
 from collections import deque
+import collections
 import warnings
 
 import networkx
@@ -14,8 +15,18 @@ from pyprt.shared.cubic_spline import Knot, CubicSpline, OutOfBoundsError
 from pyprt.shared.utility import pairwise
 ##from pyprt.shared.utility import deque # extension of collections.deque which includes 'insert' method
 
+# These global objects are instantiated upon receipt of the SimGreeting
+# message, which contains the scenario information.
+# See PrtController.on_SIM_GREETING
+# See load_scenario
+tracks = None # Will be a Tracks instance
+stations = None # Will be a Stations instance.
+vehicles = None # Will be a Vehicles instance.
+merges = None # Will be a Merges instance.
+switches = None # Will be a Switches instance.
+
 def main():
-    options_parser = optparse.OptionParser(usage="usage: %prog [options]")
+    options_parser = optparse.OptionParser(usage="usage: %prog [options] FILE\nFILE is a path to to the scenario file.")
     options_parser.add_option("--logfile", dest="logfile", default="./ctrl.log",
                 metavar="FILE", help="Log events to FILE.")
     options_parser.add_option("--comm_logfile", dest="comm_logfile", default="./ctrl_comm.log",
@@ -42,8 +53,296 @@ def main():
     if len(args) != 0:
         options_parser.error("Expected zero positional arguments. Received: %s" % ' '.join(args))
 
+
     ctrl = PrtController(options.logfile, options.comm_logfile)
     ctrl.connect(options.server, options.port)
+
+def load_scenario(scenario):
+    """Parses the scenario's xml data.
+    Creates Tracks and Stations instances and stores them in global variables.
+
+    Returns: None
+    """
+    import xml.dom.minidom
+    doc = xml.dom.minidom.parseString(scenario)
+
+    global tracks, stations, vehicles, merges, switches
+    tracks = Tracks(doc.getElementsByTagName('TrackSegments')[0])
+    stations = Stations(doc.getElementsByTagName('Stations')[0], Tracks._graph) # TODO: Use Tracks' interface functions
+    vehicles = Vehicles(doc.getElementsByTagName('Vehicles')[0],
+                        doc.getElementsByTagName('VehicleModels')[0])
+    merges = Merges(doc.getElementByTagName('Merges')[0])
+    doc.unlink() # facilitates garbage collection
+
+def _to_numeric_id(element):
+    """For elements similar to:
+        <ID>x_trackSegment_forward</ID>
+    where x is an integer. Returns just the integer value."""
+    return int(element.childNodes[0].data.split('_')[0])
+
+class Tracks(object):
+    """Holds a graph representation of the track
+    network and is responsible for providing shortest path information.
+    Intended to be a Singleton. Raises an Exception if instantiated more than once.
+    """
+    _graph = None
+
+    def __init__(self, track_segments_xml):
+        """Sets the class' fields, rather than the instance's fields. Raises an
+        Error if initialized more than once.
+
+        track_segments_xml: An xml object corresponding to the 'TrackSegments' entity.
+        graph: A networkx.DiGraph describing the track network.
+        """
+        if Tracks._graph:
+            raise Exception("Only one instance of Tracks should be created.")
+        Tracks._graph = Tracks._build_graph(track_segments_xml)
+
+    @classmethod
+    def _build_graph(cls, track_segments_xml):
+        """Returns a networkx.DiGraph suitable for routing vehicles over."""
+        graph = networkx.DiGraph()
+
+        for track_segment_xml in track_segments_xml.getElementsByTagName('TrackSegment'):
+            trackID = track_segment_xml.getAttribute('id')
+            intId = int(trackID.split("_")[0]) # get a unique, integer ID
+            length = float(track_segment_xml.getAttribute('length'))
+
+            graph.add_node(intId)
+
+            connect_to_xml = track_segment_xml.getElementsByTagName('ConnectsTo')[0]
+            for id_xml in connect_to_xml.getElementsByTagName('ID'):
+                connect_id = _to_numeric_id(id_xml)
+                graph.add_edge(intId, connect_id, weight=length)
+
+        return graph
+
+class Stations(collections.Mapping):
+    """Behaves as though it is a dict wherein
+    the keys are integer station id's, and the values are Station instances.
+    Offers some convience methods for locating stations that are associated
+    with particular track segments.
+    Intended to be a Singleton. Raises an Exception if instantiated more than once.
+    """
+
+    # Set by __init__
+    _dict = None # A dict of Station instances, keyed by an integer id.
+    _track2station = None # A dict mapping ts_ids to Station instances.
+    _split2station = None # A dict mapping split ts_ids to Station instances.
+
+    def __init__(self, stations_xml, graph):
+        """Sets the class' fields, rather than the instance's fields. Raises an
+        Error if initialized more than once.
+
+        stations_xml: An xml object corresponding to the 'Stations' entity.
+        graph: A networkx.DiGraph describing the track network.
+        """
+        if Stations._dict:
+            raise Exception("Only one instance of Stations should be created.")
+        Stations._dict = Stations._deserialize(stations_xml, graph)
+        Stations._track2station = dict((ts, s) for s in Stations._dict.values() for ts in s.ts_ids)
+        Stations._split2station = dict((s.split, s) for s in Stations._dict.values())
+
+    def __len__(self):
+        return len(Stations._dict)
+
+    def __iter__(self):
+        return iter(Stations._dict)
+
+##    def __contains__(self, key):
+##        return key in Stations._dict
+
+    def __getitem__(self, key):
+        return Stations._dict[key]
+
+    @classmethod
+    def _deserialize(cls, stations_xml, graph):
+        """Returns a dict of stations, keyed by the integer id."""
+        stations = dict()
+        for station_xml in stations_xml.getElementsByTagName('Station'):
+            station_str_id = station_xml.getAttribute('id')
+            station_int_id = int(station_str_id.split('_')[0])
+
+            ts_ids_xml = station_xml.getElementsByTagName('TrackSegmentID')[:9] # fragile assumption :(
+            ts_ids = [_to_numeric_id(id_xml) for id_xml in ts_ids_xml]
+
+            # Get berth position data for the three platforms: Unload, Queue, Load
+            platforms_xml = station_xml.getElementsByTagName('Platform')
+
+            unload_xml = platforms_xml[0]
+            platform_ts_id = _to_numeric_id(unload_xml.getElementsByTagName('TrackSegmentID')[0])
+            assert platform_ts_id == ts_ids[Station.UNLOAD]
+            unload_positions = []
+            for berth_xml in unload_xml.getElementsByTagName('Berth'):
+                end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
+                unload_positions.append(end_pos)
+
+            queue_xml = platforms_xml[1]
+            platform_ts_id = _to_numeric_id(queue_xml.getElementsByTagName('TrackSegmentID')[0])
+            assert platform_ts_id == ts_ids[Station.QUEUE]
+            queue_positions = []
+            for berth_xml in queue_xml.getElementsByTagName('Berth'):
+                end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
+                queue_positions.append(end_pos)
+
+            load_xml = platforms_xml[2]
+            platform_ts_id = _to_numeric_id(load_xml.getElementsByTagName('TrackSegmentID')[0])
+            assert platform_ts_id == ts_ids[Station.LOAD]
+            load_positions = []
+            for berth_xml in load_xml.getElementsByTagName('Berth'):
+                end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
+                load_positions.append(end_pos)
+
+            # Discover the split, bypass, and merge TrackSegment ids from the graph
+            assert len(graph.successors(ts_ids[Station.ON_RAMP_II])) == 1
+            assert len(graph.predecessors(ts_ids[Station.OFF_RAMP_I])) == 1
+            merge = graph.successors(ts_ids[Station.ON_RAMP_II])[0]
+            split = graph.predecessors(ts_ids[Station.OFF_RAMP_I])[0]
+            # find the ts that's downstream from the offramp switch, and also upstream from the onramp merge.
+            downstream = graph.successors(split)
+            upstream = graph.predecessors(merge)
+            for ts in downstream:
+                if ts in upstream:
+                    bypass = ts
+                    break
+
+            onramp_length = networkx.dijkstra_path_length(graph,
+                                            ts_ids[Station.ACCEL], merge)
+
+            stations[station_int_id] = Station(station_int_id, ts_ids, split, bypass, merge, onramp_length,
+                                               unload_positions, queue_positions, load_positions)
+        return stations
+
+    @classmethod
+    def get_from_ts(cls, ts_id):
+        """Returns a Station instance that contains the TrackSegment identified
+        by ts_id. Returns None if no Station contains the TrackSegment."""
+        return cls._track2station.get(ts_id)
+
+    @classmethod
+    def get_from_split_ts(cls, split_ts_id):
+        """Returns a Station instance that who's "split" TrackSegment is identified
+        by ts_id. Returns None if no Station matches."""
+        return cls._split2station.get(split_ts_id)
+
+
+class Vehicles(collections.Mapping):
+    """Behaves as though it is a dict wherein
+    the keys are integer vehicle id's, and the values are Vehicle instances.
+    Intended to be a Singleton. Raises an Exception if instantiated more than once.
+    """
+
+    _vehicles = None # A dict of Vehicle instances
+
+    def __init__(self, vehicles_xml, vehicle_models_xml):
+        """Sets the class' fields, rather than the instance's fields. Raises an
+        Error if initialized more than once.
+
+        vehicles_xml: An xml object corresponding to the 'Vehicles' entity.
+        vehicles_models_xml: An xml object corresponding to the 'VehicleModels' entity.
+        """
+        if Vehicles._vehicles:
+            raise Exception("Only one instance of Vehicles should be created.")
+        Vehicles._vehicles = Vehicles._deserialize(vehicles_xml, vehicle_models_xml)
+
+    def __len__(self):
+        return len(Vehicles._vehicles)
+
+    def __iter__(self):
+        return iter(Vehicles._vehicles)
+
+##    def __contains__(self, key):
+##        return key in Vehicles._vehicles
+
+    def __getitem__(self, key):
+        return Vehicles._vehicles[key]
+
+    @classmethod
+    def _deserialize(cls, vehicles_xml, models_xml):
+        """Parses the supplied xml and returns a dict of Vehicle instances keyed by id.
+        vehicles_xml: An xml object corresponding to the 'Vehicles' entity.
+        models_xml: An xml object corresponding to the 'VehicleModels' entity.
+        """
+        models = dict()
+        vehicles = dict()
+        for model_xml in models_xml.getElementsByTagName('VehicleModel'):
+            models[model_xml.getAttribute('model')] = model_xml
+
+        for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
+            vehicle_str_id = vehicle_xml.getAttribute('id')
+            vehicle_int_id = int(vehicle_str_id.split('_')[0])
+
+            ts_str_id = vehicle_xml.getAttribute('location')
+            ts_int_id = int(ts_str_id.split('_')[0])
+
+            model_name = vehicle_xml.getAttribute('model')
+
+            model_xml = models[model_name]
+            length = float(model_xml.getAttribute('length'))
+            capacity = int(model_xml.getAttribute('passenger_capacity'))
+            jerk_xml = model_xml.getElementsByTagName('Jerk')[0]
+            accel_xml = model_xml.getElementsByTagName('Acceleration')[0]
+            vel_xml = model_xml.getElementsByTagName('Velocity')[0]
+
+            v = Vehicle(vehicle_int_id,
+                        model_name,
+                        length,
+                        capacity,
+                        ts_int_id,
+                        float(vehicle_xml.getAttribute('position')),
+                        float(vehicle_xml.getAttribute('velocity')),
+                        float(vehicle_xml.getAttribute('acceleration')),
+                        float(jerk_xml.getAttribute('normal_max')),
+                        float(jerk_xml.getAttribute('normal_min')),
+                        float(accel_xml.getAttribute('normal_max')),
+                        float(accel_xml.getAttribute('normal_min')),
+                        float(vel_xml.getAttribute('normal_max')))
+
+            vehicles[vehicle_int_id] = v
+
+        return vehicles
+
+class Merges(object):
+    """Intended to be a Singleton. Raises an Exception if instantiated more than once."""
+
+    _merges = None # A dict of Merge instances. Keyed by integer id.
+
+    def __init__(self, vehicles_xml, vehicle_models_xml):
+        """Sets the class' fields, rather than the instance's fields. Raises an
+        Error if initialized more than once.
+
+        vehicles_xml: An xml object corresponding to the 'Vehicles' entity.
+        vehicles_models_xml: An xml object corresponding to the 'VehicleModels' entity.
+        """
+        if Vehicles._dict:
+            raise Exception("Only one instance of Vehicles should be created.")
+
+
+    def _deserialize(self, merges_xml, stations, graph):
+        """Returns a dict of Merge instances keyed by id. Ignores merges that
+        are the result of a station on-ramp connecting to the main line.
+        merges_xml: An xml object corresponding to the 'Merges' entity.
+        stations: The 'Stations' instance.
+        graph: A networkx.DiGraph describing the track network.
+        """
+        merges = {}
+        for merge_xml in merges_xml:
+            # don't include station merges.
+            is_station = False
+            for incoming_xml in merge_xml.getElementsByTagName('Incoming'):
+                incoming_id = _to_numeric_id(incoming_xml)
+                if stations.get_from_ts(incoming_id):
+                    is_station = True
+                    break
+
+            if not is_station:
+                str_merge_id = merge_xml.getAttribute('id')
+                merge_id = int(str_node_id.split('_')[0])
+                ts_id = to_numeric_id(merge_xml.getElementsByTagName('Outgoing'))
+                merge = Merge(merge_id, ts_id, stations, graph)
+
+
+
 
 class NoPaxAvailableError(Exception):
     """No passengers are available."""
@@ -216,6 +515,8 @@ class PrtController(BaseController):
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
         self.sim_end_time = msg.sim_end_time
+
+
         self.log.info("Sim Greeting message received. Sim end at: %f" % msg.sim_end_time)
 
         self.manager = Manager(msg.scenario_xml, msg.sim_end_time, self)
@@ -239,6 +540,8 @@ class PrtController(BaseController):
         """
         self.log.info("Sim Start message received.")
 
+        global tracks, stations
+
         v_list = self.manager.vehicles.values()
         # Sort based on location, secondarily sorted by position -- both in descending order.
         v_list.sort(cmp=lambda x,y: cmp(y.ts_id, x.ts_id) if x.ts_id != y.ts_id else cmp(y.pos, x.pos))
@@ -251,7 +554,7 @@ class PrtController(BaseController):
             assert isinstance(vehicle, Vehicle)
             assert vehicle.state is None
 
-            station = self.manager.track2station.get(vehicle.ts_id)
+            station = stations.get_from_ts(vehicle.ts_id)
 
             if station:
                 assert isinstance(station, Station)
@@ -305,7 +608,7 @@ class PrtController(BaseController):
                 # Assign trips to vehicles. Don't travel to a station when you
                 # are on it's "split" segment, since the vehicle is already
                 # past the enter/wave off decision point.
-                station = self.manager.split2station.get(vehicle.ts_id)
+                station = stations.get_from_split_ts(vehicle.ts_id)
                 if station is None:
                     vehicle.trip = self.manager.deadhead(vehicle)
                 else: # vehicle is on the station's "split" trackseg
@@ -342,18 +645,9 @@ class PrtController(BaseController):
                     v.do_merge(m, 0.0)
                 except NotAtDecisionPoint as err:
                     self.set_fnc_notification(v.do_merge, (m, err.time), err.time) # call create_merge again later
-                except FatalTrajectoryError:
-                    # TODO: Write a function dedicated to validating the scenario when it's received.
-                    msg = api.CtrlScenarioError()
-##                  msg.mergeID = m.id # TODO: merge ID's are not in the current version. Will be introduced when a dev branch is merged.
-                    msg.vehicleID = v.id
-                    msg.trackID = v.ts_id
-                    msg.error_message = "Vehicle %s on track segment %s is too close to a merge to reach full speed." % \
-                                        (v.id, v.ts_id)
-                    self.send(api.CTRL_SCENARIO_ERROR, msg)
 
         # station's heartbeats are all synchronized for now. Change that in the future?
-        for station in self.manager.stations.itervalues():
+        for station in stations.itervalues():
             self.set_s_notification(station, self.HEARTBEAT_INTERVAL)
 
     def on_SIM_NOTIFY_TIME(self, msg, msgID, msg_time):
@@ -580,7 +874,6 @@ class PrtController(BaseController):
                 assert vehicle.merge_slot is merge_slot
                 vehicle.set_merge_slot(None)
 
-
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
     def __init__(self, scenario_xml, sim_end_time, controller):
@@ -595,21 +888,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         Merge.manager = self
 
         self.controller = controller
-        import xml.dom.minidom
-        doc = xml.dom.minidom.parseString(scenario_xml)
-
-        self.graph = self.build_graph(doc.getElementsByTagName('TrackSegments')[0])
-        self.stations = self.load_stations(doc.getElementsByTagName('Stations')[0], self.graph)
-
-        # Mapping from station's trackSegments to a station id.
-        self.track2station = dict((ts, s) for s in self.stations.values() for ts in s.ts_ids)
-
-        # Mapping from the split ts id to the Station instance
-        self.split2station = dict((s.split, s) for s in self.stations.values())
-
-        self.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0],
-                                           doc.getElementsByTagName('VehicleModels')[0])
-
 
         # Create the Merges & Switches
         self.merges = []
@@ -657,8 +935,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         self.track2merge = dict((ts, m) for m in self.merges for ts in m.zone_ids[0] + m.zone_ids[1])
 
-        doc.unlink() # facilitates garbage collection
-
         # Check that the merge zones are large enough to accomodate a vehicle stopping and starting
         maneuver_dist = -1
         for v in self.vehicles.itervalues():
@@ -674,122 +950,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         # Precalculate common trips.
         self._dist_path_dict = self._build_station_tables()
 
-    def build_graph(self, track_segments_xml):
-        """Returns a networkx.DiGraph suitable for routing vehicles over."""
-        graph = networkx.DiGraph()
 
-        for track_segment_xml in track_segments_xml.getElementsByTagName('TrackSegment'):
-            trackID = track_segment_xml.getAttribute('id')
-            intId = int(trackID.split("_")[0]) # get a unique, integer ID
-            length = float(track_segment_xml.getAttribute('length'))
-
-            graph.add_node(intId)
-
-            connect_to_xml = track_segment_xml.getElementsByTagName('ConnectsTo')[0]
-            for id_xml in connect_to_xml.getElementsByTagName('ID'):
-                connect_id = self._to_numeric_id(id_xml)
-                graph.add_edge(intId, connect_id, weight=length)
-
-        return graph
-
-    def load_stations(self, stations_xml, graph):
-        """Returns a dict of stations, keyed by the integer id."""
-        stations = dict()
-        for station_xml in stations_xml.getElementsByTagName('Station'):
-            station_str_id = station_xml.getAttribute('id')
-            station_int_id = int(station_str_id.split('_')[0])
-
-            ts_ids_xml = station_xml.getElementsByTagName('TrackSegmentID')[:9] # fragile assumption :(
-            ts_ids = [self._to_numeric_id(id_xml) for id_xml in ts_ids_xml]
-
-            # Get berth position data for the three platforms: Unload, Queue, Load
-            platforms_xml = station_xml.getElementsByTagName('Platform')
-
-            unload_xml = platforms_xml[0]
-            platform_ts_id = self._to_numeric_id(unload_xml.getElementsByTagName('TrackSegmentID')[0])
-            assert platform_ts_id == ts_ids[Station.UNLOAD]
-            unload_positions = []
-            for berth_xml in unload_xml.getElementsByTagName('Berth'):
-                end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
-                unload_positions.append(end_pos)
-
-            queue_xml = platforms_xml[1]
-            platform_ts_id = self._to_numeric_id(queue_xml.getElementsByTagName('TrackSegmentID')[0])
-            assert platform_ts_id == ts_ids[Station.QUEUE]
-            queue_positions = []
-            for berth_xml in queue_xml.getElementsByTagName('Berth'):
-                end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
-                queue_positions.append(end_pos)
-
-            load_xml = platforms_xml[2]
-            platform_ts_id = self._to_numeric_id(load_xml.getElementsByTagName('TrackSegmentID')[0])
-            assert platform_ts_id == ts_ids[Station.LOAD]
-            load_positions = []
-            for berth_xml in load_xml.getElementsByTagName('Berth'):
-                end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
-                load_positions.append(end_pos)
-
-            # Discover the split, bypass, and merge TrackSegment ids from the graph
-            assert len(graph.successors(ts_ids[Station.ON_RAMP_II])) == 1
-            assert len(graph.predecessors(ts_ids[Station.OFF_RAMP_I])) == 1
-            merge = graph.successors(ts_ids[Station.ON_RAMP_II])[0]
-            split = graph.predecessors(ts_ids[Station.OFF_RAMP_I])[0]
-            # find the ts that's downstream from the offramp switch, and also upstream from the onramp merge.
-            downstream = graph.successors(split)
-            upstream = graph.predecessors(merge)
-            for ts in downstream:
-                if ts in upstream:
-                    bypass = ts
-                    break
-
-            onramp_length = networkx.dijkstra_path_length(self.graph,
-                                            ts_ids[Station.ACCEL], merge)
-
-            stations[station_int_id] = Station(station_int_id, ts_ids, split, bypass, merge, onramp_length,
-                                               unload_positions, queue_positions, load_positions)
-        return stations
-
-    def load_vehicles(self, vehicles_xml, models_xml):
-        """Returns a dict of vehicles, keyed by the integer id."""
-        vehicles = dict()
-
-        models = dict()
-        for model_xml in models_xml.getElementsByTagName('VehicleModel'):
-            models[model_xml.getAttribute('model')] = model_xml
-
-        for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
-            vehicle_str_id = vehicle_xml.getAttribute('id')
-            vehicle_int_id = int(vehicle_str_id.split('_')[0])
-
-            ts_str_id = vehicle_xml.getAttribute('location')
-            ts_int_id = int(ts_str_id.split('_')[0])
-
-            model_name = vehicle_xml.getAttribute('model')
-
-            model_xml = models[model_name]
-            length = float(model_xml.getAttribute('length'))
-            capacity = int(model_xml.getAttribute('passenger_capacity'))
-            jerk_xml = model_xml.getElementsByTagName('Jerk')[0]
-            accel_xml = model_xml.getElementsByTagName('Acceleration')[0]
-            vel_xml = model_xml.getElementsByTagName('Velocity')[0]
-
-            v = Vehicle(vehicle_int_id,
-                        model_name,
-                        length,
-                        capacity,
-                        ts_int_id,
-                        float(vehicle_xml.getAttribute('position')),
-                        float(vehicle_xml.getAttribute('velocity')),
-                        float(vehicle_xml.getAttribute('acceleration')),
-                        float(jerk_xml.getAttribute('normal_max')),
-                        float(jerk_xml.getAttribute('normal_min')),
-                        float(accel_xml.getAttribute('normal_max')),
-                        float(accel_xml.getAttribute('normal_min')),
-                        float(vel_xml.getAttribute('normal_max')))
-
-            vehicles[vehicle_int_id] = v
-
-        return vehicles
 
     def request_trip(self, vehicle):
         """The vehicle must be currently in a station. For best efficiency,
@@ -1027,11 +1188,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         return path_dist_dict
 
-    def _to_numeric_id(self, element):
-        """For elements similar to:
-            <ID>x_trackSegment_forward</ID>
-        where x is an integer. Returns just the integer value."""
-        return int(element.childNodes[0].data.split('_')[0])
+
 
 class Station(object):
     OFF_RAMP_I = 0
@@ -1609,8 +1766,6 @@ class Vehicle(object):
 
         Raises: Does not catch a NotAtDecisionPoint exception that may be emitted
                 from Merge.create_merge_slot.
-                Does not catch a FatalTrajectory exception that may be emitted
-                from Merge.create_merge_slot.
         Returns: A MergeSlot in the normal case. Returns None if a vehicle is bound
                 for a station within the Merge's zone of control and is guaranteed
                 to enter the station (vehicle has already aquired a berth reservation).
@@ -1712,11 +1867,21 @@ class Merge(object):
 
     _SAMPLE_INTERVAL = 0.5 # distance between samples. Used to determine how far the vehicle can slip forward.
 
-    def __init__(self, merge_node, graph, vehicles, tracks2station, cutoff=0):
+    def __init__(self, merge_id, ts_id, stations, graph, cutoff=0):
+        """
+        merge_id: The integer id for the Merge object.
+        ts_id: The integer ts_id for which both legs of the merge are upstream.
+        stations: The 'Stations' instance.
+        graph: A networkx.DiGraph describing the track network.
+        cutoff: Distance prior to the merge at which the vehicles should be
+                synched up and ready to merge.
+        """
         # TODO: Emergency stop distance prior to merge
         assert isinstance(graph, networkx.classes.DiGraph)
 
-        Merge._calc_max_slips(vehicles.values()) # noop if already calculated
+##        Merge._calc_max_slips(vehicles.values()) # noop if already calculated
+
+        self.id = merge_id
 
         # FIFO queue containing MergeSlot elements. Note that 'front'
         # includes the vehicle's headway. Append to right end, pop from left end.
@@ -1727,7 +1892,7 @@ class Merge(object):
         # upstream of the merge are negative. The merge point is at 0.
         self.offsets = {}
 
-        self.outlet = merge_node
+        self.outlet = merge_node_id
 
         # maps station id's to distances from the station merge to the main merge
         self.stations = []
@@ -1737,15 +1902,19 @@ class Merge(object):
         # outlet).
         self.zone_ids = [[], []]
 
+        # Distance prior to the merge at which the vehicles should be synched
+        # up and ready to merge.
+        self.cutoff = cutoff
+
         # Walk upstream for both zones
         self.zone_lengths = [-1, -1]
         self.inlets = [None, None] # segment ids which are entry points for the Merge's zone of control
-        zones = graph.predecessors(merge_node)
+        zones = graph.predecessors(merge_node_id)
         assert len(zones) == 2
         for zone_num, node in enumerate(zones):
             offset = 0
             up_node = node     # upstream
-            down_node = merge_node # downstream
+            down_node = merge_node_id # downstream
             while True:
                 length = graph[up_node][down_node]['weight']
                 offset -= length
@@ -1764,16 +1933,16 @@ class Merge(object):
                     # if it's a merge from a station onramp, note the distance
                     # from the station to the main merge point and continue walking back
                     is_station = False
-                    if predecessors[0] in tracks2station:
+                    if stations.get_from_ts(predecessors[0]):
                         down_node = up_node
                         up_node = predecessors[1]
-                        station = tracks2station[predecessors[0]]
+                        station = stations.get_from_ts(predecessors[0])
                         self.stations.append(station)
                         is_station = True
-                    elif predecessors[1] in tracks2station:
+                    elif stations.get_from_ts(predecessors[1]):
                         down_node = up_node
                         up_node = predecessors[0]
-                        station = tracks2station[predecessors[1]]
+                        station = stations.get_from_ts(predecessors[1])
                         self.stations.append(station)
                         is_station = True
 
@@ -1795,9 +1964,6 @@ class Merge(object):
                         self.zone_lengths[zone_num] = offset
                         self.inlets[zone_num] = down_node
                         break # TODO: Notify PRT controller that I'm associated with switch. May need to implement Switches sooner, rather than later
-
-        # Force vehicles to be synched up and ready to merge 'cutoff' meters before the merge.
-        self.cutoff = cutoff
 
         # Distance from the merge by which the Merge's zone of control extends.
         # Expressed as a negative number. The decision point is normally found
@@ -1853,14 +2019,8 @@ class Merge(object):
         initial_knot = vehicle.estimate_pose(now)
 
         v_pos = initial_knot.pos + offset # negative number. 0 is merge point
-        dist = -v_pos
         v_rear_pos = v_pos - vehicle.length
-
-        # Require that vehicles start the simulation far enough back from the
-        # merge that they can get up to full speed.
-        # TODO: Move this check to be in a function dedicated to validating the scenario as soon as it is received.
-        if now == 0.0 and vehicle.get_dist_to_line_speed() > dist:
-            raise FatalTrajectoryError
+        dist = -v_pos
 
         # If the vehicle isn't to the decision point yet, then delay managing it.
         # Don't require that the vehicle not be past the decision point, so that
