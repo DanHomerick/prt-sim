@@ -28,8 +28,8 @@ package edu.ucsc.track_builder
 		/** Ground level elveation at <code>center</code>. */
 		public var centerGround:Number;	
 
-		/** Linear length, taking into account vertical distance and curvature */
-		public var length:Number;
+//		/** Linear length, taking into account vertical distance and curvature */
+//		public var length:Number;
 		/** Maximum speed for segment. */
 		public var maxSpeed:Number;
 		/** If a curved segment, the radius of the curvature. 0 if straight. Use NaN to allow straight segments to directly connect to each other. */
@@ -100,7 +100,6 @@ package edu.ucsc.track_builder
 			this.maxSpeed = maxSpeed;	
 			this.startGround = NaN; // ground values are determined when the start/end LatLngs are set.
 			this.endGround = NaN;
-			this.length = NaN; // is set by fetchElevation once both elevations are ready.
 			this._startOffset = startOffset;
 			this._endOffset = endOffset;
 
@@ -138,7 +137,6 @@ package edu.ucsc.track_builder
 																// check that the latlng wasn't moved again before a response arrived
 			                                                     if (_start.equals(latlngs[0])) { 
 			                                                     	startGround = elevation;
-			                                                     	updateLength();
 			                                                     }
 															});
 			}
@@ -153,7 +151,6 @@ package edu.ucsc.track_builder
 			                                                     // check that the latlng wasn't moved again before a response arrived
 			                                                     if (_end.equals(latlngs[0])) {
 			                                                     	endGround = elevation;
-			                                                     	updateLength();
 			                                                     }
 															});
 			}		
@@ -648,18 +645,24 @@ package edu.ucsc.track_builder
 		/** Changes the value of length to incorperate vertical distance.
 		 * Does not take curvature of the earth into account.
 		 */ 
-		private function updateLength():void {
-			/* bypass updating length unless both ends of the segment have elevation data */
-			if (isNaN(startGround) || isNaN(endGround)) return;
+		public function get length():Number {
+			/* Return the horizontal length unless both ends of the segment have elevation data */
+			var length:Number = NaN;
+			if (isNaN(startGround) || isNaN(endGround)) {
+				length = this.h_length;
+			}
 			
-			Undo.assign(this, 'length', this.length);
-			if (!isCurved()) { // A straight segment
+			/* Segment is straight and elevation data available */
+			else if (!isCurved()) { 
 				var h_dist:Number = _start.distanceFrom(_end);
 				var v_dist:Number = endElev - startElev;
 				length = Math.sqrt(h_dist*h_dist + v_dist*v_dist);
-			} else { // is curved
+			}
+			
+			/* Segment is curved and elevation data available */
+			else {
 			    /* To account for the elevation change, project the circle onto
-			     * a plane, a forming an ellipse. Calculate the perimeter of the
+			     * a plane, forming an ellipse. Calculate the perimeter of the
 			     * elipse with the formula:
 			     *   P = pi * sqrt( 2(a^2+b^2) - (a-b)^2/2 )
 			     * where a is the radius of the long axis, and b the radius of the short axis.
@@ -677,9 +680,8 @@ package edu.ucsc.track_builder
    				 // Z-axis.
    				length = Math.abs(radius * arcAngle);
    			}
-   			if (isNaN(length)) {
-   				throw new Error(id + " has a NaN length");
-   			}
+   			
+   			return length;
 		}
 		
 		public function getElevation(position:Number):Number {

@@ -563,7 +563,7 @@ package edu.ucsc.track_builder
 
 			var newTrackOverlay:TrackOverlay = new TrackOverlay(newOverlaySegs); 
 
-			// Update Vehicles on 'this' with new positions and locations,
+			// Update Vehicles on 'this' with new locations if on far side of split.
 			// Update the VehicleOverlays with the new TrackOverlay
 			// Forward direction first 
 			var v_overlays:Vector.<VehicleOverlay> = Globals.vehicles.getVehicleOverlaysFromTrackOverlay(this);
@@ -571,10 +571,8 @@ package edu.ucsc.track_builder
 			var trimmedSeg:TrackSegment = segments[0];			 
 			for each (var v_overlay:VehicleOverlay in v_overlays) {
 				var vehicle:Vehicle = v_overlay.vehicle;					
-				if (vehicle.location == trimmedSeg && vehicle.position > trimmedSeg.h_length) {
-					Undo.assign(vehicle, 'position', vehicle.position);
+				if (vehicle.location == trimmedSeg && vehicle.position > trimmedSeg.length) {
 					Undo.assign(vehicle, 'location', vehicle.location);
-					vehicle.position -= trimmedSeg.h_length;
 					vehicle.location = newSeg;
 					v_overlay.setTrackOverlay(newTrackOverlay);
 				}
@@ -586,10 +584,8 @@ package edu.ucsc.track_builder
 				trimmedSeg = newOverlaySegs[1];
 				for each (v_overlay in v_overlays) {
 					vehicle = v_overlay.vehicle;					
-					if (vehicle.location == trimmedSeg && vehicle.position > trimmedSeg.h_length) {
-						Undo.assign(vehicle, 'position', vehicle.position);
+					if (vehicle.location == trimmedSeg && vehicle.position > trimmedSeg.length) {
 						Undo.assign(vehicle, 'location', vehicle.location);
-						vehicle.position -= trimmedSeg.h_length;
 						vehicle.location = newSeg;
 					}
 				}		

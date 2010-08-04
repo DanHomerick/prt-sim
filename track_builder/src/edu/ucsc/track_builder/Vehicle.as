@@ -5,7 +5,6 @@ package edu.ucsc.track_builder
 	public class Vehicle
 	{		
 		public var id:String;
-		public var position:Number; // distance (in meters) from the start of the segment
 		public var velocity:Number;
 		public var acceleration:Number;
 		public var location:TrackSegment;		
@@ -14,11 +13,15 @@ package edu.ucsc.track_builder
 		public var label:String;
 		public var model:String;
 		
+		/** Distance in meters from the start of the track segment. */
+		public function get position():Number {
+			return this.location.getPosition(this.latlng);	
+		}
+		
 		/** Constructor */
-		public function Vehicle(id:String, pos:Number, vel:Number, accel:Number, loc:TrackSegment, latlng:LatLng, elevation:Number, label:String, model:String, preview:Boolean):void 
+		public function Vehicle(id:String, vel:Number, accel:Number, loc:TrackSegment, latlng:LatLng, elevation:Number, label:String, model:String, preview:Boolean):void 
 		{
 			this.id           = id;
-			this.position     = pos;
 			this.velocity     = vel;
 			this.acceleration = accel;
 			this.location     = loc;			
@@ -52,7 +55,6 @@ package edu.ucsc.track_builder
 			var loc:TrackSegment = Globals.tracks.getTrackSegment(xml.@location);
 			var latlng:LatLng = new LatLng(xml.LatLng.@lat, xml.LatLng.@lng);
 			return new Vehicle(xml.@id,
-			                   xml.@position,
 			                   xml.@velocity,
 			                   xml.@acceleration,
 			                   loc,

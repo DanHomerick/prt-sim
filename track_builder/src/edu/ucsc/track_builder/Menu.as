@@ -249,14 +249,25 @@ package edu.ucsc.track_builder
 			debugZoomIn.addEventListener(Event.SELECT, onZoomIn);
 
 			var autoLevel:NativeMenuItem = new NativeMenuItem("AutoLevel");
+			autoLevel.enabled = false;
 			autoLevel.mnemonicIndex = 4;
-			autoLevel.addEventListener(Event.SELECT, onAutoLevel); 
+			autoLevel.addEventListener(Event.SELECT, onAutoLevel);
+			
+			var debugDisableElevRequests:NativeMenuItem = new NativeMenuItem("Disable Elevation Requests");
+			debugDisableElevRequests.checked = false;
+			/* Disable the ElevationLoader, and disable the menu option. To restore elevation queries, restart the program.*/ 
+			debugDisableElevRequests.addEventListener(Event.SELECT, function(evt:Event):void {
+				                                                     	ElevationLoader.REQUEST_INTERVAL = 10000000000;
+				                                                     	evt.currentTarget.checked = true;
+				                                                     	evt.currentTarget.enabled = false;				                                                     	
+				                                                     });
 				
 //			debugMenu.addItem(debugShowKml);
 			debugMenu.addItem(debugShowXml);
 			debugMenu.addItem(debugFindDuplicateOverlays);
 			debugMenu.addItem(debugZoomIn);
 			debugMenu.addItem(autoLevel);
+			debugMenu.addItem(debugDisableElevRequests);
 			baseMenu.addSubmenu(debugMenu, "Debug");
 			
 			/* Help Menu */

@@ -79,7 +79,6 @@ package edu.ucsc.track_builder
 			position = location.getPosition(latlng);  // update to provide user feedback
 			var id:String = preview ? 'previewVehicle' : IdGenerator.getVehicleId();
 			var vehicle:Vehicle = new Vehicle(id,
-											  position,
 											  velocity,
 											  acceleration,
 											  location,

@@ -470,7 +470,6 @@ package edu.ucsc.track_builder.gtf_import
 									/* Make the vehicle, and overlay */
 									vehicle = new Vehicle(
 							                            IdGenerator.getVehicleId(),
-							                            distRemaining,
 							                            0, // although some vehicle speed makes sense here, there's no value that can be chosen that would be 100% 'safe'.
 							                            0,
 							                            vehicleSeg,
@@ -521,7 +520,6 @@ package edu.ucsc.track_builder.gtf_import
 				var trackSeg:TrackSegment = Globals.tracks.getTrackSegment(station.platforms[0].trackSegId);  
 				var vehicle:Vehicle = new Vehicle(
 							              	IdGenerator.getVehicleId(),
-							              	pos,
 							              	0,
 							              	0,
 							              	trackSeg,

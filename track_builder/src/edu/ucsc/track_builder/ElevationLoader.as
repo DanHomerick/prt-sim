@@ -21,7 +21,7 @@ package edu.ucsc.track_builder
 		public var queue:Vector.<ElevationRequest>;
 		public var currRequest:ElevationRequest;
 	
-		public var REQUEST_INTERVAL:int = 30; // in milliseconds.
+		public static var REQUEST_INTERVAL:int = 1000; // in milliseconds.
 		public var timer:Timer = new Timer(REQUEST_INTERVAL, 1); // fire once per start.
 				
 		public function ElevationLoader()
@@ -41,7 +41,8 @@ package edu.ucsc.track_builder
 				/* Take a short break and try again. */
 				queue.push(this.currRequest);
 				this.currRequest = null;
-				timer.delay += 5; // add 5 millisec
+				REQUEST_INTERVAL *= 1.5
+				timer.delay = REQUEST_INTERVAL;
 				timer.reset();
 				timer.start();
 				return;			
