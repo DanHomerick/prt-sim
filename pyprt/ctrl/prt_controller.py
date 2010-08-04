@@ -1618,7 +1618,7 @@ class Vehicle(object):
                              the sim, then it is extended.
         """
         assert isinstance(spline, CubicSpline)
-        assert spline.t[0] - self.controller.current_time < 1E-6 # Spline is valid at current time and beyond.
+        assert spline.t[0] - self.controller.current_time < 1E-3# Spline is valid at current time and beyond.
         self._path = self._path[self._current_path_index:]
         self._current_path_index = 0
 
@@ -2161,7 +2161,8 @@ class Merge(object):
             end_time = spline.t[-1] + vehicle.length/spline.evaluate(start_time).vel
 
             if lead_slot is not None:
-                assert start_time >= lead_slot.end_time
+                # Start time should occur after lead_slot ends, with some tolerance for rounding error.
+                assert start_time - lead_slot.end_time >= -1E-4
 
         merge_slot = MergeSlot(start_time, end_time, zone, vehicle, spline, self)
         self.reservations.append(merge_slot)
