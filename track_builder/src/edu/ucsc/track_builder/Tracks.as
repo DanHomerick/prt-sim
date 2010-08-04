@@ -1934,6 +1934,9 @@ package edu.ucsc.track_builder
 				if (isNaN(track.length)) {
 					errors.push("BUG: " + track.id + "has NaN for it's length.");
 				}
+				if (track.length == 0) {
+					errors.push(track.id + " has zero length.");
+				}
 			} 
 
 			/* Check that the connections are mutual, and that elevations match on connected segments */

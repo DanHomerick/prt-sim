@@ -54,7 +54,7 @@
 										   initialize="curveRadius.value = Globals.tracks.radius;"/>
 						<mx:Label text= "accel: {(Globals.tracks.curveMaxSpeed * Globals.tracks.curveMaxSpeed / Globals.tracks.radius / 9.8).toFixed(2) + ' g'}"
 								  fontStyle="italic" paddingBottom="5"
-						          toolTip="a = v^2 / r   The lateral acceleration experienced in the curve, assuming that no superelevation is used. Recommended to not exceed 0.35g for passenger comfort." />
+						          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />
 					</mx:HBox>	
    				</mx:FormItem>
 				
@@ -95,7 +95,7 @@
 										   initialize="sCurveRadiusStepper.value = Globals.tracks.sCurveRadius;" />				    	
 						<mx:Label text= "accel: {(Globals.tracks.sCurveMaxSpeed * Globals.tracks.sCurveMaxSpeed / Globals.tracks.sCurveRadius / 9.8).toFixed(2) + ' g'}"
 														  fontStyle="italic" paddingBottom="5"
-												          toolTip="a = v^2 / r   The lateral acceleration experienced in the curve, assuming that no superelevation is used. Recommended to not exceed 0.35g for passenger comfort." />				    </mx:HBox>
+												          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />				    </mx:HBox>
 				</mx:FormItem>								
 				
 				<mx:FormItem label="Max Turn Speed:"
@@ -113,7 +113,7 @@
 										   initialize="turnRadiusStepper.value = Globals.tracks.turnRadius;" />						
 						<mx:Label text= "accel: {(Globals.tracks.turnMaxSpeed * Globals.tracks.turnMaxSpeed / Globals.tracks.turnRadius / 9.8).toFixed(2) + ' g'}"
 														  fontStyle="italic" paddingBottom="5"
-												          toolTip="a = v^2 / r   The lateral acceleration experienced in the curve, assuming that no superelevation is used. Recommended to not exceed 0.35g for passenger comfort." />					</mx:HBox>
+												          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />					</mx:HBox>
 				</mx:FormItem>				
             </mx:Form>
 		</mx:VBox>
