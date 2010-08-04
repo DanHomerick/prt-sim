@@ -3,6 +3,27 @@
 import itertools
 import collections
 
+class Singleton(object):
+    """There is only one instance, which is returned every time.
+
+    Create a 'initialize' classmethod and leave __init__ without parameters
+    for access to the Singleton:
+        SingletonClass.initialize(param1, param2, ...)
+        myInstance = SingletonClass()
+
+    Alternatively, provide a get_instance() classmethod and use __init__ to
+    initialize the Singleton:
+        SingletonClass(param1, param2, ...)
+        myInstance = SingletonClass.get_instance()
+
+    The first approach has the advantage that 'initialize' should intuitively
+    only be called once.
+    """
+    def __new__(cls, *p, **k):
+        if not '_instance' in cls.__dict__:
+            cls._instance = object.__new__(cls)
+        return cls._instance
+
 def pairwise(iterable):
     """s -> (s0,s1), (s1,s2), (s2, s3), ...
     Compatible with Python 2.5+

@@ -4,26 +4,17 @@ from collections import defaultdict
 from collections import deque
 import collections
 import warnings
-
 import networkx
+
 from numpy import arange, inf
 
+import pyprt.shared.utility as utility
 import pyprt.shared.api_pb2 as api
 from pyprt.ctrl.base_controller import BaseController
 from trajectory_solver import TrajectorySolver, FatalTrajectoryError
-from pyprt.shared.cubic_spline import Knot, CubicSpline, OutOfBoundsError
+from pyprt.shared.cubic_spline import Knot, CubicSpline
 from pyprt.shared.utility import pairwise
 ##from pyprt.shared.utility import deque # extension of collections.deque which includes 'insert' method
-
-# These global objects are instantiated upon receipt of the SimGreeting
-# message, which contains the scenario information.
-# See PrtController.on_SIM_GREETING
-# See load_scenario
-tracks = None # Will be a Tracks instance
-stations = None # Will be a Stations instance.
-vehicles = None # Will be a Vehicles instance.
-merges = None # Will be a Merges instance.
-switches = None # Will be a Switches instance.
 
 def main():
     options_parser = optparse.OptionParser(usage="usage: %prog [options] FILE\nFILE is a path to to the scenario file.")
@@ -55,24 +46,73 @@ def main():
 
 
     ctrl = PrtController(options.logfile, options.comm_logfile)
+
+    # Use a single controller for everybody.
+    Station.controller = ctrl
+    Merge.controller = ctrl
+    Vehicle.controller = ctrl
+
     ctrl.connect(options.server, options.port)
 
 def load_scenario(scenario):
     """Parses the scenario's xml data.
-    Creates Tracks and Stations instances and stores them in global variables.
+    Initializes the Tracks, Stations, Vehicles, Merges, and Switches singletons.
 
     Returns: None
     """
     import xml.dom.minidom
     doc = xml.dom.minidom.parseString(scenario)
-
-    global tracks, stations, vehicles, merges, switches
-    tracks = Tracks(doc.getElementsByTagName('TrackSegments')[0])
-    stations = Stations(doc.getElementsByTagName('Stations')[0], Tracks._graph) # TODO: Use Tracks' interface functions
-    vehicles = Vehicles(doc.getElementsByTagName('Vehicles')[0],
-                        doc.getElementsByTagName('VehicleModels')[0])
-    merges = Merges(doc.getElementByTagName('Merges')[0])
+    tracks = Tracks.initialize(doc.getElementsByTagName('TrackSegments')[0])
+    stations = Stations.initialize(doc.getElementsByTagName('Stations')[0], tracks._graph) # TODO: Use tracks object
+    vehicles = Vehicles.initialize(doc.getElementsByTagName('Vehicles')[0],
+                                   doc.getElementsByTagName('VehicleModels')[0])
+    merges = Merges.initialize(doc.getElementsByTagName('Merges')[0],
+                               stations,
+                               tracks._graph) # TODO: Use the tracks object
+    switches = Switches.initialize(doc.getElementsByTagName('Switches')[0],
+                                   stations,
+                                   tracks._graph)
+    VehicleManager.initialize()
     doc.unlink() # facilitates garbage collection
+
+def validate_scenario(controller):
+    """Checks that the scenario does not violate any of the controllers requirements.
+    Requirements checked are:
+      - Merge's zones of control are at least large enough to stop and restart
+        a vehicle.
+      - ...  # TODO!
+
+    controller: A subclass of BaseController.
+
+    Requires load_scenario to have already been called.
+    """
+    # Singletons
+    vehicles = Vehicles()
+    merges = Merges()
+
+    # Check that the merge zones are large enough to accomodate a vehicle stopping and starting
+    maneuver_dist = -1
+    # Find the max maneuver distance for all vehicles. # TODO: Really just need to check vehicle models
+    for v in vehicles.itervalues():
+        maneuver_dist = max(maneuver_dist, v.get_dist_to_stop() + v.get_dist_to_line_speed())
+
+    for m in merges.itervalues():
+        if maneuver_dist < m.zone_lengths[0]:
+            msg = api.CtrlScenarioError()
+            msg.mergeID = m.id
+            msg.trackID = m.outlet
+            msg.error_message = "Merge %d has insufficient track distance from ts %d to ts %d for pre-merge manuevering." % (m.id, m.inlets[0], m.outlet)
+            controller.send(api.CTRL_SCENARIO_ERROR, msg)
+        elif maneuver_dist < m.zone_lengths[1]:
+            msg = api.CtrlScenarioError()
+            msg.mergeID = m.id
+            msg.trackID = m.outlet
+            msg.error_message = "Merge %d has insufficient track distance from ts %d to ts %d for pre-merge manuevering." % (m.id, m.inlets[1], m.outlet)
+            controller.send(api.CTRL_SCENARIO_ERROR, msg)
+        else:
+            pass
+
+    # TODO Check that vehicles' initial positions are not too close to a merge.
 
 def _to_numeric_id(element):
     """For elements similar to:
@@ -80,26 +120,21 @@ def _to_numeric_id(element):
     where x is an integer. Returns just the integer value."""
     return int(element.childNodes[0].data.split('_')[0])
 
-class Tracks(object):
-    """Holds a graph representation of the track
-    network and is responsible for providing shortest path information.
-    Intended to be a Singleton. Raises an Exception if instantiated more than once.
+class Tracks(utility.Singleton):
+    """Holds a graph representation of the track network and is responsible
+    for providing shortest path information.
     """
-    _graph = None
-
-    def __init__(self, track_segments_xml):
-        """Sets the class' fields, rather than the instance's fields. Raises an
-        Error if initialized more than once.
-
-        track_segments_xml: An xml object corresponding to the 'TrackSegments' entity.
-        graph: A networkx.DiGraph describing the track network.
-        """
-        if Tracks._graph:
-            raise Exception("Only one instance of Tracks should be created.")
-        Tracks._graph = Tracks._build_graph(track_segments_xml)
 
     @classmethod
-    def _build_graph(cls, track_segments_xml):
+    def initialize(cls, track_segments_xml):
+        """Returns the singleton object.
+        track_segments_xml: An xml object corresponding to the 'TrackSegments' entity.
+        """
+        tracks = cls()
+        tracks._graph = tracks._build_graph(track_segments_xml)
+        return tracks
+
+    def _build_graph(self, track_segments_xml):
         """Returns a networkx.DiGraph suitable for routing vehicles over."""
         graph = networkx.DiGraph()
 
@@ -107,56 +142,133 @@ class Tracks(object):
             trackID = track_segment_xml.getAttribute('id')
             intId = int(trackID.split("_")[0]) # get a unique, integer ID
             length = float(track_segment_xml.getAttribute('length'))
+            max_speed = float(track_segment_xml.getAttribute('max_speed'))
 
             graph.add_node(intId)
 
             connect_to_xml = track_segment_xml.getElementsByTagName('ConnectsTo')[0]
             for id_xml in connect_to_xml.getElementsByTagName('ID'):
                 connect_id = _to_numeric_id(id_xml)
-                graph.add_edge(intId, connect_id, weight=length)
+                graph.add_edge(intId, connect_id, {'length':length,
+                                                   'max_speed':max_speed,
+                                                   'weight':length/max_speed})
 
         return graph
 
-class Stations(collections.Mapping):
-    """Behaves as though it is a dict wherein
-    the keys are integer station id's, and the values are Station instances.
+    def get_path(self, ts_1, ts_2):
+        """Returns a two tuple. The first element is the path length (in meters),
+        and the second is the path. ts_1 and ts_2 are integer trackSegment ids.
+        The path is the shortest path, as weighted by vehicle travel time."""
+        weight, path = networkx.bidirectional_dijkstra(self._graph, ts_1, ts_2)
+        length = self.get_path_length(path)
+        return (length, path)
+
+    def get_path_length(self, path):
+        """Returns the length of a path, in meters."""
+        length = 0
+        for orig, dest in pairwise(path):
+            length += self._graph[orig][dest]['length']
+        return length
+
+    def get_paths(self, source_ts_id, target_ts_ids):
+        """More efficient than calling get_path repeatedly with the same source.
+
+        source_ts_id: Integer id for the source track segment.
+        dest_ts_ids: An iterable containing integer ids for destinations.
+
+        Returns best paths, and their distances.
+        distance,path : dictionaries
+            Returns a tuple of two dictionaries keyed by node.
+            The first dictionary stores distance from the source.
+            The second stores the path from the source to that node.
+        """
+        weights, paths = networkx.single_source_dijkstra(self._graph, source_ts_id)
+        paths = dict( (target, paths[target]) for target in target_ts_ids)
+        lengths = dict( (target, self.get_path_length(paths[target])) for target in target_ts_ids)
+
+        return lengths, paths
+
+    def coordinate_shift(self, idx, path):
+        """Returns a numeric offet that when subtracted from a position in path[0]'s
+        coordinate frame translates it to path[idx]'s coordinate frame.
+        The path is a list of ts_ids."""
+        if idx == 0:
+            return 0
+
+        return sum(self._graph[a][b]['length'] for a, b in pairwise(path[:idx+1]))
+
+    def predecessors(self, ts_id):
+        return self._graph.predecessors(ts_id)
+
+    def predecessors_iter(self, ts_id):
+        return self._graph.predecessors_iter(ts_id)
+
+    def successors(self, ts_id):
+        return self._graph.successors(ts_id)
+
+    def successors_iter(self, ts_id):
+        return self._graph.successors_iter(ts_id)
+
+    # Deprecated until such time that profiling proves the worth.
+    # Code will need an overhaul to work. Note that the call to bidir_dijkstra
+    #    is returning the path weight, not length.
+##    def _build_station_tables(self):
+##        """Returns a pair of 2D tables containing distances and paths. The tables
+##        are accessed like table[origin][dest], where each origin is a station's
+##        LOAD ts and the dest is a station's UNLOAD ts."""
+##        origins = [s.ts_ids[Station.LOAD] for s in self.stations.values()]
+##        dests = [s.ts_ids[Station.UNLOAD] for s in self.stations.values()]
+##
+##        path_dist_dict = defaultdict(dict)
+##
+##        for o in origins:
+##            for d in dests:
+##                path_dist_dict[o][d] = networkx.bidirectional_dijkstra(self.graph, o, d)
+##
+##        return path_dist_dict
+
+class Stations(collections.Mapping, utility.Singleton):
+    """Behaves as a dict wherein the keys are integer station id's, and the
+    values are Station instances.
     Offers some convience methods for locating stations that are associated
     with particular track segments.
-    Intended to be a Singleton. Raises an Exception if instantiated more than once.
     """
 
-    # Set by __init__
-    _dict = None # A dict of Station instances, keyed by an integer id.
-    _track2station = None # A dict mapping ts_ids to Station instances.
-    _split2station = None # A dict mapping split ts_ids to Station instances.
-
-    def __init__(self, stations_xml, graph):
-        """Sets the class' fields, rather than the instance's fields. Raises an
-        Error if initialized more than once.
-
+    @classmethod
+    def initialize(cls, stations_xml, graph):
+        """Returns the singleton object.
         stations_xml: An xml object corresponding to the 'Stations' entity.
         graph: A networkx.DiGraph describing the track network.
         """
-        if Stations._dict:
-            raise Exception("Only one instance of Stations should be created.")
-        Stations._dict = Stations._deserialize(stations_xml, graph)
-        Stations._track2station = dict((ts, s) for s in Stations._dict.values() for ts in s.ts_ids)
-        Stations._split2station = dict((s.split, s) for s in Stations._dict.values())
+        stations = cls()
+
+        # A dict of Station instances, keyed by an integer id.
+        stations._dict = stations._deserialize(stations_xml, graph)
+
+        # A dict mapping ts_ids to Station instances.
+        stations._track2station = dict((ts, s) for s in stations._dict.itervalues() for ts in s.ts_ids)
+
+        # A dict mapping split ts_ids to Station instances.
+        stations._split2station = dict((s.split, s) for s in stations._dict.itervalues())
+
+        # A dict mapping merge ts_ids to Station instances.
+        stations._merge2station = dict((s.merge, s) for s in stations._dict.itervalues())
+
+        # A list of unload track segment ids
+        stations._unload_ts_ids = [s.ts_ids[Station.UNLOAD] for s in stations._dict.itervalues()]
+
+        return stations
 
     def __len__(self):
-        return len(Stations._dict)
+        return len(self._dict)
 
     def __iter__(self):
-        return iter(Stations._dict)
-
-##    def __contains__(self, key):
-##        return key in Stations._dict
+        return iter(self._dict)
 
     def __getitem__(self, key):
-        return Stations._dict[key]
+        return self._dict[key]
 
-    @classmethod
-    def _deserialize(cls, stations_xml, graph):
+    def _deserialize(self, stations_xml, graph):
         """Returns a dict of stations, keyed by the integer id."""
         stations = dict()
         for station_xml in stations_xml.getElementsByTagName('Station'):
@@ -213,52 +325,52 @@ class Stations(collections.Mapping):
                                                unload_positions, queue_positions, load_positions)
         return stations
 
-    @classmethod
-    def get_from_ts(cls, ts_id):
+    def get_from_ts(self, ts_id):
         """Returns a Station instance that contains the TrackSegment identified
         by ts_id. Returns None if no Station contains the TrackSegment."""
-        return cls._track2station.get(ts_id)
+        return self._track2station.get(ts_id)
 
-    @classmethod
-    def get_from_split_ts(cls, split_ts_id):
-        """Returns a Station instance that who's "split" TrackSegment is identified
-        by ts_id. Returns None if no Station matches."""
-        return cls._split2station.get(split_ts_id)
+    def get_from_split_ts(self, split_ts_id):
+        """Returns a Station instance who's "split" TrackSegment is identified
+        by split_ts_id. Returns None if no Station matches."""
+        return self._split2station.get(split_ts_id)
 
+    def get_from_merge_ts(self, merge_ts_id):
+        """Returns a Station instance who's "merge" TrackSegent is identified
+        by merge_ts_id. Returns None if no Station matches."""
+        return self._merge2station.get(merge_ts_id)
 
-class Vehicles(collections.Mapping):
-    """Behaves as though it is a dict wherein
-    the keys are integer vehicle id's, and the values are Vehicle instances.
-    Intended to be a Singleton. Raises an Exception if instantiated more than once.
+    def get_unload_ts_ids(self):
+        return self._unload_ts_ids
+
+class Vehicles(collections.Mapping, utility.Singleton):
+    """Behaves as a dict wherein the keys are integer vehicle id's, and the
+    values are Vehicle instances.
     """
 
-    _vehicles = None # A dict of Vehicle instances
-
-    def __init__(self, vehicles_xml, vehicle_models_xml):
-        """Sets the class' fields, rather than the instance's fields. Raises an
-        Error if initialized more than once.
-
+    @classmethod
+    def initialize(cls, vehicles_xml, vehicle_models_xml):
+        """Returns the singleton object.
         vehicles_xml: An xml object corresponding to the 'Vehicles' entity.
         vehicles_models_xml: An xml object corresponding to the 'VehicleModels' entity.
         """
-        if Vehicles._vehicles:
-            raise Exception("Only one instance of Vehicles should be created.")
-        Vehicles._vehicles = Vehicles._deserialize(vehicles_xml, vehicle_models_xml)
+        vehicles = cls()
+
+        # A dict containing Vehicle instances. Keyed by integer ids.
+        vehicles._dict = vehicles._deserialize(vehicles_xml, vehicle_models_xml)
+
+        return vehicles
 
     def __len__(self):
-        return len(Vehicles._vehicles)
+        return len(self._dict)
 
     def __iter__(self):
-        return iter(Vehicles._vehicles)
-
-##    def __contains__(self, key):
-##        return key in Vehicles._vehicles
+        return iter(self._dict)
 
     def __getitem__(self, key):
-        return Vehicles._vehicles[key]
+        return self._dict[key]
 
-    @classmethod
-    def _deserialize(cls, vehicles_xml, models_xml):
+    def _deserialize(self, vehicles_xml, models_xml):
         """Parses the supplied xml and returns a dict of Vehicle instances keyed by id.
         vehicles_xml: An xml object corresponding to the 'Vehicles' entity.
         models_xml: An xml object corresponding to the 'VehicleModels' entity.
@@ -302,21 +414,42 @@ class Vehicles(collections.Mapping):
 
         return vehicles
 
-class Merges(object):
-    """Intended to be a Singleton. Raises an Exception if instantiated more than once."""
+class Merges(collections.Mapping, utility.Singleton):
+    """Behaves as a dict wherein the keys are integer merge id's,
+    and the values are Merge instances.
+    """
 
-    _merges = None # A dict of Merge instances. Keyed by integer id.
-
-    def __init__(self, vehicles_xml, vehicle_models_xml):
-        """Sets the class' fields, rather than the instance's fields. Raises an
-        Error if initialized more than once.
-
-        vehicles_xml: An xml object corresponding to the 'Vehicles' entity.
-        vehicles_models_xml: An xml object corresponding to the 'VehicleModels' entity.
+    @classmethod
+    def initialize(cls, merges_xml, stations, graph):
+        """Returns the singleton object.
+        merges_xml: An xml object corresponding to the 'Merges' entity.
+        stations: The 'Stations' instance.
+        graph: A networkx.DiGraph representing the track layout. TODO: Replace with Tracks instance?
         """
-        if Vehicles._dict:
-            raise Exception("Only one instance of Vehicles should be created.")
+        merges = cls()
 
+        # A dict of Merge instances. Keyed by integer id.
+        merges._dict = merges._deserialize(merges_xml, stations, graph)
+
+        # Mapping from track segment ids to Merge instance.
+        merges._track2merge = dict((ts, m) for m in merges._dict.itervalues() for ts in m.zone_ids[0] + m.zone_ids[1])
+
+        # Mapping from inlets to Merge instance.
+        merges._inlet2merge = dict((ts, m) for m in merges._dict.itervalues() for ts in m.inlets)
+
+        # Mapping from outlets to Merge instance
+        merges._outlet2merge = dict((m.outlet, m) for m in merges._dict.itervalues())
+
+        return merges
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __getitem__(self, key):
+        return self._dict[key]
 
     def _deserialize(self, merges_xml, stations, graph):
         """Returns a dict of Merge instances keyed by id. Ignores merges that
@@ -326,22 +459,75 @@ class Merges(object):
         graph: A networkx.DiGraph describing the track network.
         """
         merges = {}
-        for merge_xml in merges_xml:
+        for merge_xml in merges_xml.getElementsByTagName('Merge'):
             # don't include station merges.
-            is_station = False
-            for incoming_xml in merge_xml.getElementsByTagName('Incoming'):
-                incoming_id = _to_numeric_id(incoming_xml)
-                if stations.get_from_ts(incoming_id):
-                    is_station = True
-                    break
-
-            if not is_station:
+            outgoing_xml = merge_xml.getElementsByTagName('Outgoing')[0]
+            outgoing_id = _to_numeric_id(outgoing_xml)
+            if not stations.get_from_merge_ts(outgoing_id):
                 str_merge_id = merge_xml.getAttribute('id')
-                merge_id = int(str_node_id.split('_')[0])
-                ts_id = to_numeric_id(merge_xml.getElementsByTagName('Outgoing'))
-                merge = Merge(merge_id, ts_id, stations, graph)
+                merge_id = int(str_merge_id.split('_')[0])
+                merges[merge_id] = Merge(merge_id, outgoing_id, stations, graph)
+        return merges
 
+    def get_from_ts(self, ts_id):
+        """Returns a Merge instance that is associated with the track segment id.
+        Returns None if no Merge is found."""
+        return self._track2merge.get(ts_id)
 
+    def get_from_inlet_ts(self, ts_id):
+        """Returns the Merge instance that has ts_id as an inlet. Returns
+        None if no Merge is found."""
+        return self._inlet2merge.get(ts_id)
+
+    def get_from_outlet_ts(self, ts_id):
+        """Returns the Merge instance that has ts_id an an outlet. Returns
+        None if no Merge is found."""
+        return self._outlet2merge.get(ts_id)
+
+class Switches(collections.Mapping, utility.Singleton):
+    """Behaves as a dict wherein the keys are integer switch id's, and the
+    values are Switch instances.
+    """
+
+    @classmethod
+    def initialize(cls, switches_xml, stations, graph):
+        """Returns the singleton object.
+        switches_xml: An xml object corresponding to the 'Switches' entity.
+        stations: The 'Stations' instance.
+        graph: A networkx.DiGraph representing the track layout. TODO: Replace with Tracks instance?
+        """
+        switches = cls()
+
+        # A dict of Switch instances. Keyed by integer id.
+        switches._dict = switches._deserialize(switches_xml, stations, graph)
+        return switches
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+    def _deserialize(self, switches_xml, stations, graph):
+        """Returns a dict of Switch instances keyed by id. Ignores switch that
+        are the result of a station off-ramp departing from the main line.
+        switches_xml: An xml object corresponding to the 'Switches' entity.
+        stations: The 'Stations' instance.
+        graph: A networkx.DiGraph describing the track network.
+        """
+        switches = {}
+        for switch_xml in switches_xml.getElementsByTagName('Switch'):
+            # don't include station switches
+            incoming_xml = switch_xml.getElementsByTagName('Incoming')[0]
+            incoming_id = _to_numeric_id(incoming_xml)
+            if not stations.get_from_split_ts(incoming_id):
+                str_switch_id = switch_xml.getAttribute('id')
+                switch_id = int(str_switch_id.split('_')[0])
+                switches[switch_id] = Switch(switch_id, incoming_id, stations, graph)
+        return switches
 
 
 class NoPaxAvailableError(Exception):
@@ -376,13 +562,14 @@ class PrtController(BaseController):
         super(PrtController, self).__init__(log_path, commlog_path)
         self.t_reminders = dict() # keyed by time (in integer form), values are pairs of lists
 
-        # Manager is instantiated upon receipt of a SIM_GREETING msg.
-        self.manager = None   # Manager instance
-
-        # Meh. Not fond of this style, but it's easy. Fix if I want something braindead to work on.
-        Station.controller = self
-        Merge.controller = self
-        Vehicle.controller = self
+        # Singletons. They do not contain data until they are initialized, which
+        # occurs upon receipt of the SimGreeting message.
+        self.v_manager = VehicleManager()
+        self.tracks = Tracks()
+        self.vehicles = Vehicles()
+        self.stations = Stations()
+        self.merges = Merges()
+        self.switches = Switches()
 
     def set_v_notification(self, vehicle, time):
         """Request a time notification from sim and store which vehicle the
@@ -451,7 +638,7 @@ class PrtController(BaseController):
                     elif v.state is self.LOAD_WAITING:
                         if v.platform_id == station.LOAD_PLATFORM:
                             try:
-                                v.trip = self.manager.request_trip(v)
+                                v.trip = self.v_manager.request_trip(v)
                                 v.set_path(v.trip.path)
                                 v.state = self.EMBARKING
                                 v.embark(v.trip.passengers)
@@ -459,7 +646,7 @@ class PrtController(BaseController):
                                 if station.is_launch_berth(v.berth_id, v.platform_id):
                                     # launch as soon as possible, if there
                                     # is another station with passengers waiting.
-                                    v.trip = self.manager.deadhead(v, (station,))
+                                    v.trip = self.v_manager.deadhead(v, (station,))
                                     if v.trip is not None:
                                         v.set_path(v.trip.path)
                                         v.state = self.LAUNCH_WAITING
@@ -519,7 +706,9 @@ class PrtController(BaseController):
 
         self.log.info("Sim Greeting message received. Sim end at: %f" % msg.sim_end_time)
 
-        self.manager = Manager(msg.scenario_xml, msg.sim_end_time, self)
+        # Initialize the classes that hold scenario info.
+        load_scenario(msg.scenario_xml)
+        validate_scenario(self)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         """This function is responsible for getting all the vehicles moving at
@@ -540,9 +729,7 @@ class PrtController(BaseController):
         """
         self.log.info("Sim Start message received.")
 
-        global tracks, stations
-
-        v_list = self.manager.vehicles.values()
+        v_list = self.vehicles.values()
         # Sort based on location, secondarily sorted by position -- both in descending order.
         v_list.sort(cmp=lambda x,y: cmp(y.ts_id, x.ts_id) if x.ts_id != y.ts_id else cmp(y.pos, x.pos))
 
@@ -554,7 +741,7 @@ class PrtController(BaseController):
             assert isinstance(vehicle, Vehicle)
             assert vehicle.state is None
 
-            station = stations.get_from_ts(vehicle.ts_id)
+            station = self.stations.get_from_ts(vehicle.ts_id)
 
             if station:
                 assert isinstance(station, Station)
@@ -570,7 +757,7 @@ class PrtController(BaseController):
                     vehicle.state = self.LOAD_ADVANCING
                     vehicle.station = station
                     station.request_load_berth(vehicle)
-                    berth_dist, berth_path = self.manager.get_path(vehicle.ts_id, vehicle.plat_ts)
+                    berth_dist, berth_path = self.tracks.get_path(vehicle.ts_id, vehicle.plat_ts)
                     initial = vehicle.estimate_pose(self.current_time)
                     berth_knot = Knot(berth_dist + vehicle.berth_pos - vehicle.BERTH_GAP, 0, 0, None)
                     try:
@@ -608,25 +795,24 @@ class PrtController(BaseController):
                 # Assign trips to vehicles. Don't travel to a station when you
                 # are on it's "split" segment, since the vehicle is already
                 # past the enter/wave off decision point.
-                station = stations.get_from_split_ts(vehicle.ts_id)
+                station = self.stations.get_from_split_ts(vehicle.ts_id)
                 if station is None:
-                    vehicle.trip = self.manager.deadhead(vehicle)
+                    vehicle.trip = self.v_manager.deadhead(vehicle)
                 else: # vehicle is on the station's "split" trackseg
                     assert vehicle.ts_id == station.split
-                    vehicle.trip = self.manager.deadhead(vehicle, exclude=(station, ))
+                    vehicle.trip = self.v_manager.deadhead(vehicle, exclude=(station, ))
 
                 vehicle.set_path(vehicle.trip.path)
 
                 # Handle all the vehicles that are in a Merge's zone of control
                 # together at a later time. If not in a zone of control, just
                 # run at LINE_SPEED.
-                try:
-                    merge = self.manager.track2merge[vehicle.ts_id]
-                    merge2vehicles[merge].append(vehicle)
-                except KeyError:
+                merge = self.merges.get_from_ts(vehicle.ts_id)
+                if merge is None:
                     # Case 4. Not in a Merge's zone of control.
                     vehicle.run(speed_limit=self.LINE_SPEED)
-
+                else:
+                    merge2vehicles[merge].append(vehicle)
 
         # Case 5. Within a Merge's zone of control.
         for m, v_list in merge2vehicles.items():
@@ -647,7 +833,7 @@ class PrtController(BaseController):
                     self.set_fnc_notification(v.do_merge, (m, err.time), err.time) # call create_merge again later
 
         # station's heartbeats are all synchronized for now. Change that in the future?
-        for station in stations.itervalues():
+        for station in self.stations.itervalues():
             self.set_s_notification(station, self.HEARTBEAT_INTERVAL)
 
     def on_SIM_NOTIFY_TIME(self, msg, msgID, msg_time):
@@ -670,7 +856,7 @@ class PrtController(BaseController):
                 req_v_status.vID = vehicle.id
                 self.send(api.CTRL_REQUEST_VEHICLE_STATUS, req_v_status)
             elif vehicle.state is self.LAUNCH_WAITING:
-                blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
+                blocked_time = self.v_manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
                 if not blocked_time:
                     vehicle.state = self.LAUNCHING
                     vehicle.run(speed_limit=self.LINE_SPEED)
@@ -697,7 +883,7 @@ class PrtController(BaseController):
         del self.t_reminders[ms_msg_time]
 
     def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):
-        vehicle = self.manager.vehicles[msg.v_status.vID]
+        vehicle = self.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
@@ -725,7 +911,7 @@ class PrtController(BaseController):
                     raise Exception("Unexpected case: %s" % vehicle._advance_begun)
 
         elif vehicle.state is self.LAUNCH_WAITING:
-            merge = self.manager.track2merge.get(vehicle.station.bypass)
+            merge = self.merges.get_from_ts(vehicle.station.bypass)
             if merge and vehicle.station in merge.stations:
                 vehicle.state = self.LAUNCHING
                 slot, launch_time = merge.create_station_merge_slot(vehicle.station, vehicle, self.current_time)
@@ -737,7 +923,7 @@ class PrtController(BaseController):
                 self.set_fnc_notification(vehicle.station.release_berth, (vehicle,), launch_time)
 
             else:
-                blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
+                blocked_time = self.v_manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
                 if not blocked_time:
                     vehicle.state = self.LAUNCHING
                     vehicle.send_path()
@@ -758,11 +944,11 @@ class PrtController(BaseController):
         p_status = msg.p_status
         pax = Passenger(p_status.pID, p_status.src_stationID,
                         p_status.dest_stationID, p_status.creation_time)
-        station = self.manager.stations[pax.origin_id]
+        station = self.stations[pax.origin_id]
         station.add_passenger(pax)
 
     def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg, msgID, msg_time):
-        vehicle = self.manager.vehicles[msg.cmd.vID]
+        vehicle = self.vehicles[msg.cmd.vID]
         assert isinstance(vehicle, Vehicle)
         assert vehicle.state is self.DISEMBARKING
         self.log.info("t:%5.3f Vehicle %d at station %d, berth %d, plat %d has completed disembark of %s",
@@ -772,7 +958,7 @@ class PrtController(BaseController):
         vehicle.trip = None
 
     def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg, msgID, msg_time):
-        vehicle = self.manager.vehicles[msg.cmd.vID]
+        vehicle = self.vehicles[msg.cmd.vID]
         assert isinstance(vehicle, Vehicle)
         assert vehicle.state is self.EMBARKING
         self.log.info("t:%5.3f Vehicle %d at station %d, berth %d, plat %d has completed embark of %s",
@@ -781,7 +967,7 @@ class PrtController(BaseController):
         vehicle.state = self.EXIT_WAITING
 
     def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg, msgID, msg_time):
-        vehicle = self.manager.vehicles[msg.v_status.vID]
+        vehicle = self.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
@@ -797,7 +983,7 @@ class PrtController(BaseController):
                 except NoBerthAvailableError: # none available, circle around and try again
                     # plan a path to the ts prior from current (that is, loop around)
                     old_dest = vehicle.trip.dest_station
-                    vehicle.trip = self.manager.wave_off(vehicle)
+                    vehicle.trip = self.v_manager.wave_off(vehicle)
                     vehicle.set_path(vehicle.trip.path)
                     self.log.info("%5.3f Vehicle %d waved off from dest_station %d because NoBerthAvailable. Going to station %d instead.",
                                    self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
@@ -808,7 +994,7 @@ class PrtController(BaseController):
                     assert vehicle.berth_id is not None
                 except NoBerthAvailableError:
                     old_dest = vehicle.trip.dest_station
-                    vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
+                    vehicle.trip = self.v_manager.deadhead(vehicle, exclude=(old_dest,))
                     vehicle.set_path(vehicle.trip.path)
                     self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d due to lack of available berth. Going to station %d instead.",
                               self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
@@ -823,19 +1009,19 @@ class PrtController(BaseController):
                     and vehicle.berth_id == 0:
                 old_dest = vehicle.trip.dest_station
                 vehicle.trip.dest_station.release_berth(vehicle)
-                vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
+                vehicle.trip = self.v_manager.deadhead(vehicle, exclude=(old_dest,))
                 vehicle.set_path(vehicle.trip.path)
                 self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d to avoid clogging entrance berth. Going to station %d instead.",
                               self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
-        vehicle = self.manager.vehicles[msg.v_status.vID]
+        vehicle = self.vehicles[msg.v_status.vID]
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
         if vehicle.state is self.RUNNING:
             # Tail just cleared the main line by entering into a station.
-            station = self.manager.split2station.get(msg.trackID)
+            station = self.stations.get_from_split_ts(msg.trackID)
             if station is not None and vehicle.ts_id in station.ts_ids: # don't check against OFF_RAMP_I explicitly, because nose may already be past it.
                 assert vehicle.berth_id is not None
                 if vehicle.pax:
@@ -848,7 +1034,7 @@ class PrtController(BaseController):
                 self.set_v_notification(vehicle, stop_time)
 
         elif vehicle.state is self.LAUNCHING:
-            station = self.manager.track2station.get(msg.trackID)
+            station = self.stations.get_from_ts(msg.trackID)
             # Just joined the main line, entirely exiting the station zone
             if msg.trackID == station.ts_ids[Station.ON_RAMP_II]:
                 vehicle.state = self.RUNNING
@@ -856,101 +1042,33 @@ class PrtController(BaseController):
 
         # Check if just entered a merge's zone of control.
         if vehicle.state is self.RUNNING: # may have been LAUNCHING at beginning of function
-            # TODO: Rethink whether I should have dictionaries containing both
-            # merges and switches.
-
             # manage the vehicle through a merge
-            obj = self.manager.inlets.get(msg.v_status.tail_locID)
-            if obj and isinstance(obj, Merge):
+            merge = self.merges.get_from_inlet_ts(msg.v_status.tail_locID)
+            if merge:
                 try:
-                    vehicle.do_merge(obj, self.current_time)
+                    vehicle.do_merge(merge, self.current_time)
                 except NotAtDecisionPoint as err:
-                    self.set_fnc_notification(vehicle.do_merge, (obj, err.time), err.time) # call create_merge again later
+                    self.set_fnc_notification(vehicle.do_merge, (merge, err.time), err.time) # call do_merge again later
 
-            obj = self.manager.outlets.get(msg.v_status.tail_locID)
+            merge = self.merges.get_from_outlet_ts(msg.v_status.tail_locID)
             # Vehicle just left a merge's zone of control
-            if obj and isinstance(obj, Merge):
-                merge_slot = obj.reservations.pop(0)
+            if merge:
+                merge_slot = merge.reservations.pop(0)
                 assert vehicle.merge_slot is merge_slot
                 vehicle.set_merge_slot(None)
 
-class Manager(object): # Similar to VehicleManager in gtf_conroller class
-    """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
-    def __init__(self, scenario_xml, sim_end_time, controller):
-        """scenario_xml: the xml scenario file created by TrackBuilder, as a string.
+class VehicleManager(utility.Singleton):
+    """Coordinates vehicles to satisfy passenger demand. Handles vehicle routing."""
 
-        The scenario file is expected to have a GoogleTransitFeed section which
-        provides vehicle scheduling and trip data, in addition to the typical
-        TrackSegment, Station, and Vehicle data."""
+    @classmethod
+    def initialize(cls):
+        v_manager = cls()
 
-        # Not fond of this sort of style. Fix when I want something simple to work on.
-        Vehicle.manager = self
-        Merge.manager = self
-
-        self.controller = controller
-
-        # Create the Merges & Switches
-        self.merges = []
-        self.switches = []
-        self.outlets = {}
-        self.inlets = {}
-        for node in self.graph.nodes_iter():
-            predecessors = self.graph.predecessors(node)
-            if len(predecessors) > 1:
-                # don't include station merges
-                is_station = False
-                for p_node in predecessors:
-                    if p_node in self.track2station:
-                        is_station = True
-                        break
-
-                if not is_station:
-                    merge = Merge(node,
-                                  self.graph,
-                                  self.vehicles,
-                                  self.track2station)
-                    self.merges.append(merge)
-                    self.outlets[merge.outlet] = merge
-                    for inlet in merge.inlets:
-                        self.inlets[inlet] = merge
-
-            successors = self.graph.successors(node)
-            if len(successors) > 1:
-                # don't include station switches
-                is_station = False
-                for s_node in successors:
-                    if s_node in self.track2station:
-                        is_station = True
-                        break
-
-                if not is_station:
-                    switch = Switch(node,
-                                    self.graph,
-                                    self.vehicles,
-                                    self.track2station)
-                    self.switches.append(switch)
-                    for outlet in switch.outlets:
-                        self.outlets[outlet] = switch
-                    self.inlets[switch.inlet] = switch
-
-        self.track2merge = dict((ts, m) for m in self.merges for ts in m.zone_ids[0] + m.zone_ids[1])
-
-        # Check that the merge zones are large enough to accomodate a vehicle stopping and starting
-        maneuver_dist = -1
-        for v in self.vehicles.itervalues():
-            maneuver_dist = max(maneuver_dist, v.get_dist_to_stop() + v.get_dist_to_line_speed())
-        for m in self.merges:
-            if maneuver_dist < m.zone_lengths[0]:
-                raise Exception("Insufficient track distance from ts %d to ts %d for pre-merge manuevering." % (m.inlets[0], m.outlet))
-            elif maneuver_dist < m.zone_lengths[1]:
-                raise Exception("Insufficient track distance from ts %d to ts %d for pre-merge manuevering." % (m.inlets[1], m.outlet))
-            else:
-                pass
-
-        # Precalculate common trips.
-        self._dist_path_dict = self._build_station_tables()
-
-
+        # Other Singletons. They do not contain data until they are initialized,
+        # which occurs upon receipt of the SimGreeting message.
+        v_manager.tracks = Tracks()
+        v_manager.stations = Stations()
+        v_manager.vehicles = Vehicles()
 
     def request_trip(self, vehicle):
         """The vehicle must be currently in a station. For best efficiency,
@@ -962,7 +1080,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         orig_station = vehicle.station
         pax = orig_station.pop_passenger()
         dest_station = self.stations[pax.dest_id]
-        path_length, path = self.get_path(vehicle.ts_id, dest_station.ts_ids[Station.UNLOAD])
+        path_length, path = self.tracks.get_path(vehicle.ts_id, dest_station.ts_ids[Station.UNLOAD])
         return Trip(dest_station, path, (pax.id,) ) # just one pax for now
 
     def deadhead(self, vehicle, exclude=tuple()):
@@ -972,7 +1090,8 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         Returns a Trip instance.
         """
         assert isinstance(vehicle, Vehicle)
-        dists, paths = networkx.single_source_dijkstra(self.graph, vehicle.ts_id)
+        unload_ts_ids = self.stations.get_unload_ts_ids()
+        dists, paths = self.tracks.get_paths(vehicle.ts_id, unload_ts_ids)
         max_dist = max(dists.itervalues())
         best_station = None
         best_station_dist = 0
@@ -985,7 +1104,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             station_ts = station.ts_ids[Station.UNLOAD]
             try:
                 dist = dists[station_ts]
-            except: # Not all stations are must be reachable
+            except KeyError: # Not all stations must be reachable
                 continue
             demand = station.get_demand()
             value = max_dist/dist * demand
@@ -1010,17 +1129,17 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         station later, or sends it to a different station if empty."""
         # vehicle has passengers, so must go to this particular station
         if vehicle.trip.passengers:
-            prev_tses = self.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of station split ts
+            prev_tses = self.tracks.predecessors(vehicle.ts_id) # there may be a merge just upstream of station split ts
             best_loop_length, best_loop_path = float('inf'), None
             for prev_ts in prev_tses:
-                loop_length, loop_path = self.get_path(vehicle.ts_id, prev_ts)
+                loop_length, loop_path = self.tracks.get_path(vehicle.ts_id, prev_ts)
                 if loop_length < best_loop_length:
                     best_prev_ts = prev_ts
                     best_loop_length = loop_length
                     best_loop_path = loop_path
 
             # concatenate that path with a path to the station's unload
-            entry_length, entry_path = self.get_path(best_prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
+            entry_length, entry_path = self.tracks.get_path(best_prev_ts, vehicle.trip.dest_station.ts_ids[Station.UNLOAD])
 
             path = best_loop_path + entry_path[1:] # concat lists. Discard prev_ts, so that it's not duplicated.
 
@@ -1029,14 +1148,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         # Vehicle is empty, so any station will do.
         else:
             return self.deadhead(vehicle, exclude=(vehicle.trip.dest_station,))
-
-    def get_path(self, ts_1, ts_2):
-        """Returns a two tuple. The first element is the path length (in meters),
-        and the second is the path. ts_1 and ts_2 are integer trackSegment ids."""
-        try:
-            return self._dist_path_dict[ts_1][ts_2]
-        except KeyError:
-            return networkx.bidirectional_dijkstra(self.graph, ts_1, ts_2)
 
     def is_launch_blocked(self, station, vehicle, now):
         """Returns false if the vehicle may launch immediately. Otherwise,
@@ -1052,11 +1163,11 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         # Optimization note: this is inefficent. Expect there to only be a few vehicle and station
         # variations, so caching the results for those few cases may make sense.
 
-        # find the time it takes for the launch vehicle to reach the main line
+        # find the dist it takes for the launch vehicle to reach the main line speed
         line_speed_dist = vehicle.get_dist_to_line_speed()
 
-        # assume that vehicle is on the ts just prior to the station offramp
-        merge_dist = (self.graph[vehicle.ts_id][station.ts_ids[Station.ACCEL]]['weight'] - vehicle.pos) + station.onramp_length
+        merge_dist, merge_path = self.tracks.get_path(vehicle.ts_id, station.merge)
+        merge_dist -= vehicle.pos
         assert line_speed_dist <= merge_dist, "Onramp is too short for vehicle to achieve line speed before merge. Adjust onramp length, or vehicle's max accel and jerk in the scenario's XML file. %.4f, %.4f" % (line_speed_dist, merge_dist)
 
         merge_delay = vehicle.get_time_to_line_speed() + (merge_dist - line_speed_dist)/PrtController.LINE_SPEED
@@ -1089,8 +1200,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         # walk back from the merge point finding the tracksegments and positions
         # that are in the conflict zone
-        merge_seg = self.graph.successors(station.ts_ids[Station.ON_RAMP_II])[0] # assuming only one
-        nodes, starts, ends = self.find_distant_segs_reverse(merge_seg,
+        nodes, starts, ends = self.find_distant_segs_reverse(station.merge,
                            conflict_zone_start_dist, conflict_zone_end_dist, [], [], [])
 
         # TODO optimize this?
@@ -1115,7 +1225,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                 # find the distance, and thus time, until v clears the conflict zone
                 seg = v.ts_id
                 clearing_dist = ends[idx] - v_pos
-                path = networkx.shortest_path(self.graph, seg, merge_seg)
+                dist, path = self.tracks.get_path(seg, station.merge) # Use vehicle's path instead
                 for seg in path[1:]:
                     try:
                         idx = nodes.index(seg)
@@ -1140,13 +1250,13 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         end_dist: the distance from initial node at which the conflict zone ends
         nodes, starts, ends: lists to which the results are added.
         Returns three parallel lists: nodes, starts, and ends"""
-        preds = self.graph.predecessors(initial_node)
+        preds = self.tracks.predecessors(initial_node)
         for node in preds:
             # exclude station segments from the walk
-            if self.track2station.get(node) is not None:
+            if self.stations.get_from_ts(node) is not None:
                 continue
 
-            edge_length = self.graph[node][initial_node]['weight']
+            edge_length = self.tracks.get_path_length( (node, initial_node) )
             if start_dist <= edge_length:
                 start = max(edge_length-end_dist, 0)
                 end = min(edge_length-start_dist, edge_length)
@@ -1163,31 +1273,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                 self.find_distant_segs_reverse(node, start_dist-edge_length,
                                           end_dist-edge_length, nodes, starts, ends)
         return nodes, starts, ends
-
-    def coordinate_shift(self, idx, path):
-        """Returns a numeric offet that when subtracted from a position in path[0]'s
-        coordinate frame translates it to path[idx]'s coordinate frame.
-        The path is a list of ts_ids."""
-        if idx == 0:
-            return 0
-
-        return sum(self.graph[a][b]['weight'] for a, b in pairwise(path[:idx+1]))
-
-    def _build_station_tables(self):
-        """Returns a pair of 2D tables containing distances and paths. The tables
-        are accessed like table[origin][dest], where each origin is a station's
-        LOAD ts and the dest is a station's UNLOAD ts."""
-        origins = [s.ts_ids[Station.LOAD] for s in self.stations.values()]
-        dests = [s.ts_ids[Station.UNLOAD] for s in self.stations.values()]
-
-        path_dist_dict = defaultdict(dict)
-
-        for o in origins:
-            for d in dests:
-                path_dist_dict[o][d] = networkx.bidirectional_dijkstra(self.graph, o, d)
-
-        return path_dist_dict
-
 
 
 class Station(object):
@@ -1453,7 +1538,10 @@ class Vehicle(object):
     SPLINE_TIME_EXTENSION = 3600     # in seconds
 
     controller = None # interfaces with the sim
-    manager = None # high level planner
+
+    # Singletons.
+    manager = VehicleManager() # high level planner
+    tracks = Tracks()
 
     def __init__(self, v_id, model, length, capacity, ts_id, pos, vel, accel, j_max, j_min, a_max, a_min, v_max):
         # Can't handle non-zero initial accelerations at this time
@@ -1594,7 +1682,7 @@ class Vehicle(object):
         if idx is None:
             idx = self._current_path_index
 
-        offset = self.manager.coordinate_shift(idx, path)
+        offset = self.tracks.coordinate_shift(idx, path)
         knot = self._spline.evaluate(time)
         knot.pos -= offset
         return knot
@@ -1664,7 +1752,7 @@ class Vehicle(object):
         current_knot = self.estimate_pose(self.controller.current_time)
 
         # Slow to station speed limit at the start of the UNLOAD segment
-        unload_dist, unload_path = self.manager.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
+        unload_dist, unload_path = self.tracks.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
         unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
         try:
             to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
@@ -1674,7 +1762,7 @@ class Vehicle(object):
         unload_knot.time = to_unload_spline.t[-1]
 
         # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
-        berth_dist, berth_path = self.manager.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
+        berth_dist, berth_path = self.tracks.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
         berth_knot = Knot(unload_knot.pos + berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
         to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
 
@@ -1748,7 +1836,7 @@ class Vehicle(object):
             dist = (self.berth_pos - self.BERTH_GAP) - self.pos # stop a little short of the end
 
         else: # advancing to another next platform
-            path_length, path = self.manager.get_path(self.ts_id, self.plat_ts)
+            path_length, path = self.tracks.get_path(self.ts_id, self.plat_ts)
             dist = (path_length - self.pos) + (self.berth_pos - self.BERTH_GAP) # stop a little short of the end
 
             # Set the path, but don't stomp on the existing path if it's the same but longer
@@ -1867,10 +1955,10 @@ class Merge(object):
 
     _SAMPLE_INTERVAL = 0.5 # distance between samples. Used to determine how far the vehicle can slip forward.
 
-    def __init__(self, merge_id, ts_id, stations, graph, cutoff=0):
+    def __init__(self, merge_id, merge_ts_id, stations, graph, cutoff=0):
         """
         merge_id: The integer id for the Merge object.
-        ts_id: The integer ts_id for which both legs of the merge are upstream.
+        merge_ts_id: The integer track segment id for which both legs of the merge are upstream.
         stations: The 'Stations' instance.
         graph: A networkx.DiGraph describing the track network.
         cutoff: Distance prior to the merge at which the vehicles should be
@@ -1892,7 +1980,7 @@ class Merge(object):
         # upstream of the merge are negative. The merge point is at 0.
         self.offsets = {}
 
-        self.outlet = merge_node_id
+        self.outlet = merge_ts_id
 
         # maps station id's to distances from the station merge to the main merge
         self.stations = []
@@ -1909,14 +1997,14 @@ class Merge(object):
         # Walk upstream for both zones
         self.zone_lengths = [-1, -1]
         self.inlets = [None, None] # segment ids which are entry points for the Merge's zone of control
-        zones = graph.predecessors(merge_node_id)
+        zones = graph.predecessors(merge_ts_id)
         assert len(zones) == 2
         for zone_num, node in enumerate(zones):
             offset = 0
             up_node = node     # upstream
-            down_node = merge_node_id # downstream
+            down_node = merge_ts_id # downstream
             while True:
-                length = graph[up_node][down_node]['weight']
+                length = graph[up_node][down_node]['length']
                 offset -= length
                 self.offsets[up_node] = offset
                 self.zone_ids[zone_num].append(up_node)
@@ -1960,7 +2048,7 @@ class Merge(object):
                 # Sucessfully moved upstream, but up_node is a switch
                 if len(successors) > 1:
                     # if it's not a switch from a station offramp, stop walking
-                    if successors[0] not in tracks2station and successors[1] not in tracks2station:
+                    if not stations.get_from_ts(successors[0]) and not stations.get_from_ts(successors[1]):
                         self.zone_lengths[zone_num] = offset
                         self.inlets[zone_num] = down_node
                         break # TODO: Notify PRT controller that I'm associated with switch. May need to implement Switches sooner, rather than later
@@ -2019,8 +2107,9 @@ class Merge(object):
         initial_knot = vehicle.estimate_pose(now)
 
         v_pos = initial_knot.pos + offset # negative number. 0 is merge point
-        v_rear_pos = v_pos - vehicle.length
         dist = -v_pos
+
+        v_rear_pos = v_pos - vehicle.length
 
         # If the vehicle isn't to the decision point yet, then delay managing it.
         # Don't require that the vehicle not be past the decision point, so that
@@ -2150,8 +2239,8 @@ class Merge(object):
         # state -- launch immediately and travel to main-merge at line speed.
         # Fastest possible arrival at the merge point.
         # TODO: Figure out conditions where this couldn't be a viable solution in order to save some computation?
-        merge_dist, merge_path = self.manager.get_path(vehicle.ts_id, self.outlet)
-        onramp_dist, onramp_path = self.manager.get_path(vehicle.ts_id, station.merge)
+        merge_dist, merge_path = self.tracks.get_path(vehicle.ts_id, self.outlet)
+        onramp_dist, onramp_path = self.tracks.get_path(vehicle.ts_id, station.merge)
         blind_spline = vehicle.traj_solver.target_position(
                 initial,
                 Knot(merge_dist, self.LINE_SPEED, 0, None),
@@ -2639,8 +2728,9 @@ class Switch(object):
     """May force vehicles to reroute, based on conditions downstream of the
     switch."""
 
-    def __init__(self, switch_node, graph, vehicles, tracks2station):
+    def __init__(self, switch_id, switch_node, stations, graph):
         assert isinstance(graph, networkx.classes.DiGraph)
+        self.id = switch_id
         self.inlet = switch_node # the segment which has 2 successors
         self.outlets = [None, None] # the last segments in the zone of control
         self.stations = set()
@@ -2655,7 +2745,7 @@ class Switch(object):
             up_node = switch_node # upstream
             down_node = node     # downstream
             while True:
-                length = graph[up_node][down_node]['weight']
+                length = graph[up_node][down_node]['length']
                 self.offsets[up_node] = offset
                 offset += length
 
@@ -2664,7 +2754,7 @@ class Switch(object):
                 if len(down_predecessors) > 1:
                     is_station = False
                     for p_node in down_predecessors:
-                        if p_node in tracks2station:
+                        if stations.get_from_ts(p_node):
                             is_station = True
                             break
 
@@ -2682,14 +2772,14 @@ class Switch(object):
                 # encountered a split. If split is from a station, continue walking down main track
                 elif len(down_nodes) > 1:
                     assert len(down_nodes) == 2
-                    if down_nodes[0] in tracks2station:
+                    if stations.get_from_ts(down_nodes[0]):
                         up_node = down_node
                         down_node = down_nodes[1] # take the other path
-                        self.stations.add(tracks2station[down_nodes[0]])
-                    elif down_nodes[1] in tracks2station:
+                        self.stations.add(stations.get_from_ts(down_nodes[0]))
+                    elif stations.get_from_ts(down_nodes[1]):
                         up_node = down_node
                         down_node = down_nodes[0] # take the other path
-                        self.stations.add(tracks2station[down_nodes[1]])
+                        self.stations.add(stations.get_from_ts(down_nodes[1]))
                     else: # Switch is not due to a station. End of zone.
                         self.zone_lengths[zone_num] = offset
                         self.outlets[zone_num] = up_node
