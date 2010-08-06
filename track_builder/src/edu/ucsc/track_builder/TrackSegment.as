@@ -4,6 +4,8 @@ package edu.ucsc.track_builder
 	
 	import com.google.maps.LatLng;
 	
+	import edu.ucsc.track_builder.elevation.ElevationService;
+	
 	import flash.geom.Vector3D;
 	
 	public class TrackSegment
@@ -22,11 +24,17 @@ package edu.ucsc.track_builder
 		public var _endOffset:Number;		
 		
 		/** Ground level elevation at <code>start</code>. */
-		public var startGround:Number;
+		public function get startGround():Number {return ElevationService.getElevation(this._start);}
 		/** Ground level elevation at <code>end</code>. */
-		public var endGround:Number;
+		public function get endGround():Number {return ElevationService.getElevation(this._end);}
 		/** Ground level elveation at <code>center</code>. */
-		public var centerGround:Number;	
+		public function get centerGround():Number {return ElevationService.getElevation(this._center);}
+
+		/** <code>elevLatLngs</code> and <code>elevPositions</code> are parallel arrays that describe points along
+		 * the TrackSegment. Elevations are requested for these points.
+		 */
+		public var latlngs:Vector.<LatLng>;
+		public var positions:Vector.<Number>;
 
 //		/** Linear length, taking into account vertical distance and curvature */
 //		public var length:Number;
@@ -97,107 +105,110 @@ package edu.ucsc.track_builder
 
 			this.id = id;
 			this.label = label;
-			this.maxSpeed = maxSpeed;	
-			this.startGround = NaN; // ground values are determined when the start/end LatLngs are set.
-			this.endGround = NaN;
+			this.maxSpeed = maxSpeed;
 			this._startOffset = startOffset;
 			this._endOffset = endOffset;
 
 			this.next_ids = new Vector.<String>();
 			this.prev_ids = new Vector.<String>();
 			this.parallel_ids = new Vector.<String>();
+			
+			this._start = start;
+			this._end = end;
+			this._center = center;
+
+			this.latlngs = new Vector.<LatLng>();
+			this.positions = new Vector.<Number>();
 
 			// for curved segments
 			this.radius = radius;
 			this.arcAngle = arcAngle;
-			this._center = center ? center : null;
 			
-			/* Two notes about setStart and setEnd:
-			 *  1. We never want _start or _end to be undone back to null, so we bypass the undo system in the constructor.
-			 *  2. Must be called after the offsets, the ground values, and length have been initialized.
-			 */
-			setStart(start, true, preview); 
-			setEnd(end, true, preview);
-			
+			if (!preview) {
+				this.calcLatLngsfromSpacing(Globals.tracks.elevationSpacing); // fills this.latlngs and this.positions
+				ElevationService.requestElevations(this.latlngs);
+			}
+						
 			/* Side effects */			
 			Undo.pushMicro(Globals.tracks.segments, function():void {delete Globals.tracks.segments[id];});
-			Globals.tracks.segments[id] = this; // Add a reference to the global store.
-			
+			Globals.tracks.segments[id] = this; // Add a reference to the global store.			
 		}
 		
 		/* Fetch elevation whenever start or end is updated. Also, adhere to convention that only copies
 		 * of LatLng objects should be shared. */
 		public function getStart():LatLng {return this._start.clone();}
-		public function setStart(latlng:LatLng, bypassUndo:Boolean=false, preview:Boolean=false):void {
-			if (!bypassUndo) {Undo.assign(this, '_start', _start);}
-			_start = latlng;
-			if (!preview) {
-				Globals.elevationService.requestElevations(Vector.<LatLng>([latlng.clone()]),
-														   function(latlngs:Vector.<LatLng>, elevation:Number):void {
-																// check that the latlng wasn't moved again before a response arrived
-			                                                     if (_start.equals(latlngs[0])) { 
-			                                                     	startGround = elevation;
-			                                                     }
-															});
-			}
+		public function setStart(latlng:LatLng):void {
+			Undo.assign(this, '_start', this._start);
+			this._start = latlng;
+			this.calcLatLngsfromSpacing(Globals.tracks.elevationSpacing);
+			ElevationService.requestElevations(this.latlngs);
 		}
 		public function getEnd():LatLng {return this._end.clone();} 
-		public function setEnd(latlng:LatLng, bypassUndo:Boolean=false, preview:Boolean=false):void {
-			if (!bypassUndo) {Undo.assign(this, '_end', _end);}
-			_end = latlng;
-			if (!preview) {
-				Globals.elevationService.requestElevations(Vector.<LatLng>([latlng.clone()]),
-														  function(latlngs:Vector.<LatLng>, elevation:Number):void {
-			                                                     // check that the latlng wasn't moved again before a response arrived
-			                                                     if (_end.equals(latlngs[0])) {
-			                                                     	endGround = elevation;
-			                                                     }
-															});
-			}		
+		public function setEnd(latlng:LatLng):void {
+			Undo.assign(this, '_end', this._end);
+			this._end = latlng;
+			this.calcLatLngsfromSpacing(Globals.tracks.elevationSpacing);
+			ElevationService.requestElevations(this.latlngs);		
 		}
 		public function getCenter():LatLng {return _center ? _center.clone() : _center;} // don't try to clone null
-		public function setCenter(latlng:LatLng):void {Undo.assign(this, '_center', _center); _center = latlng;} 
 		
 		public function isCurved():Boolean {return _center != null;}
 				
 		
-		/** Find the LatLng coordinates for locations between start and end.
-		 * @param stepSize The number of meters between samples.
-		 * @return Vector of new LatLng objects. First element is always start, and the last element is end.
+		/** Find the LatLng coordinates for points between start and end, every stepSize meters.
+		 * Fills <code>this.latlngs</code> and <code>this.positions</code> with the points, represented as
+		 * LatLng objects and distances along the TrackSegment respectively. The first and last points split
+		 * the remainder from: <code>this.h_length/stepSize</code>
+		 * @param stepSize The number of meters between samples, measured in the horizontal plane (i.e. does not take
+		 * into account vertical distance).
 		 */
-		public function getLatLngs(stepSize:Number):Vector.<LatLng> {
-			var result:Vector.<LatLng> = new Vector.<LatLng>();
-			result.push(this.getStart()); // copy of _start
-			var samples:int = int(this.h_length/stepSize);
+		public function calcLatLngsfromSpacing(stepSize:Number):void {
+			// clear the vectors of any old data
+			this.latlngs.splice(0, this.latlngs.length);
+			this.positions.splice(0, this.positions.length);
+			 		
+			var samples:int = int(this.h_length/stepSize); 
+			var remainStepSize:Number = (this.h_length % stepSize)/2.0; // Split the remainder distance in half.
 			var vec:Vector3D;
-			var i:int;
+			var i:int;			
+			
+			this.latlngs.push(this.getStart());
+			this.positions.push(0);
 			
 			if (!isCurved()) { // straight segment				
 				vec = Utility.calcVectorFromLatLngs(this._start, this._end);
 				vec.scaleBy(stepSize/vec.length);
-				
+								
+				if (samples > 0) {										
+					this.latlngs.push(Utility.calcLatLngFromVector(this.getStart(), vec, remainStepSize))
+					this.positions.push(remainStepSize);
+				}  				
 				for (i = 0; i < samples; i++) {
-					result.push(Utility.calcLatLngFromVector(result[result.length-1], vec));
+					this.latlngs.push(Utility.calcLatLngFromVector(this.latlngs[this.latlngs.length-1], vec));
+					this.positions.push(this.positions[this.positions.length-1] + stepSize);
 				}
 			} else { // curved segment
 				vec = Utility.calcVectorFromLatLngs(this._center, this._start);
 				var stepAngle:Number = stepSize/this.radius;
+				var remainStepAngle:Number = remainStepSize/this.radius;
 				if (this.arcAngle < 0) { // CW rotation
 					stepAngle = -stepAngle;
+					remainStepAngle = -remainStepAngle;
 				}
-				var x:Number = vec.x;
-				var y:Number = vec.y;
-				var cosAngle:Number = Math.cos(stepAngle);
-				var sinAngle:Number = Math.sin(stepAngle);
+				if (samples > 0) {
+					Utility.rotate(vec, remainStepAngle);
+					this.latlngs.push(Utility.calcLatLngFromVector(this._center, vec));
+					this.positions.push(remainStepSize);
+				}
 				for (i = 0; i < samples; i++) {
-					// Rotate by stepAngle
-					vec.x = x*cosAngle - y*sinAngle; 
-					vec.y = x*sinAngle + y*cosAngle;
-					result.push(Utility.calcLatLngFromVector(this._center, vec)); 
+					Utility.rotate(vec, stepAngle);
+					this.latlngs.push(Utility.calcLatLngFromVector(this._center, vec));
+					this.positions.push(this.positions[this.positions.length-1] + stepSize); 
 				}
-			}			
-			result.push(this.getEnd()); // copy of _end
-			return result;
+			}
+			
+			this.latlngs.push(this.getEnd());
+			this.positions.push(this.h_length);
 		}
 		
 		public function getStartOffset():Number {return _startOffset};
@@ -489,33 +500,33 @@ package edu.ucsc.track_builder
 		}
 
 		/** Represent the TrackData object in XML. */
-		public function toXML():XML {			
+		public function toXML():XML {		
 			var xml:XML = <TrackSegment id={id}
-			                            length={length}>
-			                <Start lat={_start.lat()}
-			                       lng={_start.lng()}
+			                            length={length.toFixed(3)}>
+			                <Start lat={_start.lat().toFixed(7)} // 7 digits -> 1.11 cm accuracy. See: http://en.wikipedia.org/wiki/Decimal_degrees 
+			                       lng={_start.lng().toFixed(7)}
 			                       ground_level={startGround.toFixed(1)}
 			                       offset={_startOffset}
 			                       elevation={startElev.toFixed(1)}/>
-			                <End lat={_end.lat()}
-			                     lng={_end.lng()}
+			                <End lat={_end.lat().toFixed(7)}
+			                     lng={_end.lng().toFixed(7)}
 			                     ground_level={endGround.toFixed(1)}
-			                     offset={_endOffset}			                     
+			                     offset={_endOffset}
 			                     elevation={endElev.toFixed(1)}/>
 			                <ConnectsFrom/>
 							<ConnectsTo/>
-							<ParallelTo/>               
+							<ParallelTo/>
 						  </TrackSegment>;
 
             if (label != "")      xml.@label=label
             if (!isNaN(maxSpeed)) xml.@max_speed=maxSpeed
             if (!isNaN(radius) && radius)   xml.@radius=radius
-            if (arcAngle != 0)    xml.@arc_angle = arcAngle*180/Math.PI
+            if (arcAngle != 0)    xml.@arc_angle = (arcAngle*180/Math.PI).toFixed(7)
  
 			// Insert the center point if it's a curved segment			
 			if (_center) {
-				xml.insertChildBefore(xml.End[0], <Center lat={_center.lat()}
-				                                          lng={_center.lng()} />);
+				xml.insertChildBefore(xml.End[0], <Center lat={_center.lat().toFixed(7)}
+				                                          lng={_center.lng().toFixed(7)} />);
 			}
 			
 			for each (var f_id:String in prev_ids) {
@@ -535,6 +546,17 @@ package edu.ucsc.track_builder
 				var parallel_id:XML = <ID>{p_id}</ID>;
 				xml.ParallelTo.appendChild(parallel_id); 
 			}
+			
+			for (var i:int=0; i < this.latlngs.length; ++i) {
+				var latlng:LatLng = this.latlngs[i];
+				var position:Number = this.positions[i];
+				xml.appendChild(<Point lat={latlng.lat().toFixed(7)}
+				                       lng={latlng.lng().toFixed(7)}
+				                       position={position.toFixed(3)}
+				                       ground_level={ElevationService.getElevation(latlng)}
+				                />);				                       	
+			}
+			
 			return xml;
 		}
 
@@ -578,69 +600,6 @@ package edu.ucsc.track_builder
 			}
 			return ts;
 		}
-
-//		public function fetchElevation(latlng:LatLng, endpoint:String):void {
-//			if (preview) {
-//				return;
-//			}
-//			Undo.assign(this, 'length', length);
-//			length = NaN; // invalidate the length
-//			
-//			// invalidate the elevation. The undo and invalidation is done now, to avoid complexities of undoing an asynch operation.
-//			switch (endpoint) {
-//				case ElevationFetcher.START:
-//					Undo.assign(this, 'startGround', startGround);
-//					startGround = NaN; 
-//					break;
-//				case ElevationFetcher.END:
-//					Undo.assign(this, 'endGround', endGround);
-//					endGround = NaN;
-//					break;
-//				case ElevationFetcher.CENTER:
-//					Undo.assign(this, 'center', centerGround);
-//					centerGround = NaN;
-//					break;
-//				default:
-//					throw new Error("Unknown enpoint: " + endpoint);
-//					break;
-//			}			
-//			
-//			var elev_fetcher:ElevationFetcher = new ElevationFetcher();						
-//			elev_fetcher.addEventListener(ElevationEvent.COMPLETE, onElevationComplete, false, 0, true); // weak_ref=true
-//			elev_fetcher.addEventListener(ElevationEvent.ERROR, onElevationError, false, 0, true); // weak_ref=true
-//			elev_fetcher.fetch(latlng, endpoint);
-//		}
-//		
-//		/** Save the ground elevation. */
-//		private function onElevationComplete(event:ElevationEvent):void {
-//			switch (event.endpoint) {
-//				case ElevationFetcher.START:
-//					if (event.latlng.equals(this.getStart())) { // check that the elevation is for the current position
-//						startGround = event.elevation;						
-//					}
-//					break;
-//				case ElevationFetcher.END:
-//					if (event.latlng.equals(this.getEnd())) {
-//						endGround = event.elevation;												
-//					}
-//					break;
-//				case ElevationFetcher.CENTER:
-//					if (event.latlng.equals(this.getCenter())) {
-//						centerGround = event.elevation;	
-//					}					
-//					break;
-//				default:
-//					throw new Error("Unknown case.");			
-//			}	
-//			
-//			if ( !isNaN(startGround) && !isNaN(endGround) ) {
-//				updateLength();
-//			}
-//		}
-//		
-//		private function onElevationError(event:IOErrorEvent):void {
-//			trace("Segment elevation fetch failed", this.id);
-//		}
 
 		/** Changes the value of length to incorperate vertical distance.
 		 * Does not take curvature of the earth into account.

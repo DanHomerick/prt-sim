@@ -9,12 +9,12 @@ import com.google.maps.controls.ZoomControl;
 import com.google.maps.controls.ZoomControlOptions;
 import com.google.maps.interfaces.IPaneManager;
 
-import edu.ucsc.track_builder.ElevationService;
 import edu.ucsc.track_builder.Globals;
 import edu.ucsc.track_builder.Menu;
 import edu.ucsc.track_builder.SnappingMarker;
 import edu.ucsc.track_builder.TrackOverlay;
 import edu.ucsc.track_builder.XMLHandler;
+import edu.ucsc.track_builder.elevation.ElevationService;
 
 import flash.desktop.NativeApplication;
 import flash.display.NativeWindow;
@@ -25,7 +25,6 @@ import flash.ui.Keyboard;
 import flash.utils.Timer;
 
 import mx.core.Application;
-import mx.core.WindowedApplication;
 import mx.events.FlexEvent;
 import mx.events.ItemClickEvent;
 
@@ -119,12 +118,8 @@ internal function onMapMouseMove(event:MapMouseEvent):void {
 
 
 internal function onElevationTimerComplete(event:TimerEvent):void {
-	var latlng:LatLng = lastMouseMoveEvent.latLng;
-	/* Updates the elevation in the status bar once the data comes in. */
-	Globals.elevationService.requestElevations(Vector.<LatLng>([latlng]),
-											   function(latlngs:Vector.<LatLng>, elevations:Vector.<Number>):void {																	
-											       status = status.replace("????", elevations[0].toString());																	
-											   });		
+//	var latlng:LatLng = lastMouseMoveEvent.latLng;
+//	ElevationService.requestElevations(Vector.<LatLng>([latlng]));
 }
 
 ///** Updates the elevation in the status bar once the data comes in. */ 

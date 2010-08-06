@@ -2,6 +2,7 @@
 <mx:Window xmlns:mx="http://www.adobe.com/2006/mxml" layout="vertical" title="Preferences" width="355" height="440" showStatusBar="false" xmlns:components="com.mariosh.components.*">
 	<mx:Script>
 		<![CDATA[
+			import edu.ucsc.track_builder.elevation.ElevationService;
 			[Bindable] public var cacheSize:String = (ElevationService.getCacheSizeOnDisk() / 101048576).toFixed(1) + ' MB';
 		]]>
 	</mx:Script>

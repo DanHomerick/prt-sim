@@ -39,9 +39,7 @@ package edu.ucsc.track_builder
 		
 		public static var map:Map; // The google map		
 		public static var menu:Menu; // my menu, NOT mx.controls.menu
-		public static var toolBar:ToggleButtonBar;
-		
-		public static var elevationService:ElevationService = new ElevationService();
+		public static var toolBar:ToggleButtonBar;		
 				
 		public static var dataXMLFile:File; // The XML file currently being worked with.
 		public static var prefsXMLFile:File = File.applicationStorageDirectory.resolvePath("preferences.xml"); // The prefs file

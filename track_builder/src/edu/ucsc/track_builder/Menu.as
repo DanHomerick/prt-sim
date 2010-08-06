@@ -3,6 +3,7 @@ package edu.ucsc.track_builder
 	import com.google.maps.LatLng;
 	import com.google.maps.MapType;
 	
+	import edu.ucsc.track_builder.elevation.ElevationService;
 	import edu.ucsc.track_builder.gtf_import.GtfImportError;
 	import edu.ucsc.track_builder.gtf_import.GtfImportUI;
 	
@@ -257,9 +258,8 @@ package edu.ucsc.track_builder
 			debugDisableElevRequests.checked = false;
 			/* Disable the ElevationLoader, and disable the menu option. To restore elevation queries, restart the program.*/ 
 			debugDisableElevRequests.addEventListener(Event.SELECT, function(evt:Event):void {
-				                                                     	ElevationLoader.REQUEST_INTERVAL = 10000000000;
-				                                                     	evt.currentTarget.checked = true;
-				                                                     	evt.currentTarget.enabled = false;				                                                     	
+				                                                     	ElevationService.enabled = false;
+				                                                     	evt.currentTarget.checked = true;				                                                     	
 				                                                     });
 				
 //			debugMenu.addItem(debugShowKml);

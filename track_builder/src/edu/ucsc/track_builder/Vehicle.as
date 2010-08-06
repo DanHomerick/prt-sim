@@ -39,13 +39,13 @@ package edu.ucsc.track_builder
 		public function toXML():XML {
 			var xml:XML = <Vehicle id={id}
 			                       location={location.id}
-			                       position={position}
+			                       position={position.toFixed(3)}
 			                       label={label}
 			                       velocity={velocity}
 			                       acceleration={acceleration}
 			                       model={model}>
-							   <LatLng lat={latlng.lat()}
-			                           lng={latlng.lng()}
+							   <LatLng lat={latlng.lat().toFixed(7)}
+			                           lng={latlng.lng().toFixed(7)}
 			                       	   elevation={elevation}/>
 			              </Vehicle>;												      
 			return xml;

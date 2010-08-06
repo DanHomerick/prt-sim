@@ -44,6 +44,9 @@ package edu.ucsc.track_builder
 		/** Radius for the curved segments in an S-curve. */		
 		[Bindable] public var sCurveRadius:Number;
 		
+		/** Meters between elevation checks along a TrackSegment */
+		public var elevationSpacing:Number = 10; // TODO: Hardcoded. Expose to UI, add to prefs file!
+		
 		public var _bidirectional:Boolean;
 		public function get bidirectional():Boolean {return _bidirectional;}
 		public function set bidirectional(value:Boolean):void {

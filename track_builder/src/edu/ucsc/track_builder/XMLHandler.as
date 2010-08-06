@@ -77,8 +77,8 @@ package edu.ucsc.track_builder
 					// it's a waypoint
 					var maxSpeed:Number = Math.min(ts.maxSpeed, prevSeg.maxSpeed);
 					var waypointXml:XML = new XML(<Waypoint id={IdGenerator.getWaypointId()} max_speed={maxSpeed}>
-					                                  <LatLng lat={ts.getStart().lat()}
-					                                          lng={ts.getStart().lng()}
+					                                  <LatLng lat={ts.getStart().lat().toFixed(7)}
+					                                          lng={ts.getStart().lng().toFixed(7)}
 					                                          ground_level={ts.startGround}
 					                                          offset={ts.getStartOffset()}					                                          
 					                                          elevation={ts.startElev} />
@@ -101,8 +101,8 @@ package edu.ucsc.track_builder
 				if (ts.next_ids.length >= 2) {
 					// It's a switch. Calc the max speed as the speed of the source edge
 					var switchXml:XML = new XML(<Switch id={IdGenerator.getSwitchId()} max_speed={ts.maxSpeed} >
-					                                  <LatLng lat={ts.getEnd().lat()}
-					                                          lng={ts.getEnd().lng()}
+					                                  <LatLng lat={ts.getEnd().lat().toFixed(7)}
+					                                          lng={ts.getEnd().lng().toFixed(7)}
 					                                          elevation={ts.endElev} />
 					                                  <Incoming>{ts.id}</Incoming>
 					                            </Switch>);
@@ -125,8 +125,8 @@ package edu.ucsc.track_builder
 				if (ts.prev_ids.length >= 2) {
 					// it's a merge. Calc max speed as the speed of the outgoing edge
 					var mergeXml:XML = new XML(<Merge id={IdGenerator.getMergeId()} max_speed={ts.maxSpeed} >
-					                                  <LatLng lat={ts.getStart().lat()}
-					                                          lng={ts.getStart().lng()}
+					                                  <LatLng lat={ts.getStart().lat().toFixed(7)}
+					                                          lng={ts.getStart().lng().toFixed(7)}
 					                                          elevation={ts.startElev} />					                                  
 					                            </Merge>);					
 					for each (var prev_id:String in ts.prev_ids) {
