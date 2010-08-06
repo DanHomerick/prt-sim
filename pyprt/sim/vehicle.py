@@ -508,8 +508,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 ##            traverse_time = common.config_manager.get_sim_end_time()
             traverse_time = inf
         heapq.heappush(self._actions_queue, (traverse_time, self.BOUNDARY, None))
-        assert traverse_dist > 0, (traverse_dist, self.loc.length, self.loc.ID)
-        assert traverse_time > Sim.now(), traverse_time
+        assert traverse_dist >= -1E-3, (self.id, traverse_dist, self.loc.length, self.loc.ID)
+        assert traverse_time >= Sim.now() - 1E-5, (self.id, traverse_time, self.loc.length, self.loc.ID)
 
 ##        # Do some extra work to collect statistics about berth usages if the loc is a station platform
 ##        platform = common.platforms.get(self.loc.ID)
