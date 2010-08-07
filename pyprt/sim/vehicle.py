@@ -40,7 +40,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     # The CType indicates that the Type can be coerced from a string.
     ID              = traits.CInt     # Unique numeric ID.
     label           = traits.Str
-    length          = traits.CFloat(5) # Length of vehicle, in meters.
+    length          = traits.CFloat # Length of vehicle, in meters.
     v_mass          = traits.CInt   # mass of vehicle, in kg
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg

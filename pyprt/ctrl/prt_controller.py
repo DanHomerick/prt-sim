@@ -317,10 +317,16 @@ class PrtController(BaseController):
                 # Handle all the vehicles that are in a Merge's zone of control
                 # together at a later time. If not in a zone of control, just
                 # run at LINE_SPEED.
-                try:
-                    merge = self.manager.track2merge[vehicle.ts_id]
-                    merge2vehicles[merge].append(vehicle)
-                except KeyError:
+                merge = self.manager.track2merge.get(vehicle.ts_id)
+                if merge:
+                    # tail must be on inlet ts, not just nose. If just the nose
+                    # is on the inlet ts, let the normal code path assign a
+                    # merge slot in a few moments.
+                    if vehicle.ts_id in merge.inlets and vehicle.pos < vehicle.length:
+                        vehicle.run(speed_limit=self.LINE_SPEED)
+                    else:
+                        merge2vehicles[merge].append(vehicle)
+                else:
                     # Case 4. Not in a Merge's zone of control.
                     vehicle.run(speed_limit=self.LINE_SPEED)
 
