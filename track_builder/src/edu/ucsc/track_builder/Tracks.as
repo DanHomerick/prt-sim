@@ -1758,9 +1758,10 @@ package edu.ucsc.track_builder
 				var create:Boolean = true;
 				var parallels:Vector.<TrackSegment> = new Vector.<TrackSegment>();
 				for each (var otherId:String in seg.parallel_ids) {
-					if (!used[otherId]) {
+					if (used[otherId] == null) {
 						parallels.push(segments[otherId]);
-						used[otherId] = otherId;
+						used[seg.id] = true;
+						used[otherId] = true;
 					} else {
 						create = false;
 						break;

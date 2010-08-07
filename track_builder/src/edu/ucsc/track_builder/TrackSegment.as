@@ -563,7 +563,7 @@ package edu.ucsc.track_builder
 		/** Creates a new TrackSegment from the XML data. */ 
 		public static function fromXML(xml:XML):TrackSegment {
 			var otherId:String;
-			trace(xml.hasOwnProperty("Control"));
+
 			
 			// add the ground elevations to the Cache
 			

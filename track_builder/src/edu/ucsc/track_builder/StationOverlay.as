@@ -47,7 +47,7 @@ package edu.ucsc.track_builder
             addEventListener(MapEvent.OVERLAY_REMOVED, onOverlayRemoved, false, 0, true);
             
             addEventListener(ToolTipEvent.TOOL_TIP_SHOW, onToolTip, false, 0, true);            
-            toolTip = "Dummy text"; // requires some text to trigger tooltips. Text changed in onToolTip
+//            toolTip = "Dummy text"; // requires some text to trigger tooltips. Text changed in onToolTip
             contextMenu = getContextMenu();
             
             /* Side effects */
