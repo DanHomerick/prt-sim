@@ -953,7 +953,6 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             if abs(v.accel) > 0.0001:
                 warnings.warn("Vehicle on main line NOT travelling at constant velocity! v: %d, ts: %d, vel: %.3f, accel: %.3f" %\
                           (v.id, v.ts_id, v.vel, v.accel))
-##            assert abs(v.accel) < 0.0001, v.accel
             v_pos = v.pos + (now - v.last_update)*v.vel
 
             if v_pos > starts[idx] and v_pos < ends[idx]:
@@ -1379,13 +1378,13 @@ class Vehicle(object):
                              the sim, then it is extended.
         """
         assert isinstance(spline, CubicSpline)
-        assert spline.t[0] - self.controller.current_time < 1E-3# Spline is valid at current time and beyond.
+        assert spline.t[0] < self.controller.current_time + 2*TrajectorySolver.t_threshold# Spline is valid at current time and beyond.
         self._path = self._path[self._current_path_index:]
         self._current_path_index = 0
 
         sim_end_time = self.controller.sim_end_time
         if spline.t[-1] < sim_end_time:
-            assert abs(spline.a[-1]) < 1E-6
+            assert abs(spline.a[-1]) < 2*TrajectorySolver.a_threshold
             delta_q = spline.v[-1]*(sim_end_time + self.SPLINE_TIME_EXTENSION - spline.t[-1])
             spline.append(Knot(spline.q[-1]+delta_q, spline.v[-1], 0, sim_end_time+self.SPLINE_TIME_EXTENSION), 0)
 
@@ -1518,7 +1517,6 @@ class Vehicle(object):
         try:
             to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
         except FatalTrajectoryError: # When used during sim startup, the vehicle is not decelerating.
-            assert current_knot.vel == 0
             to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=station.SPEED_LIMIT)
         unload_knot.time = to_unload_spline.t[-1]
 
@@ -1871,7 +1869,7 @@ class Merge(object):
         # If the vehicle isn't to the decision point yet, then delay managing it.
         # Don't require that the vehicle not be past the decision point, so that
         # the code can be reused during simulation startup.
-        if v_rear_pos < self._decision_point - 0.0001:
+        if v_rear_pos < self._decision_point - TrajectorySolver.q_threshold:
             decision_time = vehicle.spline.get_time_from_dist(self._decision_point - v_rear_pos, now)
             assert decision_time >= now, (decision_time, now)
             raise NotAtDecisionPoint(decision_time)
@@ -1905,7 +1903,7 @@ class Merge(object):
                 final_knot.time = lead_slot.end_time + self.HEADWAY
                 spline = vehicle.traj_solver.target_time(initial_knot, final_knot)
 
-            assert spline.t[-1] >= lead_slot.end_time + self.HEADWAY
+            assert spline.t[-1] >= lead_slot.end_time + self.HEADWAY - 2*TrajectorySolver.t_threshold
             start_time = spline.t[-1] - self.HEADWAY
             end_time = start_time + vehicle.length/self.LINE_SPEED + self.HEADWAY
 
@@ -1919,14 +1917,14 @@ class Merge(object):
 
             if lead_slot is not None:
                 # Start time should occur after lead_slot ends, with some tolerance for rounding error.
-                assert start_time - lead_slot.end_time >= -1E-4
+                assert start_time >= lead_slot.end_time - 2*TrajectorySolver.t_threshold
 
         merge_slot = MergeSlot(start_time, end_time, zone, vehicle, spline, self)
         self.reservations.append(merge_slot)
 
         if __debug__ and len(self.reservations) >= 2:
             # no more than a little rounding error's worth of overlap
-            assert (merge_slot.start_time - self.reservations[-2].end_time) >= -1E-6
+            assert merge_slot.start_time >= self.reservations[-2].end_time - 2*TrajectorySolver.t_threshold
 
         return merge_slot
 
@@ -2123,13 +2121,13 @@ class Merge(object):
         assert slot is not None
 
         try:
-            assert slot.end_time <= rear_slot.start_time
+            assert slot.end_time <= rear_slot.start_time + 2*TrajectorySolver.t_threshold
             insert_idx = self.reservations.index(rear_slot)
             self.reservations.insert(insert_idx, slot)
         except ValueError:
             # Rear slot wasn't in self.reservations; it was a dummy slot.
             if __debug__ and self.reservations:
-                assert slot.start_time - self.reservations[-1].end_time > -1E-6
+                assert slot.start_time > self.reservations[-1].end_time - 2*TrajectorySolver.t_threshold
             self.reservations.append(slot)
         return slot, launch_time
 
@@ -2263,7 +2261,7 @@ class Merge(object):
                         maneuver_start_pos = self.cutoff - required_maneuver_dist
 
                     maneuver_start_dist = maneuver_start_pos - v_pos
-                    assert maneuver_start_dist >= 0, maneuver_start_dist
+                    assert maneuver_start_dist >= 0 - 2*TrajectorySolver.q_threshold, maneuver_start_dist
                     maneuver_start_time = vehicle.spline.get_time_from_dist(maneuver_start_dist, now)
 
                     if slip_dist != desired_slip_dist:
@@ -2278,7 +2276,7 @@ class Merge(object):
                     slip_dist = 0
 
                 merge_slot = MergeSlot(v_start_time, v_end_time, slip_dist, stop_pos, zone, vehicle)
-                assert merge_slot.start_time >= lv_slot.end_time - 0.0001, (merge_slot.start_time, lv_slot.end_time)
+                assert merge_slot.start_time >= lv_slot.end_time - 2*TrajectorySolver.t_threshold, (merge_slot.start_time, lv_slot.end_time)
                 self.reservations.append(merge_slot)
 
             except IndexError: # vehicle is the frontmost in the merge queue
@@ -2287,7 +2285,7 @@ class Merge(object):
 
         else: # Notify when rear of vehicle due to reach the decison point
             time = vehicle.spline.get_time_from_dist(self._decision_point - v_rear_pos, now)
-            assert time >= now, (time, now)
+            assert time >= now - 2*TrajectorySolver.t_threshold, (time, now)
             self.controller.set_fnc_notification(self.manage_, (vehicle, time), time) # call manage again
 
     def _slip_ahead(self, slot, lead_slot, slip_time, avail_maneuver_dist, now):
@@ -2296,7 +2294,7 @@ class Merge(object):
         the vehicle in slot has already slipped."""
         assert isinstance(slot, MergeSlot)
         assert isinstance(lead_slot, MergeSlot) or lead_slot is None
-        assert slip_time >= 0, slip_time
+        assert slip_time >= 0 - 2*TrajectorySolver.t_threshold, slip_time
         if slot.slip_dist is not None:
             return 0
 
@@ -2308,7 +2306,7 @@ class Merge(object):
 
         if lead_slot is not None:
             slip_time_potential = slot.start_time - lead_slot.end_time
-            assert slip_time_potential >= -0.0001, slip_time_potential
+            assert slip_time_potential >= 0 -2*TrajectorySolver.t_threshold, slip_time_potential
         else:
             slip_time_potential = spline.get_time_from_dist(avail_maneuver_dist, now) - now # clearly too high. Rely on _get_achievable_slip to reduce it to a realistic value
 
@@ -2385,7 +2383,7 @@ class Merge(object):
 
     def _get_achievable_slip(self, maneuver_dist, desired_slip, vehicle):
         assert isinstance(vehicle, Vehicle)
-        assert maneuver_dist >= 0
+        assert maneuver_dist >= 0 - 2*TrajectorySolver.q_threshold
 
         slips = self._slips[vehicle.model]
         maneuver_dists = self._maneuver_dists[vehicle.model]

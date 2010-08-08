@@ -427,34 +427,32 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.assertAlmostEqual(spline.t[-1], 7.4833147735, self.PLACES)
 
         # Non-zero endpoints
-        spline = solver.target_velocity(Knot(10,2,1,0), Knot(None, 35, 3, 0))
+        initial = Knot(10,2,1,0)
+        final = Knot(None, 35, 3, 5.883314773)
+        spline = solver.target_velocity(initial, final)
 #        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
-        self.assertTrue(spline.q[-1] > 0)
-        self.assertAlmostEqual(spline.v[-1], 35, self.PLACES)
-        self.assertAlmostEqual(spline.a[-1], 3, self.PLACES)
-        self.assertAlmostEqual(spline.t[-1], 5.883314773, self.PLACES)
+        self.validate_endpoints(spline, initial, final, pos=False)
 
     def test_target_velocity_III(self):
         """Decelerating. Reaches a_max"""
         solver = TrajectorySolver(40, 5, 2.5)
 
         ### zero at endpoints
-        spline = solver.target_velocity(Knot(0,35,0,0), Knot(None, 0, 0, 0))
+        initial = Knot(0,35,0,0)
+        final = Knot(None, 0, 0, 0)
+        spline = solver.target_velocity(initial, final)
 #        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
-        self.assertTrue(spline.q[-1] > 0)
-        self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
-        self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
-        self.assertAlmostEqual(spline.t[-1], 9, self.PLACES)
+        self.validate_endpoints(spline, initial, final, pos=False, time=False)
 
         # Non-zero endpoints
-        spline = solver.target_velocity(Knot(10,35,1,0), Knot(None, 2, -1, 0))
+        initial = Knot(10,35,1,0)
+        final = Knot(None, 2, -1, 0)
+        spline = solver.target_velocity(initial, final)
 #        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
-        self.assertTrue(spline.q[-1] > 0)
-        self.assertAlmostEqual(spline.v[-1], 2, self.PLACES)
-        self.assertAlmostEqual(spline.a[-1], -1, self.PLACES)
+        self.validate_endpoints(spline, initial, final, pos=False, time=False)
         self.assertAlmostEqual(spline.t[-1],  8.6799999999, self.PLACES)
 
     def test_target_velocity_IV(self):
@@ -620,12 +618,38 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_endpoints(spline, initial, final)
 
     def test_target_time_XII(self):
-        """Problem from testing."""
+        """Problem from testing. Unachievable."""
         solver = TrajectorySolver(15, 5, 2.5, 0, -5, -2.5)
         initial = Knot(2.0, 15.0, 0.0, 5.4795365136060168)
         final = Knot(70.901034075983588, 15.0, 0, 11.706272118671588) # ave speed of 11.065 m/s
+        self.assertRaises(FatalTrajectoryError,
+                          solver.target_time, initial, final )
+
+    def test_target_time_XIII(self):
+        """Cruise velocity is very near to initial and final velocities."""
+        solver = TrajectorySolver(15, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(52.5, 14.99716768771842, 0, 1530.8197971206223)
+        final = Knot(267.03399999999999, 15.0, 0, 1545.1247333079007)
         spline = solver.target_time(initial, final)
-        self.plot_it(spline, solver, "test_target_time_XII")
+##        self.plot_it(spline, solver, "test_target_time_XIII")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_time_XIV(self):
+        """Problem from testing."""
+        solver = TrajectorySolver(15, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(9.9000001907348629, 0.0, 0.0, 1978.7999999999861)
+        final = Knot(267.03399999999999, 15.0, 0, 2002.9280666602958)
+        spline = solver.target_time(initial, final)
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_time_XV(self):
+        """Problem from testing."""
+        solver = TrajectorySolver(15, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(52.500999999999998, 14.917710067720561, 0, 2924.9500320272209)
+        final = Knot(643.9559999999999, 15.0, 0, 2964.5960666793744)
+        spline = solver.target_time(initial, final)
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
@@ -727,21 +751,21 @@ class  TestTrajectorySolver(unittest.TestCase):
     def validate_endpoints(self, spline, initial, final, pos=True, vel=True, accel=True, time=True):
         """Checks that the splines endpoints match initial in all fields, and
         match final in the selected fields."""
-        self.assertAlmostEqual(initial.pos, spline.q[0], self.PLACES)
-        self.assertAlmostEqual(initial.vel, spline.v[0], self.PLACES)
-        self.assertAlmostEqual(initial.accel, spline.a[0], self.PLACES)
-        self.assertAlmostEqual(initial.time, spline.t[0], self.PLACES)
+        self.assertAlmostEqual(initial.pos, spline.q[0], TrajectorySolver.q_threshold)
+        self.assertAlmostEqual(initial.vel, spline.v[0], TrajectorySolver.v_threshold)
+        self.assertAlmostEqual(initial.accel, spline.a[0], TrajectorySolver.a_threshold)
+        self.assertAlmostEqual(initial.time, spline.t[0], TrajectorySolver.t_threshold)
 
-        if pos:   self.assertAlmostEqual(final.pos, spline.q[-1], self.PLACES)
-        if vel:   self.assertAlmostEqual(final.vel, spline.v[-1], self.PLACES)
-        if accel: self.assertAlmostEqual(final.accel, spline.a[-1], self.PLACES)
-        if time:  self.assertAlmostEqual(final.time, spline.t[-1], self.PLACES)
+        if pos:   self.assertAlmostEqual(final.pos, spline.q[-1], TrajectorySolver.q_threshold)
+        if vel:   self.assertAlmostEqual(final.vel, spline.v[-1], TrajectorySolver.v_threshold)
+        if accel: self.assertAlmostEqual(final.accel, spline.a[-1], TrajectorySolver.a_threshold)
+        if time:  self.assertAlmostEqual(final.time, spline.t[-1], TrajectorySolver.t_threshold)
 
     def splinesAlmostEqual(self, a, b):
-        self.assertAlmostEqual(a.pos, b.pos, self.PLACES)
-        self.assertAlmostEqual(a.vel, b.vel, self.PLACES)
-        self.assertAlmostEqual(a.accel, b.accel, self.PLACES)
-        self.assertAlmostEqual(a.time, b.time, self.PLACES)
+        self.assertAlmostEqual(a.pos, b.pos, TrajectorySolver.q_threshold)
+        self.assertAlmostEqual(a.vel, b.vel, TrajectorySolver.v_threshold)
+        self.assertAlmostEqual(a.accel, b.accel, TrajectorySolver.a_threshold)
+        self.assertAlmostEqual(a.time, b.time, TrajectorySolver.t_threshold)
 
     def plot_it(self, spline, solver, title=""):
         """Convience function for debugging"""

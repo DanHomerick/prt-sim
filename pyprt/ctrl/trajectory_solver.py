@@ -60,8 +60,10 @@ class TrajectorySolver(object):
         towards the track segment's origin, then the vehicle is traveling in
         reverse for trajectory generation purposes.
     """
-    v_threshold = 0.0001   # == 0.0002 miles per hour
-    a_threshold = 0.0001
+    q_threshold = 0.0005
+    v_threshold = 0.000005   # == 0.00001 miles per hour
+    a_threshold = 0.0005
+    t_threshold = 0.0005
 
     def __init__(self, velocity_max, acceleration_max, jerk_max,
                  velocity_min=None, acceleration_min=None, jerk_min=None):
@@ -652,8 +654,8 @@ class TrajectorySolver(object):
 
         no_time_constraint_spline = self.target_position(knot_initial, knot_final, max_speed)
 
-        # Rare case, but use the no_time_constraint_spline if the final time happens to be perfect.
-        if abs(no_time_constraint_spline.t[-1] - knot_final.time) < 0.0005:
+        # Rare case, but use the no_time_constraint_spline if the final time happens to be (almost) perfect.
+        if abs(no_time_constraint_spline.t[-1] - knot_final.time) < self.t_threshold:
             return no_time_constraint_spline
 
         # The final pose cannot be reached in the allotted time, even when
@@ -672,6 +674,10 @@ class TrajectorySolver(object):
         # what acceleration profile we should use.
         # TODO: Incorperate a dead-zone around the time?
         no_accel_spline = self._no_acceleration_predict(knot_initial, knot_final)
+
+        # Rare case, but use the no_accel_spline if the final time happens to be (almost) perfect
+        if abs(no_accel_spline.t[-1] - knot_final.time) < self.t_threshold:
+            return no_accel_spline
 
         # Using the average speed as an approximation for the 3-4 segment velocity.
         # This is NOT precise, but is right most of the time. Use a try/except
@@ -892,25 +898,28 @@ class TrajectorySolver(object):
 
         # Decide if either of the two "humps" in the accel profiele will not
         # hit their limits. Tighten the limits if this is the case.
-        first_hump = self.target_velocity(Knot(0,v[0],a[0],0), Knot(None,cruise_vel,0,None))
-        second_hump = self.target_velocity(Knot(0,cruise_vel,0,0), Knot(None, v[-1],0,None))
         too_loose = []
-        if j[0] > 0:
-            if a[1] > first_hump.a[1]:
-                too_loose.append(1)
-                too_loose.append(2)
-        else: # j[0] < 0
-            if a[1] < first_hump.a[1]:
-                too_loose.append(1)
-                too_loose.append(2)
-        if j[4] > 0:
-            if a[5] > second_hump.a[1]:
-                too_loose.append(5)
-                too_loose.append(6)
-        else: # j[4] < 0
-            if a[5] < second_hump.a[1]:
-                too_loose.append(5)
-                too_loose.append(6)
+        first_hump = self.target_velocity(Knot(0,v[0],a[0],0), Knot(None,cruise_vel,0,None))
+        if len(first_hump.q) == 3: # possible that no "first hump" is required, thus this may get bypassed
+            if j[0] > 0:
+                if a[1] > first_hump.a[1]:
+                    too_loose.append(1)
+                    too_loose.append(2)
+            else: # j[0] < 0
+                if a[1] < first_hump.a[1]:
+                    too_loose.append(1)
+                    too_loose.append(2)
+
+        second_hump = self.target_velocity(Knot(0,cruise_vel,0,0), Knot(None, v[-1],0,None))
+        if len(second_hump.q) == 3: # possible that no "second hump" is required
+            if j[4] > 0:
+                if a[5] > second_hump.a[1]:
+                    too_loose.append(5)
+                    too_loose.append(6)
+            else: # j[4] < 0
+                if a[5] < second_hump.a[1]:
+                    too_loose.append(5)
+                    too_loose.append(6)
 
         if too_loose:
             raise ConstraintsTooLoose(too_loose)
@@ -1154,7 +1163,7 @@ class TrajectorySolver(object):
 
         delta_v = final.vel - initial.vel
 
-        if abs(delta_v) < 0.0001:
+        if abs(delta_v) < self.v_threshold:
             if initial.accel == final.accel:
                 return CubicSpline([initial.pos], [initial.vel], [initial.accel], [], [initial.time])
             elif initial.accel <= 0: # initial decel will push vel below target.
@@ -1233,7 +1242,7 @@ class TrajectorySolver(object):
         for i in range(len(knots)-1):
             k1 = knots[i]
             k2 = knots[i+1]
-            if abs(k2.time - k1.time) <= 0.00001: # Within rounding errors of zero length
+            if abs(k2.time - k1.time) < self.t_threshold: # Within rounding errors of zero length
                 pass # Skip the knot
             elif k2.time > k1.time: # Normal case
                 q.append(k2.pos)
@@ -1287,7 +1296,7 @@ class TrajectorySolver(object):
         # Treat vi as a 'virtual ground' -- that is, treat it as though it were zero.
         initial_knot = spline.evaluate(ti)
         final_knot = spline.evaluate(spline.t[-1])
-        assert abs(initial_knot.accel) < 0.0001
+        assert abs(initial_knot.accel) < self.a_threshold
 
         slip_solver = TrajectorySolver(self.v_max-initial_knot.vel, self.a_max, self.j_max,
                                   self.v_min-initial_knot.vel, self.a_min, self.j_min)
