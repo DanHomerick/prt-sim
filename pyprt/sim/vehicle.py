@@ -716,11 +716,12 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             vs.passengerIDs.append(pax.ID)
 
         lv, dist = self.find_leading_vehicle()
-	vs.lv_distance = dist
 	if lv: # ommit if a lead vehicle wasn't found
             vs.lvID = lv.ID
-	else:
-	    vs.lvID = 999999
+	    vs.lv_distance = dist
+#	else:
+#	    vs.lvID = 999999
+#	    vs.lv_distance = dist
 
     def calc_energy_used(self):
         """Return the amount of energy used, in Joules"""
