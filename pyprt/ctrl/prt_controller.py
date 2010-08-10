@@ -125,6 +125,10 @@ class Tracks(utility.Singleton):
     for providing shortest path information.
     """
 
+    LENGTH = 'length'
+    MAX_SPEED = 'max_speed'
+    TRAVEL_TIME = 'travel_time'
+
     @classmethod
     def initialize(cls, track_segments_xml):
         """Returns the singleton object.
@@ -135,31 +139,40 @@ class Tracks(utility.Singleton):
         return tracks
 
     def _build_graph(self, track_segments_xml):
-        """Returns a networkx.DiGraph suitable for routing vehicles over."""
+        """Returns a networkx.DiGraph suitable for routing vehicles over.
+        Each node represents one track segment. Each edge represents the
+        connection to another track regment. The edges hold data that
+        actually belongs to the edge's source node, such as length, and
+        max_speed.
+
+        A track segment that doesn't connect to anybody (a dead end) still
+        requires a node to connect to in order for there to be an edge
+        which can hold the segment's length and speed data. At this time,
+        dead ends are not supported.
+        """
         graph = networkx.DiGraph()
 
         for track_segment_xml in track_segments_xml.getElementsByTagName('TrackSegment'):
             trackID = track_segment_xml.getAttribute('id')
             intId = int(trackID.split("_")[0]) # get a unique, integer ID
-            length = float(track_segment_xml.getAttribute('length'))
-            max_speed = float(track_segment_xml.getAttribute('max_speed'))
+            length = float(track_segment_xml.getAttribute(Tracks.LENGTH))
+            max_speed = float(track_segment_xml.getAttribute(Tracks.MAX_SPEED))
 
             graph.add_node(intId)
 
             connect_to_xml = track_segment_xml.getElementsByTagName('ConnectsTo')[0]
             for id_xml in connect_to_xml.getElementsByTagName('ID'):
                 connect_id = _to_numeric_id(id_xml)
-                graph.add_edge(intId, connect_id, {'length':length,
-                                                   'max_speed':max_speed,
-                                                   'weight':length/max_speed})
-
+                graph.add_edge(intId, connect_id, {Tracks.LENGTH:length,
+                                                   Tracks.MAX_SPEED:max_speed,
+                                                   Tracks.TRAVEL_TIME:length/max_speed})
         return graph
 
     def get_path(self, ts_1, ts_2):
         """Returns a two tuple. The first element is the path length (in meters),
         and the second is the path. ts_1 and ts_2 are integer trackSegment ids.
         The path is the shortest path, as weighted by vehicle travel time."""
-        weight, path = networkx.bidirectional_dijkstra(self._graph, ts_1, ts_2)
+        weight, path = networkx.bidirectional_dijkstra(self._graph, ts_1, ts_2, weight=Tracks.TRAVEL_TIME)
         length = self.get_path_length(path)
         return (length, path)
 
@@ -167,7 +180,7 @@ class Tracks(utility.Singleton):
         """Returns the length of a path, in meters."""
         length = 0
         for orig, dest in pairwise(path):
-            length += self._graph[orig][dest]['length']
+            length += self._graph[orig][dest][Tracks.LENGTH]
         return length
 
     def get_paths(self, source_ts_id, target_ts_ids):
@@ -182,7 +195,7 @@ class Tracks(utility.Singleton):
             The first dictionary stores distance from the source.
             The second stores the path from the source to that node.
         """
-        weights, paths = networkx.single_source_dijkstra(self._graph, source_ts_id)
+        weights, paths = networkx.single_source_dijkstra(self._graph, source_ts_id, weight=Tracks.TRAVEL_TIME)
         paths = dict( (target, paths[target]) for target in target_ts_ids)
         lengths = dict( (target, self.get_path_length(paths[target])) for target in target_ts_ids)
 
@@ -195,7 +208,47 @@ class Tracks(utility.Singleton):
         if idx == 0:
             return 0
 
-        return sum(self._graph[a][b]['length'] for a, b in pairwise(path[:idx+1]))
+        return sum(self._graph[a][b][Tracks.LENGTH] for a, b in pairwise(path[:idx+1]))
+
+    def get_speed_zones(self, path):
+        """Returns a list of 2-tuples, wherein each tuple consists of:
+            (max_speed, path_fragment)
+
+        Example:
+        >>> path = [0,1,2,3,4,5]
+        >>> get_speed_zones(path)
+        [(10, [0,1,2,3]), (5, [3,4]), (10, [4,5]), (10, [5])]
+
+        In the above example, track segments 0,1,2 have a speed limit of 10.
+        Track segment 3 has a speed limit of 5. Track segment 4 has a speed limit
+        of 10. Track segment 5 has a speed limit of 10.
+        """
+        if len(path) == 0:
+            return []
+
+        wp = path[:] # working path
+        # choose a successor to the last segment on the path arbitrarily.
+        # Edge data is the same for all successors.
+        try:
+            successor = self._graph.successors(wp[-1])[0]
+        except IndexError:
+            raise ValueError("Path may not contain a dead end segment.")
+        wp.append(successor)
+
+        result = []
+        last_idx = 0
+        last_speed = self._graph[wp[0]][wp[1]][Tracks.MAX_SPEED]
+        for i in xrange(len(wp)-1):
+            curr_speed = self._graph[wp[i]][wp[i+1]][Tracks.MAX_SPEED]
+            if last_speed != curr_speed:
+                result.append( (last_speed, wp[last_idx:i+1]) )
+                last_idx = i
+                last_speed = curr_speed
+
+        if last_idx != i:
+            result.append( (curr_speed, wp[last_idx:-1]) )
+        result.append( (curr_speed, [path[-1]]) )
+        return result
 
     def predecessors(self, ts_id):
         return self._graph.predecessors(ts_id)
@@ -1049,14 +1102,13 @@ class PrtController(BaseController):
                 assert vehicle.merge_slot is merge_slot
                 vehicle.set_merge_slot(None)
 
-            # manage the vehicle through a merge
             merge = self.merges.get_from_inlet_ts(msg.v_status.tail_locID)
+            # Vehicle just entered a merge's zone of control
             if merge:
                 try:
                     vehicle.do_merge(merge, self.current_time)
                 except NotAtDecisionPoint as err:
                     self.set_fnc_notification(vehicle.do_merge, (merge, err.time), err.time) # call do_merge again later
-
 
 
 class VehicleManager(utility.Singleton):
@@ -1529,7 +1581,6 @@ class Passenger(object):
                (self.id, self.origin_id, self.dest_id, self.origin_time)
 
 class Vehicle(object):
-    SPEED_INCREMENT = 2.77777  # 10 km/hr
     BERTH_GAP = 0.1 # 10 cm. A little room left between the vehicle's nose and the edge of the berth
 
     # To prevent a vehicle's trajectory from being undefined, splines are extended
@@ -1701,7 +1752,7 @@ class Vehicle(object):
             self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
 
     def run(self, speed_limit=None, dist=None, final_speed=0):
-        """Commands the vehicle's path and trajectory. Obeys the speed_limit
+        """Commands the vehicle's trajectory. Obeys the speed_limit
         constraint, if supplied. Estimates the vehicle's current pose from the
         current spline.
 
@@ -1715,18 +1766,27 @@ class Vehicle(object):
 
         'final_speed' is to be used in conjunction with 'dist'. Measured in meters/sec.
 
-        If a distance is specified, returns the scheduled arrival time."""
-        if speed_limit is None:
-            speed_limit = self.v_max
-        else:
-            speed_limit = min(self.v_max, speed_limit)
-
+        If a distance is specified, returns the scheduled arrival time.
+        """
         initial_knot = self.estimate_pose(self.controller.current_time)
 
+        speed_zones = self.tracks.get_speed_zones(self.path)
+        print speed_zones
+
+
+        # If no distance is specified, just follow the speed limits for the
+        # extent of the vehicle's path
         if dist is None:
-            spline = self.traj_solver.target_velocity(initial_knot,
-                                                      Knot(None, speed_limit, 0, None))
-        else:
+            prev_knot = initial_knot
+            spline = CubicSpline([initial_knot.pos], [initial_knot.vel], [initial_knot.accel], [], [initial_knot.time])
+            for (curr_speed, curr_path_frag), (next_speed, next_path_frag) in pairwise(speed_zones):
+                curr_path_length = self.tracks.get_path_length(curr_path_frag)
+                knot = Knot(prev_knot.pos + curr_path_length, min(next_speed, curr_speed, self.v_max), 0, None)
+                spline = spline.concat(self.traj_solver.target_position(prev_knot, knot, max_speed=curr_speed))
+                prev_knot = knot
+                prev_knot.time = spline.t[-1]
+
+        else: # TODO: Follow speed limits
             spline = self.traj_solver.target_position(initial_knot,
                                         Knot(dist + initial_knot.pos, final_speed, 0, None),
                                         max_speed=speed_limit)
@@ -1970,8 +2030,6 @@ class Merge(object):
         assert isinstance(graph, networkx.classes.DiGraph)
 
 ##        Merge._calc_max_slips(vehicles.values()) # noop if already calculated
-
-        self.tracks = Tracks() # Singleton
 
         self.id = merge_id
 
