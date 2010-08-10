@@ -1042,6 +1042,13 @@ class PrtController(BaseController):
 
         # Check if just entered a merge's zone of control.
         if vehicle.state is self.RUNNING: # may have been LAUNCHING at beginning of function
+            merge = self.merges.get_from_outlet_ts(msg.v_status.tail_locID)
+            # Vehicle just left a merge's zone of control
+            if merge:
+                merge_slot = merge.reservations.pop(0)
+                assert vehicle.merge_slot is merge_slot
+                vehicle.set_merge_slot(None)
+
             # manage the vehicle through a merge
             merge = self.merges.get_from_inlet_ts(msg.v_status.tail_locID)
             if merge:
@@ -1050,12 +1057,7 @@ class PrtController(BaseController):
                 except NotAtDecisionPoint as err:
                     self.set_fnc_notification(vehicle.do_merge, (merge, err.time), err.time) # call do_merge again later
 
-            merge = self.merges.get_from_outlet_ts(msg.v_status.tail_locID)
-            # Vehicle just left a merge's zone of control
-            if merge:
-                merge_slot = merge.reservations.pop(0)
-                assert vehicle.merge_slot is merge_slot
-                vehicle.set_merge_slot(None)
+
 
 class VehicleManager(utility.Singleton):
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle routing."""
@@ -1968,6 +1970,8 @@ class Merge(object):
         assert isinstance(graph, networkx.classes.DiGraph)
 
 ##        Merge._calc_max_slips(vehicles.values()) # noop if already calculated
+
+        self.tracks = Tracks() # Singleton
 
         self.id = merge_id
 

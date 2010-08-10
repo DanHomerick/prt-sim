@@ -2,6 +2,8 @@ import unittest
 import tempfile
 import pyprt.ctrl.prt_controller as prt
 
+import networkx
+
 from pyprt.ctrl.prt_controller import Vehicle
 
 class MockManager(object):
@@ -69,6 +71,13 @@ class TestVehicle(unittest.TestCase):
         v0.enter_station()
         self.assertEqual(v0.spline.q[0], START_POS)
         self.assertAlmostEqual(v0.spline.q[-1], s.onramp_length + 45 + 45 + 45 - v0.BERTH_GAP, places=4)
+
+    def test_run(self):
+        t = make_Track()
+        v = make_vehicle(0, 0, 0) # pos 0 on ts 0
+        v.set_path([0,1,2,3,4,5,6], send=False)
+        v.run()
+        self.assertEqual(v.get_spline(), None)
 
 class TestMerge(unittest.TestCase):
     """Tests for the Merge class"""
@@ -193,6 +202,50 @@ class TestStation(unittest.TestCase):
         self.assertEqual(req_p_id, s.LOAD_PLATFORM)
         self.assertEqual(s.reservations[s.LOAD_PLATFORM], [None, v1, v0])
 
+class TestTracks(unittest.TestCase):
+    def test_get_speed_zones(self):
+        t = make_Track()
+
+        self.assertEqual(t.get_speed_zones([0,1,2,3,4,5]),
+                         [(10, [0,1,2,3]), (5, [3,4]), (10, [4,5]), (10, [5])])
+
+        self.assertEqual(t.get_speed_zones([0,1,2,3,4]),
+                         [(10, [0,1,2,3]), (5, [3,4]), (10, [4])])
+
+        self.assertEqual(t.get_speed_zones([0,1,2,3]),
+                         [(10, [0,1,2,3]), (5, [3])])
+
+        self.assertEqual(t.get_speed_zones([0,1]),
+                         [(10, [0,1]), (10, [1])])
+
+        self.assertEqual(t.get_speed_zones([0]),
+                         [(10, [0])])
+
+        self.assertEqual(t.get_speed_zones([]), [])
+
+    def test_get_path_length(self):
+        t = make_Track()
+        self.assertEqual(t.get_path_length([0,1,2,3,4,5]), 100+50+2+20+100)
+        self.assertEqual(t.get_path_length([0,1,2,3,4]), 100+50+2+20)
+        self.assertEqual(t.get_path_length([0,1,2,3]), 100+50+2)
+        self.assertEqual(t.get_path_length([0,1]), 100)
+        self.assertEqual(t.get_path_length([0]), 0)
+        self.assertEqual(t.get_path_length([]), 0)
+
+def make_Track():
+    """Not a thorough implementation. Just creates a graph and tacks it onto the
+    Tracks singleton."""
+    graph = networkx.DiGraph()
+    graph.add_edge(0,1, {prt.Tracks.MAX_SPEED:10, prt.Tracks.LENGTH:100})
+    graph.add_edge(1,2, {prt.Tracks.MAX_SPEED:10, prt.Tracks.LENGTH:50})
+    graph.add_edge(2,3, {prt.Tracks.MAX_SPEED:10, prt.Tracks.LENGTH:2})
+    graph.add_edge(3,4, {prt.Tracks.MAX_SPEED:5,  prt.Tracks.LENGTH:20})
+    graph.add_edge(4,5, {prt.Tracks.MAX_SPEED:10, prt.Tracks.LENGTH:100})
+    graph.add_edge(5,6, {prt.Tracks.MAX_SPEED:10, prt.Tracks.LENGTH:100})
+    graph.add_edge(6,0, {prt.Tracks.MAX_SPEED:5,  prt.Tracks.LENGTH:1})
+    t = prt.Tracks()
+    t._graph = graph
+    return t
 
 def make_station_I():
     """Make a station with 3 unload, 3 queue, and 3 loading berths. Berths
