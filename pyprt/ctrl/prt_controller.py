@@ -1524,17 +1524,19 @@ class Vehicle(object):
             to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
 
             spline = to_unload_spline.concat(to_berth_spline)
+            path = unload_path + berth_path[1:] # don't duplicate the UNLOAD ts_id
         else:
             # When used during sim startup the vehicle is stationary and
             # doesn't need a separate spline for the decel to station speed limit.
             berth_dist, berth_path = self.manager.get_path(self.ts_id, self.plat_ts)
             berth_knot = Knot(berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
             spline = self.traj_solver.target_position(current_knot, berth_knot)
+            path = berth_path
 
         stop_time = spline.t[-1]
 
         self.set_spline(spline)
-        self.set_path(unload_path + berth_path[1:]) # don't duplicate the UNLOAD ts_id
+        self.set_path(path)
 
         return stop_time
 

@@ -57,23 +57,23 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     # A default view for vehicles.
     trait_view =  ui.View('ID', 'length',
-                           ui.Item(name='pos', label='Position'),
-                           ui.Item(name='vel'),
-                           ui.Item(name='v_mass'),
-                           ui.Item(name='passenger_mass'),
-                           ui.Item(name='total_mass'),
-                           ui.Item(name='max_pax_capacity', label='Max. Passenger Capacity'),
-                           ui.Item('_passengers@',
-                                   editor = ui.ListEditor( use_notebook = True,
-                                                           deletable    = False,
-                                                           export       = 'DockShellWindow',
-                                                           page_name    = '.label' )),
-                           title='Vehicle Stats',
-                           kind='nonmodal',
-                           style='readonly',
-                           resizable=True,
-                           handler=NoWritebackOnCloseHandler()
-                           )
+                          ui.Item(name='pos', label='Position'),
+                          ui.Item(name='vel'),
+                          ui.Item(name='v_mass'),
+                          ui.Item(name='passenger_mass'),
+                          ui.Item(name='total_mass'),
+                          ui.Item(name='max_pax_capacity', label='Max. Passenger Capacity'),
+                          ui.Item('_passengers@',
+                                  editor = ui.ListEditor( use_notebook = True,
+                                                          deletable    = False,
+                                                          export       = 'DockShellWindow',
+                                                          page_name    = '.label' )),
+                          title='Vehicle Stats',
+                          kind='nonmodal',
+                          style='readonly',
+                          resizable=True,
+                          handler=NoWritebackOnCloseHandler()
+                          )
 
     table_editor = ui.TableEditor(
         columns = [ui_tc.ObjectColumn(name='ID', label='ID', tooltip='Vehicle ID'),
@@ -328,7 +328,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         t_final, cnt_final = self._pax_times[-1]
         if cnt_final == 0:
             dist += self._spline.evaluate(Sim.now()).pos - \
-                    self._spline.evaluate(t_final).pos
+                 self._spline.evaluate(t_final).pos
         return dist
 
     def get_pax_dist(self):
@@ -341,7 +341,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         t_final, cnt_final = self._pax_times[-1]
         if cnt_final > 0:
             dist += self._spline.evaluate(Sim.now()).pos - \
-                    self._spline.evaluate(t_final).pos * cnt_final
+                 self._spline.evaluate(t_final).pos * cnt_final
         return dist
 
     def clear_path(self):
@@ -716,9 +716,9 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             vs.passengerIDs.append(pax.ID)
 
         lv, dist = self.find_leading_vehicle()
-	if lv: # ommit if a lead vehicle wasn't found
+        if lv: # ommit if a lead vehicle wasn't found
             vs.lvID = lv.ID
-	    vs.lv_distance = dist
+            vs.lv_distance = dist
 #	else:
 #	    vs.lvID = 999999
 #	    vs.lv_distance = dist
