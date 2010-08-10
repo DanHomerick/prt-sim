@@ -1514,18 +1514,23 @@ class Vehicle(object):
         # Slow to station speed limit at the start of the UNLOAD segment
         unload_dist, unload_path = self.manager.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
         unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
-        try:
+        if current_knot.vel > TrajectorySolver.v_threshold:
             to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
-        except FatalTrajectoryError: # When used during sim startup, the vehicle is not decelerating.
-            to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=station.SPEED_LIMIT)
-        unload_knot.time = to_unload_spline.t[-1]
+            unload_knot.time = to_unload_spline.t[-1]
 
-        # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
-        berth_dist, berth_path = self.manager.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
-        berth_knot = Knot(unload_knot.pos + berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
-        to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
+            # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
+            berth_dist, berth_path = self.manager.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
+            berth_knot = Knot(unload_knot.pos + berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
+            to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
 
-        spline = to_unload_spline.concat(to_berth_spline)
+            spline = to_unload_spline.concat(to_berth_spline)
+        else:
+            # When used during sim startup the vehicle is stationary and
+            # doesn't need a separate spline for the decel to station speed limit.
+            berth_dist, berth_path = self.manager.get_path(self.ts_id, self.plat_ts)
+            berth_knot = Knot(berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
+            spline = self.traj_solver.target_position(current_knot, berth_knot)
+
         stop_time = spline.t[-1]
 
         self.set_spline(spline)
