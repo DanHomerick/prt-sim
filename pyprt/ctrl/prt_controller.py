@@ -1725,7 +1725,7 @@ class Merge(object):
         # TODO: Emergency stop distance prior to merge
         assert isinstance(graph, networkx.classes.DiGraph)
 
-        Merge._calc_max_slips(vehicles.values()) # noop if already calculated
+##        Merge._calc_max_slips(vehicles.values()) # noop if already calculated
 
         # FIFO queue containing MergeSlot elements. Note that 'front'
         # includes the vehicle's headway. Append to right end, pop from left end.
@@ -1906,7 +1906,7 @@ class Merge(object):
             # If the vehicle, travelling at line speed, would arrive at the merge point too early, use target_time
             if spline.t[-1] < lead_slot.end_time + self.HEADWAY:
                 final_knot.time = lead_slot.end_time + self.HEADWAY
-                spline = vehicle.traj_solver.target_time(initial_knot, final_knot)
+                spline = vehicle.traj_solver.target_time(initial_knot, final_knot, max_speed=self.LINE_SPEED)
 
             assert spline.t[-1] >= lead_slot.end_time + self.HEADWAY - 2*TrajectorySolver.t_threshold
             start_time = spline.t[-1] - self.HEADWAY

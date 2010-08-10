@@ -653,6 +653,16 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
+    def test_target_time_XVI(self):
+        """Problem from testing."""
+        solver = TrajectorySolver(60, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(0.0, 0.0, 0, 0.0)
+        final = Knot(57.926000000000002, 15.0, 0, 7.1870000000000003)
+        spline = solver.target_time(initial, final)
+        self.plot_it(spline, solver, "test_target_time_XVI")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
     def test_target_time_nearly_stops(self):
         """Initial knot has a positive velocity, and the vehicle needs to
         almost come to a halt in order to arrive on time. Check that
