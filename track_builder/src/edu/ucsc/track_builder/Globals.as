@@ -2,25 +2,33 @@ package edu.ucsc.track_builder
 {
 	import com.google.maps.Map;
 	import com.google.maps.MapMouseEvent;
+	import com.google.maps.MapType;
 	import com.google.maps.controls.ZoomControl;
 	import com.google.maps.interfaces.IPane;
 	
 	import flash.display.CapsStyle;
 	import flash.display.NativeWindow;
 	import flash.display.NativeWindowDisplayState;
+	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.filesystem.File;
 	import flash.geom.Rectangle;
 	
 	import mx.controls.ToggleButtonBar;
-	import mx.core.UIComponent;
 	
 	public class Globals
 	{
+		/* Tool TabBar indexes */
 		public static const SELECT_TOOL:int = 0;
 		public static const TRACK_TOOL:int = 1;
 		public static const STATION_TOOL:int = 2;
 		public static const VEHICLE_TOOL:int = 3;
+		
+		/* MapType TabBar indexes */
+		public static const MAP_MAPTYPE:int = 0;
+		public static const SATELLITE_MAPTYPE:int = 1;
+		public static const HYBRID_MAPTYPE:int = 2;
+		public static const TERRAIN_MAPTYPE:int = 3;
 
 		public static var tool:int; // Which tool is being used. Uses above constants.	
 		
@@ -39,7 +47,8 @@ package edu.ucsc.track_builder
 		
 		public static var map:Map; // The google map		
 		public static var menu:Menu; // my menu, NOT mx.controls.menu
-		public static var toolBar:ToggleButtonBar;		
+		public static var toolBar:ToggleButtonBar;
+		public static var mapTypeBar:ToggleButtonBar;
 				
 		public static var dataXMLFile:File; // The XML file currently being worked with.
 		public static var prefsXMLFile:File = File.applicationStorageDirectory.resolvePath("preferences.xml"); // The prefs file
@@ -226,6 +235,25 @@ package edu.ucsc.track_builder
 			errors = errors.concat(Globals.tracks.validate());
 			errors = errors.concat(Globals.vehicles.validate());
 			return errors;
+		}
+
+		/** Zooms the map in one level. If already at the max zoom level, will switch map styles to zoom further if possible. */
+		public static function zoomIn(evt:Event):void {
+			var curr_max_zoom:Number = Globals.map.getMaxZoomLevel(Globals.map.getCurrentMapType());					
+			if (Globals.map.getZoom() == curr_max_zoom) {
+				if (Globals.map.getMaxZoomLevel(MapType.SATELLITE_MAP_TYPE) > curr_max_zoom) {
+					Globals.map.setMapType(MapType.SATELLITE_MAP_TYPE); // TODO: Need to update the toolbar, or change the MapType via the toolbar.
+					Globals.mapTypeBar.selectedIndex = Globals.SATELLITE_MAPTYPE
+					Globals.map.zoomIn();
+				}
+			} else {
+				Globals.map.zoomIn();
+			}
+		}
+
+		/** Zooms the map out one level. */
+		public static function zoomOut(evt:Event):void {
+			Globals.map.zoomOut();	
 		}
 
 	}

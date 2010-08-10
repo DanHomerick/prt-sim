@@ -43,7 +43,8 @@ internal function initApp(event:FlexEvent):void {
 	Globals.map = map;
 	XMLHandler.loadPrefsXML(Globals.prefsXMLFile); // load and use preferences	
 
-	Globals.toolBar = toolBar; 
+	Globals.toolBar = toolBar;
+	Globals.mapTypeBar = mapTypeBar;
 	Globals.menu = new Menu();
 	Globals.dirty = false;
 	stage.addEventListener(Event.CLOSING, Globals.menu.onExiting);
@@ -142,7 +143,7 @@ internal function onElevationTimerComplete(event:TimerEvent):void {
 
 
 /** Switch between google map styles */
-internal function onMapStyleChooser(event:ItemClickEvent):void {
+internal function onMapTypeChooser(event:ItemClickEvent):void {
     if (event.index == 0) {
     	trace("Map changed to NORMAL");
         Globals.map.setMapType(MapType.NORMAL_MAP_TYPE);
@@ -165,6 +166,7 @@ internal function onKeyDown(event:KeyboardEvent):void
 	switch (event.keyCode) {
 		case Keyboard.ESCAPE:
 			Globals.setActiveMarker(Globals.originMarker);
+			Globals.originMarker.visible = true;
 			break;
 		case Keyboard.F1:
 			tool = Globals.SELECT_TOOL;
@@ -178,6 +180,14 @@ internal function onKeyDown(event:KeyboardEvent):void
 		case Keyboard.F4:
 			tool = Globals.VEHICLE_TOOL;
 			break;
+		case Keyboard.NUMPAD_ADD:
+		case Keyboard.EQUAL:
+			Globals.zoomIn(null);
+			break;
+		case Keyboard.MINUS:
+		case Keyboard.NUMPAD_SUBTRACT:
+			Globals.zoomOut(null);
+			break;		
 		default:
 			break;
 	}

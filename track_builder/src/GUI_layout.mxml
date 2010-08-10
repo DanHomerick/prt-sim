@@ -37,7 +37,7 @@
         
         <mx:Spacer width="100%"/>
         
-        <mx:ToggleButtonBar itemClick="onMapStyleChooser(event);" keyDown="dispatchEvent(event); //I dunno why, but the bar was capturing events.">
+        <mx:ToggleButtonBar id="mapTypeBar" itemClick="onMapTypeChooser(event);" keyDown="dispatchEvent(event); //I dunno why, but the bar was capturing events.">
             <mx:dataProvider>
                 <mx:Array>
                     <mx:String>Map</mx:String>

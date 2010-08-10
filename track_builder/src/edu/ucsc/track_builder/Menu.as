@@ -1,7 +1,6 @@
 package edu.ucsc.track_builder
 {
 	import com.google.maps.LatLng;
-	import com.google.maps.MapType;
 	
 	import edu.ucsc.track_builder.elevation.ElevationService;
 	import edu.ucsc.track_builder.gtf_import.GtfImportError;
@@ -16,6 +15,7 @@ package edu.ucsc.track_builder
 	import flash.geom.Rectangle;
 	import flash.html.HTMLLoader;
 	import flash.net.URLRequest;
+	import flash.ui.Keyboard;
 	
 	import mx.containers.TitleWindow;
 	import mx.controls.Alert;
@@ -132,6 +132,12 @@ package edu.ucsc.track_builder
 			
 			/* View Menu */
 			var viewMenu:NativeMenu = new NativeMenu();
+		
+			var zoomIn:NativeMenuItem = new NativeMenuItem("Zoom In       [+]");
+			zoomIn.addEventListener(Event.SELECT, Globals.zoomIn);
+			
+			var zoomOut:NativeMenuItem = new NativeMenuItem("Zoom Out    [-]");
+			zoomOut.addEventListener(Event.SELECT, Globals.zoomOut);			
 			
 			hideTracks = new NativeMenuItem("Hide Track");
 			hideTracks.checked = false;
@@ -177,6 +183,9 @@ package edu.ucsc.track_builder
 			viewStatistics.mnemonicIndex = 1;
 			viewStatistics.addEventListener(Event.SELECT, onStatistics);				
 			
+			viewMenu.addItem(zoomIn);
+			viewMenu.addItem(zoomOut);
+			viewMenu.addItem(new NativeMenuItem("", true)); // separator
 			viewMenu.addItem(hideTracks);
 			viewMenu.addItem(hideStations);
 			viewMenu.addItem(hideVehicles);
@@ -195,19 +204,19 @@ package edu.ucsc.track_builder
 			 * See: http://bugs.adobe.com/jira/browse/SDK-17901   (Unfixed in AIR v2.0)
 			 * This was the cause of issue 
 			 */
-			var selectToolMenu:NativeMenuItem = new NativeMenuItem("Select");
+			var selectToolMenu:NativeMenuItem = new NativeMenuItem("Select       [F1]");
 			selectToolMenu.mnemonicIndex = 0;			
 			selectToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.SELECT_TOOL); Globals.toolBar.selectedIndex = Globals.SELECT_TOOL});
 			
-			var trackToolMenu:NativeMenuItem = new NativeMenuItem("Tracks");
+			var trackToolMenu:NativeMenuItem = new NativeMenuItem("Tracks      [F2]");
 			trackToolMenu.mnemonicIndex = 0;
 			trackToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.TRACK_TOOL); Globals.toolBar.selectedIndex = Globals.TRACK_TOOL});
 			
-			var stationToolMenu:NativeMenuItem = new NativeMenuItem("Stations");
+			var stationToolMenu:NativeMenuItem = new NativeMenuItem("Stations    [F3]");
 			stationToolMenu.mnemonicIndex = 0;
 			stationToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.STATION_TOOL); Globals.toolBar.selectedIndex = Globals.STATION_TOOL});
  
-			var vehicleToolMenu:NativeMenuItem = new NativeMenuItem("Vehicles");
+			var vehicleToolMenu:NativeMenuItem = new NativeMenuItem("Vehicles    [F4]");
 			vehicleToolMenu.mnemonicIndex = 0;
 			vehicleToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.VEHICLE_TOOL); Globals.toolBar.selectedIndex = Globals.VEHICLE_TOOL});			
 			
@@ -244,10 +253,7 @@ package edu.ucsc.track_builder
 			debugShowXml.addEventListener(Event.SELECT, onShowXml);		
 			
 			var debugFindDuplicateOverlays:NativeMenuItem = new NativeMenuItem("Find Duplicate Overlays");
-			debugFindDuplicateOverlays.addEventListener(Event.SELECT, onFindDuplicateOverlays);
-				
-			var debugZoomIn:NativeMenuItem = new NativeMenuItem("Zoom In");
-			debugZoomIn.addEventListener(Event.SELECT, onZoomIn);
+			debugFindDuplicateOverlays.addEventListener(Event.SELECT, onFindDuplicateOverlays);				
 
 			var autoLevel:NativeMenuItem = new NativeMenuItem("AutoLevel");
 			autoLevel.enabled = false;
@@ -265,7 +271,6 @@ package edu.ucsc.track_builder
 //			debugMenu.addItem(debugShowKml);
 			debugMenu.addItem(debugShowXml);
 			debugMenu.addItem(debugFindDuplicateOverlays);
-			debugMenu.addItem(debugZoomIn);
 			debugMenu.addItem(autoLevel);
 			debugMenu.addItem(debugDisableElevRequests);
 			baseMenu.addSubmenu(debugMenu, "Debug");
@@ -665,18 +670,6 @@ package edu.ucsc.track_builder
 				
 			}
 			trace("Done.");
-		}
-
-		public function onZoomIn(event:Event):void {
-			var curr_max_zoom:Number = Globals.map.getMaxZoomLevel(Globals.map.getCurrentMapType());					
-			if (Globals.map.getZoom() == curr_max_zoom) {
-				if (Globals.map.getMaxZoomLevel(MapType.SATELLITE_MAP_TYPE) > curr_max_zoom) {
-					Globals.map.setMapType(MapType.SATELLITE_MAP_TYPE); // TODO: Need to update the toolbar, or change the MapType via the toolbar.
-					Globals.map.zoomIn();
-				}
-			} else {
-				Globals.map.zoomIn();
-			}
 		}
 
 		public function onDoc(event:Event):void {
