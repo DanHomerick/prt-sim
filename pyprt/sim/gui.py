@@ -92,7 +92,7 @@ class MainWindow(wx.Frame):
             manager.load_scenario(filename)
 
             # adjust the window size to match the image.
-            self.SetSize(wx.Size(common.img_width+7, common.img_height+76)) # width, height, 85 for menu bar and 10 for border 
+            self.SetSize(wx.Size(common.img_width+7, common.img_height+76)) # width, height, 76 for menu bar and 7 for border
             my_size = self.GetSize()
             display_size = wx.GetDisplaySize()
 ##            if (my_size[0] > display_size[0] or my_size[1] > display_size[1]): # if too big
