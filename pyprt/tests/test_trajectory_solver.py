@@ -482,7 +482,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         initial = Knot(0, 11.51496564563041, 5.6694744752383066, 0)
         final = Knot(None, 14.732396990426981, 0, None)
         spline = solver.target_velocity(initial, final)
-##        self.plot_it(spline, solver, "test_target+velocity_V")
+        self.plot_it(spline, solver, "test_target_velocity_V")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, pos=False, time=False)
 
@@ -694,6 +694,14 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
+    def test_target_time_XVIII(self):
+        solver = TrajectorySolver(15, 10, 5.0, 0, -10, -5.0)
+        initial = Knot(23.973000000002685, 15.0, 0.0, 1154.2775841472599)
+        final = Knot(277.55799999999999, 15.0, 0, 1172.0256197255005)
+        spline = solver.target_time(initial, final)
+##        self.plot_it(spline, solver, "test_target_time_XVIII")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
 
     def test_target_time_nearly_stops(self):
         """Initial knot has a positive velocity, and the vehicle needs to

@@ -1514,7 +1514,7 @@ class Vehicle(object):
         # Slow to station speed limit at the start of the UNLOAD segment
         unload_dist, unload_path = self.manager.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
         unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
-        if current_knot.vel > TrajectorySolver.v_threshold:
+        if current_knot.vel > TrajectorySolver.v_threshold: # Non-zero velocity
             to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
             unload_knot.time = to_unload_spline.t[-1]
 
@@ -2064,8 +2064,11 @@ class Merge(object):
                     front_knot = front_slot.vehicle.estimate_pose(now, fs_outlet_idx)
                 except ValueError: # fs vehicle's path doesn't take it the the merge outlet
                     # make a temporary path that would carry the vehicle to the outlet.
-                    tmp_idx = self.zone_ids[front_slot.zone].index(front_slot.vehicle.path[0])
-                    tmp_path = self.zone_ids[front_slot.zone][tmp_idx:] + [self.outlet]
+                    try:
+                        tmp_idx = self.zone_ids[front_slot.zone].index(front_slot.vehicle.path[0])
+                        tmp_path = self.zone_ids[front_slot.zone][tmp_idx:] + [self.outlet]
+                    except ValueError:
+                        tmp_path_length, tmp_path = self.manager.get_path(front_slot.vehicle.path[0], self.outlet)
                     front_knot = front_slot.vehicle.estimate_pose(now, idx=len(tmp_path)-1, path=tmp_path)
 
                 # Front is past the station-merge. Launch immediately.
@@ -2191,8 +2194,11 @@ class Merge(object):
                     rear_knot = rear_slot.vehicle.estimate_pose(launch_backend_merge_time + self.HEADWAY, station_merge_path_idx)
                 except ValueError: # fs vehicle's path doesn't take it the the station_merge.
                     # make a temporary path that would carry the vehicle to the outlet.
-                    tmp_idx = self.zone_ids[rear_slot.zone].index(rear_slot.vehicle.path[0])
-                    tmp_path = self.zone_ids[rear_slot.zone][tmp_idx:] + [self.outlet]
+                    try:
+                        tmp_idx = self.zone_ids[rear_slot.zone].index(rear_slot.vehicle.path[0])
+                        tmp_path = self.zone_ids[rear_slot.zone][tmp_idx:] + [self.outlet]
+                    except ValueError:
+                        tmp_path_length, tmp_path = self.manager.get_path(rear_slot.vehicle.path[0], self.outlet)
                     rear_knot = rear_slot.vehicle.estimate_pose(launch_backend_merge_time, idx=len(tmp_path)-1, path=tmp_path)
 
                 if rear_knot.pos > 0:

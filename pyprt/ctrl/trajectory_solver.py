@@ -1290,7 +1290,7 @@ class TrajectorySolver(object):
         for i in range(len(knots)-1):
             k1 = knots[i]
             k2 = knots[i+1]
-            if abs(k2.time - k1.time) < self.t_threshold: # Within rounding errors of zero length
+            if abs(k2.time - k1.time) < self.t_threshold/1000: # Within rounding errors of zero length
                 pass # Skip the knot
             elif k2.time > k1.time: # Normal case
                 q.append(k2.pos)
