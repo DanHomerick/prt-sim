@@ -277,12 +277,24 @@ class Visualizer(object):
             vel = v.get_vel()
             mph = vel * 2.237
             pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
+
+            # Try to find the destination station based on the vehicle's path.
+            # Somewhat hackish, may be broken easily.
+            dest_station = None
+            dest_seg = v._path[-1]
+            for s in common.stations.itervalues():
+                if dest_seg in s.track_segments:
+                    dest_station = s
+                    break
+            dest_station_str = 'dest station: %d' % dest_station.ID if dest_station is not None else 'dest station: Unkwn'
+
             self._v_label = chaco.DataLabel(
                 component=self.plot,
                 data_point = point,
                 lines = ['ID: %d' % v.ID,
+                         'speed: %4.1f m/s (%4.0f mph)' % (vel, mph),
+                          dest_station_str,
                          'numPax: %d' % num_pax,
-                         'speed: %4.1f m/s %4.0f mph' % (vel, mph),
                          'paxIDs: ' + pax_ids]
             )
             self.plot.overlays.append(self._v_label)
