@@ -347,7 +347,7 @@ class PrtController(BaseController):
                 try:
                     v.do_merge(m, 0.0)
                 except NotAtDecisionPoint as err:
-                    self.set_fnc_notification(v.do_merge, (m, err.time), err.time) # call create_merge again later
+                    self.set_fnc_notification(v.do_merge, (m, None), err.time) # call create_merge again later
                 except FatalTrajectoryError:
                     # TODO: Write a function dedicated to validating the scenario when it's received.
                     msg = api.CtrlScenarioError()
@@ -577,7 +577,7 @@ class PrtController(BaseController):
                 try:
                     vehicle.do_merge(obj, self.current_time)
                 except NotAtDecisionPoint as err:
-                    self.set_fnc_notification(vehicle.do_merge, (obj, err.time), err.time) # call create_merge again later
+                    self.set_fnc_notification(vehicle.do_merge, (obj, None), err.time) # call create_merge again later
 
             obj = self.manager.outlets.get(msg.v_status.tail_locID)
             # Vehicle just left a merge's zone of control
@@ -1617,6 +1617,7 @@ class Vehicle(object):
 
     def do_merge(self, merge, now):
         """Aquire a MergeSlot from the Merge and use the MergeSlot's spline.
+        If now is None, then the controller's current time is used.
 
         Raises: Does not catch a NotAtDecisionPoint exception that may be emitted
                 from Merge.create_merge_slot.
@@ -1626,8 +1627,10 @@ class Vehicle(object):
                 for a station within the Merge's zone of control and is guaranteed
                 to enter the station (vehicle has already aquired a berth reservation).
         """
-
         assert isinstance(merge, Merge)
+        if now is None:
+            now = self.controller.current_time
+
         merge_slot = merge.create_merge_slot(self, now)
         self.set_merge_slot(merge_slot)
         if self.merge_slot: # May be None
@@ -1876,7 +1879,7 @@ class Merge(object):
         # If the vehicle isn't to the decision point yet, then delay managing it.
         # Don't require that the vehicle not be past the decision point, so that
         # the code can be reused during simulation startup.
-        if v_rear_pos < self._decision_point - TrajectorySolver.q_threshold:
+        if v_rear_pos < self._decision_point - 1: # If the vehicle is within a meter of the decision point, good 'nuff.
             decision_time = vehicle.spline.get_time_from_dist(self._decision_point - v_rear_pos, now)
             assert decision_time >= now, (decision_time, now)
             raise NotAtDecisionPoint(decision_time)

@@ -291,8 +291,8 @@ class Visualizer(object):
             self._v_label = chaco.DataLabel(
                 component=self.plot,
                 data_point = point,
-                lines = ['ID: %d' % v.ID,
-                         'speed: %4.1f m/s (%4.0f mph)' % (vel, mph),
+                lines = ['vID: %d' % v.ID,
+                         'speed: %.1f m/s (%.0f mph)' % (vel, mph),
                           dest_station_str,
                          'numPax: %d' % num_pax,
                          'paxIDs: ' + pax_ids]
@@ -357,7 +357,7 @@ class Visualizer(object):
                 component=self.plot,
                 data_point = point,
                 lines = ['%s' % stat_name,
-                         'ID: %d' % stat.ID,
+                         'sID: %d' % stat.ID,
                          'PAX Waiting: %d' % num_pax,
                          'max wait: %s' % max_wait,
                          'avg wait: %s' % avg_wait]
