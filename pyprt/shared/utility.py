@@ -18,6 +18,10 @@ DIST_RND = 2
 TIME_RES = 0.001
 TIME_RND = 3
 
+def same_sign(x, y):
+    """Returns true if x and y have the same sign. Zeros are treated as positive."""
+    return (x<0) == (y<0)
+
 class deque(collections.deque):
     """An extension of the deque class which includes an insert method."""
 
