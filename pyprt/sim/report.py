@@ -209,7 +209,7 @@ class VehicleReport(Report):
         lines = []
         for v in v_list:
             assert isinstance(v, BaseVehicle)
-            extrema_velocities = v._spline.get_extrema_velocity()
+            extrema_velocities, extrema_times = v._spline.get_extrema_velocities()
             max_vel = max(extrema_velocities)
             min_vel = min(extrema_velocities)
             max_jerk = max(v._spline.j)

@@ -89,7 +89,7 @@ def dist_lt(a, b):
 
 
 def time_eql(a, b):
-    """Include == test to capture float('inf') == float('inf')"""
+    # Include == test to capture float('inf') == float('inf')
     return (True if a == b or round(abs(a-b), TIME_RND) < TIME_RES else False)
 def time_ge(a, b):
     return (True if a > b or time_eql(a,b) else False)

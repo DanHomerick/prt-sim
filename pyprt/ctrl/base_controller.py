@@ -63,6 +63,7 @@ class BaseController(object):
             api.SIM_NOTIFY_VEHICLE_POSITION : api.SimNotifyVehiclePosition(),
             api.SIM_NOTIFY_VEHICLE_ARRIVE : api.SimNotifyVehicleArrive(),
             api.SIM_NOTIFY_VEHICLE_EXIT : api.SimNotifyVehicleExit(),
+            api.SIM_NOTIFY_VEHICLE_STOPPED : api.SimNotifyVehicleStopped(),
             api.SIM_NOTIFY_VEHICLE_COLLISION : api.SimNotifyVehicleCollision(),
             api.SIM_NOTIFY_VEHICLE_CRASH : api.SimNotifyVehicleCrash(),
             api.SIM_NOTIFY_PASSENGER_EMBARK_START : api.SimNotifyPassengerEmbarkStart(),
@@ -110,6 +111,7 @@ class BaseController(object):
             api.SIM_NOTIFY_VEHICLE_POSITION : self.on_SIM_NOTIFY_VEHICLE_POSITION,
             api.SIM_NOTIFY_VEHICLE_ARRIVE : self.on_SIM_NOTIFY_VEHICLE_ARRIVE,
             api.SIM_NOTIFY_VEHICLE_EXIT : self.on_SIM_NOTIFY_VEHICLE_EXIT,
+            api.SIM_NOTIFY_VEHICLE_STOPPED : self.on_SIM_NOTIFY_VEHICLE_STOPPED,
             api.SIM_NOTIFY_VEHICLE_COLLISION : self.on_SIM_NOTIFY_VEHICLE_COLLISION,
             api.SIM_NOTIFY_VEHICLE_CRASH : self.on_SIM_NOTIFY_VEHICLE_CRASH,
             api.SIM_NOTIFY_PASSENGER_EMBARK_START : self.on_SIM_NOTIFY_PASSENGER_EMBARK_START,
@@ -336,6 +338,9 @@ class BaseController(object):
         pass
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_STOPPED(self, msg, msgID, msg_time):
         pass
 
     def on_SIM_NOTIFY_VEHICLE_READY_LOAD(self, msg, msgID, msg_time):

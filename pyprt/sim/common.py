@@ -132,20 +132,28 @@ class InvalidVehicleID(MsgError):
 class InvalidPassengerID(MsgError):
     pass
 
-class InvalidAccel(MsgError):
-    """Magnitude of specified acceleration is too large for conditions.
-    Note that setting emergency=True in the CtrlCmdVehicleSpeed command
-    may increase the allowed accelerations."""
+class MsgRangeError(MsgError):
+    """Base class for message errors in which a value is outside of a valid range.
 
-class InvalidDecel(MsgError):
-    """Magnitude of specified deceleration is too large for conditions.
-    Note that setting emergency=True in the CtrlCmdVehicleSpeed command
-    may increase the allowed decelerations."""
+    Attributes:
+        value -- the invalid value
+        valid_range -- a 2 element sequence specifying the valid range
+    """
+    def __init__(self, value, valid_range):
+        self.value = value
+        self.valid_range = valid_range
+    def __str__(self):
+        return "value: %s is outside of the valid range: %s, %s" % \
+               (self.value, self.valid_range[0], self.valid_range[1])
 
-class InvalidJerk(MsgError):
-    """Magnitude of specified jerk is too large for conditions.
-    Note that setting emergency=True in the CtrlCmdVehicleSpeed command
-    may increase the allowed jerk."""
+class InvalidJerk(MsgRangeError):
+    pass
+
+class InvalidAccel(MsgRangeError):
+    pass
+
+class InvalidVel(MsgRangeError):
+    pass
 
 class CollisionError(Exception):
     """A collision occured. Used as a base class for more specific exceptions."""
@@ -157,5 +165,8 @@ class StationOvershootError(CollisionError):
     """A collision occured because a vehicle was travelling too fast to stop
     in the entry berth."""
 
-class ConfigError(Exception):
-    """An error occurred while processing configuration files."""
+class ScenarioError(Exception):
+    def __init__(self, msg=""):
+        self.msg = msg
+    def __str__(self):
+        return self.msg

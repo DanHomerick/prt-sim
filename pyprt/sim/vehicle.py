@@ -4,6 +4,7 @@ from __future__ import division
 import logging
 import warnings
 import heapq
+from itertools import izip
 
 from numpy import inf
 import enthought.traits.api as traits
@@ -17,6 +18,35 @@ from pyprt.shared.utility import pairwise
 import common
 import pyprt.shared.cubic_spline as cspline
 from visual import NoWritebackOnCloseHandler
+
+def create_vehicle_class(
+        model_name, length, vehicle_mass, max_pax_capacity,
+        jerk_max_norm, jerk_min_norm, jerk_max_emerg, jerk_min_emerg,
+        accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
+        vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg):
+    """Creates a new vehicle class, which inherits from BaseVehicle, and which
+    has the function parameters as attributes.
+    """
+
+    class_dict = {'model_name':traits.String(model_name),
+                 'length':traits.Float(length),
+                 'vehicle_mass':traits.Int(vehicle_mass),
+                 'max_pax_capacity':traits.Int(max_pax_capacity),
+                 'jerk_max_norm':traits.Float(jerk_max_norm),
+                 'jerk_min_norm':traits.Float(jerk_min_norm),
+                 'jerk_max_emerg':traits.Float(jerk_max_emerg),
+                 'jerk_min_emerg':traits.Float(jerk_min_emerg),
+                 'accel_max_norm':traits.Float(accel_max_norm),
+                 'accel_min_norm':traits.Float(accel_min_norm),
+                 'accel_max_emerg':traits.Float(accel_max_emerg),
+                 'accel_min_emerg':traits.Float(accel_min_emerg),
+                 'vel_max_norm':traits.Float(vel_max_norm),
+                 'vel_min_norm':traits.Float(vel_min_norm),
+                 'vel_max_emerg':traits.Float(vel_max_emerg),
+                 'vel_min_emerg':traits.Float(vel_min_emerg)
+                }
+
+    return type(model_name, (BaseVehicle,), class_dict)
 
 class BaseVehicle(Sim.Process, traits.HasTraits):
     """SimPy has several important features/limitations which have affected the
@@ -54,6 +84,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     ENTER_BERTH = 4
     EXIT_BERTH = 5
     NOTIFY_POSITION = 6
+    VEHICLE_STOPPED = 7
 
     # A default view for vehicles.
     trait_view =  ui.View('ID', 'length',
@@ -187,9 +218,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self.total_pax = 0
         self._pax_times = [(0,0)] # elements are (time, num_pax)
 
-##        self.emergency = False
-##        self.disabled = False
-
         # attributes: max_speed, maxG, maxlatG
         # forces: gravity (if z), drag, friction, braking, centripital, thrust
 
@@ -291,6 +319,9 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def get_tail_pos(self):
         """The vehicle's tail position, in meters, where the start of the current TrackSegment is 0."""
         tail_pos = self._spline.evaluate(Sim.now()).pos - self._pos_offset_tail
+        if __debug__ and tail_pos < -0.001:
+            logging.debug("t:%.4f v:%d, Neg tail pos: %.3f, spline pos:%.3f, self._pos_offset_tail: %.3f, _spline: %s",
+                          Sim.now(), self.ID, tail_pos, self._spline.evaluate(Sim.now()).pos, self._pos_offset_tail, str(self._spline))
         assert tail_pos > -1.5, tail_pos # position shouldn't be more than a little bit negative
         assert tail_pos <= self.tail_loc.length + 1 # very loose sanity check
         return tail_pos
@@ -360,14 +391,18 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         doesn't require knowledge of the vehicle's true state. The other
         coefficients are checked against "reality" and the discrepencies are
         logged for debugging purposes."""
-        t_initial = max(spline_msg.times[0], Sim.now())
-        self._spline = self._spline.copy_left(t_initial)
+        spline_start_time = max(spline_msg.times[0], Sim.now())
+        last_knot = self._spline.evaluate(spline_start_time)
+        spline = cspline.CubicSpline([last_knot.pos],
+                                     [last_knot.vel],
+                                     [last_knot.accel],
+                                     [],
+                                     [last_knot.time])
         for poly_msg, (t_initial, t_final) in zip(spline_msg.polys, pairwise(spline_msg.times)):
-            if t_final <= Sim.now(): # can occur if the spline_msg has some old info
+            if t_final <= Sim.now(): # skip any polys that end before the current time
                 continue
-            t_initial = max(t_initial, Sim.now())
-            last_knot = cspline.Knot(self._spline.q[-1], self._spline.v[-1], self._spline.a[-1], self._spline.t[-1])
-
+            if t_initial < Sim.now():
+                t_initial = Sim.now()
             # calculate forward using only the duration and jerk
             if len(poly_msg.coeffs) == 4:
                 jerk = poly_msg.coeffs[0]*6
@@ -379,46 +414,60 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             a = jerk*delta_t + last_knot.accel
             v = jerk*delta_t__2/2 + last_knot.accel*delta_t + last_knot.vel
             q = jerk*delta_t__3/6 + last_knot.accel*delta_t__2/2 + last_knot.vel*delta_t + last_knot.pos
+            new_knot = cspline.Knot(q, v, a, t_final)
 
             # It's one thing to not trust the controller to dictate the vehicle's
             # state. But controlling the vehicle by jerk alone eventually results
             # in rounding errors. Use points in the trajectory where the vehicle
             # has clearly come to a complete stop to zero out any accumulated
             # rounding errors in the velocity and acceleration.
-            new_knot = cspline.Knot(q, v, a, t_final)
-##            if (abs(new_knot.vel) < 0.001 and abs(new_knot.accel) < 0.001) or \
-##                                 (new_knot.vel < 0 and new_knot.accel < 0):
-##                logging.debug("Clipped vel and accel to 0. Vehicle %d, original knot: %s", self.ID, new_knot)
-##                new_knot.vel = 0
-##                new_knot.accel = 0
-##                # TODO: Send NOTIFY_STOPPED_MSG
+            # Note that this only accounts for small errors at knots. A vehicle
+            # slamming to an ungraceful halt, or doing a 'stop and go' between
+            # knots will be caught by self._validate_spline(), but will not
+            # be corrected by this code.
+            if (abs(new_knot.vel) < 1E-6 and abs(new_knot.accel) < 1E-6) or \
+                                 (new_knot.vel < 0 and new_knot.accel < 0):
+                logging.debug("Clipped vel and accel to 0. Vehicle %d, original knot: %s", self.ID, new_knot)
+                new_knot.vel = 0
+                new_knot.accel = 0
 
-            self._spline.append(new_knot, jerk)
+            spline.append(new_knot, jerk)
+            last_knot = cspline.Knot(spline.q[-1], spline.v[-1], spline.a[-1], spline.t[-1])
 
+            # log discrepencies between controller's estimate of pos, vel, accel
+            # and the actual values at each knot.
             if __debug__:
-                errors = [received-true for (received, true) in zip(reversed(poly_msg.coeffs), reversed(self._spline.coeffs[-1]))]
+                errors = [received-true for (received, true) in zip(reversed(poly_msg.coeffs), reversed(spline.coeffs[-1]))]
                 if len(errors) == 4:
-                    errors[0] += self._pos_offset_nose # Assuming that the traj msg sent in current position coordinate frame
-                error_str = ", ".join(msg + str(error) for (msg, error) in zip(['Pos: ', 'Vel: ', 'Accel: '], errors))
+                    # Assume that the traj msg is using the vehicle's current
+                    # track segment as the coordinate frame
+                    errors[0] += self._pos_offset_nose
+                error_str = ", ".join(msg + "%.6f"%error for (msg, error) in zip(['Pos: ', 'Vel: ', 'Accel: '], errors))
                 logging.debug("Vehicle %d, spline check::Times: %s to %s. Errors: %s",
                               self.ID, t_initial, t_final, error_str)
+
+        self._validate_spline(spline)
 
         # In most cases, the controller should provide a spline that is valid until
         # the end of the sim. When it doesn't, extend the spline with the current
         # velocity and warn. For the extension, the acceleration is set to zero,
         # which may be wholly inaccurate!!
         sim_end_time = common.config_manager.get_sim_end_time()
-        if self._spline.t[-1] < sim_end_time:
+        if spline.t[-1] < sim_end_time:
             warnings.warn("Spline extended to sim_end_time by simulator.")
-            vel = self._spline.v[-1]
-            pos = self._spline.q[-1] + vel*(sim_end_time-self._spline.t[-1])
-            self._spline.append(cspline.Knot(pos, vel, 0, sim_end_time), 0)
+            vel = spline.v[-1]
+            pos = spline.q[-1] + vel*(sim_end_time-spline.t[-1])
+            spline.append(cspline.Knot(pos, vel, 0, sim_end_time), 0)
 
 ##            ## DEBUG
 ##            from pyprt.shared.cspline_plotter import CSplinePlotter
-##            plotter = CSplinePlotter(self._spline, self.vel_max_norm, self.accel_max_norm, self.jerk_max_norm,
+##            plotter = CSplinePlotter(spline, self.vel_max_norm, self.accel_max_norm, self.jerk_max_norm,
 ##                                     self.vel_min_norm, self.accel_min_norm, self.jerk_min_norm)
 ##            plotter.display_plot()
+
+        ### SIDE EFFECTS ###
+        old_spline = self._spline.copy_left(max(Sim.now(), spline_start_time)) # truncated copy of the old spline
+        self._spline = old_spline.concat(spline)
 
         # Notify vehicle behind me that I changed speeds.
         follower = self.find_following_vehicle()
@@ -429,11 +478,72 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         # Leads to the action queue being cleared and repopulated.
         self.interrupt(self)
 
+    def _validate_spline(self, spline):
+        """Raises a subclass of common.MsgRangeError if the spline exceeds
+        the emergency [max|min] values. Logs a warning if the spline exceeds the
+        normal [max|min] values.
+
+        spline: A cubic_spline.CubicSpline object.
+        """
+        assert isinstance(spline, cspline.CubicSpline)
+
+        # TODO: Standardize on tolerance values throughout the sim!!
+        vel_tol = 1E-6
+        accel_tol = 1E-6
+        jerk_tol = 1E-6
+
+        # check jerks
+        max_jerk = spline.get_max_jerk()
+        if max_jerk > self.jerk_max_norm + jerk_tol:
+            logging.warn("Jerk exceeds normal max value. vID:%d, jerk:%f, normal:%f, spline:%s",
+                         self.ID, max_jerk, self.jerk_max_norm, str(spline))
+        if max_jerk > self.jerk_max_emerg + jerk_tol:
+            raise common.InvalidJerk(max_jerk, (self.jerk_min_emerg, self.jerk_max_emerg))
+
+        min_jerk = spline.get_min_jerk()
+        if min_jerk < self.jerk_min_norm - jerk_tol:
+            logging.warn("Jerk exceeds normal min value. vID:%d, jerk:%f, normal:%f, spline:%s",
+                         self.ID, min_jerk, self.jerk_min_norm, str(spline))
+        if min_jerk < self.jerk_min_emerg - jerk_tol:
+            raise common.InvalidJerk(min_jerk, (self.jerk_min_emerg, self.jerk_min_emerg))
+
+        # check accels
+        max_accel = spline.get_max_acceleration()
+        if max_accel > self.accel_max_norm + accel_tol:
+            logging.warn("accel exceeds normal max value. vID:%d, accel:%f, normal:%f, spline:%s",
+                         self.ID, max_accel, self.accel_max_norm, str(spline))
+        if max_accel > self.accel_max_emerg + accel_tol:
+            raise common.InvalidAccel(max_accel, (self.accel_min_emerg, self.accel_max_emerg))
+
+        min_accel = spline.get_min_acceleration()
+        if min_accel < self.accel_min_norm - accel_tol:
+            logging.warn("accel exceeds normal min value. vID:%d, accel:%f, normal:%f, spline:%s",
+                         self.ID, min_accel, self.accel_min_norm, str(spline))
+        if min_accel < self.accel_min_emerg - accel_tol:
+            raise common.InvalidAccel(min_accel, (self.accel_min_emerg, self.accel_min_emerg))
+
+        # check velocities. Only checks against vehicle velocity limits, not
+        # track speed limits.
+        extrema_velocities, extrema_times = spline.get_extrema_velocities()
+        max_vel = max(extrema_velocities)
+        if max_vel > self.vel_max_norm + vel_tol:
+            logging.warn("vel exceeds normal max value. vID:%d, vel:%f, normal:%f, spline:%s",
+                         self.ID, max_vel, self.vel_max_norm, str(spline))
+        if max_vel > self.vel_max_emerg + vel_tol:
+            raise common.InvalidVel(max_vel, (self.vel_min_emerg, self.vel_max_emerg))
+
+        min_vel = min(extrema_velocities)
+        if min_vel < self.vel_min_norm - vel_tol:
+            logging.warn("vel exceeds normal min value. vID:%d, vel:%f, normal:%f, spline:%s",
+                         self.ID, min_vel, self.vel_min_norm, str(spline))
+        if min_vel < self.vel_min_emerg - vel_tol:
+            raise common.InvalidVel(min_vel, (self.vel_min_emerg, self.vel_min_emerg))
+
     def is_parked_between(self, min_tail_pos, max_nose_pos, track_seg):
         """"Check that the vehicle is stopped, and is located on track_seg with
         the vehicle's nose somewhere before max_nose_pos and the tail somewhere
         beyond min_tail_pos."""
-        if abs(self.vel) > 0.01:
+        if abs(self.vel) > 1E-6:
             return False
         elif self.loc is not track_seg:
             return False
@@ -462,7 +572,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             while self.interrupted():
                 # Note: If more than one interruption occurs, the older interruption
                 #       never gets handled. So, this needs to handle the interruption
-                #       in the most generic way. Assume trajectory was changed.
+                #       as though every possible interruption could have occurred.
+                #       Assumes trajectory was changed.
                 old_actions_queue = self._actions_queue
                 self._actions_queue = []
                 self._traverse()
@@ -493,6 +604,9 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             elif action == self.NOTIFY_POSITION:
                 self._notify_position_handler(*data) # data is a 2-tuple
 
+            elif action == self.VEHICLE_STOPPED:
+                self._vehicle_stopped_handler()
+
             else:
                 raise Exception("Unknown action type: %d for vehicle %d" % (action, self.ID))
 
@@ -505,11 +619,22 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         try:
             traverse_time = self._spline.get_time_from_dist(traverse_dist, Sim.now())
         except cspline.OutOfBoundsError: # Current trajectory spline never has the vehicle leaving this TrackSegment
-##            traverse_time = common.config_manager.get_sim_end_time()
             traverse_time = inf
         heapq.heappush(self._actions_queue, (traverse_time, self.BOUNDARY, None))
-        assert traverse_dist >= -1E-3, (self.id, traverse_dist, self.loc.length, self.loc.ID)
-        assert traverse_time >= Sim.now() - 1E-5, (self.id, traverse_time, self.loc.length, self.loc.ID)
+
+        # Add vehicle stopped actions
+        if traverse_time != inf:
+            segment_spline = self._spline.slice(Sim.now(), traverse_time)
+        else:
+            segment_spline = self._spline.copy_right(Sim.now())
+        extrema_velocties, extrema_times = segment_spline.get_extrema_velocities()
+        for vel, time in izip(extrema_velocties, extrema_times):
+            if vel == 0 and time > Sim.now():
+                heapq.heappush(self._actions_queue, (time, self.VEHICLE_STOPPED, None))
+                assert abs(segment_spline.evaluate(time).accel) < 1E-5, (self.ID, vel, time, segment_spline)
+
+        assert traverse_dist >= -1E-3, (self.ID, traverse_dist, self.loc.length, self.loc.ID)
+        assert traverse_time >= Sim.now() - 1E-5, (self.ID, traverse_time, self.loc.length, self.loc.ID)
 
 ##        # Do some extra work to collect statistics about berth usages if the loc is a station platform
 ##        platform = common.platforms.get(self.loc.ID)
@@ -609,6 +734,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self.fill_VehicleStatus(sim_msg.v_status)
         common.interface.send(api.SIM_NOTIFY_VEHICLE_POSITION, sim_msg)
 
+    def _vehicle_stopped_handler(self):
+        """Sends an api.SimNotifyVehicleStopped message."""
+        notify_msg = api.SimNotifyVehicleStopped()
+        self.fill_VehicleStatus(notify_msg.v_status)
+        notify_msg.time = Sim.now()
+        common.interface.send(api.SIM_NOTIFY_VEHICLE_STOPPED, notify_msg)
+
     def _collision_check(self):
         lv, dist = self.find_leading_vehicle(current_loc_only=True)
         if dist <= 0: # just crashed.
@@ -626,6 +758,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 heapq.heappush( self._actions_queue, (t, self.COLLISION, lv) )
 
     def _add_tail_release(self):
+        if __debug__:
+            # Check that the tail isn't already scheduled to be released.
+            for time, action, data in self._actions_queue:
+                assert action != self.TAIL_RELEASE, (self.ID, time, action, data)
+
         # Add next tail release to queue.
         traverse_dist = self.tail_loc.length - self.tail_pos
         try:

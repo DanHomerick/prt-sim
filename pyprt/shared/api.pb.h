@@ -4012,12 +4012,12 @@ class SimNotifyVehicleStopped : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required int32 v_status = 1;
+  // required .prt.VehicleStatus v_status = 1;
   inline bool has_v_status() const;
   inline void clear_v_status();
   static const int kVStatusFieldNumber = 1;
-  inline ::google::protobuf::int32 v_status() const;
-  inline void set_v_status(::google::protobuf::int32 value);
+  inline const ::prt::VehicleStatus& v_status() const;
+  inline ::prt::VehicleStatus* mutable_v_status();
   
   // required double time = 2;
   inline bool has_time() const;
@@ -4031,7 +4031,7 @@ class SimNotifyVehicleStopped : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::google::protobuf::int32 v_status_;
+  ::prt::VehicleStatus* v_status_;
   double time_;
   friend void  protobuf_AddDesc_api_2eproto();
   friend void protobuf_AssignDesc_api_2eproto();
@@ -9292,20 +9292,21 @@ inline void SimNotifyVehicleExit::set_time(double value) {
 
 // SimNotifyVehicleStopped
 
-// required int32 v_status = 1;
+// required .prt.VehicleStatus v_status = 1;
 inline bool SimNotifyVehicleStopped::has_v_status() const {
   return _has_bit(0);
 }
 inline void SimNotifyVehicleStopped::clear_v_status() {
-  v_status_ = 0;
+  if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
   _clear_bit(0);
 }
-inline ::google::protobuf::int32 SimNotifyVehicleStopped::v_status() const {
-  return v_status_;
+inline const ::prt::VehicleStatus& SimNotifyVehicleStopped::v_status() const {
+  return v_status_ != NULL ? *v_status_ : *default_instance_->v_status_;
 }
-inline void SimNotifyVehicleStopped::set_v_status(::google::protobuf::int32 value) {
+inline ::prt::VehicleStatus* SimNotifyVehicleStopped::mutable_v_status() {
   _set_bit(0);
-  v_status_ = value;
+  if (v_status_ == NULL) v_status_ = new ::prt::VehicleStatus;
+  return v_status_;
 }
 
 // required double time = 2;

@@ -416,61 +416,76 @@ class ControlInterface(Sim.Process):
                     logging.debug("Msg type %d received, but not yet implemented.",
                                   msg_type)
 
-            except common.InvalidMsgType:
+            except common.InvalidMsgType as e:
+                logging.exception(e)
                 err_msg = api.SimMsgHdrInvalidType()
                 err_msg.msgID = msgID
                 err_msg.msg_type = msg_type
                 self.send(api.SIM_MSG_HDR_INVALID_TYPE, err_msg)
                 logging.error("Received invalid msg type: %s", msg_type)
                 common.errors += 1
-            except common.InvalidTrackSegID, e:
+            except common.InvalidTrackSegID as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.TRACK_SEGMENT
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except common.InvalidSwitchID, e:
+            except common.InvalidSwitchID as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.SWITCH
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except common.InvalidStationID, e:
+            except common.InvalidStationID as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.STATION
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except common.InvalidPlatformID, e:
+            except common.InvalidPlatformID as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.PLATFORM
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except common.InvalidBerthID, e:
+            except common.InvalidBerthID as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.BERTH
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except common.InvalidVehicleID, e:
+            except common.InvalidVehicleID as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.VEHICLE
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except common.InvalidPassengerID, e:
+            except common.InvalidPassengerID as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
                 err_msg.msgID = msgID
                 err_msg.id_type = api.PASSENGER
                 err_msg.ID = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_ID, err_msg)
-            except common.InvalidTime, e:
+            except common.InvalidTime as e:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidTime()
                 err_msg.msgID = msgID
                 err_msg.time = e.args[0]
                 self.send(api.SIM_MSG_BODY_INVALID_TIME, err_msg)
+            except common.MsgRangeError as e:
+                logging.exception(e)
+                err_msg = api.SimMsgBodyInvalid()
+                err_msg.msgID = msgID
+                self.send(api.SIM_MSG_BODY_INVALID, err_msg)
             except common.MsgError:
+                logging.exception(e)
                 err_msg = api.SimMsgBodyInvalid()
                 err_msg.msgID = msgID
                 self.send(api.SIM_MSG_BODY_INVALID, err_msg)
@@ -588,16 +603,20 @@ class ControlInterface(Sim.Process):
         return berth
 
     def validate_spline(self, spline):
+        """A simple check that the message data is not malformed.
+        See: vehicle._validate_spline for more thorough testing of the resulting
+             cubic_spline.CubicSpline object.
+        """
         assert isinstance(spline, api.Spline)
         # Check that the times for the spline are in non-decreasing order
         if len(spline.times) == 0:
-            raise common.MsgError
+            raise common.MsgTime
 
         for t1, t2 in pairwise(spline.times):
             if t2 < t1:
                 logging.info("T=%4.3f Spline times are not in non-decreasing order: %s",
                              Sim.now(), spline.times)
-                raise common.MsgError
+                raise common.MsgTime
 
     def validate_itinerary(self, vehicle, ids):
         if len(ids) == 0:

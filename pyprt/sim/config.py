@@ -15,7 +15,7 @@ class ConfigManager(object):
         self.options, positional_args = self.read_args()
 
         if len(positional_args) > 1 or (len(positional_args) == 1 and self.options.config_path is not None):
-            raise Exception("Unrecognized command line arguments: %s" % positional_args)
+            raise ConfigParser.Error("Unrecognized command line arguments: %s" % positional_args)
 
         # Config file
         self.config_path = None
@@ -32,7 +32,7 @@ class ConfigManager(object):
         self.config_dir = os.path.dirname(os.path.abspath(self.config_path)) + os.path.sep
         # Parse the config file
         if not self.config_parser.read(self.config_path): # returned an empty list
-            raise common.ConfigError("Unable to read config file: " + self.config_path)
+            raise ConfigParser.Error("Unable to read config file: " + self.config_path)
 
         self.logfile = None
 

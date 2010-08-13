@@ -390,9 +390,8 @@ message SimNotifyVehicleExit {
     required double            time     = 3; // time of status
 }
 
-// NOT IMPLEMENTED BY SIMULATOR
 message SimNotifyVehicleStopped {
-    required int32             v_status = 1;
+    required VehicleStatus     v_status = 1;
     required double            time     = 2;
 }
 
