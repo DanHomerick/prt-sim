@@ -557,7 +557,7 @@ message VehicleStatus {
     // obstructing this vehicle's path. Vehicles greater than 500 meters ahead
     // are not reported in most cases.
     // Ommitted if no lead vehicle is found.
-    optional int32         lvID        = 11;
+    optional int32         lvID        = 11 [default=-1]; // default to NONE_ID
     optional float         lv_distance = 12;
 
     // TODO:

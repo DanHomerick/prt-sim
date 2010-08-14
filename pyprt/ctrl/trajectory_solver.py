@@ -1012,8 +1012,8 @@ class TrajectorySolver(object):
 
         t34 = t[4] - t[3]
 
-        assert t12 >= -TrajectorySolver.t_threshold
-        assert t56 >= -TrajectorySolver.t_threshold
+        if t12 < -TrajectorySolver.t_threshold or t56 < -TrajectorySolver.t_threshold:
+            raise TrajectoryError()
 
         # Need to loosen a constraint in order to have enough control authority
         # to hit target time.
@@ -1199,15 +1199,10 @@ class TrajectorySolver(object):
 
     def target_velocity(self, initial, final):
         """Similar to target_position, but the final position is ignored in
-        addition to the final time. 'inital' and 'final' are Knot instances."""
+        addition to the final time. 'inital' and 'final' are Knot instances.
+        """
         final = final.copy() # don't alter the original
         final.time = inf
-
-        if __debug__:
-            if not (self.v_min - self.v_threshold <= initial.vel <= self.v_max + self.v_threshold):
-                raise FatalTrajectoryError("Endpoint velocity outside of solver's limit")
-            if not (self.a_min - self.a_threshold <= initial.accel <= self.a_max + self.a_threshold):
-                raise FatalTrajectoryError("Endpoint acceleration outside of solver's limit")
 
         delta_v = final.vel - initial.vel
 
@@ -1277,8 +1272,10 @@ class TrajectorySolver(object):
         h2 = (final.accel - a_top)/jn
         knots[2] = self.create_knot_before(final, h2, a_top, no_pos=True)
 
-        # skip the h1 segment if the peak acceleration didn't get flattened.
-        h1 = 0 if a_top < ax else (knots[2].vel - knots[1].vel)/a_top
+        try:
+            h1 = (knots[2].vel - knots[1].vel)/a_top
+        except ZeroDivisionError:
+            h1 = 0
 
         knots[2] = self.create_knot_after(knots[1], h1, a_top) # recreate k2 with the correct position and time
         knots[3] = self.create_knot_after(knots[2], h2, final.accel) # recreate final with the correct position and time
@@ -1302,6 +1299,16 @@ class TrajectorySolver(object):
                 raise TrajectoryError("Large negative duration: %f seconds" % (k2.t - k1.t))
         spline = CubicSpline(q, v, a, j, t)
 
+        # Check that the velocities stayed within the allowed range.
+        extrema_velocities, extrema_times = spline.get_extrema_velocities()
+        max_vel = max(extrema_velocities)
+        min_vel = min(extrema_velocities)
+        if max_vel > self.v_max + self.v_threshold:
+            raise FatalTrajectoryError("Maximum velocity: %.4f exceeded the allowed value: %.4f"
+                                       % (max_vel, self.v_max))
+        if min_vel < self.v_min - self.v_threshold:
+            raise FatalTrajectoryError("Minimum velocity: %.4f exceeded the allowed value: %.4f"
+                                       % (min_vel, self.v_min))
         return spline
 
 

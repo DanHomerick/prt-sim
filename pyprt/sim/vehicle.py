@@ -425,7 +425,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             # slamming to an ungraceful halt, or doing a 'stop and go' between
             # knots will be caught by self._validate_spline(), but will not
             # be corrected by this code.
-            if (abs(new_knot.vel) < 1E-6 and abs(new_knot.accel) < 1E-6) or \
+            if (abs(new_knot.vel) < 1E-5 and abs(new_knot.accel) < 1E-5) or \
                                  (new_knot.vel < 0 and new_knot.accel < 0):
                 logging.debug("Clipped vel and accel to 0. Vehicle %d, original knot: %s", self.ID, new_knot)
                 new_knot.vel = 0
@@ -622,14 +622,14 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             traverse_time = inf
         heapq.heappush(self._actions_queue, (traverse_time, self.BOUNDARY, None))
 
-        # Add vehicle stopped actions
+        # Add vehicle stopped notifications (if not currently stopped at the same position)
         if traverse_time != inf:
             segment_spline = self._spline.slice(Sim.now(), traverse_time)
         else:
             segment_spline = self._spline.copy_right(Sim.now())
         extrema_velocties, extrema_times = segment_spline.get_extrema_velocities()
         for vel, time in izip(extrema_velocties, extrema_times):
-            if vel == 0 and time > Sim.now():
+            if vel == 0 and time > Sim.now() and abs(segment_spline.evaluate(time).pos - self.pos) > 1E-4:
                 heapq.heappush(self._actions_queue, (time, self.VEHICLE_STOPPED, None))
                 assert abs(segment_spline.evaluate(time).accel) < 1E-5, (self.ID, vel, time, segment_spline)
 
@@ -856,9 +856,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         if lv: # ommit if a lead vehicle wasn't found
             vs.lvID = lv.ID
             vs.lv_distance = dist
-#	else:
-#	    vs.lvID = 999999
-#	    vs.lv_distance = dist
 
     def calc_energy_used(self):
         """Return the amount of energy used, in Joules"""

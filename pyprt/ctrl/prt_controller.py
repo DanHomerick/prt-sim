@@ -57,13 +57,12 @@ class PrtController(BaseController):
     # ADVANCING means moving between berths.
 
     RUNNING = "RUNNING"                     # Travelling from one station to the next.
-    SLOWING = "SLOWING"                     # Off the main line, slowing for station entry.
-    UNLOAD_ADVANCING = "UNLOAD_ADVANCING"   # Have passengers to unload, on unload platform.
+    UNLOAD_ADVANCING = "UNLOAD_ADVANCING"   # Have passengers to unload, on or approaching unload platform.
     UNLOAD_WAITING = "UNLOAD_WAITING"       # Capable of immediately disembarking passengers.
-    DISEMBARKING = "DISEMBARKING"           # Parked in berth, currently unloading passengers.
+    DISEMBARKING = "DISEMBARKING"           # Parked in unload berth, currently unloading passengers.
     LOAD_WAITING = "LOAD_WAITING"           # Capable of immediately embarking passengers.
-    LOAD_ADVANCING = "LOAD_ADVANCING"       # On the load platform.
-    EMBARKING = "EMBARKING"                 # Parked in berth, loading passengers
+    LOAD_ADVANCING = "LOAD_ADVANCING"       # On or approaching the load platform.
+    EMBARKING = "EMBARKING"                 # Parked in load berth, loading passengers
     EXIT_WAITING = "EXIT_WAITING"           # Waiting to reach launch berth.
     EXIT_ADVANCING = "EXIT_ADVANCING"       # Moving towards launch berth.
     LAUNCH_WAITING = "LAUNCH_WAITING"       # In the launch berth. Ready to lauch at any time.
@@ -184,9 +183,6 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         assert isinstance(station, Station)
 
-        # This function only changes the state. The actual movement will be
-        # commanded after the sim returns current vehicle status information.
-
         # Exclude vehicles that have reserved berths, but aren't yet in the
         # relevant states.
         if vehicle.state not in (self.UNLOAD_WAITING, self.LOAD_WAITING, self.EXIT_WAITING, None):
@@ -210,8 +206,9 @@ class PrtController(BaseController):
         except NoBerthAvailableError:
             return
 
-        # ... wait for the v_status update from the sim to do the movement
-        vehicle._advance_begun = False
+        # Will only make it to this point in the code if the vehicle has been
+        # given a new berth to travel to.
+        vehicle.advance()
 
     ### Overriden message handlers ###
     def on_SIM_GREETING(self, msg, msgID, msg_time):
@@ -272,10 +269,8 @@ class PrtController(BaseController):
                     berth_knot = Knot(berth_dist + vehicle.berth_pos - vehicle.BERTH_GAP, 0, 0, None)
                     try:
                         spline = vehicle.traj_solver.target_position(initial, berth_knot, max_speed=station.SPEED_LIMIT)
-                        stop_time = spline.t[-1]
                         vehicle.set_spline(spline)
                         vehicle.set_path(berth_path)
-                        self.set_v_notification(vehicle, stop_time)
                     except FatalTrajectoryError: # may occur if vehicles cannot reverse and are too closely spaced.
                         raise Exception("Unable to reserve a reachable berth for vehicle: %s" % str(vehicle))
 
@@ -285,8 +280,7 @@ class PrtController(BaseController):
                                        station.ts_ids[Station.DECEL]):
                     vehicle.state = self.LOAD_ADVANCING
                     station.request_load_berth(vehicle)
-                    stop_time = vehicle.enter_station(station)
-                    self.set_v_notification(vehicle, stop_time)
+                    vehicle.enter_station(station)
 
                 # Case 3. Outbound from a station.
                 elif vehicle.ts_id in (station.ts_ids[Station.ACCEL],
@@ -367,21 +361,7 @@ class PrtController(BaseController):
         vehicles, stations, functions = self.t_reminders[ms_msg_time]
 
         for vehicle in vehicles:
-            if vehicle.state is self.SLOWING: # just arrived at the initially reserved berth
-                if vehicle.pax:
-                    vehicle.state = self.UNLOAD_ADVANCING
-                else:
-                    # Skip disembarking entirely
-                    vehicle.state = self.LOAD_ADVANCING
-                    vehicle.trip = None
-
-            # Note that this is a separate if/else chain than above
-            if vehicle.state in (self.UNLOAD_ADVANCING, self.LOAD_ADVANCING, self.EXIT_ADVANCING):
-                # vehicle should be done parking or advancing. Get a status update to make sure.
-                req_v_status = api.CtrlRequestVehicleStatus()
-                req_v_status.vID = vehicle.id
-                self.send(api.CTRL_REQUEST_VEHICLE_STATUS, req_v_status)
-            elif vehicle.state is self.LAUNCH_WAITING:
+            if vehicle.state is self.LAUNCH_WAITING:
                 blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
                 if not blocked_time:
                     vehicle.state = self.LAUNCHING
@@ -413,30 +393,7 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
-        if vehicle.state in (self.UNLOAD_ADVANCING, self.LOAD_ADVANCING, self.EXIT_ADVANCING):
-            # TODO: Move to on_NOTIFY_VEHICLE_STOPPED when message is implemented
-            if abs(vehicle.vel) < 0.01 and abs(vehicle.accel) < 0.01: # check that we're stopped
-
-                if vehicle._advance_begun is False:
-                    vehicle.advance()
-                    vehicle._advance_begun = True
-
-                elif vehicle._advance_begun is True:
-                    # Really need a NOTIFY STOPPED message to clean up this flow. For now just check if I've reached my berth and stopped.
-                    if abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1 and vehicle.ts_id == vehicle.plat_ts and vehicle.vel < 0.001:
-                        if vehicle.state is self.UNLOAD_ADVANCING:
-                            vehicle.state = self.UNLOAD_WAITING
-                        elif vehicle.state is self.LOAD_ADVANCING:
-                            vehicle.state = self.LOAD_WAITING
-                        elif vehicle.state is self.EXIT_ADVANCING:
-                            vehicle.state = self.EXIT_WAITING
-                        else:
-                            raise Exception("Unexpected state: %s" % vehicle.state)
-
-                else:
-                    raise Exception("Unexpected case: %s" % vehicle._advance_begun)
-
-        elif vehicle.state is self.LAUNCH_WAITING:
+        if vehicle.state is self.LAUNCH_WAITING:
             merge = self.manager.track2merge.get(vehicle.station.bypass)
             if merge and vehicle.station in merge.stations:
                 vehicle.state = self.LAUNCHING
@@ -556,8 +513,7 @@ class PrtController(BaseController):
                 else:
                     vehicle.state = self.LOAD_ADVANCING
 
-                stop_time = vehicle.enter_station(station)
-                self.set_v_notification(vehicle, stop_time)
+                vehicle.enter_station(station)
 
         elif vehicle.state is self.LAUNCHING:
             station = self.manager.track2station.get(msg.trackID)
@@ -586,6 +542,29 @@ class PrtController(BaseController):
                 assert vehicle.merge_slot is merge_slot
                 vehicle.set_merge_slot(None)
 
+    def on_SIM_NOTIFY_VEHICLE_STOPPED(self, msg, msgID, msg_time):
+        vehicle = self.manager.vehicles[msg.v_status.vID]
+        assert isinstance(vehicle, Vehicle)
+        vehicle.update_vehicle(msg.v_status, msg.time)
+
+        if vehicle.state in (self.UNLOAD_ADVANCING, self.LOAD_ADVANCING, self.EXIT_ADVANCING):
+            # Check that I'm stopped and where I expect to be
+            assert abs(vehicle.vel) < TrajectorySolver.v_threshold, str(vehicle)
+            assert abs(vehicle.accel) < TrajectorySolver.a_threshold, str(vehicle)
+            assert vehicle.ts_id == vehicle.plat_ts, str(vehicle)
+            assert abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1, (str(vehicle), vehicle.berth_pos)
+
+            if vehicle.state is self.UNLOAD_ADVANCING:
+                vehicle.state = self.UNLOAD_WAITING
+            elif vehicle.state is self.LOAD_ADVANCING:
+                vehicle.state = self.LOAD_WAITING
+            elif vehicle.state is self.EXIT_ADVANCING:
+                vehicle.state = self.EXIT_WAITING
+            else:
+                raise Exception("Unexpected state: %s" % vehicle.state)
+
+        else:
+            self.log.warn("Vehicle %s stopped for unknown reason.", str(vehicle))
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
@@ -823,7 +802,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         best_station_dist = 0
         best_value = 0
         closest_station = None
-        closest_dist = float('inf')
+        closest_dist = inf
         for station in self.stations.itervalues():
             if station in exclude:
                 continue
@@ -856,7 +835,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         # vehicle has passengers, so must go to this particular station
         if vehicle.trip.passengers:
             prev_tses = self.graph.predecessors(vehicle.ts_id) # there may be a merge just upstream of station split ts
-            best_loop_length, best_loop_path = float('inf'), None
+            best_loop_length, best_loop_path = inf, None
             for prev_ts in prev_tses:
                 loop_length, loop_path = self.get_path(vehicle.ts_id, prev_ts)
                 if loop_length < best_loop_length:
@@ -1348,9 +1327,8 @@ class Vehicle(object):
         self.berth_id = None
         self.plat_ts = None
 
-        # A private flag for indicating whether a vehicle's "advance" has been
-        # commanded yet or not.
-        self._advance_begun = True
+        # A private flag for indicating whether a vehicle's launch from a
+        # station has been commanded yet or not.
         self._launch_begun = True
 
         accel_spline = self.traj_solver.target_velocity(Knot(0,0,0,0),
@@ -1420,8 +1398,9 @@ class Vehicle(object):
         self.pax = v_status.passengerIDs[:] # copy
         self.last_update = time
 
-        if v_status.lv_distance <= self.vel*self.controller.HEADWAY - 0.001:
-            self.controller.log.warn("Vehicle %i is following too close to vehicle %i. lv_dist: %f.3 desired separation: %f.3" \
+        if v_status.lvID != api.NONE_ID \
+           and v_status.lv_distance <= self.vel*self.controller.HEADWAY - 0.001:
+            self.controller.log.warn("Vehicle %i is following too close to vehicle %i. lv_dist: %.3f desired separation: %.3f" \
                                  % (self.id, v_status.lvID, v_status.lv_distance, self.vel*self.controller.HEADWAY))
 
 ##        if __debug__:
@@ -2339,6 +2318,7 @@ class Merge(object):
             assert time >= now - 2*TrajectorySolver.t_threshold, (time, now)
             self.controller.set_fnc_notification(self.manage_, (vehicle, time), time) # call manage again
 
+    # DEPRECATED!!!
     def _slip_ahead(self, slot, lead_slot, slip_time, avail_maneuver_dist, now):
         """Slips the vehicle in 'slot' ahead by 'slip_time' seconds. Returns the
         actual time slipped (may be less than requested time). Does not slip if
@@ -2379,7 +2359,7 @@ class Merge(object):
         else:
             return 0
 
-    @staticmethod
+    # DEPRECATED!!!
     def _calc_max_slips(vehicles):
         # TODO: This uses vehicle's max velocity, and doesn't check the track's max vel
         if Merge._slips:
@@ -2431,7 +2411,7 @@ class Merge(object):
         Merge._slips = slips
         Merge._maneuver_dists = maneuver_dists
 
-
+    # DEPRECATED!!!
     def _get_achievable_slip(self, maneuver_dist, desired_slip, vehicle):
         assert isinstance(vehicle, Vehicle)
         assert maneuver_dist >= 0 - 2*TrajectorySolver.q_threshold

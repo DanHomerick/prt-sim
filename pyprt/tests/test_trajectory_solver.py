@@ -405,13 +405,12 @@ class  TestTrajectorySolver(unittest.TestCase):
         solver = TrajectorySolver(40, 5, 2.5)
 
         ### zero at endpoints
-        spline = solver.target_velocity(Knot(0,0,0,0), Knot(None, 35, 0, 0))
-#        self.plot_it(spline, solver)
+        initial = Knot(0,0,0,0)
+        final = Knot(None, 35, 0, 9)
+        spline = solver.target_velocity(initial, final)
+##        self.plot_it(spline, solver)
         self.validate_spline(spline, solver)
-        self.assertTrue(spline.q[-1] > 0)
-        self.assertAlmostEqual(spline.v[-1], 35, self.PLACES)
-        self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
-        self.assertAlmostEqual(spline.t[-1], 9, self.PLACES)
+        self.validate_endpoints(spline, initial, final, pos=False)
 
         ### Unchanging accel
         spline = solver.target_velocity(Knot(0,0,5,0), Knot(None, 35, 5, 0))
@@ -482,9 +481,27 @@ class  TestTrajectorySolver(unittest.TestCase):
         initial = Knot(0, 11.51496564563041, 5.6694744752383066, 0)
         final = Knot(None, 14.732396990426981, 0, None)
         spline = solver.target_velocity(initial, final)
-        self.plot_it(spline, solver, "test_target_velocity_V")
+##        self.plot_it(spline, solver, "test_target_velocity_V")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, pos=False, time=False)
+
+    def test_target_velocity_VI(self):
+        """Initial positive acceleration which overshoots target velocity."""
+        solver = TrajectorySolver(60, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(0, 14.609323938835942, 1.3976338239396946, 0)
+        final = Knot(None, 14.999999771797182, 0, None)
+        spline = solver.target_velocity(initial, final)
+##        self.plot_it(spline, solver, "test_target_velocity_VI")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final, pos=False, time=False)
+
+    def test_target_velocity_VII(self):
+        solver = TrajectorySolver(15, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(0, 14.5, 2, 0)
+        final = Knot(None, 15, 0, None)
+##        spline = solver.target_velocity(initial, final)
+##        self.plot_it(spline, solver, "test_target_velocity_VII")
+        self.assertRaises(FatalTrajectoryError, solver.target_velocity, initial, final)
 
     def test_target_velocity_nonzero_endpoints_I(self):
         """Initial accel in same direction as initial velocity. Asymmetrical limits"""
@@ -641,7 +658,6 @@ class  TestTrajectorySolver(unittest.TestCase):
         solver = TrajectorySolver(15, 5, 2.5, 0, -5, -2.5)
         initial = Knot(2.0, 15.0, 0.0, 5.4795365136060168)
         final = Knot(70.901034075983588, 15.0, 0, 11.706272118671588) # ave speed of 11.065 m/s
-        solver.target_time(initial, final)
         self.assertRaises(FatalTrajectoryError,
                           solver.target_time, initial, final )
 

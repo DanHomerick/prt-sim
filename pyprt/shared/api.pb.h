@@ -6626,7 +6626,7 @@ class VehicleStatus : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
       mutable_passengerids();
   
-  // optional int32 lvID = 11;
+  // optional int32 lvID = 11 [default = -1];
   inline bool has_lvid() const;
   inline void clear_lvid();
   static const int kLvIDFieldNumber = 11;
@@ -10590,12 +10590,12 @@ VehicleStatus::mutable_passengerids() {
   return &passengerids_;
 }
 
-// optional int32 lvID = 11;
+// optional int32 lvID = 11 [default = -1];
 inline bool VehicleStatus::has_lvid() const {
   return _has_bit(8);
 }
 inline void VehicleStatus::clear_lvid() {
-  lvid_ = 0;
+  lvid_ = -1;
   _clear_bit(8);
 }
 inline ::google::protobuf::int32 VehicleStatus::lvid() const {
