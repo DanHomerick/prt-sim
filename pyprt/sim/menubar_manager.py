@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import wx
 
+from numpy import inf
+
 class MenuBarManager(object):
     def __init__(self, parent_window):
         self.parent_window = parent_window # parent window
@@ -8,8 +10,10 @@ class MenuBarManager(object):
         self.new()
         self.parent_window.SetMenuBar(self.menubar)
 
+        self._current_speed_menu = None # Set to one of the speed wx.MenuItem attributes
+
     def make_menubar(self):
-        """Returns an menubar object that has been bound to handlers"""
+        """Creates menubar object that has been populated and bound to handlers."""
         self.menubar = wx.MenuBar()
 
         ### File Menu ###
@@ -28,28 +32,30 @@ class MenuBarManager(object):
         ### Sim Menu ###
         self.simmenu = wx.Menu()
         self.connectcontroller = wx.MenuItem(self.simmenu, wx.NewId(), "Connect External Controller...", "", wx.ITEM_NORMAL)
-        self.startsim = wx.MenuItem(self.simmenu, wx.NewId(), "Start Sim", "", wx.ITEM_NORMAL)
-        self.stopsim = wx.MenuItem(self.simmenu, wx.NewId(), "Stop Sim", "", wx.ITEM_NORMAL)
-        self.pausesim = wx.MenuItem(self.simmenu, wx.NewId(), "Pause Sim", "", wx.ITEM_NORMAL)
-        self.speed1x = wx.MenuItem(self.simmenu, wx.NewId(), "1x Speed", "", wx.ITEM_NORMAL)
-        self.speed2x = wx.MenuItem(self.simmenu, wx.NewId(), "2x Speed", "", wx.ITEM_NORMAL)
-        self.speed4x = wx.MenuItem(self.simmenu, wx.NewId(), "4x Speed", "", wx.ITEM_NORMAL)
-        self.speed8x = wx.MenuItem(self.simmenu, wx.NewId(), "8x Speed", "", wx.ITEM_NORMAL)
-        self.speed32x = wx.MenuItem(self.simmenu, wx.NewId(), "32x Speed", "", wx.ITEM_NORMAL)
-        self.speedfast = wx.MenuItem(self.simmenu, wx.NewId(), "Fastest", "", wx.ITEM_NORMAL)
+        self.start_sim = wx.MenuItem(self.simmenu, wx.NewId(), "Start Sim", "", wx.ITEM_NORMAL)
+        self.stop_sim = wx.MenuItem(self.simmenu, wx.NewId(), "Stop Sim", "", wx.ITEM_NORMAL)
+        self.pause_sim = wx.MenuItem(self.simmenu, wx.NewId(), "Pause Sim", "", wx.ITEM_CHECK)
+        self.speed_halfx = wx.MenuItem(self.simmenu, wx.NewId(), "1/2x Speed", "", wx.ITEM_CHECK)
+        self.speed1x = wx.MenuItem(self.simmenu, wx.NewId(), "1x Speed", "", wx.ITEM_CHECK)
+        self.speed2x = wx.MenuItem(self.simmenu, wx.NewId(), "2x Speed", "", wx.ITEM_CHECK)
+        self.speed4x = wx.MenuItem(self.simmenu, wx.NewId(), "4x Speed", "", wx.ITEM_CHECK)
+        self.speed8x = wx.MenuItem(self.simmenu, wx.NewId(), "8x Speed", "", wx.ITEM_CHECK)
+        self.speed32x = wx.MenuItem(self.simmenu, wx.NewId(), "32x Speed", "", wx.ITEM_CHECK)
+        self.speed_fast = wx.MenuItem(self.simmenu, wx.NewId(), "Fastest", "", wx.ITEM_CHECK)
 
         self.simmenu.AppendItem(self.connectcontroller)
         self.simmenu.AppendSeparator()
-        self.simmenu.AppendItem(self.startsim)
-        self.simmenu.AppendItem(self.stopsim)
+        self.simmenu.AppendItem(self.start_sim)
+        self.simmenu.AppendItem(self.stop_sim)
         self.simmenu.AppendSeparator()
-        self.simmenu.AppendItem(self.pausesim)
+        self.simmenu.AppendItem(self.pause_sim)
+        self.simmenu.AppendItem(self.speed_halfx)
         self.simmenu.AppendItem(self.speed1x)
         self.simmenu.AppendItem(self.speed2x)
         self.simmenu.AppendItem(self.speed4x)
         self.simmenu.AppendItem(self.speed8x)
         self.simmenu.AppendItem(self.speed32x)
-        self.simmenu.AppendItem(self.speedfast)
+        self.simmenu.AppendItem(self.speed_fast)
         self.menubar.Append(self.simmenu, "&Simulation")
 
         ### View Menu ###
@@ -97,15 +103,16 @@ class MenuBarManager(object):
 #        pw.Bind(wx.EVT_MENU, pw.filemenu_saveconfig_handler, self.saveconfig)
         pw.Bind(wx.EVT_MENU, pw.filemenu_savesnapshot_handler, self.savesnapshot)
         pw.Bind(wx.EVT_MENU, pw.filemenu_exit_handler, self.exit)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_startsim_handler, self.startsim)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_stopsim_handler, self.stopsim)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_pause_handler, self.pausesim)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_1x_handler, self.speed1x)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_2x_handler, self.speed2x)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_4x_handler, self.speed4x)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_8x_handler, self.speed8x)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_32x_handler, self.speed32x)
-        pw.Bind(wx.EVT_MENU, pw.simmenu_fast_handler, self.speedfast)
+        pw.Bind(wx.EVT_MENU, pw.simmenu_start_sim_handler, self.start_sim)
+        pw.Bind(wx.EVT_MENU, pw.simmenu_stop_sim_handler, self.stop_sim)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.pause_sim)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed_halfx)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed1x)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed2x)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed4x)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed8x)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed32x)
+        pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed_fast)
         pw.Bind(wx.EVT_MENU, pw.simmenu_connectcontroller_handler, self.connectcontroller)
         pw.Bind(wx.EVT_MENU, pw.viewmenu_vehicle_handler, self.vehicle)
         pw.Bind(wx.EVT_MENU, pw.viewmenu_station_handler, self.station)
@@ -123,8 +130,8 @@ class MenuBarManager(object):
     def new(self):
         """Disable all menus except for Open"""
         for menu in [self.savesnapshot, #self.saveconfig,# # file menu
-                     self.connectcontroller, self.startsim, self.stopsim, self.pausesim, # sim menu
-                     self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speedfast, # sim menu cont.
+                     self.connectcontroller, self.start_sim, self.stop_sim, self.pause_sim, # sim menu
+                     self.speed_halfx, self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speed_fast, # sim menu cont.
                      self.vehicle, self.station, self.switch, self.track, self.passenger, self.legend, self.reports, # view menu
                      self.record_start, self.record_stop]: # record menu
             menu.Enable(False)
@@ -138,18 +145,20 @@ class MenuBarManager(object):
 
     def controllers_connected(self):
         """Allow the sim and the recording to start."""
-        for menu in [self.startsim, # sim menu
+        for menu in [self.start_sim, # sim menu
                      self.record_start]: # record menu
             menu.Enable(True)
         self.connectcontroller.Enable(False)
 
     def sim_started(self):
         """Allow the speed to be adjusted and the sim to be stopped or paused."""
-        for menu in [self.stopsim, self.pausesim, # sim menu]
-                     self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speedfast,  # sim menu cont.
+        for menu in [self.stop_sim, self.pause_sim, # sim menu]
+                     self.speed_halfx, self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speed_fast,  # sim menu cont.
                      self.reports]: # view menu
             menu.Enable(True)
-        self.startsim.Enable(False)
+        self.speed1x.Check(True)
+        self._current_speed_menu = self.speed1x
+        self.start_sim.Enable(False)
 
     def record_started(self):
         """Allow the recording to be stopped."""
@@ -162,3 +171,45 @@ class MenuBarManager(object):
 
     def sim_ended(self):
         self.new()
+
+    def sim_speed_handler(self, event):
+        """Responsible for updating which menuitem is checked, figuring out
+        what numeric speed value to use, and passing the value to the parent
+        window to handle.
+        """
+        self._current_speed_menu.Check(False)
+        Id = event.GetId()
+        if Id == self.pause_sim.Id:
+            self.pause_sim.Check(True)
+            self.parent_window.set_sim_speed(0) # FIXME: Doesn't allow sim to resume?
+            self._current_speed_menu = self.pause_sim
+        elif Id == self.speed_halfx.Id:
+            self.speed_halfx.Check(True)
+            self.parent_window.set_sim_speed(0.5)
+            self._current_speed_menu = self.speed_halfx
+        elif Id == self.speed1x.Id:
+            self.speed1x.Check(True)
+            self.parent_window.set_sim_speed(1)
+            self._current_speed_menu = self.speed1x
+        elif Id == self.speed2x.Id:
+            self.speed2x.Check(True)
+            self.parent_window.set_sim_speed(2)
+            self._current_speed_menu = self.speed2x
+        elif Id == self.speed4x.Id:
+            self.speed4x.Check(True)
+            self.parent_window.set_sim_speed(4)
+            self._current_speed_menu = self.speed4x
+        elif Id == self.speed8x.Id:
+            self.speed8x.Check(True)
+            self.parent_window.set_sim_speed(8)
+            self._current_speed_menu = self.speed8x
+        elif Id == self.speed32x.Id:
+            self.speed32x.Check(True)
+            self.parent_window.set_sim_speed(32)
+            self._current_speed_menu = self.speed32x
+        elif Id == self.speed_fast.Id:
+            self.speed_fast.Check(True)
+            self.parent_window.set_sim_speed(inf)
+            self._current_speed_menu = self.speed_fast
+        else:
+            raise Exception("Unknown Id")

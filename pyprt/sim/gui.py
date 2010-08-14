@@ -136,7 +136,7 @@ class MainWindow(wx.Frame):
         """Quit. No save capability yet."""
         self.Close()
 
-    def simmenu_startsim_handler(self, event):
+    def simmenu_start_sim_handler(self, event):
         # Create a new thread for the sim
         end_time = common.config_manager.get_sim_end_time()
 
@@ -172,7 +172,7 @@ class MainWindow(wx.Frame):
         sim_thread.setDaemon(True)
         sim_thread.start()
 
-    def simmenu_stopsim_handler(self, event):
+    def simmenu_stop_sim_handler(self, event):
         main.stop_sim()
 
     def simmenu_connectcontroller_handler(self, event): # wxGlade: MainWindow.<event_handler>
@@ -228,28 +228,28 @@ class MainWindow(wx.Frame):
             # Sim blocks, then resumes once connection is made.
             self.menubar_manager.controllers_connected()
 
-    def simmenu_pause_handler(self, event):
-        self.simmenu_speed(0)
+##    def simmenu_pause_handler(self, event):
+##        self.simmenu_speed(0)
+##
+##    def simmenu_1x_handler(self, event):
+##        self.simmenu_speed(1)
+##
+##    def simmenu_2x_handler(self, event):
+##        self.simmenu_speed(2)
+##
+##    def simmenu_4x_handler(self, event):
+##        self.simmenu_speed(4)
+##
+##    def simmenu_8x_handler(self, event):
+##        self.simmenu_speed(8)
+##
+##    def simmenu_32x_handler(self, event):
+##        self.simmenu_speed(32)
+##
+##    def simmenu_fast_handler(self, event):
+##        self.simmenu_speed(inf)
 
-    def simmenu_1x_handler(self, event):
-        self.simmenu_speed(1)
-
-    def simmenu_2x_handler(self, event):
-        self.simmenu_speed(2)
-
-    def simmenu_4x_handler(self, event):
-        self.simmenu_speed(4)
-
-    def simmenu_8x_handler(self, event):
-        self.simmenu_speed(8)
-
-    def simmenu_32x_handler(self, event):
-        self.simmenu_speed(32)
-
-    def simmenu_fast_handler(self, event):
-        self.simmenu_speed(inf)
-
-    def simmenu_speed(self, speed):
+    def set_sim_speed(self, speed):
         try:
             SimPy.rtset(speed)
             print 'Speed set to', speed, 'X'
