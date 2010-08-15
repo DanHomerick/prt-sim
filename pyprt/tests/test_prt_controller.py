@@ -202,7 +202,7 @@ def make_station_I():
 
 def make_vehicle(v_id, ts_id, pos):
     """Make a vehicle."""
-    return Vehicle(v_id, 'DEFAULT', 4, 4, ts_id, pos, 0, 0, 2.5, -2.5, 5.0, -5.0, 25)
+    return Vehicle(v_id, 'PRT_DEFAULT', 4, 4, ts_id, pos, 0, 0, 2.5, -2.5, 5.0, -5.0, 25)
 
 if __name__ == '__main__':
     unittest.main()

@@ -2141,6 +2141,7 @@ class Merge(object):
                                                  vehicle,
                                                  spline,
                                                  self)
+                            break
                         else:
                             new_slot = None
                             continue

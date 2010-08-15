@@ -1,9 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Window xmlns:mx="http://www.adobe.com/2006/mxml" title="Attributes" layout="vertical" showStatusBar="false" width="400" height="600">
+<mx:Window xmlns:mx="http://www.adobe.com/2006/mxml" title="Attributes" layout="vertical" showStatusBar="false"
+	width="450" height="700"
+	initialize="initVehicleModels();">
+	
 	<mx:Script>
 		<![CDATA[
-			import mx.events.ValidationResultEvent;
+			import mx.controls.Alert;
+			import __AS3__.vec.Vector;
+			import mx.collections.ArrayCollection;
+			
+			[Bindable]
+			public var vehicleModelCollection:ArrayCollection;
+			public var vmCollection:ArrayCollection;
+			
+			private function initVehicleModels():void {
+				vehicleModelCollection = new ArrayCollection(Globals.vehicleModels.modelNames);
+								
+				vmCollection = new ArrayCollection(Globals.vehicleModels.modelNames);
+				vmCollection.addItem("New Model");				
+			}
+			
+			private function onVehicleModelsSelection(event:Event):void {
+				trace('onVehicleModelsSelection');
+				var model:VehicleModel;
+				if (event.currentTarget.selectedItem == "New Model") {
+					model = new VehicleModel("",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+				} else {
+					model = Globals.vehicleModels.getModelByName(event.currentTarget.selectedItem)
+				}
+				fillVehicleModelsForm(model);
+				vmSave.enabled = false;
+				vmSave.label = "Save New";
+			}
 
+			private function onVehicleModelsNameChange(event:Event):void {
+				trace('onVehicleModelsNameChange');
+				var name:String = Utility.stripWS(vmName.text);
+				if (name.length == 0) {
+					vmSave.label = "Save"
+					vmSave.enabled = false;
+					return;
+				}
+				
+				// Check if name is already in use
+				for each (var existingName:String in vmCollection) {
+					if (name == existingName) {
+						vmSave.label = "Save Changes";
+						return;
+					}
+				}
+				
+				// Otherwise name is new...
+				vmSave.enabled = true;
+				vmSave.label = "Save New"					
+			}
+			
+			private function onVehicleModelsDeleteButton(event:Event):void {
+				trace('onVehicleModelsDeleteButton');
+				var name:String = vmComboBox.selectedItem as String;
+				if (name != 'New Model') {
+					if (name == Globals.vehicles.modelName) {
+						Alert.show(name + " is the currently selected model for creating new vehicles and cannot be deleted.")
+						return;
+					}
+					
+					Globals.vehicleModels.removeModelByName(name);
+					vehicleModelCollection.removeItemAt(vehicleModelCollection.getItemIndex(name));					
+					vmCollection.removeItemAt(vmCollection.getItemIndex(name));
+					vmComboBox.selectedIndex = -1;
+					setVehicleModelFormEnabled(false);								
+				}					
+			}
+
+			private function onVehicleModelsSaveButton(event:Event):void {
+				trace('onVehicleModelsSaveButton');
+				var name:String = Utility.stripWS(vmName.text);
+				var model:VehicleModel = Globals.vehicleModels.getModelByName(name);
+				// If the name is new, create a new VehicleModel
+				if (model == null) {
+					model = new VehicleModel(
+									name,
+									vmLength.value,
+									vmCapacity.value,
+									vmMass.value,
+									vmJerkMaxNorm.value,
+									-vmJerkMinNorm.value,
+									vmJerkMaxEmerg.value,
+									-vmJerkMinEmerg.value,
+									vmAccelMaxNorm.value,
+									-vmAccelMinNorm.value,
+									vmAccelMaxEmerg.value,
+									-vmAccelMinEmerg.value,
+									vmVelMaxNorm.value,
+									0,
+									vmVelMaxEmerg.value,
+									0,
+									vmFrontalArea.value,
+									vmDragCoefficient.value,
+									vmPowertrainEfficiency.value,
+									vmRegenerativeBreakingEfficiency.value
+								)
+					Globals.vehicleModels.models.push(model);
+					vmCollection.addItemAt(model.modelName, vmCollection.length-1);
+					vehicleModelCollection.addItem(model.modelName);							
+				}
+				
+				// Update the existing model with new info.
+				else {
+					model.modelName = name;
+					model.length = vmLength.value;
+					model.passengerCapacity = vmCapacity.value;
+					model.mass = vmMass.value;
+					model.jerkMaxNorm = vmJerkMaxNorm.value;
+					model.jerkMinNorm = -vmJerkMinNorm.value;
+					model.jerkMaxEmerg = vmJerkMaxEmerg.value;
+					model.jerkMinEmerg = -vmJerkMinEmerg.value;
+					model.accelMaxNorm = vmAccelMaxNorm.value;
+					model.accelMinNorm = -vmAccelMinNorm.value;
+					model.accelMaxEmerg = vmAccelMaxEmerg.value;
+					model.accelMinEmerg = -vmAccelMinEmerg.value;
+					model.velMaxNorm = vmVelMaxNorm.value;
+					model.velMinNorm = 0;
+					model.velMaxEmerg = vmVelMaxEmerg.value;
+					model.velMinEmerg = 0;
+					model.frontalArea = vmFrontalArea.value;
+					model.dragCoefficient = vmDragCoefficient.value;
+					model.powertrainEfficiency = vmPowertrainEfficiency.value;
+					model.regenerativeBrakingEfficiency = vmRegenerativeBreakingEfficiency.value;
+				}
+				
+				// Disable the save button so that it's clear that the button press was responded to.
+				vmSave.enabled = false;
+			}
+			
+			private function fillVehicleModelsForm(model:VehicleModel):void {
+				vmName.text = model.modelName;
+				vmLength.value = model.length;
+				vmCapacity.value = model.passengerCapacity;
+				vmMass.value = model.mass;
+				vmVelMaxNorm.value = model.velMaxNorm;
+				vmAccelMaxNorm.value = model.accelMaxNorm;
+				vmAccelMinNorm.value = -model.accelMinNorm;
+				vmJerkMaxNorm.value = model.jerkMaxNorm;
+				vmJerkMinNorm.value = -model.jerkMinNorm;
+				vmVelMaxEmerg.value = model.velMaxEmerg;
+				vmAccelMaxEmerg.value = model.accelMaxEmerg;
+				vmAccelMinEmerg.value = -model.accelMinEmerg;
+				vmJerkMaxEmerg.value = model.jerkMaxEmerg;
+				vmJerkMinEmerg.value = -model.jerkMinEmerg;
+				vmFrontalArea.value = model.frontalArea;
+				vmDragCoefficient.value = model.dragCoefficient;
+				vmPowertrainEfficiency.value = model.powertrainEfficiency;
+				vmRegenerativeBreakingEfficiency.value = model.regenerativeBrakingEfficiency;
+				
+				setVehicleModelFormEnabled(true);
+			}
+			
+			private function setVehicleModelFormEnabled(b:Boolean):void {
+				vmName.enabled = b;
+				vmLength.enabled = b;
+				vmCapacity.enabled = b;
+				vmMass.enabled = b;
+				vmVelMaxNorm.enabled = b;
+				vmAccelMaxNorm.enabled = b;
+				vmAccelMinNorm.enabled = b;
+				vmJerkMaxNorm.enabled = b;
+				vmJerkMinNorm.enabled = b;
+				vmVelMaxEmerg.enabled = b;
+				vmAccelMaxEmerg.enabled = b;
+				vmAccelMinEmerg.enabled = b;
+				vmJerkMaxEmerg.enabled = b;
+				vmJerkMinEmerg.enabled = b;
+				vmFrontalArea.enabled = b;
+				vmDragCoefficient.enabled = b;
+				vmPowertrainEfficiency.enabled = b;
+				vmRegenerativeBreakingEfficiency.enabled = b;				
+			}
+			
 		]]>
 	</mx:Script>
 
@@ -212,6 +385,11 @@
                     	initialize="vehicleLabel.text = Globals.vehicles.label;"/>
                 </mx:FormItem>
 
+				<mx:FormItem label="Vehicle Model">
+					<mx:ComboBox id="vehicleModelComboBox" dataProvider="{vehicleModelCollection}"
+						change="Globals.vehicles.modelName = event.currentTarget.selectedItem;" />	
+				</mx:FormItem>
+
                 <mx:FormItem label="Reverse Direction:">
                 	<mx:CheckBox id="vehicleReverseDirection"
                 		initialize="vehicleReverseDirection.selected = Globals.vehicles.reverseDir;"
@@ -219,26 +397,167 @@
                 </mx:FormItem>
 
             	<mx:FormItem label="Initial Velocity" >
-            		<mx:TextInput id="vehicleInitialVelocity"
-            			initialize="vehicleInitialVelocity.text = Globals.vehicles.velocity.toString();"
-            			change="if (vehicleVelocityValidator.validate().type == ValidationResultEvent.VALID)
-            						Globals.vehicles.velocity = Number(vehicleInitialVelocity.text);"/>
+            		<mx:NumericStepper id="vehicleInitialVelocity" minimum="0" maximum="999" stepSize="0.1"
+            			value="{Globals.vehicles.velocity}"
+            			change="Globals.vehicles.velocity = vehicleInitialVelocity.value;" />
             	</mx:FormItem>
             	
-            	<mx:FormItem label="Initial Acceleration" >
-            		<mx:TextInput id="vehicleInitialAcceleration" toolTip="Negative numbers represent deceleration"
-            			initialize="vehicleInitialAcceleration.text = Globals.vehicles.acceleration.toString();"
-            			change="if (vehicleAccelerationValidator.validate().type == ValidationResultEvent.VALID)
-            						Globals.vehicles.acceleration = Number(vehicleInitialAcceleration.text);"/>
-            	</mx:FormItem>            	
-
             </mx:Form>
 		</mx:VBox>
 
-	</mx:TabNavigator>
+		<mx:VBox label="Vehicle Models">
+			<mx:Form>
+				<mx:FormItem label="Choose Model:">
+					<mx:HBox>
+						<mx:ComboBox id="vmComboBox" dataProvider="{vmCollection}" prompt="Select One..."
+							change="onVehicleModelsSelection(event)"/>
+						<mx:Button label="Delete" click="onVehicleModelsDeleteButton(event)"/>
+					</mx:HBox>					
+				</mx:FormItem>
+				
+				<mx:FormItem label="Model Name:">
+					<mx:TextInput id="vmName" editable="true" text="" enabled="false"
+						change="onVehicleModelsNameChange(event);"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Length:">
+					<mx:NumericStepper id="vmLength" minimum="0" maximum="99999" stepSize="0.1" enabled="false"
+						change="vmSave.enabled = true;" />
+				</mx:FormItem>
+				
+				<mx:FormItem label="Capacity:">
+					<mx:HBox>
+						<mx:NumericStepper id="vmCapacity" minimum="0" maximum="99999" stepSize="1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="passengers" fontStyle="italic"/>						
+					</mx:HBox>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Mass:">
+					<mx:NumericStepper id="vmMass" minimum="0" maximum="99999" stepSize="1" enabled="false" 
+						change="vmSave.enabled = true;" />
+				</mx:FormItem>				
+			
+				<mx:FormHeading label="Comfort Limits" fontStyle="italic" fontSize="10" paddingTop="5"/>
+								
+				<mx:FormItem label="Max Speed">
+					<mx:HBox>
+						<mx:NumericStepper id="vmVelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+					</mx:HBox>					
+				</mx:FormItem>				
+				
+				<mx:FormItem label="Max Acceleration">
+					<mx:HBox>
+						<mx:NumericStepper id="vmAccelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g" fontStyle="italic" />
+					</mx:HBox>					
+				</mx:FormItem>
+				
+				<mx:FormItem label="Max Deceleration">
+					<mx:HBox>
+						<mx:NumericStepper id="vmAccelMinNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g" fontStyle="italic" />
+					</mx:HBox>
+				</mx:FormItem>
 
-	<mx:NumberValidator id="vehicleVelocityValidator" allowNegative="true" domain="real" source="{vehicleInitialVelocity}" property="text"/>
-	<mx:NumberValidator id="vehicleAccelerationValidator" allowNegative="true" domain="real" source="{vehicleInitialAcceleration}" property="text"/>
+				<mx:FormItem label="Max Forward Jerk">
+					<mx:HBox>
+						<mx:NumericStepper id="vmJerkMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g/sec" fontStyle="italic" />
+					</mx:HBox>					
+				</mx:FormItem>
+
+				<mx:FormItem label="Max Backward Jerk">
+					<mx:HBox>
+						<mx:NumericStepper id="vmJerkMinNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g/sec" fontStyle="italic" />
+					</mx:HBox>					
+				</mx:FormItem>
+
+				<mx:FormHeading label="Hardware Limits" fontStyle="italic" fontSize="10" paddingTop="5"/>
+								
+				<mx:FormItem label="Max Speed">
+					<mx:HBox>
+						<mx:NumericStepper id="vmVelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+					</mx:HBox>					
+				</mx:FormItem>				
+				
+				<mx:FormItem label="Max Acceleration">
+					<mx:HBox>
+						<mx:NumericStepper id="vmAccelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g" fontStyle="italic" />
+					</mx:HBox>					
+				</mx:FormItem>
+				
+				<mx:FormItem label="Max Deceleration">
+					<mx:HBox>
+						<mx:NumericStepper id="vmAccelMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g" fontStyle="italic" />
+					</mx:HBox>
+				</mx:FormItem>
+
+				<mx:FormItem label="Max Forward Jerk">
+					<mx:HBox>
+						<mx:NumericStepper id="vmJerkMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g/sec" fontStyle="italic" />
+					</mx:HBox>					
+				</mx:FormItem>
+
+				<mx:FormItem label="Max Backward Jerk">
+					<mx:HBox>
+						<mx:NumericStepper id="vmJerkMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Label text="x.x g/sec" fontStyle="italic" />
+					</mx:HBox>					
+				</mx:FormItem>
+
+				<mx:FormHeading label="Energy Usage" fontStyle="italic" fontSize="10" paddingTop="5"/>
+				
+				<mx:FormItem label="Air Resistance">
+					<mx:HBox>
+						<mx:Label text="Area:"/>
+						<mx:NumericStepper id="vmFrontalArea" minimum="0" maximum="999" stepSize="0.01" enabled="false" 
+							change="vmSave.enabled = true;" />
+						<mx:Spacer/>
+						<mx:Label text="Cd:" />
+						<mx:NumericStepper id="vmDragCoefficient" minimum="0" maximum="1" stepSize="0.01" enabled="false" 
+							change="vmSave.enabled = true;" />						
+					</mx:HBox>
+					
+				</mx:FormItem>
+				
+				<mx:FormItem label="Powertrain Efficiency">
+					<mx:NumericStepper id="vmPowertrainEfficiency" minimum="0" maximum="100" stepSize="0.1" enabled="false"
+					    toolTip="Average percent. 100 indicates no energy losses."
+					    change="vmSave.enabled = true;" />
+				</mx:FormItem>
+				
+				<mx:FormItem label="Regen. Braking">					
+					<mx:NumericStepper id="vmRegenerativeBreakingEfficiency" minimum="0" maximum="100" stepSize="0.1" enabled="false"
+						toolTip="Average percent of energy recovered"
+						change="vmSave.enabled = true;" />
+					
+				</mx:FormItem>								
+			</mx:Form>
+			
+			<mx:HBox width="100%">
+				<mx:Spacer width="300" />
+				<mx:Button id="vmSave" label="Save" enabled="false"
+					click="onVehicleModelsSaveButton(event);"/>	
+			</mx:HBox>
+						
+		</mx:VBox>
+
+	</mx:TabNavigator>
 	
 </mx:Window>
 

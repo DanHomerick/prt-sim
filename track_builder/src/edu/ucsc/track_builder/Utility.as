@@ -1,7 +1,5 @@
 package edu.ucsc.track_builder
 {
-	import __AS3__.vec.Vector;
-	
 	import com.google.maps.LatLng;
 	import com.google.maps.interfaces.IPane;
 	
@@ -12,6 +10,13 @@ package edu.ucsc.track_builder
 	
 	public class Utility
 	{
+		private static const wsRegExp:RegExp = new RegExp("^[\\s\\t]+|[\\s\\t]+$", "g"); // remove leading or trailing whitespace
+		/** Returns a new string that has had space and tab characters (whitespace) stripped 
+		 * from the start and end. */
+		public static function stripWS(string:String):String {
+			return string.replace(wsRegExp, "");
+		}
+		
 		public static function refreshScreen():void {
 			for each (var pane:IPane in [Globals.curvedTrackPane,
 										 Globals.straightTrackPane,

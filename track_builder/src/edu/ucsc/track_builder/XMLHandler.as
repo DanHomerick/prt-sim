@@ -23,7 +23,7 @@ package edu.ucsc.track_builder
 			xml.appendChild(StaticMap.toDataXML());
 			xml.appendChild(Globals.tracks.toDataXML());	
 			xml.appendChild(Globals.stations.toDataXML());
-			xml.appendChild(VehicleModel.toXML()); // TEMP
+			xml.appendChild(Globals.vehicleModels.toDataXML(Globals.vehicles.vehicles));
 			xml.appendChild(Globals.vehicles.toDataXML());
 			var sortedSegs:Vector.<TrackSegment> = Globals.tracks.getSortedTrackSegments();
 			xml.appendChild(makeWaypointsXml(sortedSegs)); // ignored when loading a saved file
@@ -45,6 +45,7 @@ package edu.ucsc.track_builder
 			xml.appendChild(StationOverlay.toPrefsXML());		
 			xml.appendChild(Globals.vehicles.toPrefsXML());
 			xml.appendChild(VehicleOverlay.toPrefsXML());
+			xml.appendChild(Globals.vehicleModels.toPrefsXML());			
 			return xml;
 		}
 
@@ -57,6 +58,7 @@ package edu.ucsc.track_builder
 			xml.appendChild(StationOverlay.toDefaultPrefsXML());		
 			xml.appendChild(Globals.vehicles.toDefaultPrefsXML());
 			xml.appendChild(VehicleOverlay.toDefaultPrefsXML());
+			xml.appendChild(Globals.vehicleModels.toDefaultPrefsXML());
 			return xml;
 		}
 
@@ -156,12 +158,13 @@ package edu.ucsc.track_builder
 		/* ************************ Parsing & Loading functions ************************ */
 	
 		/* Converts the xml file to an XML object. */
-		public static function parseDataXML(data:String):void
+		public static function parseDataXML(data:String, vehicleModelNameMap:Object):void
 		{
-			var xml:XML = new XML(data); 
+			var xml:XML = new XML(data);
+			Globals.vehicleModels.fromDataXML(xml.VehicleModels.VehicleModel, vehicleModelNameMap) 
 			Globals.tracks.fromDataXML(xml.TrackSegments.TrackSegment);
 			Globals.stations.fromDataXML(xml.Stations.Station);
-			Globals.vehicles.fromDataXML(xml.Vehicles.Vehicle);
+			Globals.vehicles.fromDataXML(xml.Vehicles.Vehicle, vehicleModelNameMap);
 			Globals.gtfXML = xml.GoogleTransitFeed;
 		}
 		
@@ -175,6 +178,7 @@ package edu.ucsc.track_builder
 			StationOverlay.fromPrefsXML(xml.StationOverlay);
 			Globals.vehicles.fromPrefsXML(xml.Vehicles);	
 			VehicleOverlay.fromPrefsXML(xml.VehicleOverlay);
+			Globals.vehicleModels.fromPrefsXML(xml.VehicleModels.VehicleModel);
 		}
 		
 		/** Load XML from a file. */
@@ -196,7 +200,12 @@ package edu.ucsc.track_builder
 				Globals.reinitialize();
 				
 				// Parse xml data. Creates the objects and overlays.
-				parseDataXML(data); 
+				try {
+					parseDataXML(data, {});
+				} catch (err:ModelError) {
+					// FIXME: Pop a dialog box requesting that the model be renamed.
+					//        Attach loadDataXML to the OK button via an event listener?  	
+				}
 				
 				// Attach appropriate listeners to the freshly created overlays
 				Globals.onToolChange(Globals.tool);

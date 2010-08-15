@@ -50,15 +50,11 @@ package edu.ucsc.track_builder.gtf_import
 		protected var _services:Object;
 		protected var _trips:Vector.<Trip>;
 		protected var _stops:Object;
-		protected var _stopTimes:StopTimeCollection;
-		
-		protected var wsRegExp:RegExp;
+		protected var _stopTimes:StopTimeCollection;				
 		
 		/** Constructor */
 		public function GtfImporter(feedDirectory:File) {
-			this.feedDirectory = feedDirectory;
-			
-			wsRegExp = new RegExp("^[\\s\\t]+|[\\s\\t]+$", "g"); // remove leading or trailing whitespace
+			this.feedDirectory = feedDirectory;		
 		}
 		
 //		public function setProgressBar(progressBar:ProgressBar):void {
@@ -476,7 +472,7 @@ package edu.ucsc.track_builder.gtf_import
 							                            vehicleSeg.getLatLng(distRemaining),
 							                            vehicleSeg.getElevation(distRemaining),
 							                            tBundle.trip.id,
-							                            'BUS', // FIXME: Don't hardcode for just buses!
+							                            'BUS_DEFAULT', // FIXME: Expose model choice to user during import?
 							                            false
 							                          );
 									new VehicleOverlay(vehicle, tOverlay); // added to global store as a side effect
@@ -526,7 +522,7 @@ package edu.ucsc.track_builder.gtf_import
 				                            trackSeg.getLatLng(pos),
 				                            trackSeg.getElevation(pos),
 				                            '',
-				                            'BUS', // FIXME: Don't hardcode for Buses!
+				                            'BUS_DEFAULT',  // FIXME: Expose model choice to user during import?
 				                            false);
 			}
 			
@@ -752,7 +748,7 @@ package edu.ucsc.track_builder.gtf_import
 			/* Identify field indexes */
 			var headerFields:Array = tripsData.shift().split(',');
 			for (var i:int=0; i < headerFields.length; ++i) {
-				switch(stripWS(headerFields[i])) {
+				switch(Utility.stripWS(headerFields[i])) {
 					case "route_id": ROUTE = i; break;
 					case "service_id": SERVICE = i; break;
 					case "trip_id": TRIP = i; break;
@@ -771,14 +767,14 @@ package edu.ucsc.track_builder.gtf_import
 				if (fields.length == 1) { // blank line or other non-data info
 					continue;
 				}
-				trips.push(new Trip(stripWS(fields[ROUTE]),
-				                    stripWS(fields[SERVICE]),
-				                    stripWS(fields[TRIP]),
+				trips.push(new Trip(Utility.stripWS(fields[ROUTE]),
+				                    Utility.stripWS(fields[SERVICE]),
+				                    Utility.stripWS(fields[TRIP]),
 				                    HEADSIGN ? fields[HEADSIGN] : "",
 				                    SHORT ? fields[SHORT] : "",
 				                    DIR ? fields[DIR] : "",
-				                    BLOCK ? stripWS(fields[BLOCK]) : "",
-				                    SHAPE ? stripWS(fields[SHAPE]) : ""));		
+				                    BLOCK ? Utility.stripWS(fields[BLOCK]) : "",
+				                    SHAPE ? Utility.stripWS(fields[SHAPE]) : ""));		
 			}
 			return trips;
 		}
@@ -802,7 +798,7 @@ package edu.ucsc.track_builder.gtf_import
 			/* Figure out what fields are being used, and what indexes they have */									
 			var headerFields:Array = stopsData.shift().split(',');
 			for (var i:int=0; i < headerFields.length; ++i) {
-				switch(stripWS(headerFields[i])) {
+				switch(Utility.stripWS(headerFields[i])) {
 					case "stop_id": ID = i; break;
 					case "stop_name": NAME = i; break;
 					case "stop_desc": DESC = i; break;
@@ -829,7 +825,7 @@ package edu.ucsc.track_builder.gtf_import
 					}					
 					latlng = new LatLng(toPrecision(fields[LAT]), toPrecision(fields[LON]));
 					type = fields[TYPE] ? 1 : 0;
-					id = stripWS(fields[ID]);
+					id = Utility.stripWS(fields[ID]);
 					stops[id] = new Stop(id, fields[NAME], latlng, fields[DESC], type, fields[PARENT]);
 				}
 			} else if (DESC) {
@@ -839,7 +835,7 @@ package edu.ucsc.track_builder.gtf_import
 							continue;
 					}
 					latlng = new LatLng(toPrecision(fields[LAT]), toPrecision(fields[LON]));
-					id = stripWS(fields[ID]);
+					id = Utility.stripWS(fields[ID]);
 					stops[id] = new Stop(id, fields[NAME], latlng, fields[DESC]);
 				}
 			} else if (PARENT) {
@@ -850,7 +846,7 @@ package edu.ucsc.track_builder.gtf_import
 					}
 					latlng = new LatLng(toPrecision(fields[LAT]), toPrecision(fields[LON]));
 					type = fields[TYPE] ? 1 : 0;
-					id = stripWS(fields[ID]);
+					id = Utility.stripWS(fields[ID]);
 					stops[id] = new Stop(id, fields[NAME], latlng, "", type, fields[PARENT]);
 				}
 			} else {
@@ -860,7 +856,7 @@ package edu.ucsc.track_builder.gtf_import
 							continue;
 					}
 					latlng = new LatLng(toPrecision(fields[LAT]), toPrecision(fields[LON]));
-					id = stripWS(fields[ID]);
+					id = Utility.stripWS(fields[ID]);
 					stops[id] = new Stop(id, fields[NAME], latlng);
 				}
 			}
@@ -886,7 +882,7 @@ package edu.ucsc.track_builder.gtf_import
 			/* Figure out what fields are being used, and what indexes they have */
 			var headerFields:Array = routeData.shift().split(',');
 			for (var i:int=0; i < headerFields.length; ++i) {
-				switch(stripWS(headerFields[i])) {
+				switch(Utility.stripWS(headerFields[i])) {
 					case "route_id": ROUTE = i; break;
 					case "agency_id": AGENCY = i; break;
 					case "route_short_name": SHORT = i; break;
@@ -905,8 +901,8 @@ package edu.ucsc.track_builder.gtf_import
 				if (fields.length == 1) { // blank line or other non-data info
 					continue;
 				}
-				routes.push(new Route(stripWS(fields[ROUTE]),
-				                         isNaN(AGENCY) ? stripWS(fields[AGENCY]) : "",
+				routes.push(new Route(Utility.stripWS(fields[ROUTE]),
+				                         isNaN(AGENCY) ? Utility.stripWS(fields[AGENCY]) : "",
 				                         fields[SHORT],
 				                         fields[LONG],
 				                         isNaN(DESC) ? fields[DESC] : "",
@@ -937,7 +933,7 @@ package edu.ucsc.track_builder.gtf_import
 			/* Figure out what fields are being used, and what indexes they have */									
 			var headerFields:Array = stopTimesData.shift().split(',');
 			for (var i:int=0; i < headerFields.length; ++i) {			 
-				switch(stripWS(headerFields[i])) {
+				switch(Utility.stripWS(headerFields[i])) {
 					case "trip_id": TRIP = i; break;
 					case "arrival_time": ARRIVAL = i; break;
 					case "departure_time": DEPARTURE = i; break;
@@ -957,10 +953,10 @@ package edu.ucsc.track_builder.gtf_import
 				if (fields.length == 1) {  // blank line or other non-data info
 					continue;
 				}
-				stCollection.add(new StopTime(stripWS(fields[TRIP]),
-				                            stripWS(fields[ARRIVAL]),
-				                            stripWS(fields[DEPARTURE]),
-				                            stripWS(fields[STOP]),
+				stCollection.add(new StopTime(Utility.stripWS(fields[TRIP]),
+				                            Utility.stripWS(fields[ARRIVAL]),
+				                            Utility.stripWS(fields[DEPARTURE]),
+				                            Utility.stripWS(fields[STOP]),
 				                            fields[STOP_SEQ],
 				                            isNaN(HEADSIGN) ? fields[HEADSIGN] : "",
 				                            isNaN(PICKUP) ? fields[PICKUP] : "",
@@ -998,7 +994,7 @@ package edu.ucsc.track_builder.gtf_import
 			/* Figure out what fields are being used, and what indexes they have */									
 			var headerFields:Array = calendarData.shift().split(',');
 			for (var i:int=0; i < headerFields.length; ++i) {			 
-				switch (stripWS(headerFields[i])) {
+				switch (Utility.stripWS(headerFields[i])) {
 					case "service_id": SERVICE = i; break;
 					case "monday": MON = i; break;
 					case "tuesday": TUE = i; break;
@@ -1027,13 +1023,13 @@ package edu.ucsc.track_builder.gtf_import
 				avail[Service.SAT]  = fields[SAT]  == '1' ? true : false;
 				avail[Service.SUN]  = fields[SUN]  == '1' ? true : false;
 				
-				var startStr:String = stripWS(fields[START]);				
-				var endStr:String = stripWS(fields[END]);
+				var startStr:String = Utility.stripWS(fields[START]);				
+				var endStr:String = Utility.stripWS(fields[END]);
 				/* Date strings are in YYYYMMDD format. Note that the Date constructor expects months to be zero based (wtf?), thus the -1 offset. */
 				var start:Date = new Date(Number(startStr.slice(0, 4)), Number(startStr.slice(4, 6)) - 1, Number(startStr.slice(6,8)));				
 				var end:Date = new Date(Number(endStr.slice(0, 4)), Number(endStr.slice(4, 6)) - 1, Number(endStr.slice(6,8)));
 				
-				var id:String = stripWS(fields[SERVICE]);
+				var id:String = Utility.stripWS(fields[SERVICE]);
 				services[id] = new Service(id, avail, start, end, null, null);
 			}
 			
@@ -1062,7 +1058,7 @@ package edu.ucsc.track_builder.gtf_import
 			/* Figure out what fields are being used, and what indexes they have */									
 			var headerFields:Array = calDatesData.shift().split(',');
 			for (var i:int=0; i < headerFields.length; ++i) {		 
-				switch (stripWS(headerFields[i])) {
+				switch (Utility.stripWS(headerFields[i])) {
 					case "service_id": SERVICE = i; break;
 					case "date": DATE = i; break;
 					case "exception_type": EXCEP_TYPE = i; break;
@@ -1081,10 +1077,10 @@ package edu.ucsc.track_builder.gtf_import
 				}
 
 				 /* Date strings are in YYYYMMDD format. Note that the Date constructor expects months to be zero based (wtf?), thus the -1 offset. */
-				var dateStr:String = stripWS(fields[DATE]);
+				var dateStr:String = Utility.stripWS(fields[DATE]);
 				var date:Date = new Date(Number(dateStr.slice(0, 4)), Number(dateStr.slice(4, 6)) - 1, Number(dateStr.slice(6,8))); // YYYYMMDD
 				 
-				var service_id:String = stripWS(fields[SERVICE]);
+				var service_id:String = Utility.stripWS(fields[SERVICE]);
 				var service:Service = services[service_id];
 				if (service == null) { // not found, create a new one
 					service = new Service(service_id, null, date, date, null, null);
@@ -1130,7 +1126,7 @@ package edu.ucsc.track_builder.gtf_import
 				if (fields.length == 1) { // blank line or other line lacking any commas.
 					continue;
 				}
-				var id:String = stripWS(fields[ID]);
+				var id:String = Utility.stripWS(fields[ID]);
 				if (shapeIds == null || shapeIds[id] != null) {
 					var latlng:LatLng = new LatLng(toPrecision(fields[LAT]), toPrecision(fields[LON]));
 					shp = new ShapeNode(id, latlng, fields[SEQ]);
@@ -1152,12 +1148,7 @@ package edu.ucsc.track_builder.gtf_import
 		protected function toPrecision(num:String):Number {
 			var idx:uint = num.indexOf('.');
 			return Number(num.slice(0, idx+PRECISION+1));
-		}
-		
-		/** Removes leading and trailing whitespace from a string. */
-		protected function stripWS(str:String):String {
-			return str.replace(wsRegExp, "");
-		}
+		}	
 		
 		public function forceRefresh(evt:TimerEvent):void {
 			trace('Timer event');

@@ -1,77 +1,92 @@
 package edu.ucsc.track_builder
 {
-	import __AS3__.vec.Vector;
+	import mx.utils.ObjectUtil;
 		
 	public class VehicleModel
-	{
-		public static const DEFAULT:String = "DEFAULT"
-		
-		public var model:String;
+	{		
+		public var modelName:String;
 		public var length:Number;
-		public var passenger_capacity:int;		
+		public var passengerCapacity:int;		
 		public var mass:Number;
-		public var jerk_max_norm:Number;
-		public var jerk_min_norm:Number;
-		public var jerk_max_emerg:Number;
-		public var jerk_min_emerg:Number;
-		public var accel_max_norm:Number;
-		public var accel_min_norm:Number;
-		public var accel_max_emerg:Number;
-		public var accel_min_emerg:Number;
-		public var vel_max_norm:Number;
-		public var vel_min_norm:Number;
-		public var vel_max_emerg:Number;
-		public var vel_min_emerg:Number;		
+		public var jerkMaxNorm:Number;
+		public var jerkMinNorm:Number;
+		public var jerkMaxEmerg:Number;
+		public var jerkMinEmerg:Number;
+		public var accelMaxNorm:Number;
+		public var accelMinNorm:Number;
+		public var accelMaxEmerg:Number;
+		public var accelMinEmerg:Number;
+		public var velMaxNorm:Number;
+		public var velMinNorm:Number;
+		public var velMaxEmerg:Number;
+		public var velMinEmerg:Number;
+		public var frontalArea:Number;
+		public var dragCoefficient:Number;
+		public var powertrainEfficiency:Number;
+		public var regenerativeBrakingEfficiency:Number;
 		
-		public function VehicleModel(model:String, length:Number, passenger_capacity:int, mass:Number,
-		                             jerk_max_norm:Number, jerk_min_norm:Number, jerk_max_emerg:Number, jerk_min_emerg:Number,
-		                             accel_max_norm:Number, accel_min_norm:Number, accel_max_emerg:Number, accel_min_emerg:Number,
-		                             vel_max_norm:Number, vel_min_norm:Number, vel_max_emerg:Number, vel_min_emerg:Number)
+		public function VehicleModel(modelName:String, length:Number, passengerCapacity:int, mass:Number,
+		                             jerkMaxNorm:Number, jerkMinNorm:Number, jerkMaxEmerg:Number, jerkMinEmerg:Number,
+		                             accelMaxNorm:Number, accelMinNorm:Number, accelMaxEmerg:Number, accelMinEmerg:Number,
+		                             velMaxNorm:Number, velMinNorm:Number, velMaxEmerg:Number, velMinEmerg:Number,
+		                             frontalArea:Number, dragCoefficient:Number, powertrainEfficiency:Number,
+		                             regenerativeBrakingEfficiency:Number)
 		{
-			this.model = model;
+			this.modelName = modelName;
 			this.length = length;
-			this.passenger_capacity = passenger_capacity;			
+			this.passengerCapacity = passengerCapacity;
 			this.mass = mass;
-			this.jerk_max_norm = jerk_max_norm;
-			this.jerk_min_norm = jerk_min_norm;
-			this.jerk_max_emerg = jerk_max_emerg;
-			this.jerk_min_emerg = jerk_min_emerg;
-			this.accel_max_norm = accel_max_norm;
-			this.accel_min_norm = accel_min_norm;
-			this.accel_max_emerg = accel_max_emerg;
-			this.accel_min_emerg = accel_min_emerg;
-			this.vel_max_norm = vel_max_norm;
-			this.vel_min_norm = vel_min_norm;
-			this.vel_max_emerg = vel_max_emerg;
-			this.vel_min_emerg = vel_min_emerg;		
+			this.jerkMaxNorm = jerkMaxNorm;
+			this.jerkMinNorm = jerkMinNorm;
+			this.jerkMaxEmerg = jerkMaxEmerg;
+			this.jerkMinEmerg = jerkMinEmerg;
+			this.accelMaxNorm = accelMaxNorm;
+			this.accelMinNorm = accelMinNorm;
+			this.accelMaxEmerg = accelMaxEmerg;
+			this.accelMinEmerg = accelMinEmerg;
+			this.velMaxNorm = velMaxNorm;
+			this.velMinNorm = velMinNorm;
+			this.velMaxEmerg = velMaxEmerg;
+			this.velMinEmerg = velMinEmerg;
+			this.frontalArea = frontalArea;
+			this.dragCoefficient = dragCoefficient;
+			this.powertrainEfficiency = powertrainEfficiency;
+			this.regenerativeBrakingEfficiency = regenerativeBrakingEfficiency; 
 		}
 	
-		/** TEMP! */
-		public static function toXML():XML {
-			var xml:XML = <VehicleModels>
-						  	<VehicleModel model={DEFAULT}
-						  		          length="2.0"
-						  		          passenger_capacity="4"
-						  		          mass="450">
-						  		<Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20" />
-						  		<Acceleration normal_max="5.0" normal_min="-5.0" emergency_max="5.0" emergency_min="-25" />
-						  		<Velocity normal_max="60.0" normal_min="0.0" emergency_max="65.0" emergency_min="0.0" />
-						  	</VehicleModel>		  	
-						  	<VehicleModel model="BUS"
-						  		          length="14.0"
-						  		          passenger_capacity="50"
-						  		          mass="9200">
-						  		<Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20" />
-						  		<Acceleration normal_max="1.0" normal_min="-5.0" emergency_max="1.5" emergency_min="-25" />
-						  		<Velocity normal_max="32.0" normal_min="0.0" emergency_max="65.0" emergency_min="0.0" />
-						  	</VehicleModel>	
-			              </VehicleModels>;												      
+		public function toXML():XML {
+			var xml:XML = <VehicleModel
+							model_name={modelName}
+							length={length}
+							passenger_capacity={passengerCapacity}
+							mass={mass}
+							frontal_area={frontalArea}
+							drag_coefficient={dragCoefficient}
+							powertrain_efficiency={powertrainEfficiency}
+							regenerative_braking_efficiency={regenerativeBrakingEfficiency}
+							>
+					  		<Jerk
+					  			normal_max={jerkMaxNorm}
+					  		    normal_min={jerkMinNorm}
+					  		    emergency_max={jerkMaxEmerg}
+					  		    emergency_min={jerkMinEmerg} />
+					  		<Acceleration
+					  			normal_max={accelMaxNorm}
+					  		    normal_min={accelMinNorm}
+					  		    emergency_max={accelMaxEmerg}
+					  		    emergency_min={accelMinEmerg} />
+					  		<Velocity
+					  			normal_max={velMaxNorm}
+					  		    normal_min={velMinNorm}
+					  		    emergency_max={velMaxEmerg}
+					  		    emergency_min={velMinEmerg} />
+						  </VehicleModel>		  	
 			return xml;
 		}
 
 		public static function fromXML(xml:XML):VehicleModel {
 			return new VehicleModel(
-					xml.@model,
+					xml.@model_name,
 					Number(xml.@length),
 					int(xml.@passenger_capacity),
 					Number(xml.@mass),
@@ -86,7 +101,15 @@ package edu.ucsc.track_builder
 					Number(xml.Velocity.@normal_max),
 					Number(xml.Velocity.@normal_min),
 					Number(xml.Velocity.@emergency_max),
-					Number(xml.Velocity.@emergency_min));
+					Number(xml.Velocity.@emergency_min),
+					Number(xml.@frontal_area),
+					Number(xml.@drag_coefficient),
+					Number(xml.@powertrain_efficiency),
+					Number(xml.@regenerative_braking_efficiency));
+		}
+				
+		public function equals(other:VehicleModel):Boolean {
+			return ObjectUtil.compare(this, other) == 0;
 		}
 	}
 }

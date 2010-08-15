@@ -7,10 +7,9 @@ package edu.ucsc.track_builder
 	import com.google.maps.LatLng;
 	import com.google.maps.MapMouseEvent;
 	
-	import mx.controls.Alert;
-	
 	public class Vehicles
-	{		
+	{	
+		public var modelName:String;
 		public var velocity:Number;
 		public var acceleration:Number;
 		public var label:String = "";
@@ -85,7 +84,7 @@ package edu.ucsc.track_builder
 											  latlng,
 											  location.getElevation(position),
 											  label,
-											  'DEFAULT',
+											  modelName,
 											  preview);
 			var vOverlay:VehicleOverlay = new VehicleOverlay(vehicle, tOverlay, preview);		
 		}
@@ -109,12 +108,16 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 
-		public function fromDataXML(xml:XMLList):void {
+		public function fromDataXML(xml:XMLList, vehicleModelNameMap:Object):void {
 			var vehicle:Vehicle;
 			var vOverlay:VehicleOverlay;
 			var trackOverlay:TrackOverlay;
 			for each (var vXml:XML in xml) {
 				vehicle = Vehicle.fromXML(vXml);
+				// rename the vehicle's model name if there was a naming collision
+				if (vehicle.model in vehicleModelNameMap) {
+					vehicle.model = vehicleModelNameMap[vehicle.model]
+				}
 				trackOverlay = Globals.tracks.getTrackOverlay(vehicle.location.id);
 				trace(vehicle.latlng.lat(), vehicle.latlng.lng());
 				vOverlay = new VehicleOverlay(vehicle, trackOverlay);
@@ -123,21 +126,28 @@ package edu.ucsc.track_builder
 		
 		/** Generate xml from current preferences */
 		public function toPrefsXML():XML {
-			var xml:XML = <Vehicles velocity={velocity}
-			                        acceleration={acceleration}
-			                        reverse_dir={reverseDir}/>
+			var xml:XML = <Vehicles
+							model_name={modelName}
+							velocity={velocity}
+			                acceleration={acceleration}
+			                reverse_dir={reverseDir}
+			              />
 			return xml;
 		}
 		
 		/** Generate xml from hard-coded default preferences */
 		public function toDefaultPrefsXML():XML {
-			var xml:XML = <Vehicles velocity="0"
-			                        acceleration="0"
-			                        reverse_dir="false"/>
+			var xml:XML = <Vehicles
+							model_name="PRT_DEFAULT"
+							velocity="0"
+			                acceleration="0"
+			                reverse_dir="false"
+		                  />
 			return xml;
 		}		
 		
 		public function fromPrefsXML(xml:XMLList):void {
+			modelName = xml.@model_name;
 			velocity = xml.@velocity;
 			acceleration = xml.@acceleration;
 			reverseDir = xml.@reverse_dir == 'false' || xml.@reverse_dir == '0' ? false : true;

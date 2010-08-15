@@ -10,13 +10,14 @@ package edu.ucsc.track_builder
 	import flash.display.NativeWindow;
 	import flash.display.NativeWindowDisplayState;
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	import flash.events.MouseEvent;
 	import flash.filesystem.File;
 	import flash.geom.Rectangle;
 	
 	import mx.controls.ToggleButtonBar;
 	
-	public class Globals
+	public class Globals extends EventDispatcher
 	{
 		/* Tool TabBar indexes */
 		public static const SELECT_TOOL:int = 0;
@@ -35,7 +36,8 @@ package edu.ucsc.track_builder
 		// Holds instances of the top level containers
 		public static var tracks:Tracks = new Tracks(Tracks.RIGHT);
 		public static var stations:Stations = new Stations();
-		public static var vehicles:Vehicles = new Vehicles();
+		public static var vehicles:Vehicles = new Vehicles();		
+		[Bindable] public static var vehicleModels:VehicleModels = new VehicleModels();
 		
 		// a couple new pane ids, in addition to the existing ones:
 		// http://code.google.com/apis/maps/documentation/flash/reference.html#PaneId

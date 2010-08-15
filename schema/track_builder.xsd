@@ -180,10 +180,14 @@
       <xs:element name="Acceleration" type="LimitType" />
       <xs:element name="Velocity" type="LimitType" />
     </xs:sequence>
-    <xs:attribute name="model" type="xs:string" use="required" />
+    <xs:attribute name="model_name" type="xs:string" use="required" />
     <xs:attribute name="length" type="nonNegativeDecimal" use="required" />
     <xs:attribute name="passenger_capacity" type="xs:nonNegativeInteger" use="required" />
     <xs:attribute name="mass" type="xs:nonNegativeInteger" use="required" />
+    <xs:attribute name="frontal_area" type="nonNegativeDecimal" use="optional" />
+    <xs:attribute name="drag_coefficient" type="nonNegativeDecimal" use="optional" />
+    <xs:attribute name="powertrain_efficiency" type="nonNegativeDecimal" use="optional" />
+    <xs:attribute name="regenerative_braking_efficiency" type="nonNegativeDecimal" use="optional" />
   </xs:complexType>
   <xs:complexType name="LimitType">
     <xs:attribute name="normal_max" type="xs:decimal" use="required" />
@@ -255,7 +259,7 @@
   </xs:complexType>
   <xs:complexType name="NeighborStationType">
     <xs:sequence>
-      <xs:element name="Neighbor" type="NeighborType" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Neighbor" type="NeighborType" />
     </xs:sequence>
     <xs:attribute name="id" type="IDType" />
   </xs:complexType>
