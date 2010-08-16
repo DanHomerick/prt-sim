@@ -11,6 +11,8 @@ package edu.ucsc.track_builder
 	import flash.filesystem.FileStream;
 	
 	import mx.controls.Alert;
+	import mx.events.CloseEvent;
+	import mx.utils.ObjectUtil;
 	
 	public class XMLHandler
 	{
@@ -158,13 +160,13 @@ package edu.ucsc.track_builder
 		/* ************************ Parsing & Loading functions ************************ */
 	
 		/* Converts the xml file to an XML object. */
-		public static function parseDataXML(data:String, vehicleModelNameMap:Object):void
+		public static function parseDataXML(data:String):void
 		{
 			var xml:XML = new XML(data);
-			Globals.vehicleModels.fromDataXML(xml.VehicleModels.VehicleModel, vehicleModelNameMap) 
+			Globals.vehicleModels.fromDataXML(xml.VehicleModels.VehicleModel) 
 			Globals.tracks.fromDataXML(xml.TrackSegments.TrackSegment);
 			Globals.stations.fromDataXML(xml.Stations.Station);
-			Globals.vehicles.fromDataXML(xml.Vehicles.Vehicle, vehicleModelNameMap);
+			Globals.vehicles.fromDataXML(xml.Vehicles.Vehicle);
 			Globals.gtfXML = xml.GoogleTransitFeed;
 		}
 		
@@ -188,12 +190,12 @@ package edu.ucsc.track_builder
 			if (file != null) {
 				var fs:FileStream = new FileStream();
 				try {
-					fs.open(file, FileMode.READ);		// open
-					var data:String = fs.readUTFBytes(fs.bytesAvailable); // read
+					fs.open(file, FileMode.READ);
+					var data:String = fs.readUTFBytes(fs.bytesAvailable);
 				} catch (err:Error) {
 					Alert.show(err.message);
 				} finally {
-					fs.close(); // close
+					fs.close();
 				}
 				
 				// Reset everything to a fresh state
@@ -201,10 +203,40 @@ package edu.ucsc.track_builder
 				
 				// Parse xml data. Creates the objects and overlays.
 				try {
-					parseDataXML(data, {});
+					parseDataXML(data);
 				} catch (err:ModelError) {
-					// FIXME: Pop a dialog box requesting that the model be renamed.
-					//        Attach loadDataXML to the OK button via an event listener?  	
+					fs.close();
+					
+					var knownModel:VehicleModel = Globals.vehicleModels.getModelByName(err.model.modelName);
+					
+					var alertMsg:String = 'File contains a version of the VehicleModel "'+knownModel.modelName+'" which ' + 
+							'is different than the one stored in the program. Loading the file will overwrite the ' + 
+							'version stored in the program.\n\n'
+
+					alertMsg += knownModel.modelName + '\n'
+					alertMsg += 'PROPERTY, FROM PROGRAM, FROM FILE\n'					
+					for each (var prop:String in ObjectUtil.getClassInfo(knownModel).properties) {
+						trace(prop, knownModel[prop], err.model[prop]);
+						if (knownModel[prop] != err.model[prop]) {
+							alertMsg += prop+', '+knownModel[prop]+', '+err.model[prop]+'\n';
+						}
+					}							
+
+					Alert.yesLabel = 'Continue';
+					Alert.buttonWidth = 100;
+					Alert.show(alertMsg,
+							   'Name Conflict',
+						       Alert.YES|Alert.CANCEL,
+						       null,
+					           function clickHandler(clsEvent:CloseEvent):void {
+					           		if (clsEvent.detail == Alert.YES) { // clicked 'Overwrite'
+       				           			Globals.vehicleModels.removeModelByName(knownModel.modelName);
+       				           			XMLHandler.loadDataXML(event); // the original event that triggered loadDataXML   
+					           		}
+					           		Alert.yesLabel = 'Yes'; // reset the buttons to default values
+					           		Alert.buttonWidth = 60;
+					           });					           
+					return; // Abort and wait for user interaction
 				}
 				
 				// Attach appropriate listeners to the freshly created overlays
@@ -242,7 +274,7 @@ package edu.ucsc.track_builder
 			} else {
 				trace(event.target);
 			}			
-		}
+		} 
 		
 		/** Loads and parses the prefs XML. If prefs XML file doesn't exist, a default one is created and used.
 		 */
@@ -263,6 +295,6 @@ package edu.ucsc.track_builder
 				doSaveXml(Globals.prefsXMLFile, prefs);                 // save them
 				parsePrefsXML(prefs.toXMLString());		    // use them
 			}
-		}
+		}			
 	}
 }

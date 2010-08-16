@@ -456,19 +456,19 @@
     </Station>
   </Stations>
   <VehicleModels>
-    <VehicleModel model="DEFAULT" length="2.0" passenger_capacity="4" mass="450">
+    <VehicleModel model_name="DEFAULT" length="2.0" passenger_capacity="4" mass="450">
       <Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="5.0" normal_min="-5.0" emergency_max="5.0" emergency_min="-25"/>
       <Velocity normal_max="60.0" normal_min="0.0" emergency_max="65.0" emergency_min="0.0"/>
     </VehicleModel>
-    <VehicleModel model="BUS" length="14.0" passenger_capacity="50" mass="9200">
+    <VehicleModel model_name="BUS" length="14.0" passenger_capacity="50" mass="9200">
       <Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="1.0" normal_min="-5.0" emergency_max="1.5" emergency_min="-25"/>
       <Velocity normal_max="32.0" normal_min="0.0" emergency_max="65.0" emergency_min="0.0"/>
     </VehicleModel>
   </VehicleModels>
   <Vehicles>
-    <Vehicle id="0_vehicle" location="0_trackSegment_forward" position="77.92410178459565" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="0_vehicle" location="0_trackSegment_forward" position="77.92410178459565" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.96368609492092" lng="-121.99388700841156" elevation="16.563928527290102"/>
     </Vehicle>
   </Vehicles>

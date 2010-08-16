@@ -108,16 +108,12 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 
-		public function fromDataXML(xml:XMLList, vehicleModelNameMap:Object):void {
+		public function fromDataXML(xml:XMLList):void {
 			var vehicle:Vehicle;
 			var vOverlay:VehicleOverlay;
 			var trackOverlay:TrackOverlay;
 			for each (var vXml:XML in xml) {
 				vehicle = Vehicle.fromXML(vXml);
-				// rename the vehicle's model name if there was a naming collision
-				if (vehicle.model in vehicleModelNameMap) {
-					vehicle.model = vehicleModelNameMap[vehicle.model]
-				}
 				trackOverlay = Globals.tracks.getTrackOverlay(vehicle.location.id);
 				trace(vehicle.latlng.lat(), vehicle.latlng.lng());
 				vOverlay = new VehicleOverlay(vehicle, trackOverlay);

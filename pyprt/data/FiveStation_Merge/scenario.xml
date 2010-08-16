@@ -1177,85 +1177,85 @@
     </Station>
   </Stations>
   <VehicleModels>
-    <VehicleModel model="DEFAULT" length="2.0" passenger_capacity="4" mass="450">
+    <VehicleModel model_name="DEFAULT" length="2.0" passenger_capacity="4" mass="450">
       <Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="5.0" normal_min="-5.0" emergency_max="5.0" emergency_min="-25"/>
       <Velocity normal_max="60.0" normal_min="0.0" emergency_max="65.0" emergency_min="0.0"/>
     </VehicleModel>
-    <VehicleModel model="BUS" length="14.0" passenger_capacity="50" mass="9200">
+    <VehicleModel model_name="BUS" length="14.0" passenger_capacity="50" mass="9200">
       <Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="1.0" normal_min="-5.0" emergency_max="1.5" emergency_min="-25"/>
       <Velocity normal_max="32.0" normal_min="0.0" emergency_max="65.0" emergency_min="0.0"/>
     </VehicleModel>
   </VehicleModels>
   <Vehicles>
-    <Vehicle id="0_vehicle" location="6_trackSegment_forward" position="57.8026363101325" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="0_vehicle" location="6_trackSegment_forward" position="57.8026363101325" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.952129342624936" lng="-122.02789220046579" elevation="11.07176702026831"/>
     </Vehicle>
-    <Vehicle id="1_vehicle" location="25_trackSegment_forward" position="33.94425570497086" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="1_vehicle" location="25_trackSegment_forward" position="33.94425570497086" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.952230982124455" lng="-122.02970737925425" elevation="11.565274318279954"/>
     </Vehicle>
-    <Vehicle id="2_vehicle" location="69_trackSegment_forward" position="44.66489730659088" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="2_vehicle" location="69_trackSegment_forward" position="44.66489730659088" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.952069861379705" lng="-122.03186408374198" elevation="NaN"/>
     </Vehicle>
-    <Vehicle id="3_vehicle" location="10_trackSegment_forward" position="64.14314839728353" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="3_vehicle" location="10_trackSegment_forward" position="64.14314839728353" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95210646880114" lng="-122.03300010528041" elevation="11.211851156899652"/>
     </Vehicle>
-    <Vehicle id="4_vehicle" location="17_trackSegment_forward" position="83.49663205127194" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="4_vehicle" location="17_trackSegment_forward" position="83.49663205127194" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.9522281540725" lng="-122.03435882870194" elevation="11.388941204963164"/>
     </Vehicle>
-    <Vehicle id="5_vehicle" location="12_trackSegment_forward" position="64.51411492517492" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="5_vehicle" location="12_trackSegment_forward" position="64.51411492517492" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.9524985014392" lng="-122.03544787374209" elevation="11.337019384407565"/>
     </Vehicle>
-    <Vehicle id="6_vehicle" location="12_trackSegment_forward" position="166.04079245467474" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="6_vehicle" location="12_trackSegment_forward" position="166.04079245467474" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.952852955006094" lng="-122.03649943142649" elevation="11.237905994147486"/>
     </Vehicle>
-    <Vehicle id="7_vehicle" location="80_trackSegment_forward" position="44.73828972915288" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="7_vehicle" location="80_trackSegment_forward" position="44.73828972915288" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.953783686746064" lng="-122.03476089154748" elevation="NaN"/>
     </Vehicle>
-    <Vehicle id="8_vehicle" location="18_trackSegment_forward" position="59.33043745523443" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="8_vehicle" location="18_trackSegment_forward" position="59.33043745523443" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95282748657942" lng="-122.03371261920798" elevation="13.317015784863145"/>
     </Vehicle>
-    <Vehicle id="9_vehicle" location="20_trackSegment_forward" position="72.70380259965023" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="9_vehicle" location="20_trackSegment_forward" position="72.70380259965023" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95397925224486" lng="-122.0328533674683" elevation="16.62222370643872"/>
     </Vehicle>
-    <Vehicle id="10_vehicle" location="36_trackSegment_forward" position="57.94387275340407" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="10_vehicle" location="36_trackSegment_forward" position="57.94387275340407" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95423028415788" lng="-122.03040482485639" elevation="16.608674756159722"/>
     </Vehicle>
-    <Vehicle id="11_vehicle" location="23_trackSegment_forward" position="56.42140507655269" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="11_vehicle" location="23_trackSegment_forward" position="56.42140507655269" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.953649614264336" lng="-122.02930725718996" elevation="15.151971696857718"/>
     </Vehicle>
-    <Vehicle id="12_vehicle" location="23_trackSegment_forward" position="150.48324882274795" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="12_vehicle" location="23_trackSegment_forward" position="150.48324882274795" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95281088967654" lng="-122.02917891671672" elevation="13.071345681221972"/>
     </Vehicle>
-    <Vehicle id="13_vehicle" location="22_trackSegment_forward" position="94.86823192346924" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="13_vehicle" location="22_trackSegment_forward" position="94.86823192346924" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95441755088459" lng="-122.02857823558968" elevation="15.98787299245788"/>
     </Vehicle>
-    <Vehicle id="14_vehicle" location="47_trackSegment_forward" position="61.85082730671787" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="14_vehicle" location="47_trackSegment_forward" position="61.85082730671787" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.9547022947843" lng="-122.02580085237474" elevation="12.434144184738324"/>
     </Vehicle>
-    <Vehicle id="15_vehicle" location="2_trackSegment_forward" position="49.41674580757662" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="15_vehicle" location="2_trackSegment_forward" position="49.41674580757662" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95409636953494" lng="-122.02527099927191" elevation="10.557331456801899"/>
     </Vehicle>
-    <Vehicle id="16_vehicle" location="58_trackSegment_forward" position="26.384535396430984" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="16_vehicle" location="58_trackSegment_forward" position="26.384535396430984" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95227851388516" lng="-122.02618231197604" elevation="10.353757327129154"/>
     </Vehicle>
-    <Vehicle id="17_vehicle" location="15_trackSegment_forward" position="16.360384183968314" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="17_vehicle" location="15_trackSegment_forward" position="16.360384183968314" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.953493385176394" lng="-122.03704833871288" elevation="12.203545827144596"/>
     </Vehicle>
-    <Vehicle id="18_vehicle" location="48_trackSegment_forward" position="56.35252529072574" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="18_vehicle" location="48_trackSegment_forward" position="56.35252529072574" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95299086300174" lng="-122.02582520578648" elevation="10.555825627958507"/>
     </Vehicle>
-    <Vehicle id="19_vehicle" location="37_trackSegment_forward" position="55.319635566818214" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="19_vehicle" location="37_trackSegment_forward" position="55.319635566818214" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95456292026728" lng="-122.02716030874498" elevation="14.833029042718653"/>
     </Vehicle>
-    <Vehicle id="20_vehicle" location="32_trackSegment_forward" position="0" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="20_vehicle" location="32_trackSegment_forward" position="0" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.9540182847375" lng="-122.03162472946518" elevation="16.7"/>
     </Vehicle>
-    <Vehicle id="21_vehicle" location="59_trackSegment_forward" position="67.70206247355071" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="21_vehicle" location="59_trackSegment_forward" position="67.70206247355071" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.952147083716966" lng="-122.03083041426567" elevation="11.976011986638213"/>
     </Vehicle>
-    <Vehicle id="22_vehicle" location="70_trackSegment_forward" position="54.22722688422682" label="" velocity="0" acceleration="0" model="DEFAULT">
+    <Vehicle id="22_vehicle" location="70_trackSegment_forward" position="54.22722688422682" label="" velocity="0" acceleration="0" model_name="DEFAULT">
       <LatLng lat="36.95366262522417" lng="-122.0359417088359" elevation="14.774564508388105"/>
     </Vehicle>
   </Vehicles>

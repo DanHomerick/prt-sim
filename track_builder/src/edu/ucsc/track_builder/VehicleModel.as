@@ -110,6 +110,6 @@ package edu.ucsc.track_builder
 				
 		public function equals(other:VehicleModel):Boolean {
 			return ObjectUtil.compare(this, other) == 0;
-		}
+		}		
 	}
 }

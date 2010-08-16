@@ -30,7 +30,7 @@
 				}
 				fillVehicleModelsForm(model);
 				vmSave.enabled = false;
-				vmSave.label = "Save New";
+				vmSave.label = "Save Changes";
 			}
 
 			private function onVehicleModelsNameChange(event:Event):void {
@@ -60,7 +60,8 @@
 				var name:String = vmComboBox.selectedItem as String;
 				if (name != 'New Model') {
 					if (name == Globals.vehicles.modelName) {
-						Alert.show(name + " is the currently selected model for creating new vehicles and cannot be deleted.")
+						Alert.show(name + " is the currently selected model for creating new vehicles and cannot be deleted.",
+						           "Cannot Delete", 0, this)
 						return;
 					}
 					
@@ -105,7 +106,7 @@
 					vehicleModelCollection.addItem(model.modelName);							
 				}
 				
-				// Update the existing model with new info.
+				// Update the existing model with the form data.
 				else {
 					model.modelName = name;
 					model.length = vmLength.value;
@@ -176,6 +177,10 @@
 				vmPowertrainEfficiency.enabled = b;
 				vmRegenerativeBreakingEfficiency.enabled = b;				
 			}
+			
+//			private function updateConversionLabels():void {
+//	
+//			}
 			
 		]]>
 	</mx:Script>
@@ -421,61 +426,83 @@
 				</mx:FormItem>
 				
 				<mx:FormItem label="Length:">
-					<mx:NumericStepper id="vmLength" minimum="0" maximum="99999" stepSize="0.1" enabled="false"
-						change="vmSave.enabled = true;" />
+					<mx:HBox>
+						<mx:NumericStepper id="vmLength" minimum="0" maximum="99999" stepSize="0.1" enabled="false"
+							toolTip="Exterior vehicle length, in meters"
+							change="vmSave.enabled = true;"
+							valueCommit="vmLengthFt.text = (vmLength.value*3.28).toFixed(1) + ' ft'"/>
+						<mx:Label id="vmLengthFt" text="x.x ft" fontStyle="italic" />						
+					</mx:HBox>
 				</mx:FormItem>
 				
 				<mx:FormItem label="Capacity:">
 					<mx:HBox>
-						<mx:NumericStepper id="vmCapacity" minimum="0" maximum="99999" stepSize="1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="passengers" fontStyle="italic"/>						
+						<mx:NumericStepper id="vmCapacity" minimum="0" maximum="99999" stepSize="1" enabled="false"
+							change="vmSave.enabled = true;"
+							toolTip="Maximum number of passengers" />
+						<mx:Label text="passengers" fontStyle="italic"/>									
 					</mx:HBox>
 				</mx:FormItem>
 				
 				<mx:FormItem label="Mass:">
-					<mx:NumericStepper id="vmMass" minimum="0" maximum="99999" stepSize="1" enabled="false" 
-						change="vmSave.enabled = true;" />
+					<mx:HBox>
+						<mx:NumericStepper id="vmMass" minimum="0" maximum="99999" stepSize="1" enabled="false"
+							toolTip="Vehicle mass when empty of passengers and cargo, in kg"
+							change="vmSave.enabled = true;" 
+							valueCommit="vmMassLbs.text = int(vmMass.value*2.2) + ' lbs'" />
+						<mx:Label id="vmMassLbs" text="x lbs" fontStyle="italic" />
+					</mx:HBox>
 				</mx:FormItem>				
 			
 				<mx:FormHeading label="Comfort Limits" fontStyle="italic" fontSize="10" paddingTop="5"/>
 								
 				<mx:FormItem label="Max Speed">
 					<mx:HBox>
-						<mx:NumericStepper id="vmVelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
+						<mx:NumericStepper id="vmVelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max speed for regular use when passengers are on board. Note that the track or controller may impose lower limits. Measured in meters/second."
+							change="vmSave.enabled = true;"							
+							valueCommit="vmVelMaxNormMPH.text = (vmVelMaxNorm.value*3.6).toFixed(1)+' kph '+'('+(vmVelMaxNorm.value*2.2369).toFixed(1)+' mph)';" />
+						<mx:Label id="vmVelMaxNormMPH" text="x.x kph (x.x mph)" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>				
 				
 				<mx:FormItem label="Max Acceleration">
 					<mx:HBox>
-						<mx:NumericStepper id="vmAccelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g" fontStyle="italic" />
+						<mx:NumericStepper id="vmAccelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max acceleration for regular use when passengers are on board. Measured in m/s^2."
+							change="vmSave.enabled = true;"  
+							valueCommit="vmAccelMaxNormGs.text = (vmAccelMaxNorm.value/9.8).toFixed(1) + ' g';" />
+						<mx:Label id="vmAccelMaxNormGs" text="x.x g" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 				
 				<mx:FormItem label="Max Deceleration">
 					<mx:HBox>
 						<mx:NumericStepper id="vmAccelMinNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g" fontStyle="italic" />
+							toolTip="Max deceleration for regular use when passengers are on board. Measured in m/s^2."
+							change="vmSave.enabled = true;"
+							valueCommit="vmAccelMinNormGs.text = (vmAccelMinNorm.value/9.8).toFixed(1) + ' g';" />
+						<mx:Label id="vmAccelMinNormGs" text="x.x g" fontStyle="italic" />
 					</mx:HBox>
 				</mx:FormItem>
 
-				<mx:FormItem label="Max Forward Jerk">
+				<mx:FormItem label="Max Accel Jerk">
 					<mx:HBox>
-						<mx:NumericStepper id="vmJerkMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g/sec" fontStyle="italic" />
+						<mx:NumericStepper id="vmJerkMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max jerk allowed when accelerating during regular use when passengers are on board. Measured in m/s^3."
+							change="vmSave.enabled = true;"
+							valueCommit="vmJerkMaxNormGs.text = (vmJerkMaxNorm.value/9.8).toFixed(1) + ' g';" />
+						<mx:Label id="vmJerkMaxNormGs" text="x.x g/sec" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 
-				<mx:FormItem label="Max Backward Jerk">
+				<mx:FormItem label="Max Decel Jerk">
 					<mx:HBox>
-						<mx:NumericStepper id="vmJerkMinNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g/sec" fontStyle="italic" />
+						<mx:NumericStepper id="vmJerkMinNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max jerk allowed when decelerating during regular use when passengers are on board. Measured in m/s^3." 
+							change="vmSave.enabled = true;"
+							valueCommit="vmJerkMinNormGs.text = (vmJerkMinNorm.value/9.8).toFixed(1) + ' g';" />
+						<mx:Label id="vmJerkMinNormGs" text="x.x g/sec" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 
@@ -483,40 +510,51 @@
 								
 				<mx:FormItem label="Max Speed">
 					<mx:HBox>
-						<mx:NumericStepper id="vmVelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
+						<mx:NumericStepper id="vmVelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max speed when passengers are not on board or during emergency maneuvers. Measured in m/s." 
+							change="vmSave.enabled = true;"
+							valueCommit="vmVelMaxEmergMPH.text = (vmVelMaxEmerg.value*3.6).toFixed(1)+' kph '+'('+(vmVelMaxEmerg.value*2.2369).toFixed(1)+' mph)';" />
+					    <mx:Label id="vmVelMaxEmergMPH" text="x.x kph (x.x mph)" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>				
 				
 				<mx:FormItem label="Max Acceleration">
 					<mx:HBox>
-						<mx:NumericStepper id="vmAccelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g" fontStyle="italic" />
+						<mx:NumericStepper id="vmAccelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max acceleration when passengers are not on board or during emergency maneuvers. Measured in m/s^2."
+							change="vmSave.enabled = true;"
+							valueCommit="vmAccelMaxEmergGs.text = (vmAccelMaxEmerg.value/9.8).toFixed(1) + ' g';" />
+						<mx:Label id="vmAccelMaxEmergGs" text="x.x g" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 				
 				<mx:FormItem label="Max Deceleration">
 					<mx:HBox>
-						<mx:NumericStepper id="vmAccelMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g" fontStyle="italic" />
+						<mx:NumericStepper id="vmAccelMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max deceleration when passengers are not on board or during emergency maneuvers. Measured in m/s^2." 
+							change="vmSave.enabled = true;"
+							valueCommit="vmAccelMinEmergGs.text = (vmAccelMinEmerg.value/9.8).toFixed(1) + ' g';" />
+						<mx:Label id="vmAccelMinEmergGs" text="x.x g" fontStyle="italic" />
 					</mx:HBox>
 				</mx:FormItem>
 
-				<mx:FormItem label="Max Forward Jerk">
+				<mx:FormItem label="Max Accel Jerk">
 					<mx:HBox>
-						<mx:NumericStepper id="vmJerkMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g/sec" fontStyle="italic" />
+						<mx:NumericStepper id="vmJerkMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max jerk allowed when accelerating without passengers on board or during emergency maneuvers. Measured in m/s^3." 
+							change="vmSave.enabled = true;"
+							valueCommit="vmJerkMaxEmergGs.text = (vmJerkMaxEmerg.value/9.8).toFixed(1) + ' g/s';" />
+						<mx:Label id="vmJerkMaxEmergGs" text="x.x g/sec" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 
-				<mx:FormItem label="Max Backward Jerk">
+				<mx:FormItem label="Max Decel Jerk">
 					<mx:HBox>
-						<mx:NumericStepper id="vmJerkMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
-							change="vmSave.enabled = true;" />
-						<mx:Label text="x.x g/sec" fontStyle="italic" />
+						<mx:NumericStepper id="vmJerkMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
+							toolTip="Max jerk allowed when decelerating without passengers on board or during emergency maneuvers. Measured in m/s^3." 
+							change="vmSave.enabled = true;"
+							valueCommit="vmJerkMinEmergGs.text = (vmJerkMinEmerg.value/9.8).toFixed(1) + ' g/s';" />
+						<mx:Label id="vmJerkMinEmergGs" text="x.x g/sec" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 
@@ -525,11 +563,13 @@
 				<mx:FormItem label="Air Resistance">
 					<mx:HBox>
 						<mx:Label text="Area:"/>
-						<mx:NumericStepper id="vmFrontalArea" minimum="0" maximum="999" stepSize="0.01" enabled="false" 
+						<mx:NumericStepper id="vmFrontalArea" minimum="0" maximum="999" stepSize="0.01" enabled="false"
+							toolTip="Measure of frontal area, in sq. meters" 
 							change="vmSave.enabled = true;" />
 						<mx:Spacer/>
 						<mx:Label text="Cd:" />
-						<mx:NumericStepper id="vmDragCoefficient" minimum="0" maximum="1" stepSize="0.01" enabled="false" 
+						<mx:NumericStepper id="vmDragCoefficient" minimum="0" maximum="1" stepSize="0.01" enabled="false"
+							toolTip="Coefficient of Drag. Unitless" 
 							change="vmSave.enabled = true;" />						
 					</mx:HBox>
 					
@@ -543,7 +583,7 @@
 				
 				<mx:FormItem label="Regen. Braking">					
 					<mx:NumericStepper id="vmRegenerativeBreakingEfficiency" minimum="0" maximum="100" stepSize="0.1" enabled="false"
-						toolTip="Average percent of energy recovered"
+						toolTip="Average percent of energy recovered through regenerative breaking. 100 indicates that all kinetic energy is recovered during braking."
 						change="vmSave.enabled = true;" />
 					
 				</mx:FormItem>								
