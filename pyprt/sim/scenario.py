@@ -134,7 +134,7 @@ class ScenarioManager(object):
         for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
             vId = vehicle_xml.getAttribute('id')
             v_intId = int(vId.split("_")[0]) # get a unique, integer ID
-            v_model = vehicle_xml.getAttribute('model')
+            v_model = vehicle_xml.getAttribute('model_name')
             eId = vehicle_xml.getAttribute('location')
             e_intId = int(eId.split("_")[0])
             loc = common.track_segments[e_intId] # look up edge by id
@@ -304,7 +304,7 @@ class ScenarioManager(object):
             vel_xml = vehicle_model_xml.getElementsByTagName('Velocity')[0]
 
             # read xml
-            model_name = str(vehicle_model_xml.getAttribute('model'))
+            model_name = str(vehicle_model_xml.getAttribute('model_name'))
             length = float(vehicle_model_xml.getAttribute('length'))
             vehicle_mass = int(vehicle_model_xml.getAttribute('mass'))
             max_pax_capacity = int(vehicle_model_xml.getAttribute('passenger_capacity'))

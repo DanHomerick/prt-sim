@@ -740,7 +740,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         models = dict()
         for model_xml in models_xml.getElementsByTagName('VehicleModel'):
-            models[model_xml.getAttribute('model')] = model_xml
+            models[model_xml.getAttribute('model_name')] = model_xml
 
         for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
             vehicle_str_id = vehicle_xml.getAttribute('id')
@@ -749,7 +749,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             ts_str_id = vehicle_xml.getAttribute('location')
             ts_int_id = int(ts_str_id.split('_')[0])
 
-            model_name = vehicle_xml.getAttribute('model')
+            model_name = vehicle_xml.getAttribute('model_name')
 
             model_xml = models[model_name]
             length = float(model_xml.getAttribute('length'))
