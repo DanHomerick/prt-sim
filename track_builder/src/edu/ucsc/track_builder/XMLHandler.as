@@ -191,9 +191,13 @@ package edu.ucsc.track_builder
 				var fs:FileStream = new FileStream();
 				try {
 					fs.open(file, FileMode.READ);
-					var data:String = fs.readUTFBytes(fs.bytesAvailable);
+					var data:String = "";
+					while (fs.bytesAvailable) {
+						data += fs.readUTFBytes(fs.bytesAvailable);
+					}
 				} catch (err:Error) {
-					Alert.show(err.message);
+					trace(err.message);
+					Alert.show(err.message, "Load Failed", Alert.CANCEL);
 				} finally {
 					fs.close();
 				}
@@ -237,6 +241,9 @@ package edu.ucsc.track_builder
 					           		Alert.buttonWidth = 60;
 					           });					           
 					return; // Abort and wait for user interaction
+				} catch (err:Error) {
+					Alert.show(err.message, "XML Parsing Error", Alert.CANCEL);
+					Globals.reinitialize();	
 				}
 				
 				// Attach appropriate listeners to the freshly created overlays
@@ -259,7 +266,7 @@ package edu.ucsc.track_builder
 				var center:LatLng = bounds.getCenter();
 				Globals.map.setCenter(center);
 				var zoom:Number = Globals.map.getBoundsZoomLevel(bounds);
-				Globals.map.setZoom(zoom-1); // -1 to account for a station's coverage area not being considered
+				Globals.map.setZoom(zoom);
 				
 				// Reset the markers
 				Globals.originMarker.setSnapOverlay(null);

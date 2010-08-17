@@ -85,6 +85,9 @@ package edu.ucsc.track_builder
 		}
 
 		public static function fromXML(xml:XML):VehicleModel {
+			if (!('@model_name' in xml)) {
+				throw new Error('A VehicleModel in the file has no "model_name" attribute.');
+			}
 			return new VehicleModel(
 					xml.@model_name,
 					Number(xml.@length),

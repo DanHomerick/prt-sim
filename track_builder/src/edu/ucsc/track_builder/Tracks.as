@@ -1745,7 +1745,6 @@ package edu.ucsc.track_builder
 		}
 
 		public function fromDataXML(xml:XMLList):void {
-			trace("xml:", xml.toXMLString());
 			var used:Object = new Object; // a dict to track which TrackSegments already have an overlay
 			
 			// Create all TrackSegments

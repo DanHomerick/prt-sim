@@ -306,6 +306,7 @@ package edu.ucsc.track_builder
 							dir.browseForOpen("Open");					
 						} catch(error:Error) {
 							trace("Failed:", error.message);
+							Alert.show(error.message, "Open Failed", Alert.CANCEL);							
 						}
 					} else {
 						try {
@@ -313,6 +314,7 @@ package edu.ucsc.track_builder
 							Globals.dataXMLFile.browseForOpen("Open");					
 						} catch(error:Error) {
 							trace("Failed:", error.message);
+							Alert.show(error.message, "Open Failed", Alert.CANCEL);							
 						}
 					}});
 		}
@@ -327,13 +329,15 @@ package edu.ucsc.track_builder
 					dir.addEventListener(Event.SELECT, onFileChosen);
 					dir.browseForSave("Save");					
 				} catch(error:Error) {
+					Alert.show(error.message, "Save Failed", Alert.CANCEL);
 					trace("Failed:", error.message);
 				}
 			} else {
 				try {
-					// Don't browse, just overwrite the current xml_file
+					// Don't browse, just overwrite the current xml_file				
 					XMLHandler.doSaveXml(Globals.dataXMLFile, XMLHandler.generateDataXML());
 				} catch(error:Error) {
+					Alert.show(error.message, "Save Failed", Alert.CANCEL);
 					trace("Failed:", error.message);
 				}
 			}
@@ -349,6 +353,7 @@ package edu.ucsc.track_builder
 					dir.addEventListener(Event.SELECT, onFileChosen);
 					dir.browseForSave("Save As");							
 				} catch(error:Error) {
+					Alert.show(error.message, "Save As Failed", Alert.CANCEL);
 					trace("Failed:", error.message);
 				}
 			} else { // Go to save folder as previous save
@@ -356,6 +361,7 @@ package edu.ucsc.track_builder
 					Globals.dataXMLFile.addEventListener(Event.SELECT, onFileChosen);
 					Globals.dataXMLFile.browseForSave("Save As");					
 				} catch(error:Error) {
+					Alert.show(error.message, "Save As Failed", Alert.CANCEL);
 					trace("Failed:", error.message);
 				}
 			}
@@ -369,8 +375,13 @@ package edu.ucsc.track_builder
 			Globals.dataXMLFile = file;			
 			Globals.dirty = false;
 			Globals.dataXMLFile.removeEventListener(Event.SELECT, onFileChosen); // remove the event listener that got me here
-						
-			XMLHandler.doSaveXml(Globals.dataXMLFile, XMLHandler.generateDataXML()); // also saves map image
+			
+			try {
+				XMLHandler.doSaveXml(Globals.dataXMLFile, XMLHandler.generateDataXML()); // also saves map image
+			} catch (err:Error) {
+				trace ("Failed:", err.message);
+				Alert.show(err.message, "Save Failed", Alert.CANCEL);
+			}
 			if (Globals.postSave != null) {
 				Globals.postSave();
 				Globals.postSave = null; // clean up after myself
@@ -385,6 +396,7 @@ package edu.ucsc.track_builder
 				dir.browseForDirectory("Select Google Transit Feed directory:");					
 			} catch(error:Error) {
 				trace("Failed:", error.message);
+				Alert.show(error.message, "Import Failed", Alert.CANCEL);				
 			}
 		}
 
@@ -404,7 +416,7 @@ package edu.ucsc.track_builder
 					gtfImportUI.orderToFront(); // bring it into view for them
 				}
 			} catch (gtfErr:GtfImportError) {
-				Alert.show(gtfErr.message);
+				Alert.show(gtfErr.message, "Import Failed", Alert.CANCEL);
 			}
 		}
 
