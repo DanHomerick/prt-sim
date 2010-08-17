@@ -13,41 +13,43 @@
 	</mx:Script>
 	<mx:Script source="GUI_logic.as"/>
 
-	<maps:Map id="map" xmlns:maps="com.google.maps.*"	      
-		      mapevent_mapready="onMapReady(event)"
-		      width="100%" height="100%"
-		      url="http://code.google.com/p/prt-sim/"
-		      key="ABQIAAAADtK5P0wYyZFDmjzoanxE5xSDTED1dMqBzm1PMihRGvUygQO1OxTN4Ia2w7lhdfpkzT5dOtexVdW8eQ"
-		      sensor="false"/>
-		      
-	<mx:ApplicationControlBar width="100%">		
-        <mx:ToggleButtonBar id="toolBar"
-        	                itemClick="Globals.onToolChange(toolBar.selectedIndex);"
-        	                selectedIndex="{Globals.TRACK_TOOL}"
-        	                keyDown="dispatchEvent(event); //I dunno why, but the bar was capturing events.">
-            <mx:dataProvider>
-                <mx:Array>
-                	<mx:String>Select</mx:String>
-                    <mx:String>Track</mx:String>
-                    <mx:String>Station</mx:String>
-                    <mx:String>Vehicle</mx:String>                    
-                </mx:Array>
-            </mx:dataProvider>
-        </mx:ToggleButtonBar>
-        
-        <mx:Spacer width="100%"/>
-        
-        <mx:ToggleButtonBar id="mapTypeBar" itemClick="onMapTypeChooser(event);" keyDown="dispatchEvent(event); //I dunno why, but the bar was capturing events.">
-            <mx:dataProvider>
-                <mx:Array>
-                    <mx:String>Map</mx:String>
-                    <mx:String>Satellite</mx:String>
-                    <mx:String>Hybrid</mx:String>
-                    <mx:String>Terrain</mx:String>
-                </mx:Array>
-            </mx:dataProvider>
-        </mx:ToggleButtonBar>                
-	</mx:ApplicationControlBar>
+	<mx:VBox width="100%" height="100%">						      
+		<mx:ApplicationControlBar width="100%">		
+	        <mx:ToggleButtonBar id="toolBar"
+	        	                itemClick="Globals.onToolChange(toolBar.selectedIndex);"
+	        	                selectedIndex="{Globals.TRACK_TOOL}"
+	        	                keyDown="dispatchEvent(event); //I dunno why, but the bar was capturing events.">
+	            <mx:dataProvider>
+	                <mx:Array>
+	                	<mx:String>Select</mx:String>
+	                    <mx:String>Track</mx:String>
+	                    <mx:String>Station</mx:String>
+	                    <mx:String>Vehicle</mx:String>                    
+	                </mx:Array>
+	            </mx:dataProvider>
+	        </mx:ToggleButtonBar>
+	        
+	        <mx:Spacer width="100%"/>
+	        
+	        <mx:ToggleButtonBar id="mapTypeBar" itemClick="onMapTypeChooser(event);" keyDown="dispatchEvent(event); //I dunno why, but the bar was capturing events.">
+	            <mx:dataProvider>
+	                <mx:Array>
+	                    <mx:String>Map</mx:String>
+	                    <mx:String>Satellite</mx:String>
+	                    <mx:String>Hybrid</mx:String>
+	                    <mx:String>Terrain</mx:String>
+	                </mx:Array>
+	            </mx:dataProvider>
+	        </mx:ToggleButtonBar>                
+		</mx:ApplicationControlBar>
+		
+		<maps:Map id="map" xmlns:maps="com.google.maps.*"	      
+	      mapevent_mapready="onMapReady(event)"
+	      width="100%" height="100%"
+	      url="http://code.google.com/p/prt-sim/"
+	      key="ABQIAAAADtK5P0wYyZFDmjzoanxE5xSDTED1dMqBzm1PMihRGvUygQO1OxTN4Ia2w7lhdfpkzT5dOtexVdW8eQ"
+	      sensor="false"/>
+	</mx:VBox>
 <!--
 	<mx:Image source="http://maps.google.com/staticmap?center=37.00356438307206,-122.05888420104979&amp;zoom=16&amp;size=640x640&amp;key=ABQIAAAADtK5P0wYyZFDmjzoanxE5xSDTED1dMqBzm1PMihRGvUygQO1OxTN4Ia2w7lhdfpkzT5dOtexVdW8eQ&amp;sensor=false"
 		   enabled="false" visible="false"/>
