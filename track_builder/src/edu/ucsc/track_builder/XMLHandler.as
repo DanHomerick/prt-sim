@@ -151,6 +151,7 @@ package edu.ucsc.track_builder
 				fs.writeUTFBytes('<?xml version="1.0" encoding="utf-8"?>' + '\n');
 				fs.writeUTFBytes(xml.toXMLString());
 			} catch(e:Error) {
+				Alert.show(e.message, "Save Failed", Alert.CANCEL);
 				trace("Failed:", e.message);
 			} finally {
 				fs.close();
@@ -243,7 +244,8 @@ package edu.ucsc.track_builder
 					return; // Abort and wait for user interaction
 				} catch (err:Error) {
 					Alert.show(err.message, "XML Parsing Error", Alert.CANCEL);
-					Globals.reinitialize();	
+					Globals.reinitialize();
+					return; // Abort and wait for user interaction
 				}
 				
 				// Attach appropriate listeners to the freshly created overlays

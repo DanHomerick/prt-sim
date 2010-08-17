@@ -54,7 +54,7 @@ package edu.ucsc.track_builder
 		public static function fromXML(xml:XML):Vehicle {			
 			var loc:TrackSegment = Globals.tracks.getTrackSegment(xml.@location);
 			var latlng:LatLng = new LatLng(xml.LatLng.@lat, xml.LatLng.@lng);
-			if (!('model_name' in xml)) {
+			if (!('@model_name' in xml)) {
 				throw new Error('Vehicle "' + xml.@id + '" from the XML file has no "model_name" attribute.');
 			}
 			return new Vehicle(xml.@id,

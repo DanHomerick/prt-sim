@@ -144,7 +144,8 @@ package edu.ucsc.track_builder
 		public static function reinitialize():void {
 			tracks.reinitialize();
 			stations.reinitialize();
-			vehicles.reinitialize();	
+			vehicles.reinitialize();
+			dataXMLFile = null;	
 			gtfXML = null;
 			
 			map.clearOverlays();
