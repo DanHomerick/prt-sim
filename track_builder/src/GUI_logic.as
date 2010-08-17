@@ -186,7 +186,9 @@ internal function onKeyDown(event:KeyboardEvent):void
 			break;
 		case Keyboard.MINUS:
 		case Keyboard.NUMPAD_SUBTRACT:
-			Globals.zoomOut(null);
+			if (!event.shiftKey) {
+				Globals.zoomOut(null);
+			}
 			break;		
 		default:
 			break;

@@ -103,12 +103,15 @@ package edu.ucsc.track_builder
 			Globals.vehicles.removeVehicleOverlay(this); // also removes vehicle
 		}
 
-		public function onToolTip(event:ToolTipEvent):void {			
-			var txt:String = vehicle.label == "" ? vehicle.id + "\n" : vehicle.label + "\n";
-			txt += "Position:\t\t" + vehicle.position.toFixed(1) + " meters" +
-			     "\nVelocity:\t\t" + vehicle.velocity + " m/s" +
-			     "\nAccel:   \t\t" + vehicle.acceleration + " m/s^2" +
-			     "\nElevation:\t" + vehicle.elevation.toFixed(0) + " meters";
+		public function onToolTip(event:ToolTipEvent):void {
+			var txt:String = vehicle.id;
+			if (vehicle.label != "") {
+				txt += "\nLabel:\t\t" + vehicle.label;
+			}
+			txt += "\nModel:\t\t" + vehicle.modelName
+			     + "\nPosition:\t" + vehicle.position.toFixed(1) + " meters"
+			     + "\nVelocity:\t" + vehicle.velocity + " m/s"
+			     + "\nElevation:\t" + vehicle.elevation.toFixed(0) + " meters";
 			     
 			ToolTipManager.currentToolTip.text = txt;
 		}

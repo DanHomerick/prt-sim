@@ -25,7 +25,7 @@
 					                       location:vehicle.location.label ? vehicle.location.label : vehicle.location.id,
 					                       position:Utility.truncateTo(vehicle.position, 2),
 					                       velocity:vehicle.velocity,
-					                       model:vehicle.model,
+					                       model:vehicle.modelName,
 					                       vehicle:vehicle,
 					                       overlay:overlay});
 				}

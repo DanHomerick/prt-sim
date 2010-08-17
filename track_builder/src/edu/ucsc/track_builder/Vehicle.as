@@ -11,7 +11,7 @@ package edu.ucsc.track_builder
 		public var latlng:LatLng;
 		public var elevation:Number;
 		public var label:String;
-		public var model:String;
+		public var modelName:String;
 		
 		/** Distance in meters from the start of the track segment. */
 		public function get position():Number {
@@ -19,7 +19,7 @@ package edu.ucsc.track_builder
 		}
 		
 		/** Constructor */
-		public function Vehicle(id:String, vel:Number, accel:Number, loc:TrackSegment, latlng:LatLng, elevation:Number, label:String, model:String, preview:Boolean):void 
+		public function Vehicle(id:String, vel:Number, accel:Number, loc:TrackSegment, latlng:LatLng, elevation:Number, label:String, modelName:String, preview:Boolean):void 
 		{
 			this.id           = id;
 			this.velocity     = vel;
@@ -28,7 +28,7 @@ package edu.ucsc.track_builder
 			this.latlng       = latlng;
 			this.elevation    = elevation;
 			this.label        = label;
-			this.model        = model;
+			this.modelName    = modelName;
 			
 			if (!preview) {
 				Undo.pushMicro(Globals.vehicles.vehicles, Globals.vehicles.vehicles.pop)
@@ -43,7 +43,7 @@ package edu.ucsc.track_builder
 			                       label={label}
 			                       velocity={velocity}
 			                       acceleration={acceleration}
-			                       model={model}>
+			                       model_name={modelName}>
 							   <LatLng lat={latlng.lat().toFixed(7)}
 			                           lng={latlng.lng().toFixed(7)}
 			                       	   elevation={elevation}/>
@@ -61,7 +61,7 @@ package edu.ucsc.track_builder
 			                   latlng,
 			                   xml.LatLng.@elevation,
 			                   xml.@label,
-			                   xml.@model,
+			                   xml.@model_name,
 			                   false);        
 		}
 	}

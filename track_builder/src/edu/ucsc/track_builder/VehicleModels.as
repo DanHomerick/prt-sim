@@ -30,11 +30,11 @@ package edu.ucsc.track_builder
 			// Create a set of the model names used in current scenario.
 			var modelNamesSet:Object = new Object();
 			for each (var v:Vehicle in vehicles) {
-				modelNamesSet[v.model] = true;
+				modelNamesSet[v.modelName] = true;
 			}
 
 			// Create a mapping from VehicleModel names to VehicleModel objects
-			var namesToModels:Object;
+			var namesToModels:Object = new Object();
 			for each (var m:VehicleModel in this.models) {
 				namesToModels[m.modelName] = m
 			}
