@@ -17,6 +17,7 @@ import enthought.chaco.tools.api as tools
 import enthought.traits.ui.api as ui
 from enthought.kiva import CompiledPath
 from enthought.chaco.scatter_markers import CustomMarker
+from enthought.enable.events import MouseEvent
 
 import common
 import segment_plot
@@ -189,8 +190,8 @@ class Visualizer(object):
         #drag_tool.modifier_key = 'control'
         #wypt_plot.tools.append(drag_tool)
 
-        plot.overlays.append(tools.SimpleZoom(plot, tool_mode='box', always_on=False))
-
+        self.zoom_tool = KeyboardSimpleZoom(plot, tool_mode='box', always_on=False)
+        plot.overlays.append(self.zoom_tool)
 
         # See examples/basic/scatter_inspector.py
         # Add 'clickablility' for vehicles. Clicking brings up traits view.
@@ -633,6 +634,30 @@ class VisDataCollector(SimPy.Process):
             if changed:
                 self.queue.put( data )
             yield SimPy.hold, self, self.data_interval
+
+class KeyboardSimpleZoom(tools.SimpleZoom):
+    """Adds the ability to do a zoom without selecting an area or moving the
+    cursor."""
+
+    def zoom_in(self):
+        """Zoom in, at the center of the plot."""
+        # Fakes a MouseEvent with the mouse position in the middle of the plot.
+        event = MouseEvent()
+        event.mouse_wheel = 6
+        c = self.component
+        event.x = (c.x2 - c.x)/2.0 + c.x
+        event.y = (c.y2 - c.y)/2.0 + c.y
+        self.normal_mouse_wheel(event)
+
+    def zoom_out(self):
+        """Zoom out, at the center of the plot."""
+        # Fakes a MouseEvent with the mouse position in the middle of the plot.
+        event = MouseEvent()
+        event.mouse_wheel = -6
+        c = self.component
+        event.x = (c.x2 - c.x)/2.0 + c.x
+        event.y = (c.y2 - c.y)/2.0 + c.y
+        self.normal_mouse_wheel(event)
 
 class NoWritebackOnCloseHandler(ui.Handler):
     def close(self, info, is_ok):

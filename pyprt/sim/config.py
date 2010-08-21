@@ -47,6 +47,9 @@ class ConfigManager(object):
                   help="Start external controller specified in config file after startup.")
         optpar.add_option("-s", "--start", action="store_true",
                   help="Start simulation immediately. Implies --controller flag.")
+        optpar.add_option("--profile", dest="profile_path", metavar="FILE",
+                  help="Profile the sim's performance and store results in FILE (debug). "
+                       "Only profiles the Sim thread, not the viz thread or GUI thread.")
 
         group = optparse.OptionGroup(optpar, "Configuration Options",
                   "These options override any settings specified in the configuration file.")
@@ -97,6 +100,9 @@ class ConfigManager(object):
 
     def get_config_dir(self):
         return self.config_dir
+
+    def get_profile_path(self):
+        return self.options.profile_path
 
     def get_scenario_path(self):
         if self.options.scenario_path != None:

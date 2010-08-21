@@ -31,8 +31,8 @@ class MenuBarManager(object):
 
         ### Sim Menu ###
         self.simmenu = wx.Menu()
-        self.connectcontroller = wx.MenuItem(self.simmenu, wx.NewId(), "Connect External Controller...", "", wx.ITEM_NORMAL)
-        self.start_sim = wx.MenuItem(self.simmenu, wx.NewId(), "Start Sim", "", wx.ITEM_NORMAL)
+        self.connectcontroller = wx.MenuItem(self.simmenu, wx.NewId(), "Connect External Controller...\tCtrl-C", "", wx.ITEM_NORMAL)
+        self.start_sim = wx.MenuItem(self.simmenu, wx.NewId(), "&Start Sim\tCtrl-S", "", wx.ITEM_NORMAL)
         self.stop_sim = wx.MenuItem(self.simmenu, wx.NewId(), "Stop Sim", "", wx.ITEM_NORMAL)
         self.pause_sim = wx.MenuItem(self.simmenu, wx.NewId(), "Pause Sim", "", wx.ITEM_CHECK)
         self.speed_halfx = wx.MenuItem(self.simmenu, wx.NewId(), "1/2x Speed", "", wx.ITEM_CHECK)
@@ -60,6 +60,8 @@ class MenuBarManager(object):
 
         ### View Menu ###
         self.viewmenu = wx.Menu()
+        self.zoom_in = wx.MenuItem(self.viewmenu, wx.NewId(), "Zoom &In\t+", "", wx.ITEM_NORMAL)
+        self.zoom_out = wx.MenuItem(self.viewmenu, wx.NewId(), "Zoom &Out\t-", "", wx.ITEM_NORMAL)
         self.vehicle = wx.MenuItem(self.viewmenu, wx.NewId(), "&Vehicle...", "", wx.ITEM_NORMAL)
         self.station = wx.MenuItem(self.viewmenu, wx.NewId(), "&Station...", "", wx.ITEM_NORMAL)
         self.switch = wx.MenuItem(self.viewmenu, wx.NewId(), "S&witch...", "", wx.ITEM_NORMAL)
@@ -68,6 +70,9 @@ class MenuBarManager(object):
         self.legend = wx.MenuItem(self.viewmenu, wx.ID_ANY, "&Legend")
         self.reports = wx.MenuItem(self.viewmenu, wx.ID_ANY, "&Reports")
 
+        self.viewmenu.AppendItem(self.zoom_in)
+        self.viewmenu.AppendItem(self.zoom_out)
+        self.viewmenu.AppendSeparator()
         self.viewmenu.AppendItem(self.vehicle)
         self.viewmenu.AppendItem(self.station)
         self.viewmenu.AppendItem(self.switch)
@@ -114,6 +119,8 @@ class MenuBarManager(object):
         pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed32x)
         pw.Bind(wx.EVT_MENU, self.sim_speed_handler, self.speed_fast)
         pw.Bind(wx.EVT_MENU, pw.simmenu_connectcontroller_handler, self.connectcontroller)
+        pw.Bind(wx.EVT_MENU, pw.viewmenu_zoom_in_handler, self.zoom_in)
+        pw.Bind(wx.EVT_MENU, pw.viewmenu_zoom_out_handler, self.zoom_out)
         pw.Bind(wx.EVT_MENU, pw.viewmenu_vehicle_handler, self.vehicle)
         pw.Bind(wx.EVT_MENU, pw.viewmenu_station_handler, self.station)
         pw.Bind(wx.EVT_MENU, pw.viewmenu_switch_handler, self.switch)
@@ -126,6 +133,27 @@ class MenuBarManager(object):
         pw.Bind(wx.EVT_MENU, pw.record_stop_handler, self.record_stop)
         pw.Bind(wx.EVT_MENU, pw.open_port_handler, self.open_port)
         pw.Bind(wx.EVT_CLOSE, pw.close_handler)
+
+
+        ## Create Accelerator Table ##
+        # Note: Though the wx.WXK_NUMPAD_ADD and wx.WXK_NUMPAD_SUBTRACT seem to
+        #   work fine, the wx.WXK_ADD and wx.WXK_SUBTRACT don't. Using ord
+        #   works to trigger from the main keys.
+        accelerators = [ # Zoom
+                        (wx.ACCEL_NORMAL, ord('+'), self.zoom_in.GetId()),
+                        (wx.ACCEL_SHIFT, ord('+'), self.zoom_in.GetId()),
+                        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ADD, self.zoom_in.GetId()),
+                        (wx.ACCEL_NORMAL, ord('-'), self.zoom_out.GetId()),
+                        (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_SUBTRACT, self.zoom_out.GetId()),
+
+                         # Simulation
+                        (wx.ACCEL_CMD, ord('c'), self.start_sim.GetId()),
+                        (wx.ACCEL_CTRL, ord('c'), self.start_sim.GetId()),
+                        (wx.ACCEL_CMD, ord('s'), self.start_sim.GetId()),
+                        (wx.ACCEL_CTRL, ord('s'), self.start_sim.GetId())
+                       ]
+        accel_table = wx.AcceleratorTable(accelerators)
+        self.parent_window.SetAcceleratorTable(accel_table)
 
     def new(self):
         """Disable all menus except for Open"""

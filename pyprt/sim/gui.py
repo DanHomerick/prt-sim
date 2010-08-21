@@ -170,7 +170,15 @@ class MainWindow(wx.Frame):
                                       args=[end_time, self.sim_end_callback])
 
         sim_thread.setDaemon(True)
-        sim_thread.start()
+
+        if common.config_manager.get_profile_path():
+            if __debug__:
+                import warnings
+                warnings.warn("Profiling code that is in debug mode!")
+            import cProfile
+            cProfile.runctx('sim_thread.start()', globals(), locals(), common.config_manager.get_profile_path())
+        else:
+            sim_thread.start()
 
     def simmenu_stop_sim_handler(self, event):
         main.stop_sim()
@@ -255,6 +263,14 @@ class MainWindow(wx.Frame):
             print 'Speed set to', speed, 'X'
         except AttributeError:
             self.show_message('Start simulation first.')
+
+    def viewmenu_zoom_in_handler(self, event):
+        print "Zoom in handler" # DEBUG
+        self.visualizer.zoom_tool.zoom_in()
+
+    def viewmenu_zoom_out_handler(self, event):
+        print "Zoom out handler" # DEBUG
+        self.visualizer.zoom_tool.zoom_out()
 
     def viewmenu_vehicle_handler(self, event): # wxGlade: MaSimPyinWindow.<event_handler>
         labels = [str(v) for v in common.vehicle_list]
