@@ -120,6 +120,21 @@ class CubicSpline(object):
             # other has < 2 elements
             return self.copy()
 
+    def time_shift(self, sec):
+        """Returns a new spline which has been shifted in time by 'sec'
+        seconds. If sec is positive then the resulting spline will start
+        later. If sec is negative then the resulting spline will start earlier.
+        """
+        return CubicSpline(self.q[:], self.v[:], self.a[:], self.j[:],
+                           [time + sec for time in self.t])
+
+    def position_shift(self, dist):
+        """Returns a new spline which has been shifted in position by 'dist'
+        meters. Dist is added to existing positions. A negative dist may be
+        supplied."""
+        return CubicSpline([pos + dist for pos in self.q],
+                           self.v[:], self.a[:], self.j[:], self.t[:])
+
     def get_max_jerk(self):
         return max(self.j)
 
@@ -380,13 +395,9 @@ class CubicSpline(object):
         """
         spline_msg.times.append(self.t[0])
         for c, (ti, tf) in zip(self.coeffs, pairwise(self.t)):
-            if tf - ti >= 0.0001: # poly has duration of at least 1/10th of a millisecond
-                poly_msg = spline_msg.polys.add()
-                poly_msg.coeffs.extend( c )
-                spline_msg.times.append(tf)
-            else:
-                continue
-##                warnings.warn("Dropped coeffs %s. ti: %f, tf: %f" % (c, ti, tf))
+            poly_msg = spline_msg.polys.add()
+            poly_msg.coeffs.extend( c )
+            spline_msg.times.append(tf)
 
     def _get_idx_from_time(self, time):
         """Returns the left index corresponding to time."""

@@ -719,6 +719,16 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
+    def test_target_time_XIIX(self):
+        """Check to see if this trajectory is actually infeasible."""
+        solver = TrajectorySolver(15, 10, 5.0, 0, -10, -5.0)
+        initial = Knot(52.494, 11.249728648794314, 6.0670212249379762, 2984.9179172292665)
+        final = Knot(302.44799999999998, 15.0, 0, 3001.7569876662833)
+        spline = solver.target_time(initial, final)
+        self.plot_it(spline, solver, "test_target_time_XIIX")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
     def test_target_time_nearly_stops(self):
         """Initial knot has a positive velocity, and the vehicle needs to
         almost come to a halt in order to arrive on time. Check that

@@ -164,6 +164,20 @@ class  TestCubicSpline(unittest.TestCase):
         self.assertEqual(spline.j, [2.5])
         self.assertEqual(spline.t, [0, 2.0])
 
+    def test_time_shift(self):
+        spline = self.make_test_spline_I()
+        time = 10.5
+        shifted = spline.time_shift(time)
+        for t_orig, t_shift in zip(spline.t, shifted.t):
+            self.assertEqual(t_orig + time, t_shift)
+
+    def test_position_shift(self):
+        spline = self.make_test_spline_I()
+        position = 12.5
+        shifted = spline.position_shift(position)
+        for q_orig, q_shift in zip(spline.q, shifted.q):
+            self.assertEqual(q_orig + position, q_shift)
+
     def test_get_time_from_dist(self):
         spline = self.make_test_spline_I()
         t = spline.get_time_from_dist(195, 0)
