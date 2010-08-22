@@ -15,7 +15,7 @@ class ConfigManager(object):
         self.options, positional_args = self.read_args()
 
         if len(positional_args) > 1 or (len(positional_args) == 1 and self.options.config_path is not None):
-            raise Exception("Unrecognized command line arguments: %s" % positional_args)
+            raise ConfigParser.Error("Unrecognized command line arguments: %s" % positional_args)
 
         # Config file
         self.config_path = None
@@ -32,7 +32,7 @@ class ConfigManager(object):
         self.config_dir = os.path.dirname(os.path.abspath(self.config_path)) + os.path.sep
         # Parse the config file
         if not self.config_parser.read(self.config_path): # returned an empty list
-            raise common.ConfigError("Unable to read config file: " + self.config_path)
+            raise ConfigParser.Error("Unable to read config file: " + self.config_path)
 
         self.logfile = None
 
@@ -47,6 +47,9 @@ class ConfigManager(object):
                   help="Start external controller specified in config file after startup.")
         optpar.add_option("-s", "--start", action="store_true",
                   help="Start simulation immediately. Implies --controller flag.")
+        optpar.add_option("--profile", dest="profile_path", metavar="FILE",
+                  help="Profile the sim's performance and store results in FILE (debug). "
+                       "Only profiles the Sim thread, not the viz thread or GUI thread.")
 
         group = optparse.OptionGroup(optpar, "Configuration Options",
                   "These options override any settings specified in the configuration file.")
@@ -97,6 +100,9 @@ class ConfigManager(object):
 
     def get_config_dir(self):
         return self.config_dir
+
+    def get_profile_path(self):
+        return self.options.profile_path
 
     def get_scenario_path(self):
         if self.options.scenario_path != None:

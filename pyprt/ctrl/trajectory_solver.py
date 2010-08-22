@@ -8,22 +8,23 @@ from scipy import inf
 
 from pyprt.shared.cubic_spline import CubicSpline
 from pyprt.shared.cubic_spline import Knot
-from pyprt.shared.utility import pairwise
+from pyprt.shared.utility import pairwise, same_sign
 
 class TrajectoryError(Exception):
     """Raised when a generated trajectory is known to be flawed."""
 
-class ConstraintsTooTight(TrajectoryError):
-    """Acceleration constraints are too low to have any viable solutions."""
-    def __init__(self, indexes):
-        super(ConstraintsTooTight, self).__init__(self)
-        self.indexes = indexes
+class ConstraintsError(TrajectoryError):
+    """Acceleration constraints are too low or too high to have a viable solution.
+    too_loose: A sequence of spline knot indexes for which the accel constraint is too loose.
+    too_tight: A sequence of spline knot indexes for which the accel constraint is too tight.
+    """
+    HUMP_ONE = 0
+    HUMP_TWO = 1
 
-class ConstraintsTooLoose(TrajectoryError):
-    """Acceleration constraints are too high, and were not reached."""
-    def __init__(self, indexes):
-        super(ConstraintsTooLoose, self).__init__(self)
-        self.indexes = indexes
+    def __init__(self, too_loose=None, too_tight=None):
+        super(ConstraintsError, self).__init__(self)
+        self.too_loose = too_loose if too_loose is not None else []
+        self.too_tight = too_tight if too_tight is not None else []
 
 class FatalTrajectoryError(Exception):
     """Raised when the specified trajectory cannot be met, such as when an
@@ -60,8 +61,10 @@ class TrajectorySolver(object):
         towards the track segment's origin, then the vehicle is traveling in
         reverse for trajectory generation purposes.
     """
-    v_threshold = 0.0001   # == 0.0002 miles per hour
-    a_threshold = 0.0001
+    q_threshold = 0.0005
+    v_threshold = 0.000005   # == 0.00001 miles per hour
+    a_threshold = 0.0005
+    t_threshold = 0.0005
 
     def __init__(self, velocity_max, acceleration_max, jerk_max,
                  velocity_min=None, acceleration_min=None, jerk_min=None):
@@ -652,8 +655,8 @@ class TrajectorySolver(object):
 
         no_time_constraint_spline = self.target_position(knot_initial, knot_final, max_speed)
 
-        # Rare case, but use the no_time_constraint_spline if the final time happens to be perfect.
-        if abs(no_time_constraint_spline.t[-1] - knot_final.time) < 0.0005:
+        # Rare case, but use the no_time_constraint_spline if the final time happens to be (almost) perfect.
+        if abs(no_time_constraint_spline.t[-1] - knot_final.time) < self.t_threshold:
             return no_time_constraint_spline
 
         # The final pose cannot be reached in the allotted time, even when
@@ -672,6 +675,10 @@ class TrajectorySolver(object):
         # what acceleration profile we should use.
         # TODO: Incorperate a dead-zone around the time?
         no_accel_spline = self._no_acceleration_predict(knot_initial, knot_final)
+
+        # Rare case, but use the no_accel_spline if the final time happens to be (almost) perfect
+        if abs(no_accel_spline.t[-1] - knot_final.time) < self.t_threshold:
+            return no_accel_spline
 
         # Using the average speed as an approximation for the 3-4 segment velocity.
         # This is NOT precise, but is right most of the time. Use a try/except
@@ -802,35 +809,69 @@ class TrajectorySolver(object):
 
 
     def _impose_limits_target_amax(self, q, v, a, j, t, ave_vel, max_speed, trials=30):
-        """Warning: inputs are modified."""
-        accels = a[:]
-        ceilings = accels[:]
-        floors = [0]*len(accels)
+        """Performs a search over the acceleration limits, stopping
+        when it finds viable limits that will be reached. In this way, we
+        may satisfy the preconditions for the self._target_time_amax function.
+        Warning: inputs are modified.
+        """
+        original_a = a[:]
+        ceilings = [a[1], a[-2]]
+        floors = [a[0], a[-1]]
+        deltas = [(floors[0] - ceilings[0])/2.0,
+                  (floors[1] - ceilings[1])/2.0]
 
         switchover = trials // 2
         use_alt_soln = False
         spline = None
         while trials:
             if trials == switchover:
-                ceilings = accels[:]
-                floors = [0]*len(accels)
+                a = original_a[:]
+                deltas = [(floors[0] - ceilings[0])/2.0,
+                          (floors[1] - ceilings[1])/2.0]
                 use_alt_soln = True
 
             try:
                 spline = self._target_time_amax(q,v,a,j,t,ave_vel,max_speed,use_alt_soln)
                 break
-            except ConstraintsTooTight as err:
+            except ConstraintsError as err:
                 trials -= 1
-                for index in err.indexes:
-                    floors[index] = abs(a[index])
-                    delta = (ceilings[index] - floors[index])/2
-                    a[index] += math.copysign(delta, a[index])
-            except ConstraintsTooLoose as err:
-                trials -= 1
-                for index in err.indexes:
-                    ceilings[index] = abs(a[index])
-                    delta = (ceilings[index] - floors[index])/2
-                    a[index] -= math.copysign(delta, a[index])
+                for hump in err.too_loose: # tighten the limit
+                    if not same_sign(deltas[hump], floors[hump] - ceilings[hump]):
+                        # Last time we loosened. Switch direction and cut the magnitude in half.
+                        deltas[hump] = -deltas[hump]
+                        deltas[hump] /= 2
+
+                    if hump == ConstraintsError.HUMP_ONE:
+                        if deltas[hump] < 0:
+                            a[1] = a[2] = max(a[1] + deltas[hump], floors[hump]) # don't go below floors
+                        else: # deltas[hump] > 0
+                            a[1] = a[2] = min(a[1] + deltas[hump], floors[hump]) # don't go above floors
+                    elif hump == ConstraintsError.HUMP_TWO:
+                        if deltas[hump] < 0:
+                            a[5] = a[6] = max(a[5] + deltas[hump], floors[hump])
+                        else: # deltas[hump] > 0
+                            a[5] = a[6] = min(a[5] + deltas[hump], floors[hump])
+                    else:
+                        raise Exception("ConstraintsError contains invalid value.")
+
+                for hump in err.too_tight: # loosen the limit
+                    if not same_sign(deltas[hump], ceilings[hump] - floors[hump]):
+                        # Last time we tightened. Switch direction and cut the magnitude in half.
+                        deltas[hump] = -deltas[hump]
+                        deltas[hump] /= 2
+
+                    if hump == ConstraintsError.HUMP_ONE:
+                        if deltas[hump] > 0:
+                            a[1] = a[2] = min(a[1] + deltas[hump], ceilings[hump]) # don't go over ceiling
+                        else: # deltas[hump] < 0
+                            a[1] = a[2] = max(a[1] + deltas[hump], ceilings[hump]) # don't go over ceiling
+                    elif hump == ConstraintsError.HUMP_TWO:
+                        if deltas[hump] > 0:
+                            a[5] = a[6] = min(a[5] + deltas[hump], ceilings[hump])
+                        else: # deltas[hump] > 0
+                            a[5] = a[6] = max(a[5] + deltas[hump], ceilings[hump])
+                    else:
+                        raise Exception("ConstraintsError contains invalid value.")
 
         if spline is None:
             raise TrajectoryError
@@ -843,6 +884,9 @@ class TrajectorySolver(object):
         Assumes that the vehicle makes a large enough velocity change that both
         acceleration limits are hit.
         """
+        HUMP_ONE = ConstraintsError.HUMP_ONE
+        HUMP_TWO = ConstraintsError.HUMP_TWO
+
         j_sq = [x*x for x in j]
         a_sq = [x*x for x in a]
 
@@ -853,7 +897,7 @@ class TrajectorySolver(object):
             try:
                 numerator_b = math.sqrt(3)*math.sqrt(j_sq[0]*j_sq[2]*j_sq[4]*j_sq[6]*(3*j_sq[2]*j_sq[4]*(a_sq[1]*a[5]*j[6]+a[5]*j[6]*(a_sq[0]-2*j[0]*v[0])+a[1]*(-2*a[5]*(a[0]*j[6]+j[0]*(a[6]-a[7]-j[6]*t[0]+j[6]*t[7]))+j[0]*(a_sq[6]-a_sq[7]+2*j[6]*v[7])))**2-(a[1]-a[5])*(a_sq[1]*a_sq[1]*a[5]*j_sq[2]*j_sq[4]*j_sq[6]-6*a_sq[1]*a[5]*j_sq[2]*j_sq[4]*j_sq[6]*(a_sq[0]-2*j[0]*v[0])+3*a[5]*j_sq[4]*j_sq[6]*(a_sq[2]*a_sq[2]*j_sq[0]-j_sq[2]*(a_sq[0]-2*j[0]*v[0])**2)+a[1]*(-6*a_sq[4]*a_sq[5]*j_sq[0]*j_sq[2]*j_sq[6]+a_sq[5]*a_sq[5]*j_sq[0]*j_sq[2]*j_sq[6]-4*a[5]*(a_sq[6]*a[6]*j_sq[0]*j_sq[2]*j_sq[4]+2*a_sq[7]*a[7]*j_sq[0]*j_sq[2]*j_sq[4]+j_sq[6]*(-2*a_sq[4]*a[4]*j_sq[0]*j_sq[2]+j_sq[4]*(a_sq[2]*a[2]*j_sq[0]-2*j_sq[2]*(a_sq[0]*a[0]+3*j_sq[0]*(q[0]-q[7])-3*a[0]*j[0]*v[0])))-6*a[7]*j_sq[0]*j_sq[2]*j_sq[4]*j[6]*v[7]-3*a[6]*j_sq[0]*j_sq[2]*j_sq[4]*(a_sq[7]-2*j[6]*v[7]))+3*j_sq[0]*j_sq[2]*(-a_sq[4]*j[6]+j[4]*(a_sq[6]-a_sq[7]+2*j[6]*v[7]))*(a_sq[4]*j[6]+j[4]*(a_sq[6]-a_sq[7]+2*j[6]*v[7]))))))
             except ValueError:
-                raise ConstraintsTooTight((1,2,5,6)) # FIXME: Choose correct places to loosen?
+                raise ConstraintsError(too_tight=(HUMP_ONE, HUMP_TWO)) # FIXME: Choose correct places to loosen?
             denominator = (6*(a[1]-a[5])*j_sq[0]*j_sq[2]*j_sq[4]*j_sq[6])
             potential_solutions = [(numerator_a + numerator_b) / denominator,
                                    (numerator_a - numerator_b) / denominator]
@@ -872,48 +916,58 @@ class TrajectorySolver(object):
         # this case.
         elif a[1] == a[5] and use_alt_soln is False:
             assert a[1] == a[2] == a[5] == a[6]
-            assert j[0] == j[4]
-            assert j[2] == j[6]
-            cruise_vel = (-3*a_sq[0]*a_sq[0]*j_sq[6]+8*a_sq[0]*a[0]*a[1]*j_sq[6]+2*a_sq[1]*a_sq[1]*(j[6]-j[4])*(j[6]+j[4])-24*a[0]*a[1]*j_sq[6]*j[4]*v[0]-6*a_sq[0]*j_sq[6]*(a_sq[1]-2*j[4]*v[0])-8*a[1]*j_sq[4]*(a[7]*a_sq[7]+3*j_sq[6]*(-q[0]+q[7])-3*a[7]*j[6]*v[7])+6*a_sq[1]*j[4]*(a_sq[7]*j[4]+2*j_sq[6]*v[0]-2*j[6]*j[4]*v[7])+3*j_sq[4]*(a_sq[7]+2*j[6]*v[0]-2*j[6]*v[7])*(a_sq[7]-2*j[6]*(v[0]+v[7])))/(12*j[6]*j[4]*(a_sq[0]*j[6]-2*a[0]*a[1]*j[6]+a_sq[1]*(j[6]-j[4])+2*a[1]*j[4]*(a[7]+j[6]*t[0]-j[6]*t[7])-j[4]*(a_sq[7]+2*j[6]*v[0]-2*j[6]*v[7])))
+##            assert j[0] == j[4]
+##            assert j[2] == j[6]
+            try:
+                cruise_vel = (-3*a_sq[0]*a_sq[0]*j_sq[6]+8*a_sq[0]*a[0]*a[1]*j_sq[6]+2*a_sq[1]*a_sq[1]*(j[6]-j[4])*(j[6]+j[4])-24*a[0]*a[1]*j_sq[6]*j[4]*v[0]-6*a_sq[0]*j_sq[6]*(a_sq[1]-2*j[4]*v[0])-8*a[1]*j_sq[4]*(a[7]*a_sq[7]+3*j_sq[6]*(-q[0]+q[7])-3*a[7]*j[6]*v[7])+6*a_sq[1]*j[4]*(a_sq[7]*j[4]+2*j_sq[6]*v[0]-2*j[6]*j[4]*v[7])+3*j_sq[4]*(a_sq[7]+2*j[6]*v[0]-2*j[6]*v[7])*(a_sq[7]-2*j[6]*(v[0]+v[7])))/(12*j[6]*j[4]*(a_sq[0]*j[6]-2*a[0]*a[1]*j[6]+a_sq[1]*(j[6]-j[4])+2*a[1]*j[4]*(a[7]+j[6]*t[0]-j[6]*t[7])-j[4]*(a_sq[7]+2*j[6]*v[0]-2*j[6]*v[7])))
+                if math.isnan(cruise_vel):
+                    cruise_vel = v[0]
+            except ZeroDivisionError:
+                assert a[1] == a[2] == a[5] == a[6] == 0
+                cruise_vel = v[0]
 
         else: # use_alt_soln is True
             assert a[1] == a[2] == a[5] == a[6]
-            assert j[0] == j[4]
-            assert j[2] == j[6]
+##            assert j[0] == j[4]
+##            assert j[2] == j[6]
             raise FatalTrajectoryError
 
         # choose the minimum, positive velocity option where the solution doesn't involve t12 or t56 being negative
         success = False
         if cruise_vel > max_speed:
-            raise ConstraintsTooTight((1,2,5,6))
+            raise ConstraintsError(too_tight=(HUMP_ONE, HUMP_TWO))
 
-        if cruise_vel < 0: # TODO: Can't work in a negative direction?
-            raise ConstraintsTooLoose((1,2,5,6))
+        if cruise_vel <= 0: # TODO: Can't work in a negative direction?
+            raise ConstraintsError(too_tight=(HUMP_ONE, HUMP_TWO))
 
-        # Decide if either of the two "humps" in the accel profiele will not
+        # Decide if either of the two "humps" in the accel profile will not
         # hit their limits. Tighten the limits if this is the case.
-        first_hump = self.target_velocity(Knot(0,v[0],a[0],0), Knot(None,cruise_vel,0,None))
-        second_hump = self.target_velocity(Knot(0,cruise_vel,0,0), Knot(None, v[-1],0,None))
         too_loose = []
-        if j[0] > 0:
-            if a[1] > first_hump.a[1]:
-                too_loose.append(1)
-                too_loose.append(2)
-        else: # j[0] < 0
-            if a[1] < first_hump.a[1]:
-                too_loose.append(1)
-                too_loose.append(2)
-        if j[4] > 0:
-            if a[5] > second_hump.a[1]:
-                too_loose.append(5)
-                too_loose.append(6)
-        else: # j[4] < 0
-            if a[5] < second_hump.a[1]:
-                too_loose.append(5)
-                too_loose.append(6)
+        too_tight = []
+        first_hump = self.target_velocity(Knot(0,v[0],a[0],0), Knot(None,cruise_vel,0,None))
+        if len(first_hump.q) > 1: # possible that no "first hump" is required, thus this may get bypassed
+            if a[0] == a[1]:
+                pass
+            elif j[0] > 0:
+                if a[1] > first_hump.a[1]: # Force a[1] to be flattened
+                    too_loose.append(HUMP_ONE)
+            else: # j[0] < 0
+                if a[1] < first_hump.a[1]:
+                    too_loose.append(HUMP_ONE)
 
-        if too_loose:
-            raise ConstraintsTooLoose(too_loose)
+        second_hump = self.target_velocity(Knot(0,cruise_vel,0,0), Knot(None, v[-1],0,None))
+        if len(second_hump.q) > 1: # possible that no "second hump" is required
+            if a[6] == a[7]:
+                pass
+            elif j[4] > 0:
+                if a[5] > second_hump.a[1]:
+                    too_loose.append(HUMP_TWO)
+            else: # j[4] < 0
+                if a[5] < second_hump.a[1]:
+                    too_loose.append(HUMP_TWO)
+
+        if too_loose or too_tight:
+            raise ConstraintsError(too_loose=too_loose, too_tight=too_tight)
 
         v[3] = cruise_vel
         v[4] = cruise_vel
@@ -929,7 +983,7 @@ class TrajectorySolver(object):
         t23_2 = t23*t23
         v[2] = v[3] - (j[2]*t23_2/2 + a[2]*t23) # v3 - v23
 
-        t12 = (v[2] - v[1])/a[1]
+        t12 = (v[2] - v[1])/a[1] if a[1] != 0 else 0
         t12_2 = t12*t12
         t[2] = t[1] + t12
         q[2] = q[1] + a[1]*t12_2/2 + v[1]*t12 # q1 + q12
@@ -948,7 +1002,7 @@ class TrajectorySolver(object):
         t45_2 = t45*t45
         v[5] = j[4]*t45_2/2 + a[4]*t45 + v[4] # v4 + v45
 
-        t56 = (v[6] - v[5])/a[5]
+        t56 = (v[6] - v[5])/a[5] if a[5] != 0 else 0
         t56_2 = t56*t56
         t[5] = t[6] - t56
         q[5] = q[6] - (a[5]*t56_2/2 + v[5]*t56) # q6 - q56
@@ -956,30 +1010,33 @@ class TrajectorySolver(object):
         t[4] = t[5] - t45
         q[4] = q[5] - (j[4]*t45*t45_2/6 + a[4]*t45_2/2 + v[4]*t45) # q5 - q45
 
-        assert t12 >= 0
-        assert t56 >= 0
+        t34 = t[4] - t[3]
+
+        if t12 < -TrajectorySolver.t_threshold or t56 < -TrajectorySolver.t_threshold:
+            raise TrajectoryError()
 
         # Need to loosen a constraint in order to have enough control authority
         # to hit target time.
-        if t[4] < t[3]:
-            too_tight = []
-            if j[0] > 0:
+        if t34 < -TrajectorySolver.t_threshold or \
+                abs((q[4] - q[3]) - (v[3]*t34)) > TrajectorySolver.q_threshold:
+            if a[0] == a[1]:
+                too_tight.append(HUMP_ONE)
+            elif j[0] > 0:
                 if a[1] < first_hump.a[1]:
-                    too_tight.append(1)
-                    too_tight.append(2)
+                    too_tight.append(HUMP_ONE)
             else: # j[0] < 0
                 if a[1] > first_hump.a[1]:
-                    too_tight.append(1)
-                    too_tight.append(2)
-            if j[4] > 0:
+                    too_tight.append(HUMP_ONE)
+
+            if a[6] == a[7]:
+                too_tight.append(HUMP_TWO)
+            elif j[4] > 0:
                 if a[5] < second_hump.a[1]:
-                    too_tight.append(5)
-                    too_tight.append(6)
+                    too_tight.append(HUMP_TWO)
             else: # j[4] < 0
                 if a[5] > second_hump.a[1]:
-                    too_tight.append(5)
-                    too_tight.append(6)
-            raise ConstraintsTooTight(too_tight)
+                    too_tight.append(HUMP_TWO)
+            raise ConstraintsError(too_tight=too_tight)
 
         return CubicSpline(q, v, a, j, t)
 
@@ -1142,19 +1199,14 @@ class TrajectorySolver(object):
 
     def target_velocity(self, initial, final):
         """Similar to target_position, but the final position is ignored in
-        addition to the final time. 'inital' and 'final' are Knot instances."""
+        addition to the final time. 'inital' and 'final' are Knot instances.
+        """
         final = final.copy() # don't alter the original
         final.time = inf
 
-        if __debug__:
-            if not (self.v_min - self.v_threshold <= initial.vel <= self.v_max + self.v_threshold):
-                raise FatalTrajectoryError("Endpoint velocity outside of solver's limit")
-            if not (self.a_min - self.a_threshold <= initial.accel <= self.a_max + self.a_threshold):
-                raise FatalTrajectoryError("Endpoint acceleration outside of solver's limit")
-
         delta_v = final.vel - initial.vel
 
-        if abs(delta_v) < 0.0001:
+        if abs(delta_v) < self.v_threshold:
             if initial.accel == final.accel:
                 return CubicSpline([initial.pos], [initial.vel], [initial.accel], [], [initial.time])
             elif initial.accel <= 0: # initial decel will push vel below target.
@@ -1220,8 +1272,10 @@ class TrajectorySolver(object):
         h2 = (final.accel - a_top)/jn
         knots[2] = self.create_knot_before(final, h2, a_top, no_pos=True)
 
-        # skip the h1 segment if the peak acceleration didn't get flattened.
-        h1 = 0 if a_top < ax else (knots[2].vel - knots[1].vel)/a_top
+        try:
+            h1 = (knots[2].vel - knots[1].vel)/a_top
+        except ZeroDivisionError:
+            h1 = 0
 
         knots[2] = self.create_knot_after(knots[1], h1, a_top) # recreate k2 with the correct position and time
         knots[3] = self.create_knot_after(knots[2], h2, final.accel) # recreate final with the correct position and time
@@ -1233,7 +1287,7 @@ class TrajectorySolver(object):
         for i in range(len(knots)-1):
             k1 = knots[i]
             k2 = knots[i+1]
-            if abs(k2.time - k1.time) <= 0.00001: # Within rounding errors of zero length
+            if abs(k2.time - k1.time) < self.t_threshold/1000: # Within rounding errors of zero length
                 pass # Skip the knot
             elif k2.time > k1.time: # Normal case
                 q.append(k2.pos)
@@ -1245,6 +1299,16 @@ class TrajectorySolver(object):
                 raise TrajectoryError("Large negative duration: %f seconds" % (k2.t - k1.t))
         spline = CubicSpline(q, v, a, j, t)
 
+        # Check that the velocities stayed within the allowed range.
+        extrema_velocities, extrema_times = spline.get_extrema_velocities()
+        max_vel = max(extrema_velocities)
+        min_vel = min(extrema_velocities)
+        if max_vel > self.v_max + self.v_threshold:
+            raise FatalTrajectoryError("Maximum velocity: %.4f exceeded the allowed value: %.4f"
+                                       % (max_vel, self.v_max))
+        if min_vel < self.v_min - self.v_threshold:
+            raise FatalTrajectoryError("Minimum velocity: %.4f exceeded the allowed value: %.4f"
+                                       % (min_vel, self.v_min))
         return spline
 
 
@@ -1287,7 +1351,7 @@ class TrajectorySolver(object):
         # Treat vi as a 'virtual ground' -- that is, treat it as though it were zero.
         initial_knot = spline.evaluate(ti)
         final_knot = spline.evaluate(spline.t[-1])
-        assert abs(initial_knot.accel) < 0.0001
+        assert abs(initial_knot.accel) < self.a_threshold
 
         slip_solver = TrajectorySolver(self.v_max-initial_knot.vel, self.a_max, self.j_max,
                                   self.v_min-initial_knot.vel, self.a_min, self.j_min)

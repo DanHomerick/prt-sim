@@ -17,6 +17,7 @@ import enthought.chaco.tools.api as tools
 import enthought.traits.ui.api as ui
 from enthought.kiva import CompiledPath
 from enthought.chaco.scatter_markers import CustomMarker
+from enthought.enable.events import MouseEvent
 
 import common
 import segment_plot
@@ -189,8 +190,8 @@ class Visualizer(object):
         #drag_tool.modifier_key = 'control'
         #wypt_plot.tools.append(drag_tool)
 
-        plot.overlays.append(tools.SimpleZoom(plot, tool_mode='box', always_on=False))
-
+        self.zoom_tool = KeyboardSimpleZoom(plot, tool_mode='box', always_on=False)
+        plot.overlays.append(self.zoom_tool)
 
         # See examples/basic/scatter_inspector.py
         # Add 'clickablility' for vehicles. Clicking brings up traits view.
@@ -277,12 +278,24 @@ class Visualizer(object):
             vel = v.get_vel()
             mph = vel * 2.237
             pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
+
+            # Try to find the destination station based on the vehicle's path.
+            # Somewhat hackish, may be broken easily.
+            dest_station = None
+            dest_seg = v._path[-1]
+            for s in common.stations.itervalues():
+                if dest_seg in s.track_segments:
+                    dest_station = s
+                    break
+            dest_station_str = 'dest station: %d' % dest_station.ID if dest_station is not None else 'dest station: Unkwn'
+
             self._v_label = chaco.DataLabel(
                 component=self.plot,
                 data_point = point,
-                lines = ['ID: %d' % v.ID,
+                lines = ['vID: %d' % v.ID,
+                         'speed: %.1f m/s (%.0f mph)' % (vel, mph),
+                          dest_station_str,
                          'numPax: %d' % num_pax,
-                         'speed: %4.1f m/s %4.0f mph' % (vel, mph),
                          'paxIDs: ' + pax_ids]
             )
             self.plot.overlays.append(self._v_label)
@@ -345,7 +358,7 @@ class Visualizer(object):
                 component=self.plot,
                 data_point = point,
                 lines = ['%s' % stat_name,
-                         'ID: %d' % stat.ID,
+                         'sID: %d' % stat.ID,
                          'PAX Waiting: %d' % num_pax,
                          'max wait: %s' % max_wait,
                          'avg wait: %s' % avg_wait]
@@ -621,6 +634,30 @@ class VisDataCollector(SimPy.Process):
             if changed:
                 self.queue.put( data )
             yield SimPy.hold, self, self.data_interval
+
+class KeyboardSimpleZoom(tools.SimpleZoom):
+    """Adds the ability to do a zoom without selecting an area or moving the
+    cursor."""
+
+    def zoom_in(self):
+        """Zoom in, at the center of the plot."""
+        # Fakes a MouseEvent with the mouse position in the middle of the plot.
+        event = MouseEvent()
+        event.mouse_wheel = 6
+        c = self.component
+        event.x = (c.x2 - c.x)/2.0 + c.x
+        event.y = (c.y2 - c.y)/2.0 + c.y
+        self.normal_mouse_wheel(event)
+
+    def zoom_out(self):
+        """Zoom out, at the center of the plot."""
+        # Fakes a MouseEvent with the mouse position in the middle of the plot.
+        event = MouseEvent()
+        event.mouse_wheel = -6
+        c = self.component
+        event.x = (c.x2 - c.x)/2.0 + c.x
+        event.y = (c.y2 - c.y)/2.0 + c.y
+        self.normal_mouse_wheel(event)
 
 class NoWritebackOnCloseHandler(ui.Handler):
     def close(self, info, is_ok):

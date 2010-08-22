@@ -38,6 +38,15 @@ class Knot(object):
 class SplineError(Exception):
     pass
 
+class OutOfBoundsError(SplineError):
+    def __init__(self, start, end, value):
+        self.start = start
+        self.end = end
+        self.value = value
+
+    def __str__(self):
+        return 'start:%s, end:%s, value:%s' % (self.start, self.end, self.value)
+
 class CubicSpline(object):
     """Knots is a list of Knot instances. acceleration_min should be negative."""
     TIME_EPSILON = 0.0001
@@ -111,38 +120,64 @@ class CubicSpline(object):
             # other has < 2 elements
             return self.copy()
 
+    def time_shift(self, sec):
+        """Returns a new spline which has been shifted in time by 'sec'
+        seconds. If sec is positive then the resulting spline will start
+        later. If sec is negative then the resulting spline will start earlier.
+        """
+        return CubicSpline(self.q[:], self.v[:], self.a[:], self.j[:],
+                           [time + sec for time in self.t])
+
+    def position_shift(self, dist):
+        """Returns a new spline which has been shifted in position by 'dist'
+        meters. Dist is added to existing positions. A negative dist may be
+        supplied."""
+        return CubicSpline([pos + dist for pos in self.q],
+                           self.v[:], self.a[:], self.j[:], self.t[:])
+
+    def get_max_jerk(self):
+        return max(self.j)
+
+    def get_min_jerk(self):
+        return min(self.j)
+
     def get_max_acceleration(self):
         return max(self.a)
 
     def get_min_acceleration(self):
         return min(self.a)
 
-    def get_extrema_velocity(self):
-        """Gets points that have the potential to be a global max/min velocity.
+    def get_extrema_velocities(self):
+        """Find points that have the potential to be a global max/min velocity.
         Each point returned is not necessarily a local max or min, since all
-        knots are included."""
-        # This isn't terribly efficient
-        extreama = []
-        extreama.extend(self.v) # append all knots
+        knots are included.
 
+        return: A pair of lists. The lists contain the velocities and times, respectively.
+                The lists are ordered with respect to each other, but are not
+                otherwise sorted.
+        """
+        # all knots
+        vels = self.v[:]
+        times = self.t[:]
+
+        # check if there's a zero crossing in acceleration between knots
         for i in range(len(self.t)-1):
-            # check if there's a zero crossing in acceleration
             jerk = self.j[i]
             if jerk != 0:
-                crossing_t = -self.a[i]/jerk + self.t[i]
+                crossing_t = -self.a[i]/jerk + self.t[i] # accel crosses zero
                 if self.t[i] < crossing_t < self.t[i+1]:
-                    extreama.append(self.evaluate(crossing_t).vel)
+                    vels.append(self.evaluate(crossing_t).vel)
+                    times.append(crossing_t)
 
-        extreama.append(self.v[-1])
-        return extreama
+        return vels, times
 
     def get_max_velocity(self):
         """Returns the value of the maximum velocity over the whole spline."""
-        return max(self.get_extrema_velocity())
+        return max(self.get_extrema_velocities()[0])
 
     def get_min_velocity(self):
         """Returns the value of the minimum velocity over the whole spline."""
-        return min(self.get_extrema_velocity())
+        return min(self.get_extrema_velocities()[0])
 
     def evaluate(self, time):
         """Returns a Knot instance. Raises an OutOfBoundsError if time is not
@@ -296,27 +331,50 @@ class CubicSpline(object):
         """Returns a new spline that only contains the data to the "left"
         (i.e. earlier) than 'time'.
         """
-        knot = self.evaluate(time)
-        idx = self._get_idx_from_time(time) + 1 # right idx
-
-        spline = CubicSpline(self.q[:idx] + [knot.pos],
-                             self.v[:idx] + [knot.vel],
-                             self.a[:idx] + [knot.accel],
-                             self.j[:idx],
-                             self.t[:idx] + [knot.time])
-        return spline
+        try:
+            start_time = self.t[0]
+            return self.slice(start_time, time)
+        except IndexError: # empty spline
+            raise OutOfBoundsError(float('nan'), float('nan'), time)
 
     def copy_right(self, time):
         """Returns a new spline that only contains the data to the "right"
         (i.e. later) than 'time'."""
-        knot = self.evaluate(time)
-        idx = self._get_idx_from_time(time) + 1 # right idx
-        spline = CubicSpline([knot.pos] + self.q[idx:],
-                             [knot.vel] + self.v[idx:],
-                             [knot.accel] + self.a[idx:],
-                             self.j[idx-1:],
-                             [knot.time] + self.t[idx:])
-        return spline
+        try:
+            end_time = self.t[-1]
+            return self.slice(time, end_time)
+        except IndexError: # empty spline
+            raise OutOfBoundsError(float('nan'), float('nan'), time)
+
+    def slice(self, start_time, end_time):
+        """Returns a slice of the spline between the two times. The slice
+        is a copy and changes to it do not affect the original.
+
+        raises: OutOfBoundsError if start_time or end_time are outside the
+                time range of the spline.
+
+        return: A CubicSpline
+        """
+        if start_time > end_time:
+            raise OutOfBoundsError(start_time, end_time, start_time)
+
+        if start_time == end_time:
+            knot = self.evaluate(start_time)
+            return CubicSpline([knot.pos], [knot.vel], [knot.accel], [], [knot.time])
+
+        start_idx = self._get_idx_from_time(start_time) + 1 # right idx
+        end_idx = self._get_idx_from_time(end_time)
+        if self.t[end_idx] != end_time:
+            end_idx += 1 # one past, for array splice
+
+        start_knot = self.evaluate(start_time)
+        end_knot = self.evaluate(end_time)
+
+        return CubicSpline([start_knot.pos] + self.q[start_idx:end_idx] + [end_knot.pos],
+                             [start_knot.vel] + self.v[start_idx:end_idx] + [end_knot.vel],
+                             [start_knot.accel] + self.a[start_idx:end_idx] + [end_knot.accel],
+                             self.j[start_idx-1:end_idx],
+                             [start_knot.time] + self.t[start_idx:end_idx] + [end_knot.time])
 
 ##    def extend(self, spline):
 ##        """Merges a CubicSpline instance with this. If there is overlap in the
@@ -337,13 +395,9 @@ class CubicSpline(object):
         """
         spline_msg.times.append(self.t[0])
         for c, (ti, tf) in zip(self.coeffs, pairwise(self.t)):
-            if tf - ti >= 0.0001: # poly has duration of at least 1/10th of a millisecond
-                poly_msg = spline_msg.polys.add()
-                poly_msg.coeffs.extend( c )
-                spline_msg.times.append(tf)
-            else:
-                continue
-##                warnings.warn("Dropped coeffs %s. ti: %f, tf: %f" % (c, ti, tf))
+            poly_msg = spline_msg.polys.add()
+            poly_msg.coeffs.extend( c )
+            spline_msg.times.append(tf)
 
     def _get_idx_from_time(self, time):
         """Returns the left index corresponding to time."""
@@ -445,15 +499,6 @@ class CubicSpline(object):
         print 'jerk:', p.deriv(3)(self.t[0]), p.deriv(3)(self.t[1])
 # Timed at 8.0 sec for 1E6 iterations (ommitting print statements and poly1d creation)
 # Timed at 7.2 sec when reusing the time squared and cubed values
-
-class OutOfBoundsError(Exception):
-    def __init__(self, start, end, value):
-        self.start = start
-        self.end = end
-        self.value = value
-
-    def __str__(self):
-        return 'start:%s, end:%s, value:%s' % (self.start, self.end, self.value)
 
 if __name__ == '__main__':
     import timeit

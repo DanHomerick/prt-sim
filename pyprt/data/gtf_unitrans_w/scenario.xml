@@ -4216,25 +4216,25 @@
     </Station>
   </Stations>
   <VehicleModels>
-    <VehicleModel model="DEFAULT" length="2.0" passenger_capacity="4" mass="450">
+    <VehicleModel model_name="DEFAULT" length="2.0" passenger_capacity="4" mass="450">
       <Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="5.0" normal_min="-5.0" emergency_max="5.0" emergency_min="-25"/>
       <Velocity normal_max="60.0" normal_min="0.0" emergency_max="65.0" emergency_min="-5.0"/>
     </VehicleModel>
-    <VehicleModel model="BUS" length="14.0" passenger_capacity="50" mass="9200">
+    <VehicleModel model_name="BUS" length="14.0" passenger_capacity="50" mass="9200">
       <Jerk normal_max="2.5" normal_min="-2.5" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="1.0" normal_min="-5.0" emergency_max="1.5" emergency_min="-25"/>
       <Velocity normal_max="32.0" normal_min="0.0" emergency_max="65.0" emergency_min="-5.0"/>
     </VehicleModel>
   </VehicleModels>
   <Vehicles>
-    <Vehicle id="0_vehicle" location="196_trackSegment_forward" position="59.9" label="" velocity="0" acceleration="0" model="BUS">
+    <Vehicle id="0_vehicle" location="196_trackSegment_forward" position="59.9" label="" velocity="0" acceleration="0" model_name="BUS">
       <LatLng lat="38.53934" lng="-121.7530920631063" elevation="15.796892393476877"/>
     </Vehicle>
-    <Vehicle id="1_vehicle" location="196_trackSegment_forward" position="44.9" label="" velocity="0" acceleration="0" model="BUS">
+    <Vehicle id="1_vehicle" location="196_trackSegment_forward" position="44.9" label="" velocity="0" acceleration="0" model_name="BUS">
       <LatLng lat="38.53934" lng="-121.75326433444862" elevation="15.772628855878327"/>
     </Vehicle>
-    <Vehicle id="2_vehicle" location="196_trackSegment_forward" position="29.9" label="" velocity="0" acceleration="0" model="BUS">
+    <Vehicle id="2_vehicle" location="196_trackSegment_forward" position="29.9" label="" velocity="0" acceleration="0" model_name="BUS">
       <LatLng lat="38.53934" lng="-121.75343660579097" elevation="15.748365318279776"/>
     </Vehicle>
   </Vehicles>

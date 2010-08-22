@@ -21,6 +21,14 @@ class  TestCubicSpline(unittest.TestCase):
 
     PLACES = 6
 
+    def make_test_spline_I(self):
+        return CubicSpline( # velocity peaks midway between the 3rd and 4th knot
+            [0, 3.3333333333333335, 49.30209095900485, 150.69790904099514, 196.66666666666663, 200], # pos
+            [0, 5.0, 22.015621187164243, 22.015621187164243, 5.0, 0], # vel
+            [0, 5, 5, -5, -5, 0], # accel
+            [2.5, 0, -2.5, 0, 2.5], # jerk
+            [0, 2.0, 5.4031242374328485, 9.4031242374328485, 12.806248474865697, 14.806248474865697]) #  time
+
     def test_init(self):
         spline = CubicSpline([0,1/6,1], [0,1/2,1], [0,1,0], [1,-1], [0,1,2])
         self.assertEqual(spline.q, [0,1/6,1])
@@ -60,13 +68,19 @@ class  TestCubicSpline(unittest.TestCase):
 
         self.assertRaises(SplineError, spline2.concat, spline1)
 
+    def test_get_extrema_velocities(self):
+        spline = self.make_test_spline_I()
+        vels, times = spline.get_extrema_velocities()
+
+        # Check that maxima/minima are among the values
+        self.assertTrue(27.015621187164243 in vels)
+        self.assertTrue(7.4031242374328485 in times)
+        self.assertTrue(0 in vels)
+        self.assertTrue(0 in times)
+        self.assertTrue(14.806248474865697 in times)
+
     def test__get_idx_from_time(self):
-        spline = CubicSpline( # velocity peaks midway between the 3rd and 4th knot
-            [0, 3.3333333333333335, 49.30209095900485, 150.69790904099514, 196.66666666666663, 200],
-            [0, 5.0, 22.015621187164243, 22.015621187164243, 5.0, 0],
-            [0, 5, 5, -5, -5, 0],
-            [2.5,0,-2.5,0,2.5], # jerk
-            [0, 2.0, 5.4031242374328485, 9.4031242374328485, 12.806248474865697, 14.806248474865697])
+        spline = self.make_test_spline_I()
         self.assertEquals(spline._get_idx_from_time(1.0), 0)
         self.assertEquals(spline._get_idx_from_time(2.5), 1)
         self.assertEquals(spline._get_idx_from_time(13.0), 4)
@@ -80,12 +94,7 @@ class  TestCubicSpline(unittest.TestCase):
         self.assertRaises(OutOfBoundsError, spline._get_idx_from_time, -1)
 
     def test_copy_left(self):
-        orig_spline = CubicSpline( # velocity peaks midway between the 3rd and 4th knot
-            [0, 3.3333333333333335, 49.30209095900485, 150.69790904099514, 196.66666666666663, 200], # pos
-            [0, 5.0, 22.015621187164243, 22.015621187164243, 5.0, 0], # vel
-            [0, 5, 5, -5, -5, 0], # accel
-            [2.5, 0, -2.5, 0, 2.5], # jerk
-            [0, 2.0, 5.4031242374328485, 9.4031242374328485, 12.806248474865697, 14.806248474865697]) #  time
+        orig_spline = self.make_test_spline_I()
         spline = orig_spline.copy_left(5.5)
 ##        self.plot_it(spline, 'test_copy_left')
 
@@ -102,12 +111,7 @@ class  TestCubicSpline(unittest.TestCase):
         self.validate_endpoints(spline, initial, final)
 
     def test_copy_right(self):
-        orig_spline = CubicSpline( # velocity peaks midway between the 3rd and 4th knot
-            [0, 3.3333333333333335, 49.30209095900485, 150.69790904099514, 196.66666666666663, 200], # pos
-            [0, 5.0, 22.015621187164243, 22.015621187164243, 5.0, 0], # vel
-            [0, 5, 5, -5, -5, 0], # accel
-            [2.5, 0, -2.5, 0, 2.5], # jerk
-            [0, 2.0, 5.4031242374328485, 9.4031242374328485, 12.806248474865697, 14.806248474865697]) #  time
+        orig_spline = self.make_test_spline_I()
         initial = orig_spline.evaluate(5.5)
         final = orig_spline.evaluate(orig_spline.t[-1])
         spline = orig_spline.copy_right(5.5)
@@ -115,13 +119,67 @@ class  TestCubicSpline(unittest.TestCase):
         self.assertEqual(len(spline.t), 4)
         self.validate_endpoints(spline, initial, final)
 
+    def test_slice_I(self):
+        """Test that a slice with equal start and stop times returns a one element spline."""
+        orig_spline = self.make_test_spline_I()
+
+        knot = orig_spline.evaluate(5.5)
+        spline = orig_spline.slice(5.5, 5.5)
+        self.assertEqual(spline.q, [knot.pos])
+        self.assertEqual(spline.v, [knot.vel])
+        self.assertEqual(spline.a, [knot.accel])
+        self.assertEqual(spline.j, [])
+        self.assertEqual(spline.t, [knot.time])
+        self.assertEqual(spline.coeffs, [])
+
+    def test_slice_II(self):
+        """Test for OutOfBoundsErrors"""
+        orig_spline = self.make_test_spline_I()
+
+        # stop_time earlier than start_time
+        self.assertRaises(OutOfBoundsError, orig_spline.slice, 5.5, 5.4)
+
+        # time beyond the spline
+        self.assertRaises(OutOfBoundsError, orig_spline.slice, -1, 5.5)
+        self.assertRaises(OutOfBoundsError, orig_spline.slice, 0, 15)
+
+    def test_slice_III(self):
+        """Test that a slice holds correct data."""
+        orig_spline = self.make_test_spline_I()
+        spline = orig_spline.slice(1.5, 5.5)
+        self.assertEqual(spline.q, [1.40625, 3.3333333333333335, 49.30209095900485, 51.457954512233492])
+        self.assertEqual(spline.v, [2.8125, 5.0, 22.015621187164243, 22.488268858283792])
+        self.assertEqual(spline.a, [3.75, 5, 5, 4.7578105935821213])
+        self.assertEqual(spline.j, [2.5, 0, -2.5])
+        self.assertEqual(spline.t, [1.5, 2.0, 5.4031242374328485, 5.5])
+
+    def tests_splice_IV(self):
+        """Test that the first|last elements aren't duplicated if they happen to
+        fall on a knot point."""
+        orig_spline = self.make_test_spline_I()
+        spline = orig_spline.slice(0, 2.0)
+        self.assertEqual(spline.q, [0, 3.3333333333333335])
+        self.assertEqual(spline.v, [0, 5.0])
+        self.assertEqual(spline.a, [0, 5])
+        self.assertEqual(spline.j, [2.5])
+        self.assertEqual(spline.t, [0, 2.0])
+
+    def test_time_shift(self):
+        spline = self.make_test_spline_I()
+        time = 10.5
+        shifted = spline.time_shift(time)
+        for t_orig, t_shift in zip(spline.t, shifted.t):
+            self.assertEqual(t_orig + time, t_shift)
+
+    def test_position_shift(self):
+        spline = self.make_test_spline_I()
+        position = 12.5
+        shifted = spline.position_shift(position)
+        for q_orig, q_shift in zip(spline.q, shifted.q):
+            self.assertEqual(q_orig + position, q_shift)
+
     def test_get_time_from_dist(self):
-        spline = CubicSpline( # velocity peaks midway between the 3rd and 4th knot
-            [0, 3.3333333333333335, 49.30209095900485, 150.69790904099514, 196.66666666666663, 200], # pos
-            [0, 5.0, 22.015621187164243, 22.015621187164243, 5.0, 0], # vel
-            [0, 5, 5, -5, -5, 0], # accel
-            [2.5, 0, -2.5, 0, 2.5], # jerk
-            [0, 2.0, 5.4031242374328485, 9.4031242374328485, 12.806248474865697, 14.806248474865697]) #  time
+        spline = self.make_test_spline_I()
         t = spline.get_time_from_dist(195, 0)
         self.assertAlmostEqual(spline.evaluate(t).pos, 195, self.PLACES)
 
@@ -131,21 +189,11 @@ class  TestCubicSpline(unittest.TestCase):
         self.assertRaises(OutOfBoundsError, spline.get_time_from_dist, 210, 0) # out of bounds...
 
     def test_get_maximum_velocity(self):
-        spline = CubicSpline( # velocity peaks midway between the 3rd and 4th knot
-            [0, 3.3333333333333335, 49.30209095900485, 150.69790904099514, 196.66666666666663, 200], # pos
-            [0, 5.0, 22.015621187164243, 22.015621187164243, 5.0, 0], # vel
-            [0, 5, 5, -5, -5, 0], # accel
-            [2.5, 0, -2.5, 0, 2.5], # jerk
-            [0, 2.0, 5.4031242374328485, 9.4031242374328485, 12.806248474865697, 14.806248474865697]) #  time
+        spline = self.make_test_spline_I()
         self.assertAlmostEqual(spline.get_max_velocity(), spline.evaluate((spline.t[2]+spline.t[3])/2).vel, self.PLACES)
 
     def test_coeffs(self):
-        spline = CubicSpline( # velocity peaks midway between the 3rd and 4th knot
-            [0, 3.3333333333333335, 49.30209095900485, 150.69790904099514, 196.66666666666663, 200], # pos
-            [0, 5.0, 22.015621187164243, 22.015621187164243, 5.0, 0], # vel
-            [0, 5, 5, -5, -5, 0], # accel
-            [2.5, 0, -2.5, 0, 2.5], # jerk
-            [0, 2.0, 5.4031242374328485, 9.4031242374328485, 12.806248474865697, 14.806248474865697]) #  time
+        spline = self.make_test_spline_I()
         self.polys_coeffs_check(spline)
 
     def test_coeffs_II(self):

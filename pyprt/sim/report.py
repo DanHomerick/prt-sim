@@ -80,8 +80,12 @@ class SummaryReport(Report):
         max_miles = max_km * KM_TO_MILES
         min_km = min(v.get_dist_travelled() for v in common.vehicle_list)/1000.
         min_miles = min_km * KM_TO_MILES
-        mean_vel_kph = total_km/sim_hours/len(common.vehicle_list)
-        mean_vel_mph = total_miles/sim_hours/len(common.vehicle_list)
+        try:
+            mean_vel_kph = total_km/sim_hours/len(common.vehicle_list)
+            mean_vel_mph = total_miles/sim_hours/len(common.vehicle_list)
+        except ZeroDivisionError:
+            mean_vel_kph = 0
+            mean_vel_mph = 0
         total_pax = sum(v.total_pax for v in common.vehicle_list)
         min_pax = min(v.total_pax for v in common.vehicle_list)
         mean_pax = total_pax/len(common.vehicle_list)
@@ -205,7 +209,7 @@ class VehicleReport(Report):
         lines = []
         for v in v_list:
             assert isinstance(v, BaseVehicle)
-            extrema_velocities = v._spline.get_extrema_velocity()
+            extrema_velocities, extrema_times = v._spline.get_extrema_velocities()
             max_vel = max(extrema_velocities)
             min_vel = min(extrema_velocities)
             max_jerk = max(v._spline.j)

@@ -39,6 +39,10 @@ DIST_RND = 2
 TIME_RES = 0.001
 TIME_RND = 3
 
+def same_sign(x, y):
+    """Returns true if x and y have the same sign. Zeros are treated as positive."""
+    return (x<0) == (y<0)
+
 class deque(collections.deque):
     """An extension of the deque class which includes an insert method."""
 
@@ -106,7 +110,7 @@ def dist_lt(a, b):
 
 
 def time_eql(a, b):
-    """Include == test to capture float('inf') == float('inf')"""
+    # Include == test to capture float('inf') == float('inf')
     return (True if a == b or round(abs(a-b), TIME_RND) < TIME_RES else False)
 def time_ge(a, b):
     return (True if a > b or time_eql(a,b) else False)

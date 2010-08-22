@@ -38,7 +38,7 @@ class ScenarioManager(object):
             # else n.next_loc is left as None
 
         # Vehicles
-        common.vehicle_models = self.make_vehicle_classes(doc.getElementsByTagName('VehicleModels')[0])
+        common.vehicle_models = self.load_vehicle_models(doc.getElementsByTagName('VehicleModels')[0])
         common.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], common.vehicle_models)
 
         # Stations
@@ -131,60 +131,25 @@ class ScenarioManager(object):
     def load_vehicles(self, vehicles_xml, vehicle_classes):
         all_vehicles = dict()
 
-    #    vType = 'Default Vehicle' # TODO: Add vType to the trackBuilder?
-    #
-    #    # Get and validate the vehicle constants
-    #    length = self.config_parser.getfloat(vType, 'length')
-    #    max_pax_capacity = self.config_parser.getfloat(vType, 'max_pax_capacity')
-    #    norm_max_accel = self.config_parser.getfloat(vType, 'norm_max_accel')
-    #    norm_max_decel = self.config_parser.getfloat(vType, 'norm_max_decel')
-    #    norm_max_jerk = self.config_parser.getfloat(vType, 'norm_max_jerk')
-    #    emerg_max_accel = self.config_parser.getfloat(vType, 'emerg_max_accel')
-    #    emerg_max_decel = self.config_parser.getfloat(vType, 'emerg_max_decel')
-    #    emerg_max_jerk = self.config_parser.getfloat(vType, 'emerg_max_jerk')
-    #    v_mass = self.config_parser.getfloat(vType, 'v_mass')
-    #
-    #    # data validation
-    #    if length < 0:
-    #        raise common.ConfigError, "Negative vehicle length: %s" % length
-    #    if max_pax_capacity < 0:
-    #        raise common.ConfigError, "Negative maximum vehicle passenger capacity: %s" % max_pax_capacity
-    #    if norm_max_accel <= 0:
-    #        raise common.ConfigError, "Invalid norm_max_accel: %s" % norm_max_accel
-    #    if emerg_max_accel <= 0:
-    #        raise common.ConfigError, "Invalid emerg_max_accel: %s" % emerg_max_accel
-    #    if norm_max_decel >= 0:
-    #        raise common.ConfigError, "Invalid norm_max_decel (must be neg): %s" % norm_max_decel
-    #    if emerg_max_decel >= 0:
-    #        raise common.ConfigError, "Invalid emerg_max_decel (must be neg): %s" % emerg_max_decel
-    #    if v_mass <= 0:
-    #        raise common.ConfigError, "Invalid vehicle mass (v_mass): %s" % v_mass
-
         for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
             vId = vehicle_xml.getAttribute('id')
             v_intId = int(vId.split("_")[0]) # get a unique, integer ID
-            v_model = vehicle_xml.getAttribute('model')
+            v_model = vehicle_xml.getAttribute('model_name')
             eId = vehicle_xml.getAttribute('location')
             e_intId = int(eId.split("_")[0])
             loc = common.track_segments[e_intId] # look up edge by id
             position = float(vehicle_xml.getAttribute('position'))
 
             if position > loc.length:
-                raise common.ConfigError("Vehicle %s starting position: %s is greater than location %s length: %s" % (v_intId, position, loc.ID, loc.length))
-            vehicle = vehicle_classes[v_model](ID=v_intId,
-                                     loc=loc,
-    #                                 length=length,
-    #                                 max_pax_capacity=max_pax_capacity,
-    #                                 norm_max_accel=norm_max_accel,
-    #                                 norm_max_decel=norm_max_decel,
-    #                                 norm_max_jerk=norm_max_jerk,
-    #                                 emerg_max_accel=emerg_max_accel,
-    #                                 emerg_max_decel=emerg_max_decel,
-    #                                 emerg_max_jerk=emerg_max_jerk,
-    #                                 v_mass=v_mass,
-                                     position=position,
-                                     vel=float(vehicle_xml.getAttribute('velocity'))
-                                     )
+                raise common.ScenarioError("Vehicle %s starting position: %s "
+                                           "is greater than location %s length: %s"
+                                           % (v_intId, position, loc.ID, loc.length))
+            vehicle = vehicle_classes[v_model](
+                                ID=v_intId,
+                                loc=loc,
+                                position=position,
+                                vel=float(vehicle_xml.getAttribute('velocity'))
+                            )
             all_vehicles[vehicle.ID] = vehicle
         return all_vehicles
 
@@ -257,11 +222,13 @@ class ScenarioManager(object):
                     dStatID = data[2].strip() # left in string form
                     sTime = float(data[3])
                 except IndexError:
-                    raise common.ConfigError, "Line %s of passengerfile %s has too few fields." %\
-                                       (line_num+1, filename)
+                    raise common.ScenarioError(
+                        "Line %s of passengerfile %s has too few fields."
+                        % (line_num+1, filename))
                 except ValueError:
-                    raise common.ConfigError, "Line %s of passengerfile %s has a field of the incorrect type." %\
-                                       (line_num+1, filename)
+                    raise common.ScenarioError(
+                        "Line %s of passengerfile %s has a field of the incorrect type."
+                        % (line_num+1, filename))
                 try:
                     load_delay = float(data[4])
                 except (IndexError, ValueError):
@@ -279,9 +246,10 @@ class ScenarioManager(object):
                     elif not will_share_str:
                         raise ValueError
                     else:
-                        raise common.ConfigError, "On line %s of passengerfile %s: '%s' is " \
-                                          "not an acceptable boolean value." % \
-                                       (line_num+1, filename, will_share_str)
+                        raise common.ScenarioError(
+                            "On line %s of passengerfile %s: '%s' is "
+                            "not an acceptable boolean value."
+                            % (line_num+1, filename, will_share_str))
                 except (IndexError, ValueError):
                     will_share = default_will_share
                 try:
@@ -292,8 +260,10 @@ class ScenarioManager(object):
                     sStat = aliases[sStatID]
                     dStat = aliases[dStatID]
                 except KeyError:
-                    raise common.ConfigError, "On line %s of passengerfile %s, at least one of the following ID's is not a station: %s, %s" %\
-                                   (line_num+1, filename, sStatID, dStatID)
+                    raise common.ScenarioError(
+                        "On line %s of passengerfile %s, at least one of the "
+                        "following ID's is not a station: %s, %s"
+                        % (line_num+1, filename, sStatID, dStatID))
                 e = events.Passenger(time=sTime, ID=pID,
                                       src_station=sStat, dest_station=dStat,
                                       load_delay=load_delay,
@@ -323,41 +293,85 @@ class ScenarioManager(object):
         where x is an integer. Returns just the integer value."""
         return int(element.childNodes[0].data.split('_')[0])
 
-    def make_vehicle_classes(self, vehicle_models_xml):
+    def load_vehicle_models(self, vehicle_models_xml):
         """Returns a dict of new Python classes. Each value in the dict is a
         subclass of BaseVehicle and has jerk_max_norm, jerk_min_norm,
         accel_max_norm, etc. as class attributes."""
         all_models = {}
-        max_pax = 0
         for vehicle_model_xml in vehicle_models_xml.getElementsByTagName('VehicleModel'):
-            model_name = vehicle_model_xml.getAttribute('model')
-            length = float(vehicle_model_xml.getAttribute('length'))
-            v_mass = int(vehicle_model_xml.getAttribute('mass'))
-            max_pax_capacity = int(vehicle_model_xml.getAttribute('passenger_capacity'))
-
             jerk_xml = vehicle_model_xml.getElementsByTagName('Jerk')[0]
             accel_xml = vehicle_model_xml.getElementsByTagName('Acceleration')[0]
             vel_xml = vehicle_model_xml.getElementsByTagName('Velocity')[0]
 
-            type_dict = {'name':traits.String(model_name),
-                         'length':traits.Float(length),
-                         'v_mass':traits.Int(v_mass),
-                         'max_pax_capacity':traits.Int(max_pax_capacity),
-                         'jerk_max_norm':traits.Float(float(jerk_xml.getAttribute('normal_max'))),
-                         'jerk_min_norm':traits.Float(float(jerk_xml.getAttribute('normal_min'))),
-                         'jerk_max_emerg':traits.Float(float(jerk_xml.getAttribute('emergency_max'))),
-                         'jerk_min_emerg':traits.Float(float(jerk_xml.getAttribute('emergency_min'))),
-                         'accel_max_norm':traits.Float(float(accel_xml.getAttribute('normal_max'))),
-                         'accel_min_norm':traits.Float(float(accel_xml.getAttribute('normal_min'))),
-                         'accel_max_emerg':traits.Float(float(accel_xml.getAttribute('emergency_max'))),
-                         'accel_min_emerg':traits.Float(float(accel_xml.getAttribute('emergency_min'))),
-                         'vel_max_norm':traits.Float(float(vel_xml.getAttribute('normal_max'))),
-                         'vel_min_norm':traits.Float(float(vel_xml.getAttribute('normal_min'))),
-                         'vel_max_emerg':traits.Float(float(vel_xml.getAttribute('emergency_max'))),
-                         'vel_min_emerg':traits.Float(float(vel_xml.getAttribute('emergency_min')))
-            }
+            # read xml
+            model_name = str(vehicle_model_xml.getAttribute('model_name'))
+            length = float(vehicle_model_xml.getAttribute('length'))
+            vehicle_mass = int(vehicle_model_xml.getAttribute('mass'))
+            max_pax_capacity = int(vehicle_model_xml.getAttribute('passenger_capacity'))
+            jerk_max_norm = float(jerk_xml.getAttribute('normal_max'))
+            jerk_min_norm = float(jerk_xml.getAttribute('normal_min'))
+            jerk_max_emerg = float(jerk_xml.getAttribute('emergency_max'))
+            jerk_min_emerg = float(jerk_xml.getAttribute('emergency_min'))
+            accel_max_norm = float(accel_xml.getAttribute('normal_max'))
+            accel_min_norm = float(accel_xml.getAttribute('normal_min'))
+            accel_max_emerg = float(accel_xml.getAttribute('emergency_max'))
+            accel_min_emerg = float(accel_xml.getAttribute('emergency_min'))
+            vel_max_norm = float(vel_xml.getAttribute('normal_max'))
+            vel_min_norm = float(vel_xml.getAttribute('normal_min'))
+            vel_max_emerg = float(vel_xml.getAttribute('emergency_max'))
+            vel_min_emerg = float(vel_xml.getAttribute('emergency_min'))
 
-            all_models[model_name] = type(str(model_name), (vehicle.BaseVehicle,), type_dict)
+            # data validation
+            if len(model_name) == 0:
+                raise common.ScenarioError("Invalid model name: %s" % model_name)
+            if length <= 0:
+                raise common.ScenarioError("Vehicle length must be positive: %s" % length)
+            if vehicle_mass <= 0:
+                raise common.ScenarioError("Invalid vehicle mass: %s" % vehicle_mass)
+            if max_pax_capacity < 0:
+                raise common.ScenarioError("Negative maximum vehicle passenger capacity: %s" % max_pax_capacity)
+            if jerk_max_norm < 0:
+                raise common.ScenarioError("Negative jerk_max_norm: %s" % jerk_max_norm)
+            if jerk_min_norm > 0:
+                raise common.ScenarioError("Positive jerk_min_norm: %s" % jerk_min_norm)
+            if jerk_max_emerg < 0:
+                raise common.ScenarioError("Negative jerk_max_emerg: %s" % jerk_max_emerg)
+            if jerk_min_emerg > 0:
+                raise common.ScenarioError("Positive jerk_min_emerg: %s" % jerk_min_emerg)
+            if accel_max_norm < 0:
+                raise common.ScenarioError("Negative accel_max_norm: %s" % accel_max_norm)
+            if accel_min_norm > 0:
+                raise common.ScenarioError("Positive accel_min_norm: %s" % accel_min_norm)
+            if accel_max_emerg < 0:
+                raise common.ScenarioError("Negative accel_max_emerg: %s" % accel_max_emerg)
+            if accel_min_emerg > 0:
+                raise common.ScenarioError("Positive accel_min_emerg: %s" % accel_min_emerg)
+            if vel_max_norm < 0:
+                raise common.ScenarioError("Negative vel_max_norm: %s" % vel_max_norm)
+            if vel_min_norm != 0:
+                raise common.ScenarioError("vel_min_norm may not be non-zero (in this version): %s" % vel_min_norm)
+            if vel_max_emerg < 0:
+                raise common.ScenarioError("Negative vel_max_emerg: %s" % vel_max_emerg)
+            if vel_min_emerg != 0:
+                raise common.ScenarioError("vel_min_emerg may not be non-zero (in this version): %s" % vel_min_emerg)
+            for type_str, norm, emerg in zip(
+                    ('jerk', 'jerk', 'accel', 'accel', 'vel', 'vel'),
+                    (jerk_max_norm, jerk_min_norm, accel_max_norm, accel_min_norm, vel_max_norm, vel_min_norm),
+                    (jerk_max_emerg, jerk_min_emerg, accel_max_emerg, accel_min_emerg, vel_max_emerg, vel_min_emerg)):
+                if abs(emerg) < abs(norm):
+                    raise common.ScenarioError(
+                        "Emergency " + type_str + " is less than the normal value. "
+                        "Emergency values represent the limits of a vehicle's "
+                        "capabilities (rather than limits for passenger comfort) "
+                        "and cannot be more constrained than the normal values.")
+            model = vehicle.create_vehicle_class(
+                model_name, length, vehicle_mass, max_pax_capacity,
+                jerk_max_norm, jerk_min_norm, jerk_max_emerg, jerk_min_emerg,
+                accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
+                vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg
+            )
+
+            all_models[model_name] = model
 
         return all_models
 
