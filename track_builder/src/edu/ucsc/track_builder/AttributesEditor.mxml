@@ -59,9 +59,23 @@
 				trace('onVehicleModelsDeleteButton');
 				var name:String = vmComboBox.selectedItem as String;
 				if (name != 'New Model') {
+					// Check that the model is not the currently selected model for placing new vehicles.
 					if (name == Globals.vehicles.modelName) {
 						Alert.show(name + " is the currently selected model for creating new vehicles and cannot be deleted.",
 						           "Cannot Delete", 0, this)
+						return;
+					}
+					
+					// Check that no vehicles are using the model before deleting it.
+					var modelInUseCount:int = 0;
+					for each (var v:Vehicle in Globals.vehicles.vehicles) {
+						if (name == v.modelName) {
+							modelInUseCount += 1
+						}
+					}
+					if (modelInUseCount) {
+						Alert.show("There are " + modelInUseCount.toString() + " vehicles using the " + name + " model in this scenario. " 
+								    + "The vehicles must be removed before the model can be deleted.", "Cannot Delete", 0, this)
 						return;
 					}
 					
