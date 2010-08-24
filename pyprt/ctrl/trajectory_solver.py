@@ -778,6 +778,11 @@ class TrajectorySolver(object):
 
         assert spline is not None
 
+	max_vel = spline.get_max_velocity()
+        if max_vel > max_speed + 0.0001:
+	    print "fatal trajectory spline vel > max ", max_vel, max_speed
+	    print "fatal trajectory initial knot ", knot_initial
+	    print "fatal trajectory final knot ", knot_final
         if spline.get_max_velocity() > max_speed + 0.0001:
             raise FatalTrajectoryError
 
@@ -986,6 +991,8 @@ class TrajectorySolver(object):
         q[1] = j[0]*t01*t01_2/6 + a[0]*t01_2/2 + v[0]*t01 + q[0]
 
         t23 = -a[2]/j[2]
+	if t23 < 0:
+            raise TrajectoryError()
         t23_2 = t23*t23
         v[2] = v[3] - (j[2]*t23_2/2 + a[2]*t23) # v3 - v23
 
