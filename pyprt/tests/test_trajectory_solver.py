@@ -401,7 +401,7 @@ class  TestTrajectorySolver(unittest.TestCase):
 ##        self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
     def test_target_position_X(self):
         """Starts with 20 velocity, ends with 2.3999 velocity. Entering a station"""
-        solver = TrajectorySolver(20, 7.2, 5.0, 0, -7.2, -5.0)
+        solver = TrajectorySolver(20, 9, 5.0, 0, -9, -5.0)
         initial = Knot(2,20,0,4.2891)
         final = Knot(42.509, 2.3999999, 0, None)
         spline = solver.target_position(initial, final)
