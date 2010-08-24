@@ -3,7 +3,7 @@ TODO: Rename pyprt.ctrl.base_controller to pyprt.shared.comm and inherit from th
 """
 from __future__ import division # always use floating point division
 
-import sys, socket, logging, heapq, struct, threading, time, Queue
+import sys, socket, logging, heapq, struct, threading, time, Queue, os
 
 import SimPy.SimulationRT as Sim
 import google.protobuf.text_format as text_format
@@ -119,7 +119,7 @@ class ControlInterface(Sim.Process):
         elif isinstance(log, file):
             self.log = log
         else:
-            raise Exception("ControlInterface constructor expects a string or a file")
+	    self.log = os.devnull
 
         self.TCP_server_socket = None
         self.UDP_server_socket = None
@@ -543,17 +543,19 @@ class ControlInterface(Sim.Process):
             # list of events to run.
             Sim.reactivate(self, prior=False)
 
-        print >> self.log, "Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
-                 (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
-        text_format.PrintMessage(msg, out=self.log)
-        print >> self.log, "--"
+	if self.log != os.devnull:
+		print >> self.log, "Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
+			 (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
+		text_format.PrintMessage(msg, out=self.log)
+		print >> self.log, "--"
 
     def log_rcvd_msg(self, msg_type, msgID, msg_time, msg):
         # log msg
-        print >> self.log, "Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
+	if self.log != os.devnull:
+		print >> self.log, "Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
-        text_format.PrintMessage(msg, out=self.log)
-        print >> self.log, "--"
+		text_format.PrintMessage(msg, out=self.log)
+		print >> self.log, "--"
 
     def get_trackSeg(self, ID):
         """"Return the TrackSegment object specified by the ID.

@@ -134,7 +134,10 @@ class ConfigManager(object):
         if self.options.comm_log != None:
             comm_logfile = self.options.comm_log
         else:
-            comm_logfile = self.config_dir + self.config_parser.get('Output Files', 'comm_log')
+	    try:
+		    comm_logfile = self.config_dir + self.config_parser.get('Output Files', 'comm_log')
+	    except:
+		    return None
         return comm_logfile
 
     def get_results_file(self):
