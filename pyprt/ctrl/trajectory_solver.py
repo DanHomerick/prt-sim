@@ -6,6 +6,7 @@ import math
 import scipy.optimize
 from scipy import inf
 
+import pyprt.shared.utility as utility
 from pyprt.shared.cubic_spline import CubicSpline
 from pyprt.shared.cubic_spline import Knot
 from pyprt.shared.utility import pairwise, same_sign
@@ -337,13 +338,15 @@ class TrajectorySolver(object):
 
         # For the remainder of the calculations use the given a_max constraint
         # or the 'natural' acceleration maxima, whichever is more constraining.
-        if not flip:
-            a_top = max(self.nonnegative_roots(_a, _b, _c))
-            a_top = min(ax, a_top)
-        else:
-            a_top = min(self.nonpositive_roots(_a, _b, _c))
-            a_top = max(ax, a_top)
-
+        try:
+            if not flip:
+                a_top = max(x for x in utility.quadratic_roots(_a, _b, _c) if x >= 0)
+                a_top = min(ax, a_top)
+            else:
+                a_top = min(x for x in utility.quadratic_roots(_a, _b, _c) if x <= 0)
+                a_top = max(ax, a_top)
+        except ValueError:
+            raise TrajectoryError
 
         # Similarly for a_bot, the minimum acceleration that is reached. (i.e. a_bottom)
         #       5  6  7
@@ -367,12 +370,16 @@ class TrajectorySolver(object):
         _a = 1/(2*jx) - 1/(2*jn)
         _b = 0
         _c = vf - vx + af**2/(2*jn)
-        if not flip:
-            a_bot = min(self.nonpositive_roots(_a, _b, _c))
-            a_bot = max(an, a_bot)
-        else:
-            a_bot = max(self.nonnegative_roots(_a, _b, _c))
-            a_bot = min(an, a_bot)
+
+        try:
+            if not flip:
+                a_bot = min(x for x in utility.quadratic_roots(_a, _b, _c) if x <= 0)
+                a_bot = max(an, a_bot)
+            else:
+                a_bot = max(x for x in utility.quadratic_roots(_a, _b, _c) if x >= 0)
+                a_bot = min(an, a_bot)
+        except ValueError:
+            raise TrajectoryError
 
         ###  create the first three knots
         h0 = (a_top - ai)/jx
@@ -509,9 +516,8 @@ class TrajectorySolver(object):
         C = k4.pos - k1.pos - alpha*k1.vel + (alpha*ax**2 + ax*k1.vel - an*k1.vel - alpha*an*ax)/jn - ax*alpha**2/2 - ax*(an - ax)**2/(2*jn**2) - (an - ax)**3/(6*jn**2)
 
         try:
-            h3 = min(self.nonnegative_roots(A, B, C))
+            h3 = min(x for x in utility.quadratic_roots(A, B, C) if x >= 0)
         except ValueError: # No nonnegative, real solutions. a_min is not reached.
-            assert len(self.nonnegative_roots(A, B, C)) == 0
             raise TrajectoryError('No nonnegative, real solutions')
 
         h1 = alpha - an/ax*h3
@@ -1153,50 +1159,6 @@ class TrajectorySolver(object):
 
         return error
 
-    @staticmethod
-    def nonnegative_roots(A, B, C):
-        """Finds the nonnegative roots of a 2nd degree polynomial, using quadratic formula.
-        Raises a TrajectoryError if answer would be imaginary."""
-        try:
-            tmp = (B*B - 4*A*C)
-            if tmp < 1E-6: # if tmp is too small, we silently get a nan upon square root. 1E-6 choosen arbitrarily.
-                tmp = 0
-            else:
-                tmp = tmp**0.5
-        except ValueError: # negative number cannot be raised to a fractional power
-            # Allow that rounding errors may have pushed a zero to be a slight negative.
-            if (B*B - 4*A*C) > -0.0001:
-                tmp = 0
-            else:
-                raise TrajectoryError('No real roots')
-
-        roots = [(-B + tmp)/(2*A), (-B - tmp)/(2*A)]
-        def is_positive(x):
-            return x >= 0
-        return filter(is_positive, roots)
-
-    @staticmethod
-    def nonpositive_roots(A, B, C):
-        """Finds the nonpositive roots of a 2nd degree polynomial, using quadratic formula.
-        Raises a TrajectoryError if answer would be imaginary."""
-        try:
-            tmp = (B*B - 4*A*C)
-            if tmp < 1E-6: # if tmp is too small, we silently get a nan upon square root. 1E-6 choosen arbitrarily.
-                tmp = 0
-            else:
-                tmp = tmp**0.5
-        except ValueError: # negative number cannot be raised to a fractional power
-             # Allow that rounding errors may have pushed a zero to be a slight negative.
-            if (B*B - 4*A*C) > -0.0001:
-                tmp = 0
-            else:
-                raise TrajectoryError('No real roots')
-
-        roots = [(-B + tmp)/(2*A), (-B - tmp)/(2*A)]
-        def is_negative(x):
-            return x <= 0
-        return filter(is_negative, roots)
-
     def target_velocity(self, initial, final):
         """Similar to target_position, but the final position is ignored in
         addition to the final time. 'inital' and 'final' are Knot instances.
@@ -1257,12 +1219,15 @@ class TrajectorySolver(object):
         _b = 0
         _c = final.vel - initial.vel  + initial.accel**2/(2*jx) - final.accel**2/(2*jn)
 
-        if not flip:
-            a_top = max(self.nonnegative_roots(_a, _b, _c))
-            a_top = min(ax, a_top)
-        else:
-            a_top = min(self.nonpositive_roots(_a, _b, _c))
-            a_top = max(ax, a_top)
+        try:
+            if not flip:
+                a_top = max(x for x in utility.quadratic_roots(_a, _b, _c) if x >= 0)
+                a_top = min(ax, a_top)
+            else:
+                a_top = min(x for x in utility.quadratic_roots(_a, _b, _c) if x <= 0)
+                a_top = max(ax, a_top)
+        except ValueError:
+            raise TrajectoryError
 
         knots = [initial, None, None, None]
 

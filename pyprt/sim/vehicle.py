@@ -7,6 +7,7 @@ import heapq
 from itertools import izip
 
 from numpy import inf
+import numpy
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
 import enthought.traits.ui.table_column as ui_tc
@@ -84,7 +85,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     ENTER_BERTH = 4
     EXIT_BERTH = 5
     NOTIFY_POSITION = 6
-    VEHICLE_STOPPED = 7
+    STOPPED = 7
+    SPEEDING = 8
 
     # A default view for vehicles.
     trait_view =  ui.View('ID', 'length',
@@ -604,8 +606,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             elif action == self.NOTIFY_POSITION:
                 self._notify_position_handler(*data) # data is a 2-tuple
 
-            elif action == self.VEHICLE_STOPPED:
-                self._vehicle_stopped_handler()
+            elif action == self.STOPPED:
+                self._stopped_handler()
+
+            elif action == self.SPEEDING:
+                self._speeding_handler()
 
             else:
                 raise Exception("Unknown action type: %d for vehicle %d" % (action, self.ID))
@@ -616,25 +621,54 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def _traverse(self):
         # Queue up next TrackSegment boundary
         traverse_dist = self.loc.length - self.pos
+        assert traverse_dist >= -1E-3, (self.ID, traverse_dist, self.loc.length, self.loc.ID)
+
         try:
             traverse_time = self._spline.get_time_from_dist(traverse_dist, Sim.now())
         except cspline.OutOfBoundsError: # Current trajectory spline never has the vehicle leaving this TrackSegment
             traverse_time = inf
         heapq.heappush(self._actions_queue, (traverse_time, self.BOUNDARY, None))
+        assert traverse_time >= Sim.now() - 1E-5, (self.ID, traverse_time, self.loc.length, self.loc.ID)
 
-        # Add vehicle stopped notifications (if not currently stopped at the same position)
         if traverse_time != inf:
             segment_spline = self._spline.slice(Sim.now(), traverse_time)
         else:
             segment_spline = self._spline.copy_right(Sim.now())
         extrema_velocties, extrema_times = segment_spline.get_extrema_velocities()
         for vel, time in izip(extrema_velocties, extrema_times):
+            # Add stopped notification (if not currently stopped at the same position)
             if vel == 0 and time > Sim.now() and abs(segment_spline.evaluate(time).pos - self.pos) > 1E-4:
-                heapq.heappush(self._actions_queue, (time, self.VEHICLE_STOPPED, None))
+                heapq.heappush(self._actions_queue, (time, self.STOPPED, None))
                 assert abs(segment_spline.evaluate(time).accel) < 1E-5, (self.ID, vel, time, segment_spline)
 
-        assert traverse_dist >= -1E-3, (self.ID, traverse_dist, self.loc.length, self.loc.ID)
-        assert traverse_time >= Sim.now() - 1E-5, (self.ID, traverse_time, self.loc.length, self.loc.ID)
+        # Detect if there's an upcoming speed limit violation
+        speed_limit = min(self.loc.max_speed, self.vel_max_emerg) + 1E-4
+        if max(extrema_velocties) > speed_limit:
+            # Calculate times when the vehicle begins to exceed the speed limit.
+            # That is, want to find the times where the 1st derivative of a poly
+            # has a positive crossing of speed_limit.
+            speeding_times = []
+            speed_limit_poly = numpy.poly1d([speed_limit])
+            if segment_spline.v[0] >= speed_limit:
+                speeding_times.append(segment_spline.t[0])
+
+            for coeffs, (ti, tf) in zip(segment_spline.coeffs, pairwise(segment_spline.t)):
+                vel_poly = numpy.poly1d(coeffs).deriv()
+                coeffs = numpy.polysub(vel_poly, speed_limit_poly).coeffs
+                if len(coeffs) < 4:
+                    coeffs = [0]*(4-len(coeffs)) + list(coeffs) # pad to 4 elements
+                    assert len(coeffs) == 4
+                roots = utility.real_roots(*coeffs)
+                # Remove roots that are outside of the poly's valid times
+                roots = [r for r in roots if r >= ti and r <= tf]
+                for r in roots:
+                    knot = segment_spline.evaluate(r)
+                    if knot.accel > 1E-6:
+                        speeding_times.append(r)
+
+            for time in speeding_times:
+                heapq.heappush(self._actions_queue, (time, self.SPEEDING, None))
+
 
 ##        # Do some extra work to collect statistics about berth usages if the loc is a station platform
 ##        platform = common.platforms.get(self.loc.ID)
@@ -734,12 +768,22 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self.fill_VehicleStatus(sim_msg.v_status)
         common.interface.send(api.SIM_NOTIFY_VEHICLE_POSITION, sim_msg)
 
-    def _vehicle_stopped_handler(self):
+    def _stopped_handler(self):
         """Sends an api.SimNotifyVehicleStopped message."""
         notify_msg = api.SimNotifyVehicleStopped()
         self.fill_VehicleStatus(notify_msg.v_status)
         notify_msg.time = Sim.now()
         common.interface.send(api.SIM_NOTIFY_VEHICLE_STOPPED, notify_msg)
+
+    def _speeding_handler(self):
+        """Sends an api.SimNotifyVehicleSpeeding message."""
+        speed_limit = min(self.loc.max_speed, self.vel_max_emerg)
+        notify_msg = api.SimNotifyVehicleSpeeding()
+        self.fill_VehicleStatus(notify_msg.v_status)
+        notify_msg.time = Sim.now()
+        notify_msg.speed_limit = speed_limit
+        common.interface.send(api.SIM_NOTIFY_VEHICLE_SPEEDING, notify_msg)
+        logging.warn("T=%4.3f Vehicle: %d exceeded speed limit: %f on track seg: %d", Sim.now(), self.ID, speed_limit, self.loc.ID)
 
     def _collision_check(self):
         lv, dist = self.find_leading_vehicle(current_loc_only=True)

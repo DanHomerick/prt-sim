@@ -165,20 +165,23 @@ class MainWindow(wx.Frame):
         self.menubar_manager.sim_started()
 
         # Start the simulation running in a separate thread
-        sim_thread = threading.Thread(name='sim_thread',
-                                      target=main.run_sim,
-                                      args=[end_time, self.sim_end_callback])
 
-        sim_thread.setDaemon(True)
 
-        if common.config_manager.get_profile_path():
+        # Run without profiling (normal case)
+        if common.config_manager.get_profile_path() is None:
+            sim_thread = threading.Thread(name='sim_thread',
+                                          target=main.run_sim,
+                                          args=[end_time, self.sim_end_callback])
+        else: # Run with profiling
             if __debug__:
                 import warnings
                 warnings.warn("Profiling code that is in debug mode!")
-            import cProfile
-            cProfile.runctx('sim_thread.start()', globals(), locals(), common.config_manager.get_profile_path())
-        else:
-            sim_thread.start()
+            sim_thread = threading.Thread(name='sim_thread_profiled',
+                                          target=main.run_sim,
+                                          args=[end_time, self.sim_end_callback])
+
+        sim_thread.setDaemon(True)
+        sim_thread.start()
 
     def simmenu_stop_sim_handler(self, event):
         main.stop_sim()

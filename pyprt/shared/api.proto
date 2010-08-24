@@ -255,13 +255,14 @@ enum SimMsgType {
     SIM_NOTIFY_VEHICLE_ARRIVE = 1031;
     SIM_NOTIFY_VEHICLE_EXIT = 1032;
     SIM_NOTIFY_VEHICLE_STOPPED = 1033;
-    SIM_NOTIFY_VEHICLE_COLLISION = 1034;
-    SIM_NOTIFY_VEHICLE_CRASH = 1035;
-    SIM_NOTIFY_PASSENGER_EMBARK_START = 1036;
-    SIM_NOTIFY_PASSENGER_EMBARK_END = 1037;
-    SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1038;
-    SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1039;
-    SIM_NOTIFY_TIME = 1040;
+    SIM_NOTIFY_VEHICLE_SPEEDING = 1034;
+    SIM_NOTIFY_VEHICLE_COLLISION = 1035;
+    SIM_NOTIFY_VEHICLE_CRASH = 1036;
+    SIM_NOTIFY_PASSENGER_EMBARK_START = 1037;
+    SIM_NOTIFY_PASSENGER_EMBARK_END = 1038;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1039;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1040;
+    SIM_NOTIFY_TIME = 1041;
 
     SIM_EVENT_TRACK_DISABLED = 1050;
     SIM_EVENT_TRACK_REENABLED = 1051;
@@ -378,21 +379,36 @@ message SimNotifyTime {
     required double             time = 2; // in seconds
 }
 
+// Nose of vehicle has entered a new track segment.
 message SimNotifyVehicleArrive {
     required int32             trackID  = 1;
     required VehicleStatus     v_status = 2;
     required double            time     = 3; // time of status
 }
 
+// Tail of vehicle has exited a track segment.
 message SimNotifyVehicleExit {
     required int32             trackID  = 1;
     required VehicleStatus     v_status = 2;
     required double            time     = 3; // time of status
 }
 
+// Vehicle has come to a complete stop.
 message SimNotifyVehicleStopped {
     required VehicleStatus     v_status = 1;
     required double            time     = 2;
+}
+
+// Vehicle has exceeded the track segment maximum speed or the vehicle's
+// maximum speed (emergency limit). Sent when the vehicle first exceeds the limit
+// and upon arrival at each new track segment (if exceeding the new segment's limit).
+// For simplicity, a vehicle's speed is determined only its nose. If a vehicle
+// is straddling a segment boundry and only the tail is speeding, no notification
+// will be sent.
+message SimNotifyVehicleSpeeding {
+    required VehicleStatus     v_status = 1;
+    required double            time     = 2;
+    required float             speed_limit = 3;
 }
 
 // Used for collisions between two vehicles.

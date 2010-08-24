@@ -1,16 +1,10 @@
 from __future__ import division # use floating point division unless explicitly otherwise
 from math import isnan, isinf   # requires Python 2.6
 
-from numpy import roots, polysub
+from numpy import polysub
 
 from utility import pairwise
-
-
-
-# Optimization notes:
-# Store jerk in addition to other values, since it's recalculated several places.
-#   Associated with this, change trajectory_solver.create_knot_* to accept jerk
-#   instead of acceleration.
+import utility
 
 class Knot(object):
     def __init__(self, position, velocity, acceleration, time):
@@ -233,27 +227,26 @@ class CubicSpline(object):
         # idx is now the left_index for the poly containing target_pos
         coeffs = list(self.coeffs[idx])
         coeffs[-1] -= target_pos # subtract the target_pos from the position coefficient.
-        r = roots(coeffs) # Roots of poly are intersections with target_pos
+        r = utility.real_roots(coeffs[0], coeffs[1], coeffs[2], coeffs[3], threshold=1E-6) # Roots of poly are intersections with target_pos.
 
         # get only the real roots, within the valid range for the poly
         valid_start_time = self.t[idx]
         valid_end_time = self.t[idx+1]
 
-        # weed out imaginary roots, and those outside of the poly's valid range
-        pts = [t.real for t in r if
-               abs(t.imag - 0.0000) < self.TIME_EPSILON and \
-               (t.real >= valid_start_time or abs(t.real - valid_start_time) < self.TIME_EPSILON) and \
-               (t.real <= valid_end_time or abs(t.real - valid_end_time) < self.TIME_EPSILON)]
+        # weed out roots outside of the poly's valid range
+        pts = [t for t in r if
+               (t >= valid_start_time or abs(t - valid_start_time) < self.TIME_EPSILON) and \
+               (t <= valid_end_time or abs(t - valid_end_time) < self.TIME_EPSILON)]
         pts.sort() # want the earliest intersection with target_pos
 
-        # Accept that there's some inexactness, and accept a root that has
-        # an imaginary component.
-        if len(pts) == 0:
-            pts = [t.real for t in r if
-               (t.real >= valid_start_time or abs(t.real - valid_start_time) < self.TIME_EPSILON) and \
-               (t.real <= valid_end_time or abs(t.real - valid_end_time) < self.TIME_EPSILON)]
-            pts.sort()
-            assert abs(self.evaluate(pts[0]).pos - target_pos) < 0.5, (self.evaluate(pts[0]), target_pos) # loose sanity check
+##        # Accept that there's some inexactness, and accept a root that has
+##        # an imaginary component.
+##        if len(pts) == 0:
+##            pts = [t.real for t in r if
+##               (t.real >= valid_start_time or abs(t.real - valid_start_time) < self.TIME_EPSILON) and \
+##               (t.real <= valid_end_time or abs(t.real - valid_end_time) < self.TIME_EPSILON)]
+##            pts.sort()
+##            assert abs(self.evaluate(pts[0]).pos - target_pos) < 0.5, (self.evaluate(pts[0]), target_pos) # loose sanity check
 
         # TODO: use the bisect algo to find roots instead. I don't see a way
         # around the precision loss that occurs in finding the poly's coefficents
@@ -445,14 +438,13 @@ class CubicSpline(object):
             test_coeffs[-1] = test_coeffs[-1] + offset
             test_ti = max(s_ti, o_ti)
             test_tf = min(s_tf, o_tf)
-            r = roots(test_coeffs)
+            r = utility.real_roots(test_coeffs[0], test_coeffs[1], test_coeffs[2], test_coeffs[3], threshold=1E-6)
 
-            # weed out imaginary roots, and those outside of the poly's valid range
-            pts = [t.real for t in r if
-                   abs(t.imag - 0.0000) < self.TIME_EPSILON and \
-                   (t.real >= test_ti or abs(t.real - test_ti) < self.TIME_EPSILON) and \
-                   (t.real <= test_tf or abs(t.real - test_tf) < self.TIME_EPSILON) and \
-                   t.real >= start_time and t.real <= end_time]
+            # weed out roots outside of the poly's valid range
+            pts = [t for t in r if
+                   (t >= test_ti or abs(t - test_ti) < self.TIME_EPSILON) and \
+                   (t <= test_tf or abs(t - test_tf) < self.TIME_EPSILON) and \
+                   t >= start_time and t <= end_time]
             pts.sort() # want the earliest intersection with target_pos
             if len(pts) > 0:
                 return pts[0] # <------ normal exit point

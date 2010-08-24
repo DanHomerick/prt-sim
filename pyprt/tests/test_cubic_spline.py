@@ -10,7 +10,7 @@ from pyprt.shared.cubic_spline import SplineError
 from pyprt.shared.cubic_spline import OutOfBoundsError
 from pyprt.shared.utility import pairwise
 
-class  TestCubicSpline(unittest.TestCase):
+class TestCubicSpline(unittest.TestCase):
     #def setUp(self):
     #    self.foo = TestCubicSpline()
     #

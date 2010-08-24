@@ -564,6 +564,9 @@ class PrtController(BaseController):
         else:
             self.log.warn("Vehicle %s stopped for unknown reason.", str(vehicle))
 
+    def on_SIM_NOTIFY_VEHICLE_SPEEDING(self, msg, msgID, msg_time):
+        self.log.warn("Speed limit violation: %s", str(msg))
+
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
     def __init__(self, scenario_xml, sim_end_time, controller):
@@ -1507,7 +1510,7 @@ class Vehicle(object):
             # doesn't need a separate spline for the decel to station speed limit.
             berth_dist, berth_path = self.manager.get_path(self.ts_id, self.plat_ts)
             berth_knot = Knot(berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
-            spline = self.traj_solver.target_position(current_knot, berth_knot)
+            spline = self.traj_solver.target_position(current_knot, berth_knot, max_speed=self.controller.LINE_SPEED)
             path = berth_path
 
         stop_time = spline.t[-1]

@@ -69,6 +69,7 @@ class SimNotifyTime;
 class SimNotifyVehicleArrive;
 class SimNotifyVehicleExit;
 class SimNotifyVehicleStopped;
+class SimNotifyVehicleSpeeding;
 class SimNotifyVehicleCollision;
 class SimNotifyVehicleCrash;
 class SimNotifyPassengerEmbarkStart;
@@ -219,13 +220,14 @@ enum SimMsgType {
   SIM_NOTIFY_VEHICLE_ARRIVE = 1031,
   SIM_NOTIFY_VEHICLE_EXIT = 1032,
   SIM_NOTIFY_VEHICLE_STOPPED = 1033,
-  SIM_NOTIFY_VEHICLE_COLLISION = 1034,
-  SIM_NOTIFY_VEHICLE_CRASH = 1035,
-  SIM_NOTIFY_PASSENGER_EMBARK_START = 1036,
-  SIM_NOTIFY_PASSENGER_EMBARK_END = 1037,
-  SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1038,
-  SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1039,
-  SIM_NOTIFY_TIME = 1040,
+  SIM_NOTIFY_VEHICLE_SPEEDING = 1034,
+  SIM_NOTIFY_VEHICLE_COLLISION = 1035,
+  SIM_NOTIFY_VEHICLE_CRASH = 1036,
+  SIM_NOTIFY_PASSENGER_EMBARK_START = 1037,
+  SIM_NOTIFY_PASSENGER_EMBARK_END = 1038,
+  SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1039,
+  SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1040,
+  SIM_NOTIFY_TIME = 1041,
   SIM_EVENT_TRACK_DISABLED = 1050,
   SIM_EVENT_TRACK_REENABLED = 1051,
   SIM_EVENT_SWITCH_DISABLED = 1052,
@@ -4052,6 +4054,111 @@ class SimNotifyVehicleStopped : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static SimNotifyVehicleStopped* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class SimNotifyVehicleSpeeding : public ::google::protobuf::Message {
+ public:
+  SimNotifyVehicleSpeeding();
+  virtual ~SimNotifyVehicleSpeeding();
+  
+  SimNotifyVehicleSpeeding(const SimNotifyVehicleSpeeding& from);
+  
+  inline SimNotifyVehicleSpeeding& operator=(const SimNotifyVehicleSpeeding& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SimNotifyVehicleSpeeding& default_instance();
+  
+  void Swap(SimNotifyVehicleSpeeding* other);
+  
+  // implements Message ----------------------------------------------
+  
+  SimNotifyVehicleSpeeding* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const SimNotifyVehicleSpeeding& from);
+  void MergeFrom(const SimNotifyVehicleSpeeding& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required .prt.VehicleStatus v_status = 1;
+  inline bool has_v_status() const;
+  inline void clear_v_status();
+  static const int kVStatusFieldNumber = 1;
+  inline const ::prt::VehicleStatus& v_status() const;
+  inline ::prt::VehicleStatus* mutable_v_status();
+  
+  // required double time = 2;
+  inline bool has_time() const;
+  inline void clear_time();
+  static const int kTimeFieldNumber = 2;
+  inline double time() const;
+  inline void set_time(double value);
+  
+  // required float speed_limit = 3;
+  inline bool has_speed_limit() const;
+  inline void clear_speed_limit();
+  static const int kSpeedLimitFieldNumber = 3;
+  inline float speed_limit() const;
+  inline void set_speed_limit(float value);
+  
+  // @@protoc_insertion_point(class_scope:prt.SimNotifyVehicleSpeeding)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::prt::VehicleStatus* v_status_;
+  double time_;
+  float speed_limit_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static SimNotifyVehicleSpeeding* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -9323,6 +9430,59 @@ inline double SimNotifyVehicleStopped::time() const {
 inline void SimNotifyVehicleStopped::set_time(double value) {
   _set_bit(1);
   time_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// SimNotifyVehicleSpeeding
+
+// required .prt.VehicleStatus v_status = 1;
+inline bool SimNotifyVehicleSpeeding::has_v_status() const {
+  return _has_bit(0);
+}
+inline void SimNotifyVehicleSpeeding::clear_v_status() {
+  if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
+  _clear_bit(0);
+}
+inline const ::prt::VehicleStatus& SimNotifyVehicleSpeeding::v_status() const {
+  return v_status_ != NULL ? *v_status_ : *default_instance_->v_status_;
+}
+inline ::prt::VehicleStatus* SimNotifyVehicleSpeeding::mutable_v_status() {
+  _set_bit(0);
+  if (v_status_ == NULL) v_status_ = new ::prt::VehicleStatus;
+  return v_status_;
+}
+
+// required double time = 2;
+inline bool SimNotifyVehicleSpeeding::has_time() const {
+  return _has_bit(1);
+}
+inline void SimNotifyVehicleSpeeding::clear_time() {
+  time_ = 0;
+  _clear_bit(1);
+}
+inline double SimNotifyVehicleSpeeding::time() const {
+  return time_;
+}
+inline void SimNotifyVehicleSpeeding::set_time(double value) {
+  _set_bit(1);
+  time_ = value;
+}
+
+// required float speed_limit = 3;
+inline bool SimNotifyVehicleSpeeding::has_speed_limit() const {
+  return _has_bit(2);
+}
+inline void SimNotifyVehicleSpeeding::clear_speed_limit() {
+  speed_limit_ = 0;
+  _clear_bit(2);
+}
+inline float SimNotifyVehicleSpeeding::speed_limit() const {
+  return speed_limit_;
+}
+inline void SimNotifyVehicleSpeeding::set_speed_limit(float value) {
+  _set_bit(2);
+  speed_limit_ = value;
 }
 
 // -------------------------------------------------------------------
