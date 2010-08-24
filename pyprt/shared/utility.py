@@ -198,11 +198,9 @@ def cubic_roots(A,B,C,D, threshold=None):
     Q_3 = Q*Q*Q
 
     # Allow for some rounding error, with an emphasis on finding more roots
-    if abs(R_2 - Q_3) < 1E-12:
+    if abs(R_2 - Q_3) < 1E-14:
         if R_2 > 0:
             Q_3 = R_2
-        else:
-            R_2 = Q_3
 
     if R_2 <= Q_3 and Q_3 != 0: # Has three real roots
         RQ_temp = R/math.pow(Q, 3/2)

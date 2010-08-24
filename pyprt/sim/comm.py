@@ -52,7 +52,7 @@ def receive(sock, queue, comm_idx):
         hdr = ''.join(hdr) # concatenate strings
 
         msg_sep, msg_type, msgID, msg_time, msg_size \
-                = struct.unpack('>hhiii', hdr)
+               = struct.unpack('>hhiii', hdr)
         # TODO: Subtype Exception,  and handle
         if msg_sep != api.MSG_SEP:
             err_msg = api.SimMsgHdrInvalidSeparator()
@@ -119,7 +119,7 @@ class ControlInterface(Sim.Process):
         elif isinstance(log, file):
             self.log = log
         else:
-	    self.log = os.devnull
+            self.log = os.devnull
 
         self.TCP_server_socket = None
         self.UDP_server_socket = None
@@ -177,8 +177,8 @@ class ControlInterface(Sim.Process):
             sendQ = Queue.Queue(-1) # no size limit
             self.sendQs.append(sendQ)
             transmit_thread = threading.Thread(target = transmit,
-                                           name='sim_transmitter_'+str(idx),
-                                           args = (sock, sendQ))
+                                               name='sim_transmitter_'+str(idx),
+                                               args = (sock, sendQ))
             transmit_thread.setDaemon(True)
             transmit_thread.start()
 
@@ -501,7 +501,7 @@ class ControlInterface(Sim.Process):
             err.msg_time = msg_time
             self.send(api.SIM_MSG_HDR_INVALID_TIME, err)
             logging.error("Time stamp for RCVD message %s type %s in the past. Stamp: %s Now: %s ",
-                  msgID, msg_type, msg_time, ms_now())
+                          msgID, msg_type, msg_time, ms_now())
             common.errors += 1
 
         return msg_type
@@ -543,19 +543,19 @@ class ControlInterface(Sim.Process):
             # list of events to run.
             Sim.reactivate(self, prior=False)
 
-	if self.log != os.devnull:
-		print >> self.log, "Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
-			 (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
-		text_format.PrintMessage(msg, out=self.log)
-		print >> self.log, "--"
+        if self.log != os.devnull:
+            print >> self.log, "Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
+                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
+            text_format.PrintMessage(msg, out=self.log)
+            print >> self.log, "--"
 
     def log_rcvd_msg(self, msg_type, msgID, msg_time, msg):
         # log msg
-	if self.log != os.devnull:
-		print >> self.log, "Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
-                 (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
-		text_format.PrintMessage(msg, out=self.log)
-		print >> self.log, "--"
+        if self.log != os.devnull:
+            print >> self.log, "Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
+                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
+            text_format.PrintMessage(msg, out=self.log)
+            print >> self.log, "--"
 
     def get_trackSeg(self, ID):
         """"Return the TrackSegment object specified by the ID.

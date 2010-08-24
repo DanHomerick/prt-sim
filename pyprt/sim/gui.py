@@ -177,7 +177,7 @@ class MainWindow(wx.Frame):
                 import warnings
                 warnings.warn("Profiling code that is in debug mode!")
             sim_thread = threading.Thread(name='sim_thread_profiled',
-                                          target=main.run_sim,
+                                          target=main.run_sim_profiled,
                                           args=[end_time, self.sim_end_callback])
 
         sim_thread.setDaemon(True)
