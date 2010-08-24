@@ -1871,7 +1871,7 @@ class Merge(object):
         # merge that they can get up to full speed.
         # TODO: Move this check to be in a function dedicated to validating the scenario as soon as it is received.
 ##        if now == 0.0 and vehicle.get_dist_to_line_speed() > dist:
-##            raise FatalTrajectoryError
+##            raise FatalTrajectoryError(initial_knot, final_knot)
 
         # If the vehicle isn't to the decision point yet, then delay managing it.
         # Don't require that the vehicle not be past the decision point, so that

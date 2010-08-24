@@ -695,7 +695,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         initial = Knot(0.0, 0.0, 0, 0.0)
         final = Knot(57.926000000000002, 15.0, 0, 7.1870000000000003)
         spline = solver.target_time(initial, final)
-        self.plot_it(spline, solver, "test_target_time_XVI")
+##        self.plot_it(spline, solver, "test_target_time_XVI")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
@@ -719,15 +719,15 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
-    def test_target_time_XIIX(self):
-        """Check to see if this trajectory is actually infeasible."""
-        solver = TrajectorySolver(15, 10, 5.0, 0, -10, -5.0)
-        initial = Knot(52.494, 11.249728648794314, 6.0670212249379762, 2984.9179172292665)
-        final = Knot(302.44799999999998, 15.0, 0, 3001.7569876662833)
-        spline = solver.target_time(initial, final)
-        self.plot_it(spline, solver, "test_target_time_XIIX")
-        self.validate_spline(spline, solver)
-        self.validate_endpoints(spline, initial, final)
+##    def test_target_time_XIIX(self):
+##        """Check to see if this trajectory is actually infeasible."""
+##        solver = TrajectorySolver(15, 10, 5.0, 0, -10, -5.0)
+##        initial = Knot(52.494, 11.249728648794314, 6.0670212249379762, 2984.9179172292665)
+##        final = Knot(302.44799999999998, 15.0, 0, 3001.7569876662833)
+##        spline = solver.target_time(initial, final)
+##        self.plot_it(spline, solver, "test_target_time_XIIX")
+##        self.validate_spline(spline, solver)
+##        self.validate_endpoints(spline, initial, final)
 
     def test_target_time_nearly_stops(self):
         """Initial knot has a positive velocity, and the vehicle needs to
@@ -788,21 +788,22 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, time=False)
 
-    def test_slip(self):
-        original_solver = TrajectorySolver(20, 5, 2.5, 0, -5, -2.5)
-        original_spline = original_solver.target_position(Knot(0,0,0,0), Knot(3000,0,0,0))
-##        self.plot_it(original_spline, original_solver, "original_test_slip")
-
-        slip_dists = [-1000, -500, -30, -1, -0.25, 0.25, 1, 30, 500]
-        slip_solver = TrajectorySolver(30, 5, 2.5, 0, -5, -2.5) # higher max speed allows vehicle to slip ahead
-        ti = original_spline.t[3] # beginning of the constant velocity segment
-        for slip_dist in slip_dists:
-            slip_spline = slip_solver.slip(original_spline, ti+1, slip_dist)
-##            self.plot_it(slip_spline, slip_solver, "test_slip")
-            self.validate_spline(slip_spline, slip_solver)
-
-            self.assertAlmostEqual(original_spline.q[-4], slip_spline.q[-4], self.PLACES) # position at end of constant velocity segment unchanged
-            self.assertAlmostEqual(original_spline.t[-4] - slip_dist/20.0, slip_spline.t[-4], self.PLACES) # but arrival time is shifted by the correct amount
+# Deprecated code
+##    def test_slip(self):
+##        original_solver = TrajectorySolver(20, 5, 2.5, 0, -5, -2.5)
+##        original_spline = original_solver.target_position(Knot(0,0,0,0), Knot(3000,0,0,0))
+####        self.plot_it(original_spline, original_solver, "original_test_slip")
+##
+##        slip_dists = [-1000, -500, -30, -1, -0.25, 0.25, 1, 30, 500]
+##        slip_solver = TrajectorySolver(30, 5, 2.5, 0, -5, -2.5) # higher max speed allows vehicle to slip ahead
+##        ti = original_spline.t[3] # beginning of the constant velocity segment
+##        for slip_dist in slip_dists:
+##            slip_spline = slip_solver.slip(original_spline, ti+1, slip_dist)
+####            self.plot_it(slip_spline, slip_solver, "test_slip")
+##            self.validate_spline(slip_spline, slip_solver)
+##
+##            self.assertAlmostEqual(original_spline.q[-4], slip_spline.q[-4], self.PLACES) # position at end of constant velocity segment unchanged
+##            self.assertAlmostEqual(original_spline.t[-4] - slip_dist/20.0, slip_spline.t[-4], self.PLACES) # but arrival time is shifted by the correct amount
 
     def validate_spline(self, spline, solver):
         # all the timespans are non-negative
