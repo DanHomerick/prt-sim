@@ -56,9 +56,7 @@ class CubicSpline(object):
         self.t = times
         self.h = self.make_intervals()
 
-        self.coeffs = []
-        for idx in range(len(self.h)):
-            self.coeffs.append(self.make_coeffs(idx))
+        self._coeffs = None
 
     def __str__(self):
         coeffs_str = ''.join('\n\t\t' + str(c) for c in self.coeffs)
@@ -71,10 +69,23 @@ class CubicSpline(object):
     def __getitem__(self, key):
         return Knot(self.q[key], self.v[key], self.a[key], self.t[key])
 
+    @property
+    def coeffs(self):
+        if self._coeffs is None:
+            self._coeffs = []
+            for idx in range(len(self.h)):
+                self._coeffs.append(self.make_coeffs(idx))
+
+        return self._coeffs
+
     def copy(self):
-        # OPTIMIZATION: Test if efficiency gained from copying the intervals and
-        # coeffs, rather than recalculating them, would be worth the extra effort
-        return CubicSpline(self.q[:], self.v[:], self.a[:], self.j[:], self.t[:])
+        # OPTIMIZATION: Test if efficiency gained from copying the intervals
+        # would be worth the extra effort. Would need to make intervals be calculated
+        # lazily, and explicitly set them before returning the new spline.
+        spline = CubicSpline(self.q[:], self.v[:], self.a[:], self.j[:], self.t[:])
+        if self._coeffs is not None:
+            spline._coeffs = self._coeffs[:]
+        return spline
 
     def append(self, knot, jerk):
         """Append a new knot to the end of the spline. A SplineError is raised
@@ -90,7 +101,9 @@ class CubicSpline(object):
         if len(self.t) >= 2:
             self.j.append(jerk)
             self.h.append(self.t[-1] - self.t[-2])
-            self.coeffs.append(self.make_coeffs(len(self.h)-1))
+
+        if self._coeffs is not None and self.h:
+            self._coeffs.append(self.make_coeffs(len(self.h)-1))
 
     def make_intervals(self):
         return [(tf - ti) for ti, tf in pairwise(self.t)]
@@ -105,14 +118,18 @@ class CubicSpline(object):
             raise SplineError
 
         try:
-            return CubicSpline(self.q + other.q[1:], # + operator returns a new list.
-                               self.v + other.v[1:], # contents of lists are primatives
-                               self.a + other.a[1:], # so copies are made.
-                               self.j + other.j,
-                               self.t + other.t[1:])
+            spline = CubicSpline(self.q + other.q[1:], # + operator returns a new list.
+                                 self.v + other.v[1:], # contents of lists are primatives
+                                 self.a + other.a[1:], # so copies are made.
+                                 self.j + other.j,
+                                 self.t + other.t[1:])
+            if self._coeffs is not None and other._coeffs is not None:
+                spline._coeffs = self._coeffs + other._coeffs
         except IndexError:
             # other has < 2 elements
-            return self.copy()
+            spline = self.copy()
+
+        return spline
 
     def time_shift(self, sec):
         """Returns a new spline which has been shifted in time by 'sec'
@@ -178,7 +195,7 @@ class CubicSpline(object):
         within the spline's valid range."""
 
         # Optimization note: This is about 5 times faster than using a call to
-        # numpy.polyval, even though the poly coefficients are precalculated.
+        # numpy.polyval, even when the poly coefficients are precalculated.
         t = self.t
         if time < t[0] or time > t[-1]:
             raise OutOfBoundsError(t[0], t[-1], time)
@@ -225,7 +242,10 @@ class CubicSpline(object):
             raise OutOfBoundsError(self.q[0], self.q[-1], target_pos)
 
         # idx is now the left_index for the poly containing target_pos
-        coeffs = list(self.coeffs[idx])
+        if self._coeffs is None:
+            coeffs = list(self.make_coeffs(idx)) # Just make the coeffs for the one knot interval that we care about.
+        else:
+            coeffs = list(self._coeffs[idx])
         coeffs[-1] -= target_pos # subtract the target_pos from the position coefficient.
         r = utility.real_roots(coeffs[0], coeffs[1], coeffs[2], coeffs[3], threshold=1E-6) # Roots of poly are intersections with target_pos.
 
@@ -363,11 +383,18 @@ class CubicSpline(object):
         start_knot = self.evaluate(start_time)
         end_knot = self.evaluate(end_time)
 
-        return CubicSpline([start_knot.pos] + self.q[start_idx:end_idx] + [end_knot.pos],
+        spline = CubicSpline([start_knot.pos] + self.q[start_idx:end_idx] + [end_knot.pos],
                              [start_knot.vel] + self.v[start_idx:end_idx] + [end_knot.vel],
                              [start_knot.accel] + self.a[start_idx:end_idx] + [end_knot.accel],
                              self.j[start_idx-1:end_idx],
                              [start_knot.time] + self.t[start_idx:end_idx] + [end_knot.time])
+
+        # Reuse the already calculated coeffs. At the end segments, the
+        # coefficients are unchanged, they're just valid for shorter time spans.
+        if self._coeffs is not None:
+            coeffs = self._coeffs[start_idx-1:end_idx]
+
+        return spline
 
 ##    def extend(self, spline):
 ##        """Merges a CubicSpline instance with this. If there is overlap in the
@@ -420,6 +447,8 @@ class CubicSpline(object):
         except OutOfBoundsError:
             return None
 
+        # Create a pair of iterators for self and other. Iterate over the splines
+        # supplying (coeffs, (start_valid_time, end_valid_time)) tuples
         s_iter = iter(zip(self.coeffs[self_idx_start:self_idx_end],
                                      pairwise(self.t[self_idx_start:self_idx_end+1])))
 
