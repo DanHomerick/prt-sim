@@ -86,6 +86,9 @@ class TestUtility(unittest.TestCase):
 ####                        coeffs = [a,b,c,d]
 ####                        self.check_roots(coeffs, threshold=1E-8)
 
+    def test_cubic_roots_II(self):
+        """Excercises the cubic root finder when it uses the 'if abs(R_2 - Q_3) < 1E-14:' code path."""
+        self.check_roots([0.83333333333333337, -4.3362704036527395, 7.5212964054378766, -4.3485833333333321], correct=[1.7344879404273357])
 
 def quadratic_roots_timing():
     print timeit.repeat('utility.quadratic_roots(2,-12,17,1.0)', setup='import pyprt.shared.utility as utility', number=1000)

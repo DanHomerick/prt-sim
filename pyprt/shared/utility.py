@@ -201,6 +201,7 @@ def cubic_roots(A,B,C,D, threshold=None):
     if abs(R_2 - Q_3) < 1E-14:
         if R_2 > 0:
             Q_3 = R_2
+            Q = math.pow(Q_3, 1/3)
 
     if R_2 <= Q_3 and Q_3 != 0: # Has three real roots
         RQ_temp = R/math.pow(Q, 3/2)
