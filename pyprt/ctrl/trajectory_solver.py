@@ -994,8 +994,6 @@ class TrajectorySolver(object):
         q[1] = j[0]*t01*t01_2/6 + a[0]*t01_2/2 + v[0]*t01 + q[0]
 
         t23 = -a[2]/j[2]
-        if t23 < 0:
-            raise TrajectoryError()
         t23_2 = t23*t23
         v[2] = v[3] - (j[2]*t23_2/2 + a[2]*t23) # v3 - v23
 
