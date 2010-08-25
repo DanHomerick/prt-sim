@@ -399,6 +399,16 @@ class  TestTrajectorySolver(unittest.TestCase):
 ##        self.assertAlmostEqual(spline.q[-1], 100, self.PLACES)
 ##        self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
 ##        self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
+    def test_target_position_X(self):
+        """Starts with 20.0001 velocity, ends with 20 velocity."""
+        solver = TrajectorySolver(60, 10, 6, 0, -10, -6)
+        initial = Knot(2.00000000000274,20.00000000111,2.273736e-13,1367.1)
+        final = Knot(997.62,20.0, 0, 1384.79)
+        spline = solver.target_position(initial, final, 20)
+##        self.plot_it(spline, solver, "test_target_position_X")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final, time=False)
+
 
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
