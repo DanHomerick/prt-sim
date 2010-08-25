@@ -8,12 +8,12 @@ package edu.ucsc.track_builder
 	public class VehicleModels extends EventDispatcher // allows binding
 	{
 		[Bindable]
-		public var models:Vector.<VehicleModel>;
+		public var models:Array; // Using an Array instead of a Vector because ArrayCollection doesn't support Vectors.
 		
 		public function VehicleModels()
 		{
 			super();
-			this.models = new Vector.<VehicleModel>()
+			this.models = new Array();
 		}
 				
 		/** Returns XML containing all vehicle models. */
@@ -89,7 +89,7 @@ package edu.ucsc.track_builder
 		}
 		
 		public function fromPrefsXML(xml:XMLList):void {
-			this.models = new Vector.<VehicleModel>();
+			this.models = new Array();
 			for each (var modelXML:XML in xml) {
 				var model:VehicleModel = VehicleModel.fromXML(modelXML);
 				this.models.push(model)					

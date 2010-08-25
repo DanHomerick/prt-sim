@@ -17,14 +17,15 @@ package edu.ucsc.track_builder
 	/** Acts as a factory for TrackSegments and TrackOverlays.
 	 * Keeps references to both of them.
 	 * Contains some handlers for GUI events relating to tracks. */	
+	[Bindable]
 	public class Tracks
 	{
 		/* Values that are controlled by the GUI */
 		public var label:String = "";		
-		[Bindable] public var straightMaxSpeed:Number;
-		[Bindable] public var curveMaxSpeed:Number;
-		[Bindable] public var offset:Number = 0; 		
-		[Bindable] public var radius:Number;
+		public var straightMaxSpeed:Number;
+		public var curveMaxSpeed:Number;
+		public var offset:Number = 0; 		
+		public var radius:Number;
 		public var minOffset:Number;
 		public var maxOffset:Number;
 		/** For bidirectional track. Indicates which side vehicles move forward on. One of: Tracks.LEFT or Tracks.RIGHT. */ 
@@ -36,13 +37,13 @@ package edu.ucsc.track_builder
 		/** Length of the accel segment of a connecting ramp. */
 		public var accelLength:Number;
 		/** Max speed on the turn segment of a connecting ramp. */
-		[Bindable] public var turnMaxSpeed:Number;
+		public var turnMaxSpeed:Number;
 		/** Radius for the turn segment of a connecting ramp. */
-		[Bindable] public var turnRadius:Number;
+		public var turnRadius:Number;
 		/** Max speed on the s-curve segment of a connecting ramp. */
-		[Bindable] public var sCurveMaxSpeed:Number;
+		public var sCurveMaxSpeed:Number;
 		/** Radius for the curved segments in an S-curve. */		
-		[Bindable] public var sCurveRadius:Number;
+		public var sCurveRadius:Number;
 		
 		/** Meters between elevation checks along a TrackSegment */
 		public var elevationSpacing:Number = 10; // TODO: Hardcoded. Expose to UI, add to prefs file!

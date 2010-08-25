@@ -20,6 +20,7 @@ package edu.ucsc.track_builder
 		public var reverse:Boolean = false;
 		[Bindable] public var lateralOffset:Number;
 		[Bindable] public var accelLength:Number;
+		[Bindable] public var decelLength:Number;
 		[Bindable] public var slotLength:Number;		
 		[Bindable] public var queueSlots:uint;
 		[Bindable] public var unloadSlots:uint;
@@ -114,7 +115,7 @@ package edu.ucsc.track_builder
 
 			var stationBundle:TrackBundle = new TrackBundle();
 			
-			// Shadow Stations.reverse with a local reverse. Only true when the overlay is bidirectional.
+			// Shadow Stations.reverse with a local reverse. False when overlay is not bidirectional.
 			var reverse:Boolean = this.reverse && mainLineOverlay.bidirectional;
 									
 			var bypass:TrackSegment;
@@ -127,7 +128,7 @@ package edu.ucsc.track_builder
 			// make the off ramp (squiggle + decel run)
 			var bypassVec:Vector3D = Utility.calcVectorFromLatLngs(bypass.getStart(), bypass.getEnd());
 			bypassVec.normalize();
-			var offRamp:TrackBundle = Globals.tracks.makeRamp(bypassVec, stationStart, this.accelLength, this.lateralOffset,
+			var offRamp:TrackBundle = Globals.tracks.makeRamp(bypassVec, stationStart, this.decelLength, this.lateralOffset,
 					Globals.tracks.radius, Globals.tracks.driveSide, Tracks.OFF_RAMP, Globals.tracks.sCurveMaxSpeed, 
 					bypass.getStartOffset(), bypass.getEndOffset(), preview);
 			
@@ -296,6 +297,7 @@ package edu.ucsc.track_builder
 			                        reverse={reverse}
 			                        lateral_offset={lateralOffset}
 			                        accel_length={accelLength}
+			                        decel_length={decelLength}
 			                        slot_length={slotLength}
 			                        queue_slots={queueSlots}
 			                        unload_slots={unloadSlots}
@@ -313,8 +315,9 @@ package edu.ucsc.track_builder
 			var xml:XML = <Stations
 							max_speed="3.5"
 							reverse="0"
-							lateral_offset="5"
+							lateral_offset="2.0"
 							accel_length="42.5"
+							decel_length="42.5"
 							slot_length="5"
 							queue_slots="2"
 							unload_slots="3"
@@ -332,6 +335,7 @@ package edu.ucsc.track_builder
 			reverse = xml.@reverse == 'false' || xml.@reverse == '0' ? false : true;
 			lateralOffset = xml.@lateral_offset;
 			accelLength = xml.@accel_length;
+			decelLength = xml.@decel_length;
 			slotLength = xml.@slot_length;
 			queueSlots = xml.@queue_slots;
 			unloadSlots = xml.@unload_slots;

@@ -34,9 +34,9 @@ package edu.ucsc.track_builder
 		public static var tool:int; // Which tool is being used. Uses above constants.	
 		
 		// Holds instances of the top level containers
-		public static var tracks:Tracks = new Tracks(Tracks.RIGHT);
-		public static var stations:Stations = new Stations();
-		public static var vehicles:Vehicles = new Vehicles();		
+		[Bindable] public static var tracks:Tracks = new Tracks(Tracks.RIGHT);
+		[Bindable] public static var stations:Stations = new Stations();
+		[Bindable] public static var vehicles:Vehicles = new Vehicles();		
 		[Bindable] public static var vehicleModels:VehicleModels = new VehicleModels();
 		
 		// a couple new pane ids, in addition to the existing ones:

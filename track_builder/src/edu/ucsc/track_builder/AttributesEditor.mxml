@@ -5,16 +5,21 @@
 	
 	<mx:Script>
 		<![CDATA[
+			import mx.core.UIComponent;
+			import mx.utils.ArrayUtil;
 			import mx.controls.Alert;
 			import __AS3__.vec.Vector;
-			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayCollection;			
 			
-			[Bindable]
-			public var vehicleModelCollection:ArrayCollection;
-			public var vmCollection:ArrayCollection;
+			/** Used to supply the Vehicle tab with data for its vehicle model combobox. Contains VehicleModel objects.*/
+			[Bindable] public var vehicleModelCollection:ArrayCollection;
+			
+			/** Used to supply the VehicleModel tab with data for its vehicle model combobox.			 
+			 */ 
+			[Bindable] public var vmCollection:ArrayCollection;
 			
 			private function initVehicleModels():void {
-				vehicleModelCollection = new ArrayCollection(Globals.vehicleModels.modelNames);
+				vehicleModelCollection = new ArrayCollection(Globals.vehicleModels.models);
 								
 				vmCollection = new ArrayCollection(Globals.vehicleModels.modelNames);
 				vmCollection.addItem("New Model");				
@@ -60,7 +65,7 @@
 				var name:String = vmComboBox.selectedItem as String;
 				if (name != 'New Model') {
 					// Check that the model is not the currently selected model for placing new vehicles.
-					if (name == Globals.vehicles.modelName) {
+					if (name == Globals.vehicles.model.modelName) {
 						Alert.show(name + " is the currently selected model for creating new vehicles and cannot be deleted.",
 						           "Cannot Delete", 0, this)
 						return;
@@ -117,7 +122,7 @@
 								)
 					Globals.vehicleModels.models.push(model);
 					vmCollection.addItemAt(model.modelName, vmCollection.length-1);
-					vehicleModelCollection.addItem(model.modelName);							
+					vehicleModelCollection.addItem(model);							
 				}
 				
 				// Update the existing model with the form data.
@@ -196,6 +201,33 @@
 //	
 //			}
 			
+			/** Finds the deceleration distance from full speed to station max speed,
+			 * where full speed is defined as min(trackMaxSpeed, vehicleMaxSpeed).
+			 * Assumes that the vehicle does not begin decelerating until its tail is on the decel stretch.
+			 */ 
+			private function decelDistRequired(stationMaxSpeed:Number, vehicleMaxSpeed:Number, trackMaxSpeed:Number, maxAccel:Number, maxJerk:Number, vehicleLength:Number):Number {
+				var fullSpeed:Number = Math.min(vehicleMaxSpeed, trackMaxSpeed);
+	            var distReq:Number = Utility.distanceFromVelocityChange(fullSpeed, stationMaxSpeed, Math.abs(maxAccel), Math.abs(maxJerk));
+	            return distReq + vehicleLength
+			}
+
+			/** Finds the accceleration distance from 0 to full speed,
+			 * where full speed is defined as min(trackMaxSpeed, vehicleMaxSpeed).
+			 */ 
+			private function accelDistRequired(vehicleMaxSpeed:Number, trackMaxSpeed:Number, maxAccel:Number, maxJerk:Number):Number {
+				var fullSpeed:Number = Math.min(vehicleMaxSpeed, trackMaxSpeed);
+	            var distReq:Number = Utility.distanceFromVelocityChange(0, fullSpeed, Math.abs(maxAccel), Math.abs(maxJerk));
+	            return distReq;
+			}
+			
+			private function redIfLessThan(value1:Number, value2:Number, ui:UIComponent):void {
+				if (value1 < value2) {
+					ui.setStyle("color", 0xFF0000);
+				} else {
+					ui.setStyle("color", 0x000000);
+				} 	
+			} 
+			
 		]]>
 	</mx:Script>
 
@@ -244,7 +276,7 @@
 						<mx:NumericStepper id="curveRadius" minimum="0" maximum="999" stepSize="5"
 										   change="Globals.tracks.radius = curveRadius.value"
 										   initialize="curveRadius.value = Globals.tracks.radius;"/>
-						<mx:Label text= "accel: {(Globals.tracks.curveMaxSpeed * Globals.tracks.curveMaxSpeed / Globals.tracks.radius / 9.8).toFixed(2) + ' g'}"
+						<mx:Label text= "lateral: {(Globals.tracks.curveMaxSpeed * Globals.tracks.curveMaxSpeed / Globals.tracks.radius / 9.8).toFixed(2) + ' g'}"
 								  fontStyle="italic" paddingBottom="5"
 						          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />
 					</mx:HBox>	
@@ -285,7 +317,7 @@
 						<mx:NumericStepper id="sCurveRadiusStepper" minimum="1" maximum="999" stepSize="1"
 										   change="Globals.tracks.sCurveRadius = sCurveRadiusStepper.value;"
 										   initialize="sCurveRadiusStepper.value = Globals.tracks.sCurveRadius;" />				    	
-						<mx:Label text= "accel: {(Globals.tracks.sCurveMaxSpeed * Globals.tracks.sCurveMaxSpeed / Globals.tracks.sCurveRadius / 9.8).toFixed(2) + ' g'}"
+						<mx:Label text= "lateral: {(Globals.tracks.sCurveMaxSpeed * Globals.tracks.sCurveMaxSpeed / Globals.tracks.sCurveRadius / 9.8).toFixed(2) + ' g'}"
 														  fontStyle="italic" paddingBottom="5"
 												          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />				    </mx:HBox>
 				</mx:FormItem>								
@@ -303,7 +335,7 @@
 						<mx:NumericStepper id="turnRadiusStepper" minimum="1" maximum="999" stepSize="1" 
 										   change="Globals.tracks.turnRadius = turnRadiusStepper.value;"
 										   initialize="turnRadiusStepper.value = Globals.tracks.turnRadius;" />						
-						<mx:Label text= "accel: {(Globals.tracks.turnMaxSpeed * Globals.tracks.turnMaxSpeed / Globals.tracks.turnRadius / 9.8).toFixed(2) + ' g'}"
+						<mx:Label text= "lateral: {(Globals.tracks.turnMaxSpeed * Globals.tracks.turnMaxSpeed / Globals.tracks.turnRadius / 9.8).toFixed(2) + ' g'}"
 														  fontStyle="italic" paddingBottom="5"
 												          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />					</mx:HBox>
 				</mx:FormItem>				
@@ -335,33 +367,70 @@
                 	        change="Globals.stations.lateralOffset = stationLateralOffset.value;"
                 	        initialize="stationLateralOffset.value = Globals.stations.lateralOffset;" />
                 </mx:FormItem>
-                
-                <mx:FormItem label="Accel/Decel Length:"
-                	         toolTip="Length of track required to bring vehicle down to station entrance speed, or up to line speed (whichever is greater).">
-                	<mx:NumericStepper id="stationAccelLength" minimum="2" maximum="500" stepSize="0.5"
-                	        change="Globals.stations.accelLength = stationAccelLength.value;"
-                	        initialize="stationAccelLength.value = Globals.stations.accelLength;" />                	 		 
+
+                <mx:FormItem label="Decel Length:" >
+                	<mx:HBox>                		                
+		            	<mx:NumericStepper id="stationDecelLength" minimum="0" maximum="999" stepSize="0.5"
+							toolTip="Straight length of off-mainline track used for slowing a vehicle down to the station's entrance speed."
+							change="Globals.stations.decelLength = stationDecelLength.value;"
+							initialize="stationDecelLength.value = Globals.stations.decelLength;" 
+							valueCommit="redIfLessThan(stationDecelLength.value, Number(stationDecelLengthGuide.text), stationDecelLengthGuide)" />
+						<mx:Label text="Recommended:" fontStyle="italic"
+							toolTip="Distance required to slow to station speed. Takes into account the current values of: straight track speed, station speed, vehicle length, and 'normal' vehicle parameters (max speed, accel, jerk) for currently selected vehicle."/>
+		            	<mx:Label id="stationDecelLengthGuide"
+							fontStyle="italic"
+							toolTip="Distance required to slow to station speed. Takes into account the current values of: straight track speed, station speed, vehicle length, and 'normal' vehicle parameters (max speed, accel, jerk) for currently selected vehicle."
+							text="{decelDistRequired(Globals.stations.maxSpeed,
+													 Globals.vehicles.model.velMaxNorm,
+							                         Globals.tracks.straightMaxSpeed,
+							                         Globals.vehicles.model.accelMaxNorm,
+							                         Globals.vehicles.model.jerkMaxNorm,
+							                         Globals.vehicles.model.length).toFixed(1)}" 
+							valueCommit="redIfLessThan(stationDecelLength.value, Number(stationDecelLengthGuide.text), stationDecelLengthGuide)" />
+						
+        	        </mx:HBox>                	 		 
                 </mx:FormItem>
+
                 
+                <mx:FormItem label="Accel Length:" >                	         
+                	<mx:HBox>
+		            	<mx:NumericStepper id="stationAccelLength" minimum="0" maximum="999" stepSize="0.5"
+	            			toolTip="Straight length of off-mainline track used for accelerating a vehicle up to full speed."		            			
+	            	        change="Globals.stations.accelLength = stationAccelLength.value;"
+	            	        initialize="stationAccelLength.value = Globals.stations.accelLength;"
+	            	        valueCommit="redIfLessThan(stationAccelLength.value, Number(stationAccelLengthGuide.text), stationAccelLengthGuide)" />
+						<mx:Label text="Recommended:" fontStyle="italic"
+							toolTip="Distance required to accelerate to full speed. Takes into account the current values of: straight track speed, and 'normal' vehicle parameters (max speed, accel, jerk) for currently selected vehicle."/>
+		            	<mx:Label id="stationAccelLengthGuide"
+							fontStyle="italic"
+							toolTip="Distance required to accelerate to full speed. Takes into account the current values of: straight track speed, and 'normal' vehicle parameters (max speed, accel, jerk) for currently selected vehicle."
+							text="{accelDistRequired(Globals.vehicles.model.velMaxNorm,
+							                         Globals.tracks.straightMaxSpeed,
+							                         Globals.vehicles.model.accelMaxNorm,
+							                         Globals.vehicles.model.jerkMaxNorm).toFixed(1)}"
+							valueCommit="redIfLessThan(stationAccelLength.value, Number(stationAccelLengthGuide.text), stationAccelLengthGuide)" />
+        	        </mx:HBox>
+                </mx:FormItem>
+              
                 <mx:FormItem label="Slot Length:" toolTip="Per slot length">
                 	<mx:NumericStepper id="stationSlotLength" minimum="0" maximum="200" stepSize="0.5"
                 		change="Globals.stations.slotLength = stationSlotLength.value;"
                 		initialize="stationSlotLength.value = Globals.stations.slotLength;" />
+                </mx:FormItem>
+
+                <mx:FormItem label="Unload Slots:" toolTip="Number of independent unloading berths.">
+                        <mx:NumericStepper id="stationUnloadSlots" minimum="0" maximum="100" stepSize="1"
+                    	change="Globals.stations.unloadSlots = stationUnloadSlots.value;"
+                    	initialize="stationUnloadSlots.value = Globals.stations.unloadSlots;" />  
                 </mx:FormItem>
                                 
                 <mx:FormItem label="Queue Slots:" toolTip="Number of slots for vehicles waiting to unload. Assumed to be inline with the rest of the station's track.">
                     <mx:NumericStepper id="stationQueueSlots" minimum="0" maximum="100" stepSize="1"
                     	change="Globals.stations.queueSlots = stationQueueSlots.value;"
                     	initialize="stationQueueSlots.value = Globals.stations.queueSlots;" />                    	
-                </mx:FormItem>
+                </mx:FormItem>               
                 
-                <mx:FormItem label="Unload Slots:" toolTip="Number of independent unloading berths.">
-                        <mx:NumericStepper id="stationUnloadSlots" minimum="0" maximum="100" stepSize="1"
-                    	change="Globals.stations.unloadSlots = stationUnloadSlots.value;"
-                    	initialize="stationUnloadSlots.value = Globals.stations.unloadSlots;" />  
-                </mx:FormItem>
-                
-                <mx:FormItem label="Loading Slots:" toolTip="Number of independent loading berths.">
+                <mx:FormItem label="Load Slots:" toolTip="Number of independent loading berths.">
                     <mx:NumericStepper id="stationLoadSlots" minimum="0" maximum="100" stepSize="1" 
                     	change="Globals.stations.loadSlots = stationLoadSlots.value;"
                     	initialize="stationLoadSlots.value = Globals.stations.loadSlots;" /> 
@@ -405,8 +474,9 @@
                 </mx:FormItem>
 
 				<mx:FormItem label="Vehicle Model">
-					<mx:ComboBox id="vehicleModelComboBox" dataProvider="{vehicleModelCollection}"
-						change="Globals.vehicles.modelName = event.currentTarget.selectedItem;" />	
+					<mx:ComboBox id="vehicleModelComboBox" dataProvider="{vehicleModelCollection}" labelField="modelName"
+						change="Globals.vehicles.model = event.currentTarget.selectedItem;"
+						initialize="vehicleModelComboBox.selectedIndex = vehicleModelCollection.getItemIndex(Globals.vehicles.model);"/>	
 				</mx:FormItem>
 
                 <mx:FormItem label="Reverse Direction:">
@@ -474,9 +544,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmVelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max speed for regular use when passengers are on board. Note that the track or controller may impose lower limits. Measured in meters/second."
-							change="vmSave.enabled = true;"							
-							valueCommit="vmVelMaxNormMPH.text = (vmVelMaxNorm.value*3.6).toFixed(1)+' kph '+'('+(vmVelMaxNorm.value*2.2369).toFixed(1)+' mph)';" />
-						<mx:Label id="vmVelMaxNormMPH" text="x.x kph (x.x mph)" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmVelMaxNorm.value*3.6).toFixed(1)+' kph '+'('+(vmVelMaxNorm.value*2.2369).toFixed(1)+' mph)'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>				
 				
@@ -484,9 +553,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmAccelMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max acceleration for regular use when passengers are on board. Measured in m/s^2."
-							change="vmSave.enabled = true;"  
-							valueCommit="vmAccelMaxNormGs.text = (vmAccelMaxNorm.value/9.8).toFixed(1) + ' g';" />
-						<mx:Label id="vmAccelMaxNormGs" text="x.x g" fontStyle="italic" />
+							change="vmSave.enabled = true;"  />							
+						<mx:Label text="{(vmAccelMaxNorm.value/9.8).toFixed(1) + ' g'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 				
@@ -494,9 +562,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmAccelMinNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false" 
 							toolTip="Max deceleration for regular use when passengers are on board. Measured in m/s^2."
-							change="vmSave.enabled = true;"
-							valueCommit="vmAccelMinNormGs.text = (vmAccelMinNorm.value/9.8).toFixed(1) + ' g';" />
-						<mx:Label id="vmAccelMinNormGs" text="x.x g" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmAccelMinNorm.value/9.8).toFixed(1) + ' g'}" fontStyle="italic" />
 					</mx:HBox>
 				</mx:FormItem>
 
@@ -504,9 +571,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmJerkMaxNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max jerk allowed when accelerating during regular use when passengers are on board. Measured in m/s^3."
-							change="vmSave.enabled = true;"
-							valueCommit="vmJerkMaxNormGs.text = (vmJerkMaxNorm.value/9.8).toFixed(1) + ' g';" />
-						<mx:Label id="vmJerkMaxNormGs" text="x.x g/sec" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmJerkMaxNorm.value/9.8).toFixed(1) + ' g/sec'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 
@@ -514,9 +580,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmJerkMinNorm" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max jerk allowed when decelerating during regular use when passengers are on board. Measured in m/s^3." 
-							change="vmSave.enabled = true;"
-							valueCommit="vmJerkMinNormGs.text = (vmJerkMinNorm.value/9.8).toFixed(1) + ' g';" />
-						<mx:Label id="vmJerkMinNormGs" text="x.x g/sec" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmJerkMinNorm.value/9.8).toFixed(1) + ' g/sec'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 
@@ -526,9 +591,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmVelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max speed when passengers are not on board or during emergency maneuvers. Measured in m/s." 
-							change="vmSave.enabled = true;"
-							valueCommit="vmVelMaxEmergMPH.text = (vmVelMaxEmerg.value*3.6).toFixed(1)+' kph '+'('+(vmVelMaxEmerg.value*2.2369).toFixed(1)+' mph)';" />
-					    <mx:Label id="vmVelMaxEmergMPH" text="x.x kph (x.x mph)" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+					    <mx:Label text="{(vmVelMaxEmerg.value*3.6).toFixed(1)+' kph '+'('+(vmVelMaxEmerg.value*2.2369).toFixed(1)+' mph)'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>				
 				
@@ -536,9 +600,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmAccelMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max acceleration when passengers are not on board or during emergency maneuvers. Measured in m/s^2."
-							change="vmSave.enabled = true;"
-							valueCommit="vmAccelMaxEmergGs.text = (vmAccelMaxEmerg.value/9.8).toFixed(1) + ' g';" />
-						<mx:Label id="vmAccelMaxEmergGs" text="x.x g" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmAccelMaxEmerg.value/9.8).toFixed(1) + ' g'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 				
@@ -546,9 +609,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmAccelMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max deceleration when passengers are not on board or during emergency maneuvers. Measured in m/s^2." 
-							change="vmSave.enabled = true;"
-							valueCommit="vmAccelMinEmergGs.text = (vmAccelMinEmerg.value/9.8).toFixed(1) + ' g';" />
-						<mx:Label id="vmAccelMinEmergGs" text="x.x g" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmAccelMinEmerg.value/9.8).toFixed(1) + ' g'}" fontStyle="italic" />
 					</mx:HBox>
 				</mx:FormItem>
 
@@ -556,9 +618,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmJerkMaxEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max jerk allowed when accelerating without passengers on board or during emergency maneuvers. Measured in m/s^3." 
-							change="vmSave.enabled = true;"
-							valueCommit="vmJerkMaxEmergGs.text = (vmJerkMaxEmerg.value/9.8).toFixed(1) + ' g/s';" />
-						<mx:Label id="vmJerkMaxEmergGs" text="x.x g/sec" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmJerkMaxEmerg.value/9.8).toFixed(1) + ' g/s'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 
@@ -566,9 +627,8 @@
 					<mx:HBox>
 						<mx:NumericStepper id="vmJerkMinEmerg" minimum="0" maximum="999" stepSize="0.1" enabled="false"
 							toolTip="Max jerk allowed when decelerating without passengers on board or during emergency maneuvers. Measured in m/s^3." 
-							change="vmSave.enabled = true;"
-							valueCommit="vmJerkMinEmergGs.text = (vmJerkMinEmerg.value/9.8).toFixed(1) + ' g/s';" />
-						<mx:Label id="vmJerkMinEmergGs" text="x.x g/sec" fontStyle="italic" />
+							change="vmSave.enabled = true;" />
+						<mx:Label text="{(vmJerkMinEmerg.value/9.8).toFixed(1) + ' g/s'}" fontStyle="italic" />
 					</mx:HBox>					
 				</mx:FormItem>
 

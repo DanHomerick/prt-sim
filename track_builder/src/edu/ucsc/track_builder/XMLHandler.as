@@ -179,9 +179,10 @@ package edu.ucsc.track_builder
 			TrackOverlay.fromPrefsXML(xml.TrackOverlay);
 			Globals.stations.fromPrefsXML(xml.Stations);
 			StationOverlay.fromPrefsXML(xml.StationOverlay);
+			Globals.vehicleModels.fromPrefsXML(xml.VehicleModels.VehicleModel); // must be loaded before vehicles
 			Globals.vehicles.fromPrefsXML(xml.Vehicles);	
 			VehicleOverlay.fromPrefsXML(xml.VehicleOverlay);
-			Globals.vehicleModels.fromPrefsXML(xml.VehicleModels.VehicleModel);
+
 		}
 		
 		/** Load XML from a file. */

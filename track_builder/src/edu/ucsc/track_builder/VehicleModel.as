@@ -1,7 +1,8 @@
 package edu.ucsc.track_builder
 {
 	import mx.utils.ObjectUtil;
-		
+	
+	[Bindable]
 	public class VehicleModel
 	{		
 		public var modelName:String;

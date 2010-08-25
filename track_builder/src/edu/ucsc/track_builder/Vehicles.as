@@ -7,18 +7,15 @@ package edu.ucsc.track_builder
 	import com.google.maps.LatLng;
 	import com.google.maps.MapMouseEvent;
 	
+	[Bindable]
 	public class Vehicles
 	{	
-		public var modelName:String;
+		public var model:VehicleModel;
 		public var velocity:Number;
 		public var acceleration:Number;
 		public var label:String = "";
 		public var reverseDir:Boolean;			
-
-		[Bindable]
 		public var position:Number = -1; // denotes invalid
-
-		[Bindable]
 		public var location:TrackSegment;
 		
 		public var targetVehicle:Vehicle; // a dummy vehicle, holding just enough info for targetMarker to work.
@@ -84,7 +81,7 @@ package edu.ucsc.track_builder
 											  latlng,
 											  location.getElevation(position),
 											  label,
-											  modelName,
+											  model.modelName,
 											  preview);
 			var vOverlay:VehicleOverlay = new VehicleOverlay(vehicle, tOverlay, preview);		
 		}
@@ -123,7 +120,7 @@ package edu.ucsc.track_builder
 		/** Generate xml from current preferences */
 		public function toPrefsXML():XML {
 			var xml:XML = <Vehicles
-							model_name={modelName}
+							model_name={model.modelName}
 							velocity={velocity}
 			                acceleration={acceleration}
 			                reverse_dir={reverseDir}
@@ -143,7 +140,7 @@ package edu.ucsc.track_builder
 		}		
 		
 		public function fromPrefsXML(xml:XMLList):void {
-			modelName = xml.@model_name;
+			model = Globals.vehicleModels.getModelByName(xml.@model_name);
 			velocity = xml.@velocity;
 			acceleration = xml.@acceleration;
 			reverseDir = xml.@reverse_dir == 'false' || xml.@reverse_dir == '0' ? false : true;

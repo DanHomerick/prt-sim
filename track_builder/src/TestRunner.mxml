@@ -5,6 +5,7 @@
 	                    creationComplete="onCreationComplete()">
 	<mx:Script>
 		<![CDATA[
+			import edu.ucsc.track_builder.UtilityTest;
 			import edu.ucsc.track_builder.TrackSegmentTest;
 			import edu.ucsc.track_builder.gtf_import.TimeTest;
 			import edu.ucsc.graph.GraphTest;
@@ -26,7 +27,8 @@
 				testSuite.addTestSuite(GraphTest);
 				testSuite.addTestSuite(TimeTest);
 				
-				testSuite.addTestSuite(TrackSegmentTest);	// start a new test group for this?	
+				testSuite.addTestSuite(TrackSegmentTest);	// start a new test group for this?
+				testSuite.addTestSuite(UtilityTest);
 				return testSuite;
 			}
 		]]>

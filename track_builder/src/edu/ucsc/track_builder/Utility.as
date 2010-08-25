@@ -208,6 +208,72 @@ package edu.ucsc.track_builder
             else return 1; // (aInt < bInt)
   		}
 
+		/**Returns the distance required to do an acceleration change. Assumes that initial and final accelerations are zero.
+		 * 
+		 * @param v_initial The initial velocity.
+		 * @param v_final The final velocity.
+		 * @param max_accel The absolute value of the maximum acceleration or deceleration to be used.
+		 * @param max_jerk The absolute value of the maximum jerk.
+		 * @return Distance required to perform the velocity change. 
+		 * */
+		public static function distanceFromVelocityChange(v_initial:Number, v_final:Number, max_accel:Number, max_jerk:Number):Number {
+			var delta_v:Number = v_final - v_initial;
+			var j_initial:Number; // The first jerk value to use
+			var j_final:Number;   // The last jerk value to use
+			if (delta_v == 0) {
+				return 0;
+			} else if (delta_v < 0) {
+				j_initial = -max_jerk;
+				j_final = max_jerk
+			} else {
+				j_initial = max_jerk;
+				j_final = -max_jerk;
+			}
+			
+	        /* See prob3 in trajectory_calcs.py
+             *
+	         *                                  2      2
+	         *             2 / 1      1  \   a0     a2
+	         * v2 - v0 + at *|---- - ----| + ---- - ----
+	         *               \2*jn   2*jx/   2*jx   2*jn
+	         *
+	         * In this case, a0 and a2 are both 0.	         
+			 */
+			var a:Number = 1/(2*j_final) - 1/(2*j_initial);
+			var b:Number = 0
+			var c:Number = delta_v
+			
+			/* Quadratic formula simplified by b==0:
+			 *   +/- sqrt(-AC)/A
+			 */
+			var accel_peak:Number = -Math.sqrt(-a*c)/a; // Acceleration peak if there is not limit (or it's not reached).
+			var accel_limit:Number;
+			if (delta_v > 0) {
+				accel_limit = Math.min(max_accel, accel_peak);
+			} else {
+				accel_limit = Math.max(-max_accel, accel_peak);
+			}
+						
+			var t01:Number = accel_limit/j_initial; // How many seconds it takes to reach accel_limit
+			var t23:Number = t01;                   // By symmetry, how many seconds to return to zero acceleration.
+			var v1:Number = j_initial*t01*t01/2.0 + v_initial;  // Velocity at start of constant accel segment
+			var v2:Number = j_final*t23*t23/2.0 + v_final;    // Velocity at end of constant accel segment
+			var v12:Number = v2 - v1;   // How much the velocity needs to change during constant accel.
+			var t12:Number;             // How many seconds to hold constant acceleration to get desired velocity change
+			if (Math.abs(v12) < 1E-8) {
+				v12 = 0.0;
+				t12 = 0.0;
+			} else {
+				t12 = v12/accel_limit;
+			}
+ 						
+			var dist:Number = j_initial*t01*t01*t01/6.0 + v_initial*t01  // Increasing accel. Note that initial accel = 0			
+			                + accel_limit*t12*t12/2.0 + v1*t12           // Constant accel
+			                + j_final*t23*t23*t23/6.0 + accel_limit*t23*t23/2.0 + v2*t23;          // Decreasing accel.
+			return dist;		
+		}
+		 
+
 		// Looks good. Off by at most a couple meters at high latitude over a full degree (7000 m)
 		public static function unitTest():void {
 			trace("Utility.unitTest!!!!!");
