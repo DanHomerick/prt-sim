@@ -349,10 +349,10 @@ class TrajectorySolver(object):
         # or the 'natural' acceleration maxima, whichever is more constraining.
         try:
             if not flip:
-                a_top = max(x for x in utility.quadratic_roots(_a, _b, _c) if x >= 0)
+                a_top = max(x for x in utility.quadratic_roots(_a, _b, _c, self.a_threshold/2.0) if x >= 0)
                 a_top = min(ax, a_top)
             else:
-                a_top = min(x for x in utility.quadratic_roots(_a, _b, _c) if x <= 0)
+                a_top = min(x for x in utility.quadratic_roots(_a, _b, _c, self.a_threshold/2.0) if x <= 0)
                 a_top = max(ax, a_top)
         except ValueError:
             raise TrajectoryError(initial, final)
@@ -382,10 +382,10 @@ class TrajectorySolver(object):
 
         try:
             if not flip:
-                a_bot = min(x for x in utility.quadratic_roots(_a, _b, _c) if x <= 0)
+                a_bot = min(x for x in utility.quadratic_roots(_a, _b, _c, self.a_threshold/2.0) if x <= 0)
                 a_bot = max(an, a_bot)
             else:
-                a_bot = max(x for x in utility.quadratic_roots(_a, _b, _c) if x >= 0)
+                a_bot = max(x for x in utility.quadratic_roots(_a, _b, _c, self.a_threshold/2.0) if x >= 0)
                 a_bot = min(an, a_bot)
         except ValueError:
             raise TrajectoryError(initial, final)
@@ -454,7 +454,7 @@ class TrajectorySolver(object):
                     j.append(self.j_min)
                 else:
                     j.append(0)
-            elif (k2.time - k1.time) >= -0.0001: # Negative or zero duration, but only by rounding errors
+            elif (k2.time - k1.time) >= -self.t_threshold: # Negative or zero duration, but only by rounding errors
                 pass # Skip the knot
             else: # large negative duration
                 raise TrajectoryError(initial, final, "Large negative duration: %f seconds" \
@@ -525,7 +525,7 @@ class TrajectorySolver(object):
         C = k4.pos - k1.pos - alpha*k1.vel + (alpha*ax**2 + ax*k1.vel - an*k1.vel - alpha*an*ax)/jn - ax*alpha**2/2 - ax*(an - ax)**2/(2*jn**2) - (an - ax)**3/(6*jn**2)
 
         try:
-            h3 = min(x for x in utility.quadratic_roots(A, B, C) if x >= 0)
+            h3 = min(x for x in utility.quadratic_roots(A, B, C, self.t_threshold/2.0) if x >= 0)
         except ValueError: # No nonnegative, real solutions. a_min is not reached.
             raise TrajectoryError(initial, final, 'No nonnegative, real solutions')
 
@@ -1229,10 +1229,10 @@ class TrajectorySolver(object):
 
         try:
             if not flip:
-                a_top = max(x for x in utility.quadratic_roots(_a, _b, _c) if x >= 0)
+                a_top = max(x for x in utility.quadratic_roots(_a, _b, _c, self.a_threshold/2.0) if x >= 0)
                 a_top = min(ax, a_top)
             else:
-                a_top = min(x for x in utility.quadratic_roots(_a, _b, _c) if x <= 0)
+                a_top = min(x for x in utility.quadratic_roots(_a, _b, _c, self.a_threshold/2.0) if x <= 0)
                 a_top = max(ax, a_top)
         except ValueError:
             raise TrajectoryError(initial, final)
