@@ -90,6 +90,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     # A default view for vehicles.
     trait_view =  ui.View('ID', 'length',
+                          ui.Item(name='loc', label='Location'),
                           ui.Item(name='pos', label='Position'),
                           ui.Item(name='vel'),
                           ui.Item(name='v_mass'),

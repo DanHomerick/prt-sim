@@ -293,6 +293,7 @@ class Visualizer(object):
                 component=self.plot,
                 data_point = point,
                 lines = ['vID: %d' % v.ID,
+                         'loc: %d' % v.loc.ID,
                          'speed: %.1f m/s (%.0f mph)' % (vel, mph),
                           dest_station_str,
                          'numPax: %d' % num_pax,
