@@ -399,15 +399,6 @@ class  TestTrajectorySolver(unittest.TestCase):
 ##        self.assertAlmostEqual(spline.q[-1], 100, self.PLACES)
 ##        self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
 ##        self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
-    def test_target_position_X(self):
-        """Starts with 20 velocity, ends with 2.3999 velocity. Entering a station"""
-        solver = TrajectorySolver(20, 9, 5.0, 0, -9, -5.0)
-        initial = Knot(2,20,0,4.2891)
-        final = Knot(42.509, 2.3999999, 0, None)
-        spline = solver.target_position(initial, final)
-        self.plot_it(spline, solver, "test_target_position_X")
-        self.validate_spline(spline, solver)
-        self.validate_endpoints(spline, initial, final, time=False)
 
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
@@ -737,6 +728,16 @@ class  TestTrajectorySolver(unittest.TestCase):
 ##        self.plot_it(spline, solver, "test_target_time_XIIX")
 ##        self.validate_spline(spline, solver)
 ##        self.validate_endpoints(spline, initial, final)
+    def test_target_time_XIX(self):
+	""" negative time interval in spline. """
+        solver = TrajectorySolver(20, 10, 5, 0, -10, -5.0)
+        initial = Knot(2,19.2506,2.737,3.452)
+        final = Knot(701.952,20.0,0,39.3653)
+        spline = solver.target_time(initial, final, 20)
+        self.plot_it(spline, solver, "test_target_time_XIX")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
 
     def test_target_time_nearly_stops(self):
         """Initial knot has a positive velocity, and the vehicle needs to
