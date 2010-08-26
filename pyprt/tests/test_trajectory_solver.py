@@ -749,6 +749,15 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
+    def test_target_time_XX(self):
+        """ Fatal Trajectory Error in simple spline. """
+        solver = TrajectorySolver(60, 10, 6, 0, -10, -6.0)
+        initial = Knot(35.570999922343617, 20.000000000263217, 4.5474735088646412e-13, 1660.7976499923104)
+        final = Knot(2593.1289999999999, 20.0, 0, 1789.7778999999914)
+        spline = solver.target_time(initial, final, 20)
+        self.plot_it(spline, solver, "test_target_time_XX")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
 
     def test_target_time_nearly_stops(self):
         """Initial knot has a positive velocity, and the vehicle needs to
