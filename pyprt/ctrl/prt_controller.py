@@ -425,8 +425,10 @@ class PrtController(BaseController):
         # Vehicle needs to make choice to enter station or bypass.
         # Note: Some track networks will have one station's ON_RAMP_II lead straight into
         #       another station's "split" track seg, thus LAUNCHING is a viable state.
-        if vehicle.state in (self.RUNNING, self.LAUNCHING) and msg.trackID == vehicle.trip.dest_station.split:
-            if vehicle.pax: # has passengers
+        station = self.manager.split2station.get(msg.trackID)
+        if vehicle.state in (self.RUNNING, self.LAUNCHING) and station:
+            # Has passengers and this is the dest station
+            if vehicle.pax and station is vehicle.trip.dest_station:
                 try:   # Reserve an unload berth
                     vehicle.trip.dest_station.request_unload_berth(vehicle)
                     assert vehicle.berth_id is not None
@@ -438,18 +440,37 @@ class PrtController(BaseController):
                     self.log.info("%5.3f Vehicle %d waved off from dest_station %d because NoBerthAvailable. Going to station %d instead.",
                                    self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
-            else: # no passengers
-                try:
-                    vehicle.trip.dest_station.request_load_berth(vehicle)
-                    assert vehicle.berth_id is not None
-                except NoBerthAvailableError:
-                    old_dest = vehicle.trip.dest_station
-                    vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
-                    vehicle.set_path(vehicle.trip.path)
-                    self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d due to lack of available berth. Going to station %d instead.",
-                              self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
+            # Has passengers and not at dest station
+            elif vehicle.pax and station is not vehicle.trip.dest_station:
+                pass
 
+            # Empty vehicle, any station
+            else:
+                # Refresh the destination station, since demand for empties has
+                #   likely changed while travelling. This presents the possiblity
+                #   that empties will get caught in a game of 'keep away', where
+                #   their destination station keeps changing and they spend a lot
+                #   of time chasing new destinations rather than accomplishing
+                #   useful work. This shouldn't be much of a problem so long as
+                #   vehicles strongly favor nearby stations, which they currently do.
+                #
+                # TODO: This refreshes the empty's destination whenever it passes by a
+                #   station. The preferred approach would be to refresh whenever it
+                #   comes to a switch of any sort. That is, refresh whenever the vehicle
+                #   has the opportunity to act on the information.
+                vehicle.trip = self.manager.deadhead(vehicle)
+                vehicle.set_path(vehicle.trip.path)
 
+                if vehicle.trip.dest_station is station:
+                    try:
+                        vehicle.trip.dest_station.request_load_berth(vehicle)
+                        assert vehicle.berth_id is not None
+                    except NoBerthAvailableError:
+                        old_dest = vehicle.trip.dest_station
+                        vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
+                        vehicle.set_path(vehicle.trip.path)
+                        self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d due to lack of available berth. Going to station %d instead.",
+                                  self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
             # If the vehicle is empty, and the assigned berth is the entrance
             # berth, give it up and waive off so as to not clog up the station
@@ -794,7 +815,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         if best_value > 0:
             return Trip(best_station, paths[best_station.ts_ids[Station.UNLOAD]], tuple())
         else: # no demand anywhere
-            if vehicle.station is not None: # in a station -- just stay there
+            if vehicle.berth_id is not None: # in a station -- just stay there
                 return None
             else: # on the main line, really need someplace to go
                 return Trip(closest_station, paths[closest_station.ts_ids[Station.UNLOAD]], tuple())
