@@ -410,6 +410,15 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, time=False)
 
+    def test_target_position_XI(self):
+        solver = TrajectorySolver(60, 10, 5, 0, -10, -5)
+        initial = Knot(1.9999999896260192, 8.5068000742251115, -0.022863034988063191, 447.29479530675786)
+        final = Knot(42.498999999999995, 2.3999999999999999, 0, None)
+        spline = solver.target_position(initial, final, initial.vel)
+##        self.plot_it(spline, solver, "test_target_position_XI")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final, time=False)
+
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
         solver = TrajectorySolver(40, 5, 2.5)
@@ -755,7 +764,16 @@ class  TestTrajectorySolver(unittest.TestCase):
         initial = Knot(35.570999922343617, 20.000000000263217, 4.5474735088646412e-13, 1660.7976499923104)
         final = Knot(2593.1289999999999, 20.0, 0, 1789.7778999999914)
         spline = solver.target_time(initial, final, 20)
-        self.plot_it(spline, solver, "test_target_time_XX")
+##        self.plot_it(spline, solver, "test_target_time_XX")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_time_XXI(self):
+        solver = TrajectorySolver(20, 7.2, 5.0, 0, -7.2, -5.0)
+        initial = Knot(9.8130000000001303, 18.114342061230673, 4.3424163075059123, 3.3492945162765952)
+        final = Knot(709.7650000000001, 20.0, 0, 38.72843888888891)
+        spline = solver.target_time(initial, final)
+##        self.plot_it(spline, solver, "test_target_time_XXI")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 

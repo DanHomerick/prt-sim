@@ -13,13 +13,13 @@ from pyprt.shared.utility import pairwise, same_sign
 
 class TrajectoryError(Exception):
     """Raised when a generated trajectory is known to be flawed."""
-    def __init__(self, initial=None, final=None, message=""):
+    def __init__(self, initial=None, final=None, msg=""):
         self.initial = initial
         self.final = final
-        self.message = message
+        self.msg = msg
 
     def __str__(self):
-        return self.message + "\ninitial: %s\nfinal: %s" % (str(self.initial), str(self.final))
+        return self.msg + "\ninitial: %s\nfinal: %s" % (str(self.initial), str(self.final))
 
 class ConstraintsError(TrajectoryError):
     """Acceleration constraints are too low or too high to have a viable solution.
@@ -33,6 +33,9 @@ class ConstraintsError(TrajectoryError):
         super(ConstraintsError, self).__init__(self)
         self.too_loose = too_loose if too_loose is not None else []
         self.too_tight = too_tight if too_tight is not None else []
+
+    def __str__(self):
+        return "too_loose: %s\ntoo_tight: %s" % (str(self.too_loose), str(self.too_tight))
 
 class FatalTrajectoryError(TrajectoryError):
     """Raised when the specified trajectory cannot be met, such as when an
@@ -71,7 +74,7 @@ class TrajectorySolver(object):
     """
     q_threshold = 0.0005
     v_threshold = 0.000005   # == 0.00001 miles per hour
-    a_threshold = 0.0005
+    a_threshold = 0.000005
     t_threshold = 0.0005
 
     def __init__(self, velocity_max, acceleration_max, jerk_max,
@@ -961,7 +964,7 @@ class TrajectorySolver(object):
         first_hump = self.target_velocity(Knot(0,v[0],a[0],0), Knot(None,cruise_vel,0,None))
         if len(first_hump.q) > 1: # possible that no "first hump" is required, thus this may get bypassed
             if a[0] == a[1]:
-                pass
+                pass # Tightened all the way to the initial accel. Don't try to tighten past this.
             elif j[0] > 0:
                 if a[1] > first_hump.a[1]: # Force a[1] to be flattened
                     too_loose.append(HUMP_ONE)
@@ -1026,14 +1029,17 @@ class TrajectorySolver(object):
 
         t34 = t[4] - t[3]
 
-        if t12 < -TrajectorySolver.t_threshold or t56 < -TrajectorySolver.t_threshold:
-            raise TrajectoryError()
-
         # Need to loosen a constraint in order to have enough control authority
-        # to hit target time.
-        if t34 < -TrajectorySolver.t_threshold or \
-           abs((q[4] - q[3]) - (v[3]*t34)) > TrajectorySolver.q_threshold:
-            if a[0] == a[1]:
+        # to hit target time. Checks that:
+        #  1. No negative durations
+        #  2. Distance traveled on const vel segment is reasonable
+        #  3. cruise segment should have a constant velocity
+        if [True for ti, tf in pairwise(t) if (tf-ti) < -TrajectorySolver.t_threshold] \
+           or abs((q[4] - q[3]) - (v[3]*t34)) > TrajectorySolver.q_threshold \
+           or abs(v[4] - v[3]) > TrajectorySolver.v_threshold:
+            if len(first_hump.q) <= 1:
+                too_tight.append(HUMP_ONE)
+            elif a[0] == a[1]:
                 too_tight.append(HUMP_ONE)
             elif j[0] > 0:
                 if a[1] < first_hump.a[1]:
@@ -1042,7 +1048,9 @@ class TrajectorySolver(object):
                 if a[1] > first_hump.a[1]:
                     too_tight.append(HUMP_ONE)
 
-            if a[6] == a[7]:
+            if len(second_hump.q) <= 1:
+                too_tight.append(HUMP_TWO)
+            elif a[6] == a[7]:
                 too_tight.append(HUMP_TWO)
             elif j[4] > 0:
                 if a[5] < second_hump.a[1]:
@@ -1050,6 +1058,7 @@ class TrajectorySolver(object):
             else: # j[4] < 0
                 if a[5] > second_hump.a[1]:
                     too_tight.append(HUMP_TWO)
+
             raise ConstraintsError(too_tight=too_tight)
 
         return CubicSpline(q, v, a, j, t)
