@@ -14,37 +14,6 @@ from pyprt.shared.cubic_spline import Knot, CubicSpline, OutOfBoundsError
 from pyprt.shared.utility import pairwise
 ##from pyprt.shared.utility import deque # extension of collections.deque which includes 'insert' method
 
-def main():
-    options_parser = optparse.OptionParser(usage="usage: %prog [options]")
-    options_parser.add_option("--logfile", dest="logfile", default="./ctrl.log",
-                metavar="FILE", help="Log events to FILE.")
-    options_parser.add_option("--comm_logfile", dest="comm_logfile", default="./ctrl_comm.log",
-                metavar="FILE", help="Log communication messages to FILE.")
-    options_parser.add_option("--server", dest="server", default="localhost",
-                help="The IP address of the server (simulator). Default is %default")
-    options_parser.add_option("-p", "--port", type="int", dest="port", default=64444,
-                help="TCP Port to connect to. Default is: %default")
-    options_parser.add_option("--line_speed", type="float", dest="line_speed", default=25,
-                help="The cruising speed for vehicles on the main line, in m/s. Default is %default")
-    options_parser.add_option("--station_speed", type="float", dest="station_speed", default=2.4,
-                help="The maximum speed for vehicles on station platforms, in m/s. " + \
-                "Setting too high may negatively affect computation performance. Default is %default")
-    options_parser.add_option("--headway", type="float", dest="headway", default="2.0",
-                help="The minimum following time for vehicles, in seconds. Measured from tip-to-tail.")
-    options, args = options_parser.parse_args()
-
-    PrtController.LINE_SPEED = options.line_speed
-    PrtController.HEADWAY = options.headway
-    Merge.LINE_SPEED = options.line_speed
-    Merge.HEADWAY = options.headway
-    Station.SPEED_LIMIT = options.station_speed
-
-    if len(args) != 0:
-        options_parser.error("Expected zero positional arguments. Received: %s" % ' '.join(args))
-
-    ctrl = PrtController(options.logfile, options.comm_logfile)
-    ctrl.connect(options.server, options.port)
-
 class NoPaxAvailableError(Exception):
     """No passengers are available."""
 
@@ -1309,7 +1278,6 @@ class Vehicle(object):
         self._current_path_index = 0
 
         self._spline = CubicSpline([pos, pos+vel*end_time], [vel, vel], [0, 0], [0], [0.0, end_time])
-        self._spline_ts_id = ts_id
 
         self._merge_slot = None
 
@@ -2996,5 +2964,47 @@ class Switch(object):
                 else: # len(down_nodes) == 0:
                     raise Exception("Not able to handle dead end track.")
 
+def main(options):
+    PrtController.LINE_SPEED = options.line_speed
+    PrtController.HEADWAY = options.headway
+    Merge.LINE_SPEED = options.line_speed
+    Merge.HEADWAY = options.headway
+    Station.SPEED_LIMIT = options.station_speed
+
+    ctrl = PrtController(options.logfile, options.comm_logfile)
+    ctrl.connect(options.server, options.port)
+
 if __name__ == '__main__':
-    main()
+    options_parser = optparse.OptionParser(usage="usage: %prog [options]")
+    options_parser.add_option("--logfile", dest="logfile", default="./ctrl.log",
+                metavar="FILE", help="Log events to FILE.")
+    options_parser.add_option("--comm_logfile", dest="comm_logfile", default="./ctrl_comm.log",
+                metavar="FILE", help="Log communication messages to FILE.")
+    options_parser.add_option("--server", dest="server", default="localhost",
+                help="The IP address of the server (simulator). Default is %default")
+    options_parser.add_option("-p", "--port", type="int", dest="port", default=64444,
+                help="TCP Port to connect to. Default is: %default")
+    options_parser.add_option("--line_speed", type="float", dest="line_speed", default=25,
+                help="The cruising speed for vehicles on the main line, in m/s. Default is %default")
+    options_parser.add_option("--station_speed", type="float", dest="station_speed", default=2.4,
+                help="The maximum speed for vehicles on station platforms, in m/s. " + \
+                "Setting too high may negatively affect computation performance. Default is %default")
+    options_parser.add_option("--headway", type="float", dest="headway", default="2.0",
+                help="The minimum following time for vehicles, in seconds. Measured from tip-to-tail.")
+    options_parser.add_option("--profile", dest="profile_path",
+                metavar="FILE", help="Log performance data to FILE. See 'http://docs.python.org/library/profile.html'")
+    options, args = options_parser.parse_args()
+
+    if len(args) != 0:
+        options_parser.error("Expected zero positional arguments. Received: %s" % ' '.join(args))
+
+    if options.profile_path is not None:
+        import cProfile
+        if __debug__:
+            import warnings
+            warnings.warn("Profiling prt_controller.py in debug mode! Specify the -O option for python to disable debug code.")
+        else:
+            print "Profiling prt_controller.py"
+        cProfile.run('main(options)', filename=options.profile_path)
+    else:
+        main(options)
