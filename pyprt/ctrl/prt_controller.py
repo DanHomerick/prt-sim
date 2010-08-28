@@ -126,10 +126,9 @@ class PrtController(BaseController):
                                 v.embark(v.trip.passengers)
                             except NoPaxAvailableError:
                                 if station.is_launch_berth(v.berth_id, v.platform_id):
-                                    # launch as soon as possible, if there
-                                    # is another station with passengers waiting.
-                                    v.trip = self.manager.deadhead(v, (station,))
-                                    if v.trip is not None:
+                                    trip = self.manager.deadhead(v)
+                                    if trip.dest_station is not station:
+                                        v.trip = trip
                                         v.set_path(v.trip.path)
                                         v.state = self.LAUNCH_WAITING
                                         self.log.info("%5.3f Vehicle %d deadheading from station %d. Going to station %d.",
@@ -185,6 +184,19 @@ class PrtController(BaseController):
         self.log.info("Sim Greeting message received. Sim end at: %f" % msg.sim_end_time)
 
         self.manager = Manager(msg.scenario_xml, msg.sim_end_time, self)
+
+        # TODO: Move this into scenario validation function
+        # If every single berth is full, then a vehicle will not have anywhere
+        # to go if it's kicked out of a station (to make room for incoming vehicles).
+        total_berths = sum(station.NUM_BERTHS for station in self.manager.stations.itervalues())
+        total_vehicles = len(self.manager.vehicles)
+        if total_vehicles >= total_berths:
+            msg = api.CtrlScenarioError()
+            msg.error_message = \
+                "Total number of vehicles must be less than the total number of " \
+                "station berths.\nVehicles: %d\nBerths: %d" % (total_vehicles, total_berths)
+            self.send(api.CTRL_SCENARIO_ERROR, msg)
+            self.log.error(msg.error_message)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         """This function is responsible for getting all the vehicles moving at
@@ -784,41 +796,55 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         """Go to a station that has waiting passengers and needs more vehicles.
         The exclude parameter is a tuple of Station instances that the vehicle
         should not pick as a destination.
-        Returns a Trip instance.
+
+        Side Effects:
+          None
+
+        Returns:
+          A Trip instance.
         """
         assert isinstance(vehicle, Vehicle)
         dists, paths = networkx.single_source_dijkstra(self.graph, vehicle.ts_id)
         max_dist = max(dists.itervalues())
         best_station = None
-        best_station_dist = 0
-        best_value = 0
+        best_station_dist = -inf
+        best_value = -inf
         closest_station = None
         closest_dist = inf
         for station in self.stations.itervalues():
             if station in exclude:
                 continue
-            station_ts = station.ts_ids[Station.UNLOAD]
+            station_ts = station.ts_ids[Station.LOAD]
             try:
                 dist = dists[station_ts]
-            except: # Not all stations are must be reachable
+            except: # Not all stations must be reachable
                 continue
+
             demand = station.get_demand()
-            value = max_dist/dist * demand
-            if value >= best_value:
+
+            # If the vehicle is currently in the station, give it a little inertia
+            # to overcome before moving on to another station. Otherwise a vehicle
+            # will leave a station as soon as demand drops to 0, resulting in
+            # the station increasing it's demand again.
+            if vehicle.station is station:
+                demand += 0.1
+
+            # The distance weight is 1 when dist is 0, and decays down to 1/10
+            # as the distance increases to max_dist.
+            value = max_dist/(9*dist+max_dist) * demand
+
+            if value > best_value:
                 best_station = station
                 best_station_dist = dist
                 best_value = value
-            if dist < closest_dist:
+            if dist < closest_dist and value >= 0: # closest station that isn't rejecting vehicles
                 closest_station = station
                 closest_dist = dist
 
         if best_value > 0:
-            return Trip(best_station, paths[best_station.ts_ids[Station.UNLOAD]], tuple())
-        else: # no demand anywhere
-            if vehicle.berth_id is not None: # in a station -- just stay there
-                return None
-            else: # on the main line, really need someplace to go
-                return Trip(closest_station, paths[closest_station.ts_ids[Station.UNLOAD]], tuple())
+            return Trip(best_station, paths[best_station.ts_ids[Station.LOAD]], tuple())
+        else: # no demand anywhere, choose the closest station
+            return Trip(closest_station, paths[closest_station.ts_ids[Station.LOAD]], tuple())
 
     def wave_off(self, vehicle):
         """Sends a vehicle around in a loop so as to come back and try entering the
@@ -1059,6 +1085,11 @@ class Station(object):
         self.passengers = deque()
         self.v_count = 0
 
+        self.NUM_UNLOAD_BERTHS = len(unload_positions)
+        self.NUM_QUEUE_BERTHS = len(queue_positions)
+        self.NUM_LOAD_BERTHS = len(load_positions)
+        self.NUM_BERTHS = self.NUM_UNLOAD_BERTHS + self.NUM_QUEUE_BERTHS + self.NUM_LOAD_BERTHS
+
     def add_passenger(self, pax):
         self.passengers.append(pax)
 
@@ -1117,13 +1148,16 @@ class Station(object):
         if choosen_idx is not None:
             self.release_berth(vehicle)
             self.reservations[platform_id][choosen_idx] = vehicle
-            self.v_count += 1
             berth_pos = self.berth_positions[platform_id][choosen_idx]
             plat_ts = self.ts_ids[platform_id+3]  # +3 maps platform_id to ts
             vehicle.berth_pos = berth_pos
             vehicle.berth_id = choosen_idx
             vehicle.platform_id = platform_id
             vehicle.plat_ts = plat_ts
+
+            self.v_count += 1
+            assert 0 <= self.v_count <= self.NUM_BERTHS
+
             return (berth_pos, choosen_idx, platform_id, plat_ts)
         else: # no berth available
             raise NoBerthAvailableError()
@@ -1209,6 +1243,7 @@ class Station(object):
                     break
         if found:
             self.v_count -= 1
+            assert 0 <= self.v_count <= self.NUM_BERTHS
 
         vehicle.berth_pos = None
         vehicle.berth_id = None
@@ -1238,11 +1273,26 @@ class Station(object):
             return True
 
     def get_demand(self):
-        """Returns a value indicating vehicle demand. Minimum of 0"""
-        if self.v_count == 0: # report at least a little demand if empty of vehicles
-            return max(len(self.passengers), 0.2)
+        """Returns a value indicating vehicle demand. Higher values indicate
+        more demand, and values may be negative."""
+        # All berths are full, and no passengers are waiting.
+        if self.v_count == self.NUM_BERTHS and len(self.passengers) == 0:
+            # Being full prevents vehicles from arriving, so we want to actively
+            # reduce the number of vehicles.
+            return -1
+
         else:
-            return max(len(self.passengers), 0) - self.v_count
+            # Provide some demand until there are enough vehicles in the
+            # station to fill the load berths. When no vehicles are present,
+            # advertise slightly less than 1 passenger's worth of demand.
+            load_berth_demand = max((self.NUM_LOAD_BERTHS - self.v_count) *
+                                    1/(self.NUM_LOAD_BERTHS + 1), 0)
+
+            # Provide demand based on the discrepency between the number of
+            # passengers waiting and the number of vehicles in the station
+            passenger_demand = len(self.passengers) - self.v_count
+
+            return max(passenger_demand, load_berth_demand)
 
 class Passenger(object):
     def __init__(self, pax_id, origin_id, dest_id, origin_time):
