@@ -130,8 +130,8 @@ package edu.ucsc.track_builder
 			var segments:Vector.<TrackSegment> = new Vector.<TrackSegment>();
 			for each (var id:String in xml.TrackSegmentID) {
 				var match:TrackSegment = Globals.tracks.getTrackSegment(id);
-				if (!match) {
-					throw new Error("Unknown TrackSegmentID: " + match.id)
+				if (match == null) {
+					throw new Error("Unknown TrackSegmentID: " + id + " referred to by Station: " + xml.@id)
 				} else {
 					segments.push(match);
 				}
