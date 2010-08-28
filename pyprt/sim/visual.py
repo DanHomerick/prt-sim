@@ -277,6 +277,7 @@ class Visualizer(object):
             num_pax = v.get_pax_count()
             vel = v.get_vel()
             mph = vel * 2.237
+            lv, dist_to_lv = v.find_leading_vehicle()
             pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
 
             # Try to find the destination station based on the vehicle's path.
@@ -296,6 +297,7 @@ class Visualizer(object):
                          'loc: %d' % v.loc.ID,
                          'speed: %.1f m/s (%.0f mph)' % (vel, mph),
                           dest_station_str,
+                          'dist to lv: %.1f m (%.0f ft)' % (dist_to_lv, dist_to_lv*3.28),
                          'numPax: %d' % num_pax,
                          'paxIDs: ' + pax_ids]
             )
