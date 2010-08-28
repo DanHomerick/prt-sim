@@ -1293,6 +1293,36 @@ class TrajectorySolver(object):
                                        % (min_vel, self.v_min))
         return spline
 
+    def target_acceleration(self, initial, final):
+        """Targets the acceleration value in final.
+
+        Parameters:
+          initial -- A fully specified cubic_spline.Knot
+          final   -- A cubic_spline.Knot. The position, velocity, and time
+                     are ignored and my be set to None.
+
+        Returns:
+          A Cubic spline of one or two knots length.
+        """
+        spline = CubicSpline([initial.pos], [initial.vel], [initial.accel], [], [initial.time])
+        delta_a = final.accel - initial.accel
+        if abs(delta_a) < self.a_threshold:
+            return spline
+        elif delta_a > 0:
+            jerk = self.j_max
+        else:
+            jerk = self.j_min
+
+        duration = delta_a/jerk
+        knot = self.create_knot_after(initial, duration, final.accel)
+        spline.append(knot, jerk)
+
+        if not ((self.v_min - self.v_threshold) <= spline.v[-1] <= (self.v_max + self.v_threshold)):
+            raise FatalTrajectoryError(initial, final, "Exceeds velocity limit: %f" % spline.v[-1])
+        if not ((self.a_min - self.a_threshold) <= spline.a[-1] <= (self.a_max + self.a_threshold)):
+            raise FatalTrajectoryError(initial, final, "Exceeds acceleration limit: %f" % spline.a[-1])
+
+        return spline
 
     def slip(self, spline, ti, dist):
         """DEPRECATED. See target_time instead.

@@ -564,6 +564,26 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, pos=False, time=False)
 
+    def test_target_acceleration_I(self):
+        """Standard usage"""
+        solver = TrajectorySolver(40, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(0,0,0,0)
+        final = Knot(3+1/3., 5, 5, 2)
+        spline = solver.target_acceleration(initial, final)
+        self.plot_it(spline, solver, "test_target_acceleration_I")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_acceleration_II(self):
+        """No change in accel"""
+        solver = TrajectorySolver(40, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(0,0,3,0)
+        final = Knot(None, None, 3, None)
+        spline = solver.target_acceleration(initial, final)
+        self.plot_it(spline, solver, "test_target_acceleration_I")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
     def test_target_time_I(self):
         """Uses zero for accel and velocity endpoints."""
         solver = TrajectorySolver(40, 5, 2.5, 0, -5, -2.5)

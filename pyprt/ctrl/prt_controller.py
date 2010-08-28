@@ -1534,7 +1534,12 @@ class Vehicle(object):
         unload_dist, unload_path = self.manager.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
         unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
         if current_knot.vel > TrajectorySolver.v_threshold: # Non-zero velocity
-            to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
+            if current_knot.accel > 0:
+                accel_bleed = self.traj_solver.target_acceleration(current_knot, Knot(None, None, 0, None))
+                peak_vel_knot = Knot(accel_bleed.q[-1], accel_bleed.v[-1], accel_bleed.a[-1], accel_bleed.t[-1])
+                to_unload_spline = accel_bleed.concat(self.traj_solver.target_position(peak_vel_knot, unload_knot, max_speed=peak_vel_knot.vel))
+            else:
+                to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
             unload_knot.time = to_unload_spline.t[-1]
 
             # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
