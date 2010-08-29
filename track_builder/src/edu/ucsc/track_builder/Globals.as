@@ -16,6 +16,7 @@ package edu.ucsc.track_builder
 	import flash.geom.Rectangle;
 	
 	import mx.controls.ToggleButtonBar;
+	import mx.core.WindowedApplication;
 	
 	public class Globals extends EventDispatcher
 	{
@@ -34,10 +35,11 @@ package edu.ucsc.track_builder
 		public static var tool:int; // Which tool is being used. Uses above constants.	
 		
 		// Holds instances of the top level containers
-		[Bindable] public static var tracks:Tracks = new Tracks(Tracks.RIGHT);
-		[Bindable] public static var stations:Stations = new Stations();
-		[Bindable] public static var vehicles:Vehicles = new Vehicles();		
-		[Bindable] public static var vehicleModels:VehicleModels = new VehicleModels();
+		[Bindable] public static var tracks:Tracks;
+		[Bindable] public static var stations:Stations;
+		[Bindable] public static var vehicles:Vehicles;		
+		[Bindable] public static var vehicleModels:VehicleModels;		
+		public static var menu:Menu; // my menu, NOT mx.controls.menu
 		
 		// a couple new pane ids, in addition to the existing ones:
 		// http://code.google.com/apis/maps/documentation/flash/reference.html#PaneId
@@ -47,8 +49,8 @@ package edu.ucsc.track_builder
 		public static var vehiclePane:IPane;
 		public static var markerPane:IPane;
 		
-		public static var map:Map; // The google map		
-		public static var menu:Menu; // my menu, NOT mx.controls.menu
+		public static var mainWindow:NativeWindow;
+		public static var map:Map; // The google map				
 		public static var toolBar:ToggleButtonBar;
 		public static var mapTypeBar:ToggleButtonBar;
 				
@@ -66,6 +68,35 @@ package edu.ucsc.track_builder
 		public static var postSave:Function = null;
 
 		public static var zoomControl:ZoomControl;
+
+		public static function initialize(mainWindow_:NativeWindow):void {
+			mainWindow = mainWindow_
+			tracks = new Tracks(Tracks.RIGHT);
+		    stations = new Stations();
+			vehicles = new Vehicles();		
+			vehicleModels = new VehicleModels();		
+			menu = new Menu();			
+		}
+
+		public static function reinitialize():void {
+			tracks.reinitialize();
+			stations.reinitialize();
+			vehicles.reinitialize();
+			dataXMLFile = null;	
+			gtfXML = null;
+			
+			map.clearOverlays();
+			Globals.map.addOverlay(Globals.originMarker);
+			Globals.map.addOverlay(Globals.destMarker);
+			Globals.originMarker.setSnapOverlay(null);
+			Globals.destMarker.setSnapOverlay(null);
+			originMarker.setLatLng(Globals.map.getCenter());		
+			setActiveMarker(Globals.originMarker);
+			
+			IdGenerator.reinitialize();
+			Undo.reinitialize();
+			dirty = false;
+		}
 
 		public static function onToolChange(newTool:int):void {
 			var trackOverlay:TrackOverlay;
@@ -141,26 +172,6 @@ package edu.ucsc.track_builder
 		    Globals.tool = newTool; // Set tool to the new value
 		}	
 
-		public static function reinitialize():void {
-			tracks.reinitialize();
-			stations.reinitialize();
-			vehicles.reinitialize();
-			dataXMLFile = null;	
-			gtfXML = null;
-			
-			map.clearOverlays();
-			Globals.map.addOverlay(Globals.originMarker);
-			Globals.map.addOverlay(Globals.destMarker);
-			Globals.originMarker.setSnapOverlay(null);
-			Globals.destMarker.setSnapOverlay(null);
-			originMarker.setLatLng(Globals.map.getCenter());		
-			setActiveMarker(Globals.originMarker);
-			
-			IdGenerator.reinitialize();
-			Undo.reinitialize();
-			dirty = false;
-		}
-
 		public static function getActiveMarker():SnappingMarker {
 			return activeMarker;
 		}
@@ -209,8 +220,7 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 		
-		public static function fromPrefsXML(xml:XMLList):void {
-			var mainWindow:NativeWindow = map.stage.nativeWindow;
+		public static function fromPrefsXML(xml:XML):void {
 			var x:Number = Number(xml.MainWindow.@x);
 			var y:Number = Number(xml.MainWindow.@y);
 			var width:Number = Number(xml.MainWindow.@width);

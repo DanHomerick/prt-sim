@@ -5,7 +5,6 @@ package edu.ucsc.track_builder
 	import com.google.maps.LatLng;
 	import com.google.maps.LatLngBounds;
 	
-	import flash.events.Event;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
@@ -41,6 +40,7 @@ package edu.ucsc.track_builder
 		public static function generatePrefsXML():XML {
 			var xml:XML = <Preferences/>
 			xml.appendChild(Globals.toPrefsXML());
+			xml.appendChild(Globals.menu.toPrefsXML());
 			xml.appendChild(Globals.tracks.toPrefsXML());
 			xml.appendChild(TrackOverlay.toPrefsXML());
 			xml.appendChild(Globals.stations.toPrefsXML());
@@ -54,6 +54,7 @@ package edu.ucsc.track_builder
 		public static function generateDefaultPrefsXML():XML {
 			var xml:XML = <Preferences/>
 			xml.appendChild(Globals.toDefaultPrefsXML());
+			xml.appendChild(Globals.menu.toDefaultPrefsXML());
 			xml.appendChild(Globals.tracks.toDefaultPrefsXML());
 			xml.appendChild(TrackOverlay.toDefaultPrefsXML());
 			xml.appendChild(Globals.stations.toDefaultPrefsXML());
@@ -174,21 +175,73 @@ package edu.ucsc.track_builder
 		public static function parsePrefsXML(data:String):void
 		{
 			var xml:XML = new XML(data);
-			Globals.fromPrefsXML(xml.General);
-			Globals.tracks.fromPrefsXML(xml.Tracks);
-			TrackOverlay.fromPrefsXML(xml.TrackOverlay);
-			Globals.stations.fromPrefsXML(xml.Stations);
-			StationOverlay.fromPrefsXML(xml.StationOverlay);
-			Globals.vehicleModels.fromPrefsXML(xml.VehicleModels.VehicleModel); // must be loaded before vehicles
-			Globals.vehicles.fromPrefsXML(xml.Vehicles);	
-			VehicleOverlay.fromPrefsXML(xml.VehicleOverlay);
-
+			try {
+				Globals.fromPrefsXML(XML(xml.General));
+			} catch (err:TypeError) {
+				trace("Unable to load General Prefs. Using defaults.")
+				Globals.fromPrefsXML(Globals.toDefaultPrefsXML());
+			}
+			
+			try {
+				Globals.menu.fromPrefsXML(XML(xml.Menu));
+				Globals.menu.refreshOpenRecentMenu();
+			} catch (err:TypeError) {
+				trace("Unable to load Menu Prefs. Using defaults.")
+				Globals.menu.fromPrefsXML(Globals.menu.toDefaultPrefsXML());
+			}
+			
+			try {
+				Globals.tracks.fromPrefsXML(XML(xml.Tracks));
+			} catch (err:TypeError) {
+				trace("Unable to load Tracks Prefs. Using defaults.")
+				Globals.tracks.fromPrefsXML(Globals.tracks.toDefaultPrefsXML());
+			}
+			
+			try {
+				TrackOverlay.fromPrefsXML(XML(xml.TrackOverlay));
+			} catch (err:TypeError) {
+				trace("Unable to load TrackOverlay Prefs. Using defaults.")
+				TrackOverlay.fromPrefsXML(TrackOverlay.toDefaultPrefsXML());
+			}
+			
+			try {
+				Globals.stations.fromPrefsXML(XML(xml.Stations));
+			} catch (err:TypeError) {
+				trace("Unable to load Stations Prefs. Using defaults.")
+				Globals.stations.fromPrefsXML(Globals.stations.toDefaultPrefsXML());
+			}
+			
+			try {
+				StationOverlay.fromPrefsXML(XML(xml.StationOverlay));
+			} catch (err:TypeError) {
+				trace("Unable to load StationOverlay Prefs. Using defaults.")				
+				StationOverlay.fromPrefsXML(StationOverlay.toDefaultPrefsXML());
+			}
+			
+			try {
+				Globals.vehicleModels.fromPrefsXML(XML(xml.VehicleModels)); // must be loaded before vehicles
+			} catch (err:TypeError) {
+				trace("Unable to load VehicleModels Prefs. Using defaults.")
+				Globals.vehicleModels.fromPrefsXML(Globals.vehicleModels.toDefaultPrefsXML());
+			}
+			
+			try {
+				Globals.vehicles.fromPrefsXML(XML(xml.Vehicles));
+			} catch (err:TypeError) {
+				trace("Unable to load Vehicles Prefs. Using defaults.")
+				Globals.vehicles.fromPrefsXML(Globals.vehicles.toDefaultPrefsXML());
+			}
+			
+			try {
+				VehicleOverlay.fromPrefsXML(XML(xml.VehicleOverlay));
+			} catch (err:TypeError) {
+				trace("Unable to load VehicleOverlay Prefs. Using defaults.")
+				VehicleOverlay.fromPrefsXML(VehicleOverlay.toDefaultPrefsXML());
+			}
 		}
 		
 		/** Load XML from a file. */
-		public static function loadDataXML(event:Event):void {					
-			var file:File = event.target as File;
-			file.removeEventListener(Event.SELECT, loadDataXML); // remove the event listener that got me here
+		public static function loadDataXML(file:File):void {			
 			if (file != null) {
 				var fs:FileStream = new FileStream();
 				try {
@@ -210,9 +263,7 @@ package edu.ucsc.track_builder
 				// Parse xml data. Creates the objects and overlays.
 				try {
 					parseDataXML(data);
-				} catch (err:ModelError) {
-					fs.close();
-					
+				} catch (err:ModelError) {					
 					var knownModel:VehicleModel = Globals.vehicleModels.getModelByName(err.model.modelName);
 					
 					var alertMsg:String = 'File contains a version of the VehicleModel "'+knownModel.modelName+'" which ' + 
@@ -237,7 +288,7 @@ package edu.ucsc.track_builder
 					           function clickHandler(clsEvent:CloseEvent):void {
 					           		if (clsEvent.detail == Alert.YES) { // clicked 'Overwrite'
        				           			Globals.vehicleModels.removeModelByName(knownModel.modelName);
-       				           			XMLHandler.loadDataXML(event); // the original event that triggered loadDataXML   
+       				           			XMLHandler.loadDataXML(file); // the original event that triggered loadDataXML   
 					           		}
 					           		Alert.yesLabel = 'Yes'; // reset the buttons to default values
 					           		Alert.buttonWidth = 60;
@@ -281,9 +332,7 @@ package edu.ucsc.track_builder
 				Globals.dataXMLFile = file; // Point to the new "save" file				
 				Globals.dirty = false;      // Mark the file as 'clean'
 				Globals.setActiveMarker(Globals.originMarker);
-			} else {
-				trace(event.target);
-			}			
+			}		
 		} 
 		
 		/** Loads and parses the prefs XML. If prefs XML file doesn't exist, a default one is created and used.

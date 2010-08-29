@@ -330,7 +330,7 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 		
-		public function fromPrefsXML(xml:XMLList):void {
+		public function fromPrefsXML(xml:XML):void {
 			maxSpeed = xml.@max_speed;
 			reverse = xml.@reverse == 'false' || xml.@reverse == '0' ? false : true;
 			lateralOffset = xml.@lateral_offset;

@@ -180,6 +180,10 @@ package edu.ucsc.track_builder
 			var menu:NativeMenu = new NativeMenu();
 			
 			if (segments.length == 1) { // only one segment associated with overlay
+				var labelMenuItem:NativeMenuItem = new NativeMenuItem(segments[0].id);
+				labelMenuItem.enabled = false;
+				menu.addItem(labelMenuItem);
+			
 				var selectMenuItem:NativeMenuItem = new NativeMenuItem("Select");
 				selectMenuItem.addEventListener(Event.SELECT, onSelect);
 				menu.addItem(selectMenuItem);
@@ -662,7 +666,7 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 		
-		public static function fromPrefsXML(xml:XMLList):void {
+		public static function fromPrefsXML(xml:XML):void {
 			line_thickness=xml.@line_thickness;
 			hitLineThickness=xml.@hit_line_thickness;
 			unidirLineColor=xml.@unidir_line_color;

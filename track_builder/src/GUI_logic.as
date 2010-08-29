@@ -37,15 +37,15 @@ internal var app:Application;
 /** Create the window / application menu */
 internal function initApp(event:FlexEvent):void {
 	trace("this.initApp:", this, this.type);
+	Globals.initialize(this.nativeWindow);
+	
 	// Create new panes for the various overlays. createPane inserts into the middle of the
 	// pane stack. The final pane stack is, in descending order:
 	// PANE_FLOAT, PANE_MARKER, vehiclePane, straightTrackPane, curvedTrackPane, stationPane, PANE_OVERLAYS, PANE_MAP
-	Globals.map = map;
 	XMLHandler.loadPrefsXML(Globals.prefsXMLFile); // load and use preferences	
 
 	Globals.toolBar = toolBar;
 	Globals.mapTypeBar = mapTypeBar;
-	Globals.menu = new Menu();
 	Globals.dirty = false;
 	stage.addEventListener(Event.CLOSING, Globals.menu.onExiting);
 	NativeApplication.nativeApplication.addEventListener(Event.EXITING, Globals.menu.onExiting);		
@@ -71,6 +71,7 @@ internal function initApp(event:FlexEvent):void {
 }
 
 internal function onMapReady(event:Event):void {
+	Globals.map = map;
 	var defaultLatLng:LatLng = new LatLng(37.0,-122.06); // UC Santa Cruz (Has to go somewhere...)
     map.setCenter(defaultLatLng, 14, MapType.NORMAL_MAP_TYPE);
     map.enableScrollWheelZoom();

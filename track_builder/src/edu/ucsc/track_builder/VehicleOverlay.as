@@ -76,6 +76,10 @@ package edu.ucsc.track_builder
 		public function getContextMenu():NativeMenu {
 			var menu:NativeMenu = new NativeMenu();
 			
+			var labelMenuItem:NativeMenuItem = new NativeMenuItem(this.vehicle.id);
+			labelMenuItem.enabled = false;
+			menu.addItem(labelMenuItem);
+			
 			var selectMenuItem:NativeMenuItem = new NativeMenuItem("Select");
 			selectMenuItem.addEventListener(Event.SELECT, onSelect);
 			menu.addItem(selectMenuItem);
@@ -216,7 +220,7 @@ package edu.ucsc.track_builder
         	
         }
 
-		public static function fromPrefsXML(xml:XMLList):void {
+		public static function fromPrefsXML(xml:XML):void {
 			v_hr_width = xml.@v_hr_width;
 			v_hr_length = xml.@v_hr_length;
 			v_lr_size = xml.@v_lr_size;

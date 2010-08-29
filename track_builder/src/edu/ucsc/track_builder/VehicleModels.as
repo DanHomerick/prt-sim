@@ -88,9 +88,9 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 		
-		public function fromPrefsXML(xml:XMLList):void {
+		public function fromPrefsXML(xml:XML):void {
 			this.models = new Array();
-			for each (var modelXML:XML in xml) {
+			for each (var modelXML:XML in xml.VehicleModel) {
 				var model:VehicleModel = VehicleModel.fromXML(modelXML);
 				this.models.push(model)					
 			}

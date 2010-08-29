@@ -1820,7 +1820,7 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 		
-		public function fromPrefsXML(xml:XMLList):void {
+		public function fromPrefsXML(xml:XML):void {
 			straightMaxSpeed = xml.@straight_max_speed;
 			offset = xml.@offset;
 			bidirectional = xml.@bidirectional == 'false' || xml.@bidirectional == '0' ? false : true;

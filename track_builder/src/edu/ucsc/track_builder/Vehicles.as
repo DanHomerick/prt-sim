@@ -139,7 +139,7 @@ package edu.ucsc.track_builder
 			return xml;
 		}		
 		
-		public function fromPrefsXML(xml:XMLList):void {
+		public function fromPrefsXML(xml:XML):void {
 			model = Globals.vehicleModels.getModelByName(xml.@model_name);
 			velocity = xml.@velocity;
 			acceleration = xml.@acceleration;

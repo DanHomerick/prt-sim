@@ -1,5 +1,7 @@
 package edu.ucsc.track_builder
 {
+	import __AS3__.vec.Vector;
+	
 	import com.google.maps.LatLng;
 	
 	import edu.ucsc.track_builder.elevation.ElevationService;
@@ -14,8 +16,8 @@ package edu.ucsc.track_builder
 	import flash.filesystem.File;
 	import flash.geom.Rectangle;
 	import flash.html.HTMLLoader;
+	import flash.net.FileFilter;
 	import flash.net.URLRequest;
-	import flash.ui.Keyboard;
 	
 	import mx.containers.TitleWindow;
 	import mx.controls.Alert;
@@ -41,16 +43,24 @@ package edu.ucsc.track_builder
 		public var viewGrade:NativeMenuItem;
 //		public var viewElevation:NativeMenuItem;
 		
+		public var MAX_RECENT_FILES:uint = 6;
+		public var openRecentMenu:NativeMenu;
+		public var recentFiles:Vector.<File>;
+		
+		
 		/** Add submenus and menu items to then basemenu. For now, no references to
 		 * submenus or items are kept.
 		 */
 		public function Menu() {
+			recentFiles = new Vector.<File>();
+			
 			baseMenu = new NativeMenu();
 			
 			/* File Menu */
 			var fileMenu:NativeMenu	= new NativeMenu();
 			var fileNew:NativeMenuItem = new NativeMenuItem("New");
 			var fileOpen:NativeMenuItem = new NativeMenuItem("Open...");
+			openRecentMenu = new NativeMenu();
 			var fileSave:NativeMenuItem = new NativeMenuItem("Save");
 			var fileSaveAs:NativeMenuItem = new NativeMenuItem("Save As...");
 			var fileImportMenu:NativeMenu = new NativeMenu();
@@ -63,7 +73,7 @@ package edu.ucsc.track_builder
 			
 			fileOpen.keyEquivalent = "o";
 			fileOpen.mnemonicIndex = 0;
-			fileOpen.addEventListener(Event.SELECT, onOpen);
+			fileOpen.addEventListener(Event.SELECT, onOpen);		
 			
 			fileSave.keyEquivalent = "s";
 			fileSave.mnemonicIndex = 0;
@@ -82,6 +92,7 @@ package edu.ucsc.track_builder
 			
 			fileMenu.addItem(fileNew);
 			fileMenu.addItem(fileOpen);
+			fileMenu.addSubmenu(openRecentMenu, "Open Recent");
 			fileMenu.addItem(fileSave);
 			fileMenu.addItem(fileSaveAs);
 			fileMenu.addItem(new NativeMenuItem("", true));
@@ -133,10 +144,10 @@ package edu.ucsc.track_builder
 			/* View Menu */
 			var viewMenu:NativeMenu = new NativeMenu();
 		
-			var zoomIn:NativeMenuItem = new NativeMenuItem("Zoom In       [+]");
+			var zoomIn:NativeMenuItem = new NativeMenuItem("Zoom In\t+");
 			zoomIn.addEventListener(Event.SELECT, Globals.zoomIn);
 			
-			var zoomOut:NativeMenuItem = new NativeMenuItem("Zoom Out    [-]");
+			var zoomOut:NativeMenuItem = new NativeMenuItem("Zoom Out\t-");
 			zoomOut.addEventListener(Event.SELECT, Globals.zoomOut);			
 			
 			hideTracks = new NativeMenuItem("Hide Track");
@@ -204,19 +215,19 @@ package edu.ucsc.track_builder
 			 * See: http://bugs.adobe.com/jira/browse/SDK-17901   (Unfixed in AIR v2.0)
 			 * This was the cause of issue 
 			 */
-			var selectToolMenu:NativeMenuItem = new NativeMenuItem("Select       [F1]");
+			var selectToolMenu:NativeMenuItem = new NativeMenuItem("Select\tF1");
 			selectToolMenu.mnemonicIndex = 0;			
 			selectToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.SELECT_TOOL); Globals.toolBar.selectedIndex = Globals.SELECT_TOOL});
 			
-			var trackToolMenu:NativeMenuItem = new NativeMenuItem("Tracks      [F2]");
+			var trackToolMenu:NativeMenuItem = new NativeMenuItem("Tracks\tF2");
 			trackToolMenu.mnemonicIndex = 0;
 			trackToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.TRACK_TOOL); Globals.toolBar.selectedIndex = Globals.TRACK_TOOL});
 			
-			var stationToolMenu:NativeMenuItem = new NativeMenuItem("Stations    [F3]");
+			var stationToolMenu:NativeMenuItem = new NativeMenuItem("Stations\tF3");
 			stationToolMenu.mnemonicIndex = 0;
 			stationToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.STATION_TOOL); Globals.toolBar.selectedIndex = Globals.STATION_TOOL});
  
-			var vehicleToolMenu:NativeMenuItem = new NativeMenuItem("Vehicles    [F4]");
+			var vehicleToolMenu:NativeMenuItem = new NativeMenuItem("Vehicles\tF4");
 			vehicleToolMenu.mnemonicIndex = 0;
 			vehicleToolMenu.addEventListener(Event.SELECT, function():void {Globals.onToolChange(Globals.VEHICLE_TOOL); Globals.toolBar.selectedIndex = Globals.VEHICLE_TOOL});			
 			
@@ -290,6 +301,26 @@ package edu.ucsc.track_builder
 			helpMenu.addItem(helpAbout);
 			baseMenu.addSubmenu(helpMenu, "Help");
 		}
+
+		public function refreshOpenRecentMenu():void {
+			while (recentFiles.length > MAX_RECENT_FILES) {
+				recentFiles.shift();
+			}
+			
+			openRecentMenu.removeAllItems();
+			for each (var recent:File in recentFiles) {
+				var recentMenuItem:NativeMenuItem = new NativeMenuItem(recent.nativePath);				
+				recentMenuItem.addEventListener(Event.SELECT, function(event:Event):void {
+					                                            trace("Choose recent menu item!");
+					                                            var recentFile:File = new File(event.currentTarget.label);
+																rescueDirty(
+																	function():void {
+		                                             					XMLHandler.loadDataXML(recentFile);
+						                                            	Globals.dataXMLFile = recentFile;
+					                                                })});
+				openRecentMenu.addItem(recentMenuItem);		 
+			}
+		}
 		
 		// Handler for "New" file menuitem.
 		public function onNew(event:Event):void {
@@ -299,32 +330,36 @@ package edu.ucsc.track_builder
 		// Handler for "Open" file menuitem.
 		public function onOpen(event:Event):void {
 			rescueDirty(function():void {
-					if (Globals.dataXMLFile == null) {
-						var dir:File = File.documentsDirectory;
+						var dir:File = File.documentsDirectory.clone();
+						var fileFilter:FileFilter = new FileFilter("XML", "*.xml");
 						try {
-							dir.addEventListener(Event.SELECT, XMLHandler.loadDataXML); // clears old data before load
-							dir.browseForOpen("Open");					
+							dir.addEventListener(Event.SELECT, function(event:Event):void {
+								                                 var file:File = event.target as File;
+								                                 if (file != null) {
+							                                     	XMLHandler.loadDataXML(file);
+ 								                                 	recentFiles.push(file);
+								                                 	refreshOpenRecentMenu();
+								                                 	Globals.dataXMLFile = file;
+							                                     }}, false, 0, true); // weak ref
+							dir.browseForOpen("Open", [fileFilter]);
 						} catch(error:Error) {
 							trace("Failed:", error.message);
 							Alert.show(error.message, "Open Failed", Alert.CANCEL);							
-						}
-					} else {
-						try {
-							Globals.dataXMLFile.addEventListener(Event.SELECT, XMLHandler.loadDataXML); // clears old data before load
-							Globals.dataXMLFile.browseForOpen("Open");					
-						} catch(error:Error) {
-							trace("Failed:", error.message);
-							Alert.show(error.message, "Open Failed", Alert.CANCEL);							
-						}
-					}});
+						}});
 		}
 		
 		// Handler for "Save" file menuitem.
 		public function onSave(event:Event):void {
 			trace("Globals.xml_file: ", Globals.dataXMLFile);
 			if (Globals.dataXMLFile == null) {
-				var dir:File = File.documentsDirectory;
-				dir = dir.resolvePath('Untitled.xml');
+				var dir:File;
+				if (recentFiles.length == 0) {
+					dir = File.documentsDirectory.clone();
+				} else {
+					dir = recentFiles[recentFiles.length-1].parent
+				}
+				
+				dir = dir.resolvePath('Untitled.xml'); // Set a default name
 				try {
 					dir.addEventListener(Event.SELECT, onFileChosen);
 					dir.browseForSave("Save");					
@@ -345,10 +380,16 @@ package edu.ucsc.track_builder
 		
 		// Handler for "SaveAs" file menuitem.
 		public function onSaveAs(event:Event):void {			
-			// no previous save: go to Docs folder
+			// no previous save
 			if (Globals.dataXMLFile == null) {
-				var dir:File = File.documentsDirectory;
-				dir = dir.resolvePath('Untitled.xml');
+				var dir:File;
+				if (recentFiles.length == 0) {
+					dir = File.documentsDirectory.clone();
+				} else {
+					dir = recentFiles[recentFiles.length-1].parent
+				}
+
+				dir = dir.resolvePath('Untitled.xml'); // Set a default name
 				try { 
 					dir.addEventListener(Event.SELECT, onFileChosen);
 					dir.browseForSave("Save As");							
@@ -358,8 +399,9 @@ package edu.ucsc.track_builder
 				}
 			} else { // Go to save folder as previous save
 				try {
-					Globals.dataXMLFile.addEventListener(Event.SELECT, onFileChosen);
-					Globals.dataXMLFile.browseForSave("Save As");					
+					var file:File = Globals.dataXMLFile.clone(); 
+					file.addEventListener(Event.SELECT, onFileChosen);
+					file.browseForSave("Save As");					
 				} catch(error:Error) {
 					Alert.show(error.message, "Save As Failed", Alert.CANCEL);
 					trace("Failed:", error.message);
@@ -372,12 +414,11 @@ package edu.ucsc.track_builder
 			if (file.extension != "xml") {
 				file.nativePath += ".xml";
 			}
-			Globals.dataXMLFile = file;			
-			Globals.dirty = false;
-			Globals.dataXMLFile.removeEventListener(Event.SELECT, onFileChosen); // remove the event listener that got me here
 			
 			try {
 				XMLHandler.doSaveXml(Globals.dataXMLFile, XMLHandler.generateDataXML()); // also saves map image
+				Globals.dataXMLFile = file;			
+				Globals.dirty = false;
 			} catch (err:Error) {
 				trace ("Failed:", err.message);
 				Alert.show(err.message, "Save Failed", Alert.CANCEL);
@@ -451,7 +492,7 @@ package edu.ucsc.track_builder
 					Alert.yesLabel = 'Save';
 					Alert.noLabel = 'Discard';
 					Alert.buttonWidth = 80; // Discard is a big word!
-					Alert.show('Save file "'+Globals.dataXMLFile.nativePath+' ?',
+					Alert.show('Save changes to file "'+Globals.dataXMLFile.nativePath+'"?',
 					           'Save',
 					           Alert.YES|Alert.NO|Alert.CANCEL,
 					           null,
@@ -649,7 +690,6 @@ package edu.ucsc.track_builder
 		
 		public function onShowXml(event:Event):void {
 			trace(event.target.label);
-			trace(XMLHandler.generateDataXML().toXMLString());
 			var window:TitleWindow = new TitleWindow();
 			window.showCloseButton = true;
 			window.title = "DEBUG: XML output";
@@ -700,9 +740,33 @@ package edu.ucsc.track_builder
 		}
 		
 		public function onAbout(event:Event):void {
-			Alert.show("By Dan Homerick \t danhomerick@gmail.com\nElevation data courtesy of geonames.org and NASA's Shuttle Radar Topography Mission (SRTM) dataset", "About");
+			Alert.show("By Dan Homerick \t danhomerick@gmail.com", "About");
 		}			
 
+		public function toPrefsXML():XML {
+			var xml:XML = <Menu/>
+			for each (var file:File in recentFiles) {
+				file.canonicalize();
+				if (file.exists) {
+					xml.appendChild(<RecentFile>{file.nativePath}</RecentFile>);
+				}				
+			}
+			return xml;	
+		} 
 
+		public function toDefaultPrefsXML():XML {
+			return <Menu/>;
+		}
+
+		public function fromPrefsXML(xml:XML):void {
+			recentFiles = new Vector.<File>();
+			for each (var fileStr:String in xml.RecentFile) {
+				var file:File = new File(fileStr);
+				if (file.exists) {
+					recentFiles.push(file);
+				}
+			}
+			refreshOpenRecentMenu();
+		}
 	}		
 }

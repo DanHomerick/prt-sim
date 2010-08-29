@@ -27,6 +27,7 @@ package edu.ucsc.track_builder
 	{
 		public var map:IMap;
 		public var station:Station;
+		public var stationOutline:Shape;
 		public var stationArea:Shape;
 		private var radius_pix_width:uint;
 		private var radius_pix_height:uint;
@@ -40,7 +41,8 @@ package edu.ucsc.track_builder
 		public function StationOverlay(station:Station)
 		{
 			super();			
-			this.station = station;			
+			this.station = station;
+			stationOutline = new Shape();	
 			stationArea = new Shape();
 
             addEventListener(MapEvent.OVERLAY_ADDED, onOverlayAdded, false, 0, true); // weak_ref=true
@@ -67,12 +69,14 @@ package edu.ucsc.track_builder
         private function onOverlayAdded(event:MapEvent):void
         {
         	addChild(stationArea);
+        	addChild(stationOutline);
             positionOverlay(false); // force screen refresh
         }
 
         private function onOverlayRemoved(event:MapEvent):void
-        {
+        {        	
             removeChild(stationArea);
+            removeChild(stationOutline);
         }        
         
         public override function positionOverlay(zoomChanged:Boolean):void
@@ -90,9 +94,18 @@ package edu.ucsc.track_builder
         	var endPt:Point = pane.fromLatLngToPaneCoords(seg.getEnd(), true);
         	var centerPt:Point = pane.fromLatLngToPaneCoords(seg.midpoint, true);
 
-        	stationArea.graphics.clear();
-        	stationArea.graphics.moveTo(centerPt.x, centerPt.y);
+			drawStationArea(centerPt);
+        	drawStationOutline();
         	
+        	// Draw the queue, unload, and load
+        	// ...
+        	
+        }
+
+		public function drawStationArea(centerPt:Point):void {
+        	stationArea.graphics.clear();
+    		stationArea.graphics.moveTo(centerPt.x, centerPt.y);
+			
         	// Draw the station coverage area
 //        	stationArea.graphics.beginFill(0xFF0000, 0.2);
 			gradiantBox.createGradientBox(radius_pix_width*2, radius_pix_height*2, 0, centerPt.x - radius_pix_width, centerPt.y - radius_pix_height);
@@ -107,12 +120,12 @@ package edu.ucsc.track_builder
 //        	                                  centerPt.y - radius_pix_height,
 //        	                                  radius_pix_width,
 //        	                                  radius_pix_height); // uses upper left corner, relative to the registration point of the parent display object        	
-        	stationArea.graphics.endFill(); 
-        	
-        	// Draw the queue, unload, and load
-        	// ...
-        	
-        }
+        	stationArea.graphics.endFill(); 			
+		}
+
+		public function drawStationOutline():void {
+			stationOutline.graphics.clear();			
+		}
 
 		public function getLatLngBounds():LatLngBounds {
 			var bounds:LatLngBounds = new LatLngBounds();
@@ -136,6 +149,10 @@ package edu.ucsc.track_builder
 		public function getContextMenu():NativeMenu {
 			var menu:NativeMenu = new NativeMenu();
 			
+			var labelMenuItem:NativeMenuItem = new NativeMenuItem(this.station.id);
+			labelMenuItem.enabled = false;
+			menu.addItem(labelMenuItem);
+						
 			var selectMenuItem:NativeMenuItem = new NativeMenuItem("Select");
 			selectMenuItem.addEventListener(Event.SELECT, onSelect);
 			menu.addItem(selectMenuItem);
@@ -172,7 +189,7 @@ package edu.ucsc.track_builder
 			radius_pix_height = pane.fromLatLngToPaneCoords(seg.midpoint).y - pane.fromLatLngToPaneCoords(yLatLng).y; // y increases downward
 		}
 
-		public static function fromPrefsXML(xml:XMLList):void {
+		public static function fromPrefsXML(xml:XML):void {
 			for each (var color:XML in xml.Coverage.Color) {
 				coverageColors.push(uint(color));
 			}
@@ -187,8 +204,7 @@ package edu.ucsc.track_builder
 		/** Generate xml from current preferences */
 		public static function toPrefsXML():XML {
 			var xml:XML = <StationOverlay>
-			                <Coverage>
-			                </Coverage>
+			                <Coverage/>
 			              </StationOverlay>
 			for each (var color:uint in coverageColors) {
 				xml.Coverage.appendChild(<Color>{color}</Color>);
