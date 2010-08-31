@@ -13,6 +13,8 @@ package edu.ucsc.track_builder
 		public var label:String;
 		public var modelName:String;
 		
+		public var overlay:VehicleOverlay;
+		
 		/** Distance in meters from the start of the track segment. */
 		public function get position():Number {
 			return this.location.getPosition(this.latlng);	
@@ -31,9 +33,18 @@ package edu.ucsc.track_builder
 			this.modelName    = modelName;
 			
 			if (!preview) {
+				// add to global store
 				Undo.pushMicro(Globals.vehicles.vehicles, Globals.vehicles.vehicles.pop)
 				Globals.vehicles.vehicles.push(this);
 			}			
+		}
+
+		/** Reverses all of the constructor's side effects (with Undo support) */
+		public function remove():void {
+			// remove from global store
+			function removeMe(item:Vehicle, index:int, vector:Vector.<Vehicle>):Boolean {return item !== this};
+			Undo.assign(Globals.vehicles, "vehicles", Globals.vehicles.vehicles);
+			Globals.vehicles.vehicles = Globals.vehicles.vehicles.filter(removeMe, this);
 		}
 
 		public function toXML():XML {

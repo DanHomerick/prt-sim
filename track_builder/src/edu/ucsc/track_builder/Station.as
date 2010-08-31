@@ -2,7 +2,7 @@ package edu.ucsc.track_builder
 {
 	import __AS3__.vec.Vector;
 	
-	import mx.controls.Alert;
+	import mx.utils.ObjectUtil;
 
 	public class Station
 	{	
@@ -13,6 +13,8 @@ package edu.ucsc.track_builder
 		public var coverageRadius:uint;
 		public var peakHour:uint;
 		public var daily:uint;
+		
+		public var overlay:StationOverlay;
 		
 		public static const ENTRANCE:int = 0;
 		public static const EXIT:int = 0;
@@ -41,72 +43,42 @@ package edu.ucsc.track_builder
 			this.platforms = platforms;
 			this.coverageRadius = coverage_radius;
 			this.peakHour = peakHour;
-			this.daily = daily;			
+			this.daily = daily;				
 			
-			/* Side effect */
+			/* Side effect - store Station in Stations container */
 			Undo.pushMicro(Globals.stations.stations, Globals.stations.stations.pop);
 			Globals.stations.stations.push(this);
-		}
+			
+			/* Side effect - store TrackSegment:Station pairing in Station's dictionary */
+			for each (var ts:TrackSegment in allSegments) {
+				Undo.assign(Globals.stations.trackSegment2Station, ts.id, this);	
+				Globals.stations.trackSegment2Station[ts.id] = this;
+			}
+		}	
 		
-//		/** Creates a new vehicle in an available berth closest to the departure end of the station.
-//		 * @param side If EXIT (the default) place in an available berth closest to the departure.
-//		 *                  If ENTRANCE, place the vehicle in an available berth closest to the arrival.
-//		 * @return The vehicle that was created. If no berths are available, returns null. */  
-//		public function makeVehicle(label:String, platform_index, side:int=EXIT):Vehicle {
-//			var platform:Platform;
-//			var berthIndex:int;
-//			var foundAvail:Boolean = false;
-//			
-//			if (side == EXIT) { // iterate in reverse
-//				platform = platforms[platform_index];
-//				var berths:Vector.<Berth> = platform.berths;
-//				for (berthIndex = berths.length-1; berthIndex > -1; --berthIndex) {
-//					if (berths[berthIndex] == null) {
-//						foundAvail = true;
-//						break;
-//					}
-//				}
-//				if (foundAvail) break;
-//			}
-//			
-//			else if (side == ENTRANCE) { // iterate forward
-//				for (i=0; i < platforms.length; ++i) {
-//					platform = platforms[i];
-//					berths = platform.berths;
-//					for (berthIndex=0; berthIndex < berths.length; ++berthIndex) {
-//						if (berths[berthIndex] == null) {
-//							foundAvail = true;
-//							break;
-//						}
-//					}
-//					if (foundAvail) break;
-//				}
-//			}
-//			
-//			else throw new Error("Unknown side.");
-//							
-//			/* Bail if no empty berths found */
-//			if (!foundAvail) return null;
-//			
-//			/* Create the vehicle in the empty berth */
-//			var vehicleSeg:TrackSegment = Globals.tracks.getTrackSegment(platform.trackSegId);
-//			var pos:Number = platform.berthLength * (berthIndex+1); // place the nose at the downstream edge of the berth
-//			var vehicle:Vehicle = new Vehicle(
-//						              	IdGenerator.getVehicleId(),
-//						              	pos,
-//						              	0,
-//						              	0,
-//						              	vehicleSeg,
-//			                            vehicleSeg.getLatLng(pos),
-//			                            vehicleSeg.getElevation(pos),
-//			                            label,
-//			                            'DEFAULT',
-//			                            false
-//			                          );
-//			new VehicleOverlay(vehicle, Globals.tracks.getTrackOverlay(vehicleSeg.id)); // Placed in the global store by side effect.
-//			berths[berthIndex] = vehicle.id
-//			return vehicle;
-//		}
+		/** Reverses all of the constructor's side effects (with Undo support). Does not affect associated tracks or
+		 * vehicles.
+		 * 
+		 * @see #Stations.remove */
+		public function remove():void {
+			var iterSeg:TrackSegment;		
+			
+			// Remove TrackSegment:Station pairings from Station's dictionary */			
+			for each (iterSeg in this.allSegments) {
+				Undo.assign(Globals.stations.trackSegment2Station, iterSeg.id, this);
+				delete Globals.stations.trackSegment2Station[iterSeg.id];
+			}
+			
+			// Remove Station from global store			
+			function removeStation(item:Station, index:int, vector:Vector.<Station>):Boolean {return item !== this};
+			Undo.assign(Globals.stations, "stations", Globals.stations.stations);
+			Globals.stations.stations = Globals.stations.stations.filter(removeStation, this);
+			
+			// Remove all tracks that make up the Station
+			for each (iterSeg in this.allSegments) {
+				Globals.tracks.remove(iterSeg); // handles Undo
+			}
+		}
 		
 		public function toXML():XML {			
 			var xml:XML = <Station id={id} label={label}/>;

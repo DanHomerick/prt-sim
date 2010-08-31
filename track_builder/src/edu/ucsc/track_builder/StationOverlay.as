@@ -42,17 +42,20 @@ package edu.ucsc.track_builder
 		{
 			super();			
 			this.station = station;
+			station.overlay = this;
+			
 			stationOutline = new Shape();	
 			stationArea = new Shape();
-
-            addEventListener(MapEvent.OVERLAY_ADDED, onOverlayAdded, false, 0, true); // weak_ref=true
-            addEventListener(MapEvent.OVERLAY_REMOVED, onOverlayRemoved, false, 0, true);
-            
-            addEventListener(ToolTipEvent.TOOL_TIP_SHOW, onToolTip, false, 0, true);            
+			
 //            toolTip = "Dummy text"; // requires some text to trigger tooltips. Text changed in onToolTip
             contextMenu = getContextMenu();
+
+            /* Side effects */           
+            addEventListener(MapEvent.OVERLAY_ADDED, onOverlayAdded, false, 0, true); // weak_ref=true
+            addEventListener(MapEvent.OVERLAY_REMOVED, onOverlayRemoved, false, 0, true);            
+            addEventListener(ToolTipEvent.TOOL_TIP_SHOW, onToolTip, false, 0, true);            
             
-            /* Side effects */
+            // add myself to the map
             Undo.pushMicro(Globals.stationPane, Globals.stationPane.removeOverlay, this);
             Globals.stationPane.addOverlay(this);  
             
@@ -60,6 +63,18 @@ package edu.ucsc.track_builder
 			Globals.stations.overlays.push(this);
 			Undo.pushMicro(Globals.stations.overlays, Globals.stations.overlays.pop);         
 		}
+
+        /** Reverses all of the constructor's side effects (with Undo support) */
+		public function remove():void {
+			// remove the reference from the global store
+			function removeMe(item:StationOverlay, index:int, vector:Vector.<StationOverlay>):Boolean {return item !== this};
+			Undo.assign(Globals.stations, "overlays", Globals.stations.overlays);
+			Globals.stations.overlays = Globals.stations.overlays.filter(removeMe, this);
+			
+			// remove the overlay from the map
+   			Undo.pushMicro(Globals.stationPane, Globals.stationPane.addOverlay, this);
+        	Globals.stationPane.removeOverlay(this);		
+        }
 
         public override function getDefaultPane(map:IMap):IPane
         {
@@ -174,7 +189,7 @@ package edu.ucsc.track_builder
         public function onDelete(event:Event):void {
         	trace("onDelete");
         	Undo.startCommand(Undo.USER);
-        	Globals.stations.removeStationOverlay(this);
+        	Globals.stations.remove(this.station);
         	Undo.endCommand()        	
         }        
         

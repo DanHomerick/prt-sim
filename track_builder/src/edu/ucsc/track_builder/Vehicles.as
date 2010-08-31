@@ -67,6 +67,7 @@ package edu.ucsc.track_builder
 
 		}
 
+		/** Creates a new Vehicle and VehicleOverlay. */
 		public function addVehicle(latlng:LatLng, tOverlay:TrackOverlay, preview:Boolean):void {
 			if (tOverlay == null) {
 				throw new VehicleError("Cursor must be over a track segment to place a vehicle");
@@ -83,7 +84,14 @@ package edu.ucsc.track_builder
 											  label,
 											  model.modelName,
 											  preview);
-			var vOverlay:VehicleOverlay = new VehicleOverlay(vehicle, tOverlay, preview);		
+			var vOverlay:VehicleOverlay = new VehicleOverlay(vehicle, preview);
+			vehicle.overlay = vOverlay;	
+		}
+
+		/** Removes the vehicle and its associated overlay. */
+		public function remove(v:Vehicle):void {
+			v.overlay.remove();
+			v.remove();	
 		}
 		
 		public function getVehicleOverlaysFromTrackOverlay(t_overlay:TrackOverlay):Vector.<VehicleOverlay> {
@@ -113,7 +121,7 @@ package edu.ucsc.track_builder
 				vehicle = Vehicle.fromXML(vXml);
 				trackOverlay = Globals.tracks.getTrackOverlay(vehicle.location.id);
 				trace(vehicle.latlng.lat(), vehicle.latlng.lng());
-				vOverlay = new VehicleOverlay(vehicle, trackOverlay);
+				vOverlay = new VehicleOverlay(vehicle, false);
 			}
 		}
 		
@@ -155,26 +163,6 @@ package edu.ucsc.track_builder
 			targetMarker = null;			
 			vehicles = new Vector.<Vehicle>();
 			overlays = new Vector.<VehicleOverlay>();
-		}
-		
-		
-		/** Removes the vehicle from the global store */
-		public function removeVehicle(v:Vehicle):void {
-			function removeV (item:Vehicle, index:int, vector:Vector.<Vehicle>):Boolean {return item != v;};
-			Undo.assign(this, 'vehicles', vehicles); // note that filter creates a new Vector, which is why I'm able to just store a ref to the old vector
-			vehicles = vehicles.filter(removeV); 
-		}
-		
-		/** Removes the associated vehicle and the overlay from the global store */ 
-		public function removeVehicleOverlay(vo:VehicleOverlay):void {
-			if (vo.vehicle) {
-				removeVehicle(vo.vehicle);
-			}
-			Undo.pushMicro(Globals.vehiclePane, Globals.vehiclePane.addOverlay, vo);
-			Globals.vehiclePane.removeOverlay(vo);
-			function removeVO (item:VehicleOverlay, index:int, vector:Vector.<VehicleOverlay>):Boolean {return item != vo;};
-			Undo.assign(this, 'overlays', overlays);
-			overlays = overlays.filter(removeVO);
 		}
 		
 		public function validate():Array {

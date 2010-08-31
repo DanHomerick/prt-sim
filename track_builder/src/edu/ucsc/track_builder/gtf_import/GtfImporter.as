@@ -475,7 +475,7 @@ package edu.ucsc.track_builder.gtf_import
 							                            'BUS_DEFAULT', // FIXME: Expose model choice to user during import?
 							                            false
 							                          );
-									new VehicleOverlay(vehicle, tOverlay); // added to global store as a side effect
+									new VehicleOverlay(vehicle); // added to global store as a side effect
 									placedVehicle = true; 
 									break; // break the iteration over pathOverlays				
 								} // end iteration over pathOverlays
@@ -526,7 +526,8 @@ package edu.ucsc.track_builder.gtf_import
 				                            false);
 			}
 			
-			new VehicleOverlay(vehicle, Globals.tracks.getTrackOverlay(vehicle.location.id), false);
+			var overlay:VehicleOverlay = new VehicleOverlay(vehicle, false);
+			vehicle.overlay = overlay;
 			return vehicle
 		}
 	

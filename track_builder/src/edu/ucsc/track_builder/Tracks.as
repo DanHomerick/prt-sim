@@ -224,7 +224,6 @@ package edu.ucsc.track_builder
 				throw new TrackError("originOverlay equals destOverlays");
 			}
 			
-			var curveOverlays:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
 			var returnOverlays:Vector.<TrackOverlay>;
 			var overlay:TrackOverlay; // for iterating through Vectors.
 			if (!bidirectional) {
@@ -286,7 +285,7 @@ package edu.ucsc.track_builder
 			var newVec:Vector3D;
 	        var overlay:TrackOverlay; // for general iteration
 			
-			// Track Overlays that should be connectd to the straight overlay.
+			// Track Overlays that should be connected to the straight overlay.
 			var toConnect:Vector.<TrackOverlay> = new Vector.<TrackOverlay>();
 				
 			/* Starting from an existing track */
@@ -1515,29 +1514,30 @@ package edu.ucsc.track_builder
 			return overlay;			 
 		}		
 
-		/** Removes a segment from the global store. Does not remove segment from any overlays! */
-        public function removeTrackSegment(seg:TrackSegment):void {
-        	var otherId:String;
-        	var otherSeg:TrackSegment;
-        	
-        	function removeTSID (item:String, index:int, vector:Vector.<String>):Boolean {return item != seg.id};
-        	
-        	// remove all connections to the seg
-        	for each (otherId in seg.next_ids) {
-        		otherSeg = getTrackSegment(otherId);
-        		Undo.assign(otherSeg, 'prev_ids', otherSeg.prev_ids);
-        		otherSeg.prev_ids = otherSeg.prev_ids.filter(removeTSID);
-        	}
-        	for each (otherId in seg.prev_ids) {
-				otherSeg = getTrackSegment(otherId);
-				Undo.assign(otherSeg, 'next_ids', otherSeg.next_ids); 
-				otherSeg.next_ids = otherSeg.next_ids.filter(removeTSID);
-        	}
-
-			// remove segment from Tracks.     	
-			Undo.pushMicro(this, function():void {segments[seg.id] = seg;});
-			delete segments[seg.id];
-        }
+		/** Removes a TrackSegment, and all Vehicles that reside on the segment as well as their VehicleOverlays. 
+		 * If the TrackSegment's overlay does not contain any other TrackSegments, then it too is removed. Undoable.
+		 * @param seg The TrackSegment to remove.
+		 */
+		public function remove(seg:TrackSegment):void {			
+			// remove vehicles on the track 
+			for each (var vehicle:Vehicle in Globals.vehicles.vehicles) {
+				if (vehicle.location === seg) {
+					vehicle.overlay.remove();
+					vehicle.remove();
+				}
+			}			
+		
+			if (seg.overlay.segments.length == 1) {
+				seg.overlay.remove();
+			} else {
+				// remove seg from its overlay.segments
+				function removeTS(item:TrackSegment, index:int, vector:Vector.<TrackSegment>):Boolean {return item !== seg};
+				Undo.assign(seg.overlay, "segments", seg.overlay.segments);
+				seg.overlay.segments = seg.overlay.segments.filter(removeTS);
+			}
+			
+			seg.remove();
+		}
 
 		/** Returns a vector containing all TrackSegments, sorted by id */
 		public function getSortedTrackSegments():Vector.<TrackSegment> {
@@ -1553,37 +1553,6 @@ package edu.ucsc.track_builder
 			} 
 			vec.sort(cmp);
 			return vec;
-		}
-		
-		
-		/** Removes an overlay, and all of the segments it contains. */ 
-		public function removeTrackOverlay(overlay:TrackOverlay):void {
-			// remove from the display
-			if (overlay.isCurved()) {
-				Undo.pushMicro(Globals.curvedTrackPane, Globals.curvedTrackPane.addOverlay, overlay);
-				Globals.curvedTrackPane.removeOverlay(overlay);
-			} else {
-				Undo.pushMicro(Globals.straightTrackPane, Globals.straightTrackPane.addOverlay, overlay);
-				Globals.straightTrackPane.removeOverlay(overlay); 
-			}
-			
-			// remove vehicles on the track 
-			for each (var vo:VehicleOverlay in Globals.vehicles.overlays) {
-				if (vo.getTrackOverlay() == overlay) {
-					// Surprised that I can alter a vector as I iterate through it, but seems to work fine.
-					Globals.vehicles.removeVehicleOverlay(vo);
-				}
-			}
-			
-			// remove each segment
-			for each (var ts:TrackSegment in overlay.segments) {				
-				removeTrackSegment(ts);
-			}
-			
-			// remove overlay from Tracks.
-			function removeOL (item:TrackOverlay, index:int, vector:Vector.<TrackOverlay>):Boolean {return item != overlay;};
-			Undo.assign(this, 'overlays', overlays);
-			overlays = overlays.filter(removeOL);
 		}
 
 		/** Attempts to level out the track. Returns the steepest grade remaining.

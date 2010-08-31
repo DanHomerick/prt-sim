@@ -59,7 +59,7 @@
         <mx:columns>
             <mx:DataGridColumn dataField="id" headerText="ID" width="200" sortCompareFunction="Utility.compareIds"/>  
             <mx:DataGridColumn dataField="length" headerText="Length" width="80"/>
-            <mx:DataGridColumn dataField="bidir" headerText="Bidirectional" width="50"/>
+            <mx:DataGridColumn dataField="bidirectional" headerText="Bidirectional" width="50"/>
             <mx:DataGridColumn dataField="connected" headerText="Connected" width="50"/>
             <mx:DataGridColumn dataField="grade" headerText="Grade" width="50"/>
             <mx:DataGridColumn dataField="label" headerText="Label" width="100"/>            

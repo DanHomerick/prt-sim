@@ -24,69 +24,39 @@ package edu.ucsc.track_builder
 	import flash.geom.Vector3D;
 	
 	import mx.controls.Alert;
+	import mx.events.CloseEvent;
 	import mx.events.ToolTipEvent;
 	import mx.managers.ToolTipManager;
 
 	public class TrackOverlay extends OverlayBase
 	{
+		public static const FWD:uint = 0;
+		public static const REV:uint = 1;
+		
 		public static const NORMAL_MODE:uint = 0;
 		public static const GRADE_MODE:uint = 1;
 		public static const ELEVATION_MODE:uint = 2;
-		public static const FWD:uint = 0;
-		public static const REV:uint = 1;
 		public static var displayMode:uint = NORMAL_MODE;
 				
 		
 		public static var gradeColorMap:ColorMapper = new ColorMapper(0, 0.2, ColorMapper.GnYlRd);
 		
 		public var segments:Vector.<TrackSegment>;
-		
-		/** Index of the first element in this.segments which has a reversed direction. Out of bounds if overlay is uni-directional. */ 
-		private function get switchover():uint {return Math.ceil(segments.length/2.0);} // todo: replace if implement multiple lanes in each direction
 				
 		/* The sense of start and end for a TrackOverlay is inherited from the first segment. */
 		public function getStart():LatLng {return segments[0].getStart()} // segment provides a clone
-		public function setStart(latlng:LatLng):void {
-			var i:int;
-			if (bidirectional) {
-				for (i=0; i < segments.length; ++i) {
-					if (i < switchover) {
-						segments[i].setStart(latlng.clone());
-					} else {
-						segments[i].setEnd(latlng.clone());
-					}
-				}
-			} else {
-				for (i=0; i < segments.length; ++i) {
-					segments[i].setStart(latlng.clone());
-				}
-			}
-			update(); // force a display update.
-		}
+		public function setStart(latlng:LatLng):void {this.segments[0].setStart(latlng);}
+		
 		public function getEnd():LatLng {return segments[0].getEnd()} // segment provides a clone
-		public function setEnd(latlng:LatLng):void {
-			var i:int;
-			if (bidirectional) {
-				for (i=0; i < segments.length; ++i) {
-					if (i < switchover) {
-						segments[i].setEnd(latlng.clone());
-					} else {
-						segments[i].setStart(latlng.clone());
-					}
-				}				
-			} else {
-				for (i=0; i < segments.length; ++i) {
-					segments[i].setEnd(latlng.clone());
-				}
-			}
-			update(); // force a display update.
-		}
+		public function setEnd(latlng:LatLng):void {return this.segments[0].setEnd(latlng);}
+		
 		public function get length():Number {return segments[0].length;}
 		public function get h_length():Number {return segments[0].h_length;} /** horizontal length, ignores vertical component */
+		
 		public function isCurved():Boolean {return segments[0].isCurved();}
 		public function getCenter():LatLng {return segments[0].getCenter();}
 		
-		public var bidirectional:Boolean;
+		public function get bidirectional():Boolean {return segments.length > 1;}
 		
 		private var line:Shape;     // the line drawn on the map
 		private var highlight_line:Shape; // a thicker, different color behind the line to indicate that it's highlighted.
@@ -128,14 +98,12 @@ package edu.ucsc.track_builder
 		{
 			super();
 			
+			this.segments = segments;
 			for each (var seg:TrackSegment in segments) {
 				seg.overlay = this;
 			} 
-			
-			this.segments = segments;
+						
 			this.preview = segments[0].preview;
-			// is bidirectional iff the first segment is antiparallel to the last.
-			bidirectional = segments[0].getStart().equals(segments[segments.length-1].getEnd()) && !getStart().equals(getEnd());
 			
 			line = new Shape();
 			highlight_line = new Shape();
@@ -173,6 +141,24 @@ package edu.ucsc.track_builder
 			Globals.tracks.overlays.push(this);
 			Undo.pushMicro(Globals.tracks.overlays, Globals.tracks.overlays.pop);
 		}
+
+        /** Reverses all of the constructor's side effects (with Undo support) */
+        public function remove():void {	
+			// remove myself from the map display
+			if (isCurved()) {
+				Undo.pushMicro(Globals.curvedTrackPane, Globals.curvedTrackPane.addOverlay, this);
+            	Globals.curvedTrackPane.removeOverlay(this);
+            	
+   			} else {
+   				Undo.pushMicro(Globals.straightTrackPane, Globals.straightTrackPane.addOverlay, this);
+            	Globals.straightTrackPane.removeOverlay(this);
+      		}
+			
+			// Remove myself from Tracks.overlays
+			function removeMe(item:TrackOverlay, index:int, vector:Vector.<TrackOverlay>):Boolean {return item !== this};
+			Undo.assign(Globals.tracks, "overlays", Globals.tracks.overlays);
+			Globals.tracks.overlays = Globals.tracks.overlays.filter(removeMe, this);				
+        }
 		
 		public override function get contextMenu():NativeMenu {return makeContextMenu();}
 		
@@ -192,7 +178,8 @@ package edu.ucsc.track_builder
 				deleteMenuItem.addEventListener(Event.SELECT, onDelete);
 				menu.addItem(deleteMenuItem);
 				
-				if (!isCurved()) { // straight overlays only
+				 // Add Station. Only show if straight and if not part of an existing station.
+				if (!isCurved() && (Globals.stations.trackSegment2Station[segments[0].id] == null)) {
 					var addStationMenu:NativeMenuItem = new NativeMenuItem("Add Station");
 					addStationMenu.addEventListener(Event.SELECT, onAddStation);
 					menu.addItem(addStationMenu);
@@ -234,17 +221,38 @@ package edu.ucsc.track_builder
 		}
 		
 		public function onDelete(event:Event):void {
-			trace("onDelete: ", event.target, event.target.label);
-			Undo.startCommand(Undo.USER);
-			if (event.target.label == "Delete" || event.target.label == "All") { // only one TrackSegment or delete all
-				Globals.tracks.removeTrackOverlay(this);  // handles removing the overlay from the display and breaking track connections.
-			} else {
-				var ts:TrackSegment = Globals.tracks.getTrackSegment(event.target.label);
-	        	function removeTS (item:TrackSegment, index:int, vector:Vector.<TrackSegment>):Boolean {return item.id != ts.id;};     	
-    	    	segments = segments.filter(removeTS); // remove the segment from the local store
-    	    	Globals.tracks.removeTrackSegment(ts); // remove the segment globally. breaks track connections			
+			trace("onDelete: ", event.target, event.target.label);			
+			/* Delete the whole station if a component track segment is deleted. */
+			var station:Station = Globals.stations.trackSegment2Station[this.segments[0].id];
+			if (station != null) {
+				Alert.yesLabel = "Delete";				
+				Alert.show(this.segments[0].id + " is part of " + station.id + " and cannot be deleted without deleting the station.",
+				           "Delete Station?", Alert.YES|Alert.CANCEL, null, function(event:CloseEvent):void {
+				                 if (event.detail==Alert.YES) { // clicked 'Delete'
+				                 	Undo.startCommand(Undo.USER);
+				                 	Globals.stations.remove(station);
+				                 	Undo.endCommand();
+				                 }
+				           });
+				Alert.yesLabel = "Yes";
 			}
-			Undo.endCommand();
+			
+			else {
+				Undo.startCommand(Undo.USER);
+				if (event.target.label == "Delete") { // only one TrackSegment
+					Globals.tracks.remove(this.segments[0]);  // handles removing the overlay from the display and breaking track connections.
+				} else if (event.target.label == "All") { // Multiple TrackSegments
+					var segs:Vector.<TrackSegment> = this.segments.slice();
+					for each (var seg:TrackSegment in segs) {
+						Globals.tracks.remove(seg);
+					}
+				} else { // Multiple TrackSegments, only delete one of them
+					var ts:TrackSegment = Globals.tracks.getTrackSegment(event.target.label);
+	    	    	Globals.tracks.remove(ts); // remove the segment globally. breaks track connections			
+				}
+				Undo.endCommand();			
+			}
+			
 		}
 
 		public function onAddStation(event:Event):void {
@@ -339,7 +347,6 @@ package edu.ucsc.track_builder
             if (segments[0].isCurved()) {
             	addChild(circle);
             }  
-//            update();    
         }
 
         private function onOverlayRemoved(event:MapEvent):void
@@ -349,9 +356,8 @@ package edu.ucsc.track_builder
             removeChild(line);
             if (segments[0].isCurved()) {
             	removeChild(circle);
-            }
-            // don't update right away. Can cause problems during an Undo.
-        }        
+            }    
+        }       
         
         public override function positionOverlay(zoomChanged:Boolean):void
         {
@@ -605,33 +611,23 @@ package edu.ucsc.track_builder
 		}
 
 		public function isStartExposed():Boolean {
-			for (var i:int=0; i < segments.length; ++i) {
-				if (i < switchover) {
-					if (segments[i].prev_ids.length > 0) {
-						return false;
-					}
-				} else {
-					if (segments[i].next_ids.length > 0) {
-						return false;
-					}
-				}
+			if (segments.length == 1) {
+				return segments[0].isStartExposed();
+			} else if (segments.length == 2) {
+				return segments[0].isStartExposed() || segments[1].isEndExposed();
+			} else {
+				throw Error("Unexpected 'segments' length: " + segments.length.toString);
 			}
-			return true;
 		}
 		
 		public function isEndExposed():Boolean {
-			for (var i:int=0; i < segments.length; ++i) {
-				if (i < switchover) {
-					if (segments[i].next_ids.length > 0) {
-						return false;
-					}
-				} else {
-					if (segments[i].prev_ids.length > 0) {
-						return false;
-					}
-				}
+			if (segments.length == 1) {
+				return segments[0].isEndExposed();
+			} else if (segments.length == 2) {
+				return segments[0].isEndExposed() || segments[1].isStartExposed();
+			} else {
+				throw Error("Unexpected 'segments' length: " + segments.length.toString);
 			}
-			return true;
 		}
 
 		public function getLatLngBounds():LatLngBounds {

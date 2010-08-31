@@ -39,9 +39,6 @@ internal function initApp(event:FlexEvent):void {
 	trace("this.initApp:", this, this.type);
 	Globals.initialize(this.nativeWindow);
 	
-	// Create new panes for the various overlays. createPane inserts into the middle of the
-	// pane stack. The final pane stack is, in descending order:
-	// PANE_FLOAT, PANE_MARKER, vehiclePane, straightTrackPane, curvedTrackPane, stationPane, PANE_OVERLAYS, PANE_MAP
 	XMLHandler.loadPrefsXML(Globals.prefsXMLFile); // load and use preferences	
 
 	Globals.toolBar = toolBar;
@@ -81,8 +78,10 @@ internal function onMapReady(event:Event):void {
     var scalePosition:ControlPosition = new ControlPosition(ControlPosition.ANCHOR_BOTTOM_LEFT, 100, 5);
     map.addControl(new ScaleControl(new ScaleControlOptions({position:scalePosition,
                                                              units:ScaleControlOptions.UNITS_METRIC_ONLY})));
-                                                             
-	/* Set up panes */
+                                                             	
+	// Create new panes for the various overlays. createPane inserts into the middle of the
+	// pane stack. The final pane stack is, in descending order:
+	// PANE_FLOAT, PANE_MARKER, vehiclePane, straightTrackPane, curvedTrackPane, stationPane, PANE_OVERLAYS, PANE_MAP
 	var pm:IPaneManager = map.getPaneManager();
 	Globals.vehiclePane = pm.createPane(2);
 	Globals.straightTrackPane = pm.createPane(2);

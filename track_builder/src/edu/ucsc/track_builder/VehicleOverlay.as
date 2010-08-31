@@ -36,21 +36,22 @@ package edu.ucsc.track_builder
 		private var icon:Shape;
 		
 		/** Constructor */
-		public function VehicleOverlay(vehicle:Vehicle, trackOverlay:TrackOverlay, preview:Boolean=false)
+		public function VehicleOverlay(vehicle:Vehicle, preview:Boolean=false)
 		{	
 			super();
 			this.vehicle = vehicle;
-			this.trackOverlay = trackOverlay;
-			
-            addEventListener(MapEvent.OVERLAY_ADDED, onOverlayAdded, false, 0, true); // weak_ref=true
-            addEventListener(MapEvent.OVERLAY_REMOVED, onOverlayRemoved, false, 0, true);
+			vehicle.overlay = this;
+			this.trackOverlay = vehicle.location.overlay;
 
 			icon = new Shape();
 
-			/* Side effect - add to display */
+			/* Side effects */
+            addEventListener(MapEvent.OVERLAY_ADDED, onOverlayAdded, false, 0, true); // weak_ref=true
+            addEventListener(MapEvent.OVERLAY_REMOVED, onOverlayRemoved, false, 0, true);
+
+			// add myself to the map
 			Undo.pushMicro(Globals.vehiclePane, Globals.vehiclePane.removeOverlay, this);
 			Globals.vehiclePane.addOverlay(this);
-
 			
 			if (!preview) {
 				toolTip = "dummyText"; // requires some text to trigger tooltips
@@ -58,11 +59,23 @@ package edu.ucsc.track_builder
 				
 				contextMenu = getContextMenu();
 	
-				/* Side effect - add to global store */
+				/* add to global store */
 				Undo.pushMicro(Globals.vehicles.overlays, Globals.vehicles.overlays.pop);
 				Globals.vehicles.overlays.push(this);
 			}
 		}	
+
+		/** Reverses all of the constructor's side effects (with Undo support) */
+		public function remove():void {
+			// remove the reference from the global store
+			Undo.assign(Globals.vehicles, "overlays", Globals.vehicles.overlays);
+			function removeMe(item:VehicleOverlay, index:int, vector:Vector.<VehicleOverlay>):Boolean {return item !== this};
+			Globals.vehicles.overlays = Globals.vehicles.overlays.filter(removeMe, this);		
+
+			// remove the overlay from the map   		
+			Undo.pushMicro(Globals.vehiclePane, Globals.vehiclePane.addOverlay, this);
+        	Globals.vehiclePane.removeOverlay(this);
+		}
 
 		public function getTrackOverlay():TrackOverlay {
 			return trackOverlay;
@@ -104,7 +117,9 @@ package edu.ucsc.track_builder
 		}
 		
 		public function onDelete(event:Event):void {
-			Globals.vehicles.removeVehicleOverlay(this); // also removes vehicle
+			Undo.startCommand(Undo.USER)
+			Globals.vehicles.remove(this.vehicle); // Also removes this overlay
+			Undo.endCommand();
 		}
 
 		public function onToolTip(event:ToolTipEvent):void {
@@ -202,7 +217,6 @@ package edu.ucsc.track_builder
         private function onOverlayAdded(event:MapEvent):void
         {
         	addChild(icon);
-            update();
         }
 
         private function onOverlayRemoved(event:MapEvent):void

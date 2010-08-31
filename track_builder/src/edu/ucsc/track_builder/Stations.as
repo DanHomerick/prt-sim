@@ -7,6 +7,7 @@ package edu.ucsc.track_builder
 	
 	import flash.events.MouseEvent;
 	import flash.geom.Vector3D;
+	import flash.utils.Dictionary;
 	
 	import mx.controls.Alert;
 	
@@ -39,6 +40,9 @@ package edu.ucsc.track_builder
 		public const OFF_RAMP:uint = 0;
 		public const ON_RAMP:uint = 1;
 		
+		/** A mapping from trackSegment ids to Station objects */ 
+		public var trackSegment2Station:Object; 
+		
 		[Bindable] public var startGround:Number = NaN;
 		public var startOffset:Number;
 		public function get startElev():Number {return startGround + startOffset;}
@@ -55,6 +59,7 @@ package edu.ucsc.track_builder
 		public function Stations() {
 			stations = new Vector.<Station>();
 			overlays = new Vector.<StationOverlay>();
+			trackSegment2Station = new Object();
 		}
 
 		public function onMapClick(event:MapMouseEvent):void {
@@ -69,7 +74,7 @@ package edu.ucsc.track_builder
 				Undo.startCommand(Undo.USER); // somewhat temporary. Splits adding a station into two undo phases, creating 'bypass' track, then adding the station.						
 				var stat:Station = makeOfflineStation(marker.getSnapOverlay(), marker.getLatLng(), false); // add the station to it, resizing it to just the right length
 				Undo.assign(Globals, 'dirty', Globals.dirty);
-				Globals.dirty = true; // mark that changes have occured since last save
+				Globals.dirty = true; // mark that changes have occured since last save				
 				Undo.endCommand();
 			} catch (err:StationLengthError) {
 				Undo.endCommand();
@@ -367,27 +372,19 @@ package edu.ucsc.track_builder
 			
 			stations = new Vector.<Station>();
 			overlays = new Vector.<StationOverlay>();
+			trackSegment2Station = new Object();
 		}
 		
-		/** Removes the station overlay, the station, and all tracks and track overlays associated with it */
-		public function removeStationOverlay(overlay:StationOverlay):void {
-			Undo.pushMicro(Globals.stationPane, Globals.stationPane.addOverlay, overlay);		
-			Globals.stationPane.removeOverlay(overlay);
-			
-			// remove overlay from Stations.
-			function removeSOL (item:StationOverlay, index:int, vector:Vector.<StationOverlay>):Boolean {return item != overlay;};
-			Undo.assign(this, 'overlays', overlays);
-			overlays = overlays.filter(removeSOL); // note that filter returns a new Vector, which is why I'm able to just store a ref to the old vector.
-			
-			for each (var ts:TrackSegment in overlay.station.allSegments) {
-				var tOL:TrackOverlay = Globals.tracks.getTrackOverlay(ts.id);
-				Globals.tracks.removeTrackOverlay(tOL);
+		/** Removes the station overlay, the station, and all tracks and track overlays associated with it.
+		 * @param station The Station object to delete.
+		 */
+		public function remove(station:Station):void {						
+			for each (var ts:TrackSegment in station.allSegments) {
+				Globals.tracks.remove(ts);
 			}
 			
-			// remove station from Stations
-			function removeS (item:Station, index:int, vector:Vector.<Station>):Boolean {return item.id != overlay.station.id;};
-			Undo.assign(this, 'stations', stations);
-			stations = stations.filter(removeS);
+			station.remove();
+			station.overlay.remove();
 		}		
 	}
 }

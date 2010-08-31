@@ -133,6 +133,27 @@ package edu.ucsc.track_builder
 			Undo.pushMicro(Globals.tracks.segments, function():void {delete Globals.tracks.segments[id];});
 			Globals.tracks.segments[id] = this; // Add a reference to the global store.			
 		}
+
+		/** Removes the TrackSegment and disconnects it from adjoining TrackSegments. Does not delete parallel segments,
+		 * nor does it delete any vehicles residing on the segment (See Tracks.remove(v) for that).
+		 * Reverses all of the constructor's side effects (with Undo support) */
+		public function remove():void {			
+			this.disconnect();
+			
+			// Remove association with parallel segments
+			function removeTSID (item:String, index:int, vector:Vector.<String>):Boolean {return item != this.id};
+			for each (var otherId:String in this.parallel_ids) {
+				var otherSeg:TrackSegment = Globals.tracks.getTrackSegment(otherId);
+				Undo.assign(otherSeg, "parallel_ids", otherSeg.parallel_ids);
+				otherSeg.parallel_ids = otherSeg.parallel_ids.filter(removeTSID, this);				
+			}
+			Undo.assign(this, "parallel_ids", this.parallel_ids);
+			this.parallel_ids = null;
+			
+			// Remove myself from the global store			
+			Undo.pushMicro(this, function():void {Globals.tracks.segments[id] = this;});
+			delete Globals.tracks.segments[id];			
+		}
 		
 		/* Fetch elevation whenever start or end is updated. Also, adhere to convention that only copies
 		 * of LatLng objects should be shared. */
@@ -439,6 +460,30 @@ package edu.ucsc.track_builder
 			}
 		}				
 
+		/** Disconnects this TrackSegment from the prev and next segments. Does not affect parallel segments. 
+		 * Undoable.*/ 
+		public function disconnect():void {
+			function removeTSID (item:String, index:int, vector:Vector.<String>):Boolean {return item != this.id};
+			
+			var otherId:String;
+			var otherSeg:TrackSegment;
+        	for each (otherId in this.next_ids) {
+        		otherSeg = Globals.tracks.getTrackSegment(otherId);        		        	
+        		Undo.assign(otherSeg, "prev_ids", otherSeg.prev_ids);
+        		otherSeg.prev_ids = otherSeg.prev_ids.filter(removeTSID, this);
+        	}
+        	for each (otherId in this.prev_ids) {
+				otherSeg = Globals.tracks.getTrackSegment(otherId);
+				Undo.assign(otherSeg, "next_ids", otherSeg.next_ids); 
+				otherSeg.next_ids = otherSeg.next_ids.filter(removeTSID, this);
+        	}
+        	
+        	Undo.assign(this, "prev_ids", this.prev_ids);	
+        	Undo.assign(this, "next_ids", this.next_ids);
+			this.prev_ids = new Vector.<String>();
+			this.next_ids = new Vector.<String>();
+		}
+
 		/** Makes latlng the new end point for the TrackSegment. Connections are made, so that the connectivity is unchanged.
 		 * Curved segments may not be split. If latlng is already at this segment's end, then the track is not changed,
 		 * but the next segment is still returned. 
@@ -685,6 +730,7 @@ package edu.ucsc.track_builder
 			return Utility.calcLatLngFromVector(_start, vec);
 		}
 		
-
+		public function isStartExposed():Boolean {return prev_ids.length == 0;}
+		public function isEndExposed():Boolean {return next_ids.length == 0;}		
 	}
 }
