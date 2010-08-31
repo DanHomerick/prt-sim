@@ -23,7 +23,7 @@ package edu.ucsc.track_builder
 			var xml:XML = <Network/>
 			xml.appendChild(StaticMap.toDataXML());
 			xml.appendChild(Globals.tracks.toDataXML());	
-			xml.appendChild(Globals.stations.toDataXML());
+			xml.appendChild(Globals.stations.toDataXML(Globals.vehicles.vehicles));
 			xml.appendChild(Globals.vehicleModels.toDataXML(Globals.vehicles.vehicles));
 			xml.appendChild(Globals.vehicles.toDataXML());
 			var sortedSegs:Vector.<TrackSegment> = Globals.tracks.getSortedTrackSegments();

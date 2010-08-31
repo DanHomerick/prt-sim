@@ -285,7 +285,12 @@ class ScenarioManager(object):
         common.img_ybounds = (min(lats), max(lats))
         common.img_width = int(image_xml.getAttribute('width'))
         common.img_height = int(image_xml.getAttribute('height'))
-        common.img_path = os.path.dirname(xml_path) + '/' + image_xml.getAttribute('filename')
+
+        if image_xml.hasAttribute('extension'): # Encoding only the filename extension is the current method.
+            common.img_path = os.path.splitext(xml_path)[0] + image_xml.getAttribute('extension')
+        else: # Legacy
+            common.img_path = os.path.dirname(xml_path) + '/' + image_xml.getAttribute('filename')
+
 
     def _to_numeric_id(self, element):
         """For elements similar to:

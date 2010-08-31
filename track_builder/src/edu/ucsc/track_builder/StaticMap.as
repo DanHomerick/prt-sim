@@ -1,6 +1,8 @@
-/** Uses Google's Static Map API to retrieve an image showing the area in which the track network is located.
+/** This class was originally designed to use Google's Static Map API to retrieve an image showing the area in
+ * which the track network is located. I never got this to work correctly, however, and resorted to capturing an image
+ * from the program.
  * 
- * Note: I never got this to work correctly. This class is currently dead code. */
+ */
 
 package edu.ucsc.track_builder
 {
@@ -30,11 +32,6 @@ package edu.ucsc.track_builder
 
 		/** Messy. Needs refactoring. Assumes saveFile has been set. Saves the file and returns XML */
 		public static function toDataXML():XML {
-			var saveFile:File = saveImage(true, true); // returns the filename it used                      			
-			if (saveFile == null) {
-				return new XML("<Image/>");
-			}
-			
 			var zoom:Number = Globals.map.getZoom();
 			var bounds:LatLngBounds = Globals.map.getLatLngBounds();
 			var center:LatLng = bounds.getCenter();
@@ -44,7 +41,7 @@ package edu.ucsc.track_builder
 			var width:Number = Globals.map.width;
 			var height:Number = Globals.map.height;
 			
-			var xml:XML = <Image filename={saveFile.name} width={width} height={height}>
+			var xml:XML = <Image extension=".png" width={width} height={height}>
 			                      <Center lat={center.lat()} lng={center.lng()}/>
 			                      <Northwest lat={nw.lat()} lng={nw.lng()}/>
 			                      <Southeast lat={se.lat()} lng={se.lng()}/>
@@ -52,14 +49,8 @@ package edu.ucsc.track_builder
 			return xml;
 		}
 
-		public static function saveImage(showTrack:Boolean=false, showStation:Boolean=false):File {
-			if (!Globals.dataXMLFile) {
-				trace("No save filename available.")
-				return null;
-			}
-			
-			var saveFile:File = new File(Globals.dataXMLFile.nativePath.replace(".xml", ".png"));
-			
+		public static function saveImage(saveFile:File, showTrack:Boolean=false, showStation:Boolean=false):File {
+			var saveFile:File = new File(saveFile.nativePath.replace(".xml", ".png"));
 			Globals.straightTrackPane.visible = showTrack;
 			Globals.curvedTrackPane.visible = showTrack;
 			Globals.stationPane.visible = showStation;		

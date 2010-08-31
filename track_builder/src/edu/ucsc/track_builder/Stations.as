@@ -7,7 +7,6 @@ package edu.ucsc.track_builder
 	
 	import flash.events.MouseEvent;
 	import flash.geom.Vector3D;
-	import flash.utils.Dictionary;
 	
 	import mx.controls.Alert;
 	
@@ -143,6 +142,9 @@ package edu.ucsc.track_builder
 			var num_slots:Vector.<Number> = Vector.<Number>([unloadSlots, queueSlots, loadSlots]);
 			var platformStart:LatLng = offRamp.connectNewLatLng.clone();
 			var platformOverlay:TrackOverlay;
+			const UNLOAD:int = 0;
+			const QUEUE:int = 1;
+			const LOAD:int = 2; 
 			for (var i:uint=0; i < num_slots.length; ++i) {
 				var platformEnd:LatLng = Utility.calcLatLngFromVector(platformStart, bypassVec, slotLength*num_slots[i]);
 				platformOverlay = Globals.tracks.makeStraight( // creates the station main line
@@ -150,12 +152,12 @@ package edu.ucsc.track_builder
 				stationBundle.addOverlay(platformOverlay);
 				var platform:Platform = new Platform(platformOverlay.segments[0].id, i)
 				for (var j:uint=0; j < num_slots[i]; ++j) {
-					if (i == 0) {
-						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, true, false))
-					} else if (i == 1) {
-						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, false, false))
-					} else if (i == 2) {
-						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, false, true))
+					if (i == UNLOAD) {
+						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, true, false, false, false))
+					} else if (i == QUEUE) {
+						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, false, false, true, true)) // TEMP: Hardcoding the QUEUE platform as a storage entrance/exit
+					} else if (i == LOAD) {
+						platform.berths.push(new Berth(j, j*slotLength, (j+1)*slotLength, false, true, false, false))
 					} else {
 						throw new Error("Whoops. Bug.")
 					}
@@ -281,10 +283,16 @@ package edu.ucsc.track_builder
 			//targetSegment = new Segment("", "",  
 		}
 		
-		public function toDataXML():XML {
+		public function toDataXML(vehicles:Vector.<Vehicle>):XML {
+			var scenarioModels:Vector.<VehicleModel> = Globals.vehicleModels.getModelsInUse(vehicles);
+			var modelNames:Vector.<String> = new Vector.<String>();
+			for each (var m:VehicleModel in scenarioModels) {
+				modelNames.push(m.modelName);
+			}
+			
 			var xml:XML = <Stations/>;
 			for each (var station:Station in stations) {
-				xml.appendChild(station.toXML());
+				xml.appendChild(station.toXML(modelNames));
 			}
 			return xml;
 		}

@@ -371,6 +371,7 @@ package edu.ucsc.track_builder
 				try {
 					// Don't browse, just overwrite the current xml_file				
 					XMLHandler.doSaveXml(Globals.dataXMLFile, XMLHandler.generateDataXML());
+					StaticMap.saveImage(Globals.dataXMLFile, true, true);
 				} catch(error:Error) {
 					Alert.show(error.message, "Save Failed", Alert.CANCEL);
 					trace("Failed:", error.message);
@@ -416,8 +417,9 @@ package edu.ucsc.track_builder
 			}
 			
 			try {
-				XMLHandler.doSaveXml(Globals.dataXMLFile, XMLHandler.generateDataXML()); // also saves map image
-				Globals.dataXMLFile = file;			
+				XMLHandler.doSaveXml(file, XMLHandler.generateDataXML());
+				StaticMap.saveImage(file, true, true);
+				Globals.dataXMLFile = file; // only set Globals.dataXMLFile if save didn't throw an exception			
 				Globals.dirty = false;
 			} catch (err:Error) {
 				trace ("Failed:", err.message);
@@ -501,6 +503,7 @@ package edu.ucsc.track_builder
 					           		  	  // overwrite the existing file
 					           		  	  trace("Clicked Yes");
 					           		  	  XMLHandler.doSaveXml(Globals.dataXMLFile, XMLHandler.generateDataXML()); // write data
+					           		  	  StaticMap.saveImage(Globals.dataXMLFile, true, true);
 					           		  	  XMLHandler.doSaveXml(Globals.prefsXMLFile, XMLHandler.generatePrefsXML()); // write prefs
 					           		  	  postSave();
 					           		  } else if (evt.detail == Alert.NO) {

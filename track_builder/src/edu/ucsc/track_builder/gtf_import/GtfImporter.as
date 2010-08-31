@@ -309,7 +309,7 @@ package edu.ucsc.track_builder.gtf_import
 				// The true boardingSeg.h_length varies a bit, and we want to guarantee the berths remain fully on this seg
 				var berthLength:Number = Math.min(boardingSeg.h_length/STATION_BERTH_COUNT, STATION_BERTH_LENGTH) 
 				for (var i:uint=0; i < STATION_BERTH_COUNT; ++i) {
-					platform.berths.push(new Berth(i, i*berthLength, (i+1)*berthLength, true, true))
+					platform.berths.push(new Berth(i, i*berthLength, (i+1)*berthLength, true, true, false, false))
 				}
 				platforms.push(platform);
 				var id:String = IdGenerator.getStationId();

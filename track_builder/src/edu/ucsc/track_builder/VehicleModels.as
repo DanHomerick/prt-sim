@@ -27,23 +27,7 @@ package edu.ucsc.track_builder
 
 		/** Returns XML containing only those vehicle models which are used in vehicles. */
 		public function toDataXML(vehicles:Vector.<Vehicle>):XML {
-			// Create a set of the model names used in current scenario.
-			var modelNamesSet:Object = new Object();
-			for each (var v:Vehicle in vehicles) {
-				modelNamesSet[v.modelName] = true;
-			}
-
-			// Create a mapping from VehicleModel names to VehicleModel objects
-			var namesToModels:Object = new Object();
-			for each (var m:VehicleModel in this.models) {
-				namesToModels[m.modelName] = m
-			}
-				
-			// Create a vector containing just the VehicleModels that are used in the scenario
-			var scenarioModels:Vector.<VehicleModel> = new Vector.<VehicleModel>();
-			for (var modelName:String in modelNamesSet) {
-				scenarioModels.push(namesToModels[modelName]);
-			}
+			var scenarioModels:Vector.<VehicleModel> = getModelsInUse(vehicles);
 			
 			// Sort by model name, so that they will be in a consistant order
 			scenarioModels.sort(function cmp(x:VehicleModel, y:VehicleModel):Number {
@@ -54,7 +38,7 @@ package edu.ucsc.track_builder
 			) 
 			
 			var xml:XML = <VehicleModels/>;
-			for each (m in scenarioModels) {
+			for each (var m:VehicleModel in scenarioModels) {
 				xml.appendChild(m.toXML()) 
 			}
 			
@@ -115,13 +99,36 @@ package edu.ucsc.track_builder
 				} // else do nothing.				
 			}				
 		}
-		
+		 
 		public function get modelNames():Array {
 			var results:Array = [];
 			for each (var m:VehicleModel in this.models) {
 				results.push(m.modelName);
 			}
 			return results;
+		}
+		
+		/** Get the VehicleModels that are being used by at least one of the supplied vehicles. */
+		public function getModelsInUse(vehicles:Vector.<Vehicle>):Vector.<VehicleModel> {
+			// Create a set of the model names used in current scenario.
+			var modelNamesSet:Object = new Object();
+			for each (var v:Vehicle in vehicles) {
+				modelNamesSet[v.modelName] = true;
+			}
+
+			// Create a mapping from VehicleModel names to VehicleModel objects
+			var namesToModels:Object = new Object();
+			for each (var m:VehicleModel in this.models) {
+				namesToModels[m.modelName] = m
+			}
+				
+			// Create a vector containing just the VehicleModels that are used in the scenario
+			var inUseModels:Vector.<VehicleModel> = new Vector.<VehicleModel>();
+			for (var modelName:String in modelNamesSet) {
+				inUseModels.push(namesToModels[modelName]);
+			}
+			
+			return inUseModels;
 		}
 		
 		public function getModelByName(name:String):VehicleModel {

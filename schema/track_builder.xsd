@@ -136,9 +136,12 @@
       <xs:element minOccurs="1" maxOccurs="unbounded" name="Platform" type="PlatformType" />
       <xs:element name="Coverage" type="CoverageType" />
       <xs:element name="Usage" type="UsageType" />
+      <xs:element name="Storage" type="StorageType" />
     </xs:sequence>
     <xs:attribute name="id" type="IDType" use="required" />
     <xs:attribute name="label" type="xs:string" use="optional" />
+	<xs:attribute name="storage_entrance_delay" type="nonNegativeDecimal" />
+	<xs:attribute name="storage_exit_delay" type="nonNegativeDecimal" />
   </xs:complexType>
   <xs:complexType name="PlatformType">
     <xs:sequence>
@@ -155,6 +158,13 @@
     <xs:attribute name="index" type="xs:nonNegativeInteger" />
     <xs:attribute name="loading" type="xs:boolean" />
     <xs:attribute name="unloading" type="xs:boolean" />
+    <xs:attribute name="storage_entrance" type="xs:boolean" />
+    <xs:attribute name="storage_exit" type="xs:boolean" />
+  </xs:complexType>
+  <xs:complexType name="StorageType">
+    <xs:attribute name="model_name" type="xs:string" />
+    <xs:attribute name="initial_supply" type="xs:nonNegativeInteger" />
+    <xs:attribute name="max_capacity" type="xs:nonNegativeInteger" />
   </xs:complexType>
   <xs:complexType name="CoverageType">
     <xs:attribute name="radius" type="xs:nonNegativeInteger" />
@@ -173,6 +183,7 @@
     <xs:attribute name="label" type="xs:string" use="optional" />
     <xs:attribute default="0" name="velocity" type="nonNegativeDecimal" use="optional" />
     <xs:attribute default="0" name="acceleration" type="nonNegativeDecimal" use="optional" />
+    <xs:attribute name="model_name" type="xs:string" />
   </xs:complexType>
   <xs:complexType name="VehicleModelType">
     <xs:sequence>

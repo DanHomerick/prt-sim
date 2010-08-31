@@ -1,8 +1,6 @@
 package edu.ucsc.track_builder
 {
 	import __AS3__.vec.Vector;
-	
-	import mx.utils.ObjectUtil;
 
 	public class Station
 	{	
@@ -80,7 +78,7 @@ package edu.ucsc.track_builder
 			}
 		}
 		
-		public function toXML():XML {			
+		public function toXML(modelNames:Vector.<String>):XML {			
 			var xml:XML = <Station id={id} label={label}/>;
 			
 			for each (var ts:TrackSegment in allSegments) {
@@ -93,7 +91,16 @@ package edu.ucsc.track_builder
 
 			xml.appendChild(<Coverage radius={coverageRadius}/>)
 			xml.appendChild(<Usage peak_hour={peakHour} daily={daily}/>)
-			 
+			
+			// FIXME: initial_suppy and max_capacity are hardcoded to facilitate testing the design
+			for each (var model_name:String in modelNames) {
+				xml.appendChild(<Storage
+				                    model_name={model_name}
+				                    initial_supply="INF"
+				                    max_capacity="INF"
+				                />);
+            }
+			
 			return xml;	
 		}
 		
