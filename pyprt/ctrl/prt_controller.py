@@ -11,7 +11,7 @@ import pyprt.shared.api_pb2 as api
 from pyprt.ctrl.base_controller import BaseController
 from trajectory_solver import TrajectorySolver, FatalTrajectoryError
 from pyprt.shared.cubic_spline import Knot, CubicSpline, OutOfBoundsError
-from pyprt.shared.utility import pairwise
+from pyprt.shared.utility import pairwise, is_string_false, is_string_true
 ##from pyprt.shared.utility import deque # extension of collections.deque which includes 'insert' method
 
 class NoPaxAvailableError(Exception):
@@ -19,6 +19,12 @@ class NoPaxAvailableError(Exception):
 
 class NoBerthAvailableError(Exception):
     """No station berth availaible."""
+
+class NoVehicleAvailableError(Exception):
+    pass
+
+class NoVacancyAvailableError(Exception):
+    pass
 
 class PrtController(BaseController):
 
@@ -40,6 +46,7 @@ class PrtController(BaseController):
     LINE_SPEED = None  # in meter/sec. Set in main().
     HEADWAY = None     # in sec. Measured from tip-to-tail. Set in main()
     HEARTBEAT_INTERVAL = 5.1  # in seconds. Choosen arbitrarily for testing
+    DEMAND_THRESHOLD = 3
 
     def __init__(self, log_path, commlog_path):
         super(PrtController, self).__init__(log_path, commlog_path)
@@ -107,7 +114,7 @@ class PrtController(BaseController):
         assert isinstance(station, Station)
         for plat in (Station.LOAD_PLATFORM, Station.QUEUE_PLATFORM, Station.UNLOAD_PLATFORM):
             for v in reversed(station.reservations[plat]):
-                if v is not None:
+                if v is not None and v != api.NONE_ID:
                     # If vehicle is capable of moving forward, do so
                     self.trigger_advance(v, station) # changes v.state to *_ADVANCING if able to move
 
@@ -247,7 +254,7 @@ class PrtController(BaseController):
                     station.request_load_berth(vehicle)
                     berth_dist, berth_path = self.manager.get_path(vehicle.ts_id, vehicle.plat_ts)
                     initial = vehicle.estimate_pose(self.current_time)
-                    berth_knot = Knot(berth_dist + vehicle.berth_pos - vehicle.BERTH_GAP, 0, 0, None)
+                    berth_knot = Knot(berth_dist + vehicle.berth_pos, 0, 0, None)
                     try:
                         spline = vehicle.traj_solver.target_position(initial, berth_knot, max_speed=station.SPEED_LIMIT)
                         vehicle.set_spline(spline)
@@ -409,6 +416,9 @@ class PrtController(BaseController):
         station = self.manager.stations[pax.origin_id]
         station.add_passenger(pax)
 
+        if len(self.manager.vehicles) == 0 or station.get_demand() >= self.DEMAND_THRESHOLD:
+            self.manager.retrieve_vehicle_from_storage(station, self.manager.MODEL_NAME)
+
     def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.cmd.vID]
         assert isinstance(vehicle, Vehicle)
@@ -552,7 +562,7 @@ class PrtController(BaseController):
             assert abs(vehicle.vel) < TrajectorySolver.v_threshold, str(vehicle)
             assert abs(vehicle.accel) < TrajectorySolver.a_threshold, str(vehicle)
             assert vehicle.ts_id == vehicle.plat_ts, str(vehicle)
-            assert abs(vehicle.berth_pos - vehicle.BERTH_GAP - vehicle.pos) < 0.1, (str(vehicle), vehicle.berth_pos)
+            assert abs(vehicle.berth_pos - vehicle.pos) < 0.1, (str(vehicle), vehicle.berth_pos)
 
             if vehicle.state is self.UNLOAD_ADVANCING:
                 vehicle.state = self.UNLOAD_WAITING
@@ -569,7 +579,50 @@ class PrtController(BaseController):
     def on_SIM_NOTIFY_VEHICLE_SPEEDING(self, msg, msgID, msg_time):
         self.log.warn("Speed limit violation: %s", str(msg))
 
+    def on_SIM_COMPLETE_STORAGE_EXIT(self, msg, msgID, msg_time):
+        station = self.manager.stations[msg.cmd.sID]
+        try:
+            vehicle = self.manager.vehicles[msg.v_status.vID]
+        except KeyError:
+            # Newly created vehicle
+            model = self.manager.models[msg.cmd.model_name]
+            assert isinstance(model, Vehicle)
+            vehicle = Vehicle(msg.v_status.vID,
+                              model.model,
+                              model.length,
+                              model.capacity,
+                              api.STORAGE_ID,
+                              msg.v_status.nose_pos,
+                              msg.v_status.vel,
+                              msg.v_status.accel,
+                              model.j_max,
+                              model.j_min,
+                              model.a_max,
+                              model.a_min,
+                              model.v_max)
+            self.manager.vehicles[vehicle.id] = vehicle
+
+        vehicle.set_path([msg.v_status.nose_locID], False)
+        vehicle.update_vehicle(msg.v_status, self.current_time)
+        vehicle.station = station
+        vehicle.plat_ts = vehicle.ts_id
+        vehicle.berth_id = msg.cmd.berthID
+        vehicle.platform_id = msg.cmd.platformID
+        vehicle.state = self.LOAD_WAITING
+        storage = station.storage_dict[vehicle.model]
+
+        assert isinstance(station, Station)
+        assert isinstance(vehicle, Vehicle)
+        assert isinstance(storage, Storage)
+
+        station.reservations[msg.cmd.platformID][msg.cmd.berthID] = vehicle
+        storage.end_vehicle_exit()
+
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
+    # TODO: Is there any reasonable way to handle multiple vehicle types, without
+    #       just hardcoding a behavior to a particular name?
+    MODEL_NAME = None # prt_controller only uses the last model_name that it discovers.
+
     """Coordinates vehicles to satisfy passenger demand. Handles vehicle pathing."""
     def __init__(self, scenario_xml, sim_end_time, controller):
         """scenario_xml: the xml scenario file created by TrackBuilder, as a string.
@@ -595,9 +648,16 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         # Mapping from the split ts id to the Station instance
         self.split2station = dict((s.split, s) for s in self.stations.values())
 
-        self.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0],
-                                           doc.getElementsByTagName('VehicleModels')[0])
+        self.models = self.load_models(doc.getElementsByTagName('VehicleModels')[0])
+        self.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], self.models)
 
+        try:
+            # Need to choose a model name for when I request a vehicle from storage.
+            # Eventually this controller may handle multiple vehicle models in a
+            # reasonable way, but for now just choose a vehicle model arbitrarily.
+            Manager.MODEL_NAME = self.models.keys()[0]
+        except IndexError:
+            warnings.warn("No VehicleModels found.")
 
         # Create the Merges & Switches
         self.merges = []
@@ -682,6 +742,8 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
     def load_stations(self, stations_xml, graph):
         """Returns a dict of stations, keyed by the integer id."""
+        BERTH_GAP = 0.1 # Distance from the front of the vehicle to the end of the berth
+
         stations = dict()
         for station_xml in stations_xml.getElementsByTagName('Station'):
             station_str_id = station_xml.getAttribute('id')
@@ -693,29 +755,45 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             # Get berth position data for the three platforms: Unload, Queue, Load
             platforms_xml = station_xml.getElementsByTagName('Platform')
 
+            # Contains (platform_id, berth_id) pairs.
+            storage_entrances = []
+            storage_exits = []
+
             unload_xml = platforms_xml[0]
             platform_ts_id = self._to_numeric_id(unload_xml.getElementsByTagName('TrackSegmentID')[0])
             assert platform_ts_id == ts_ids[Station.UNLOAD]
             unload_positions = []
-            for berth_xml in unload_xml.getElementsByTagName('Berth'):
+            for berth_id, berth_xml in enumerate(unload_xml.getElementsByTagName('Berth')):
                 end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
-                unload_positions.append(end_pos)
+                unload_positions.append(end_pos - BERTH_GAP)
+                if is_string_true(berth_xml.getAttribute('storage_entrance')):
+                    storage_entrances.append( (0, berth_id) )
+                if is_string_true(berth_xml.getAttribute('storage_exit')):
+                    storage_exits.append( (0, berth_id) )
 
             queue_xml = platforms_xml[1]
             platform_ts_id = self._to_numeric_id(queue_xml.getElementsByTagName('TrackSegmentID')[0])
             assert platform_ts_id == ts_ids[Station.QUEUE]
             queue_positions = []
-            for berth_xml in queue_xml.getElementsByTagName('Berth'):
+            for berth_id, berth_xml in enumerate(queue_xml.getElementsByTagName('Berth')):
                 end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
-                queue_positions.append(end_pos)
+                queue_positions.append(end_pos - BERTH_GAP)
+                if is_string_true(berth_xml.getAttribute('storage_entrance')):
+                    storage_entrances.append( (1, berth_id) )
+                if is_string_true(berth_xml.getAttribute('storage_exit')):
+                    storage_exits.append( (1, berth_id) )
 
             load_xml = platforms_xml[2]
             platform_ts_id = self._to_numeric_id(load_xml.getElementsByTagName('TrackSegmentID')[0])
             assert platform_ts_id == ts_ids[Station.LOAD]
             load_positions = []
-            for berth_xml in load_xml.getElementsByTagName('Berth'):
+            for berth_id, berth_xml in enumerate(load_xml.getElementsByTagName('Berth')):
                 end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
-                load_positions.append(end_pos)
+                load_positions.append(end_pos - BERTH_GAP)
+                if is_string_true(berth_xml.getAttribute('storage_entrance')):
+                    storage_entrances.append( (2, berth_id) )
+                if is_string_true(berth_xml.getAttribute('storage_exit')):
+                    storage_exits.append( (2, berth_id) )
 
             # Discover the split, bypass, and merge TrackSegment ids from the graph
             assert len(graph.successors(ts_ids[Station.ON_RAMP_II])) == 1
@@ -733,17 +811,66 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             onramp_length = networkx.dijkstra_path_length(self.graph,
                                             ts_ids[Station.ACCEL], merge)
 
+            storage_dict = {}
+            for storage_xml in station_xml.getElementsByTagName('Storage'):
+                v_model_name = storage_xml.getAttribute('model_name')
+                initial_supply_str = storage_xml.getAttribute('initial_supply').lower()
+                if initial_supply_str == 'inf':
+                    initial_supply = float('inf')
+                else:
+                    initial_supply = int(storage_xml.getAttribute('initial_supply'))
+
+                max_capacity_str = storage_xml.getAttribute('max_capacity').lower()
+                if max_capacity_str == 'inf':
+                    max_capacity = float('inf')
+                else:
+                    max_capacity = int(storage_xml.getAttribute('max_capacity'))
+                storage = Storage(v_model_name,
+                                  initial_supply,
+                                  max_capacity)
+
+                storage_dict[v_model_name] = storage
+                self.MODEL_NAME = v_model_name
+
             stations[station_int_id] = Station(station_int_id, ts_ids, split, bypass, merge, onramp_length,
-                                               unload_positions, queue_positions, load_positions)
+                                               unload_positions, queue_positions, load_positions,
+                                               storage_entrances, storage_exits, storage_dict)
         return stations
 
-    def load_vehicles(self, vehicles_xml, models_xml):
-        """Returns a dict of vehicles, keyed by the integer id."""
-        vehicles = dict()
-
+    def load_models(self, models_xml):
+        """Returns a dict of vehicle models, keyed by model name. Each vehicle
+        model is just a regular Vehicle object, with no location set.
+        The models are to be used as a prototype for other vehicles.
+        """
         models = dict()
         for model_xml in models_xml.getElementsByTagName('VehicleModel'):
-            models[model_xml.getAttribute('model_name')] = model_xml
+            model_name = model_xml.getAttribute('model_name')
+            length = float(model_xml.getAttribute('length'))
+            capacity = int(model_xml.getAttribute('passenger_capacity'))
+            jerk_xml = model_xml.getElementsByTagName('Jerk')[0]
+            accel_xml = model_xml.getElementsByTagName('Acceleration')[0]
+            vel_xml = model_xml.getElementsByTagName('Velocity')[0]
+
+            model_vehicle = Vehicle(api.NONE_ID,
+                              model_name,
+                              length,
+                              capacity,
+                              api.NONE_ID,
+                              0,  # pos
+                              0,  # vel
+                              0,  # accel
+                              float(jerk_xml.getAttribute('normal_max')),
+                              float(jerk_xml.getAttribute('normal_min')),
+                              float(accel_xml.getAttribute('normal_max')),
+                              float(accel_xml.getAttribute('normal_min')),
+                              float(vel_xml.getAttribute('normal_max')))
+            models[model_name] = model_vehicle
+
+        return models
+
+    def load_vehicles(self, vehicles_xml, models):
+        """Returns a dict of vehicles, keyed by the integer id."""
+        vehicles = dict()
 
         for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
             vehicle_str_id = vehicle_xml.getAttribute('id')
@@ -753,31 +880,47 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             ts_int_id = int(ts_str_id.split('_')[0])
 
             model_name = vehicle_xml.getAttribute('model_name')
-
-            model_xml = models[model_name]
-            length = float(model_xml.getAttribute('length'))
-            capacity = int(model_xml.getAttribute('passenger_capacity'))
-            jerk_xml = model_xml.getElementsByTagName('Jerk')[0]
-            accel_xml = model_xml.getElementsByTagName('Acceleration')[0]
-            vel_xml = model_xml.getElementsByTagName('Velocity')[0]
+            model = models[model_name]
 
             v = Vehicle(vehicle_int_id,
                         model_name,
-                        length,
-                        capacity,
+                        model.length,
+                        model.capacity,
                         ts_int_id,
                         float(vehicle_xml.getAttribute('position')),
                         float(vehicle_xml.getAttribute('velocity')),
                         float(vehicle_xml.getAttribute('acceleration')),
-                        float(jerk_xml.getAttribute('normal_max')),
-                        float(jerk_xml.getAttribute('normal_min')),
-                        float(accel_xml.getAttribute('normal_max')),
-                        float(accel_xml.getAttribute('normal_min')),
-                        float(vel_xml.getAttribute('normal_max')))
+                        model.j_max,
+                        model.j_min,
+                        model.a_max,
+                        model.a_min,
+                        model.v_max)
 
             vehicles[vehicle_int_id] = v
 
         return vehicles
+
+    def retrieve_vehicle_from_storage(self, station, model_name):
+        """Gets a vehicle from storage as close as possible to station."""
+        # OPTIMIZATION:
+        #   Right now, this function is doing a lot of redundant work. Could cache:
+        #    - The distances between stations.
+        #    - Which stations are capable of bringing vehicles out of storage
+        assert isinstance(station, Station)
+
+        dists, paths = networkx.single_source_dijkstra(self.graph, station.merge)
+        dists_stations = []
+        for s in self.stations.itervalues():
+            dist = dists[s.merge]
+            dists_stations.append( (dist, s) )
+        dists_stations.sort() # sort by distances, ascending
+
+        for dist, station in dists_stations:
+            try:
+                station.call_from_storage(model_name)
+                break
+            except NoVehicleAvailableError:
+                pass
 
     def request_trip(self, vehicle):
         """The vehicle must be currently in a station. For best efficiency,
@@ -1034,6 +1177,50 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         where x is an integer. Returns just the integer value."""
         return int(element.childNodes[0].data.split('_')[0])
 
+
+class Storage(object):
+    """A simple data storing class that keeps track of how many vehicles and
+    vacancies are available at one Station and for one vehicle model.
+    """
+
+    def __init__(self, model_name, initial_supply, max_capacity):
+        self.model_name = model_name
+        self.max_capacity = max_capacity
+
+        self._num_vehicles = initial_supply
+        self._num_pending_entry = 0
+        self._num_pending_exit = 0
+
+    def get_num_vehicles(self):
+        n = self._num_vehicles - self._num_pending_exit
+        assert 0 <= n <= self.max_capacity
+        return n
+
+    def get_num_vacancies(self):
+        n = self.max_capacity - self._num_vehicles - self._num_pending_entry
+        assert 0 <= n <= self.max_capacity
+        return n
+
+    def start_vehicle_entry(self):
+        self._num_pending_entry += 1
+        assert 0 <= self._num_pending_entry <= self.max_capacity
+
+    def end_vehicle_entry(self):
+        self._num_pending_entry -= 1
+        self._num_vehicles += 1
+        assert 0 <= self._num_pending_entry
+        assert 0 <= self._num_vehicles <= self.max_capacity
+
+    def start_vehicle_exit(self):
+        self._num_pending_exit += 1
+        assert 0 <= self._num_pending_exit <= self.max_capacity
+
+    def end_vehicle_exit(self):
+        self._num_pending_exit -= 1
+        self._num_vehicles -= 1
+        assert 0 <= self._num_pending_exit
+        assert 0 <= self._num_vehicles <= self.max_capacity
+
 class Station(object):
     OFF_RAMP_I = 0
     OFF_RAMP_II = 1
@@ -1054,7 +1241,8 @@ class Station(object):
     controller = None
 
     def __init__(self, s_id, ts_ids, split_ts_id, bypass_ts_id, merge_ts_id, onramp_length,
-                 unload_positions, queue_positions, load_positions):
+                 unload_positions, queue_positions, load_positions,
+                 storage_entrances, storage_exits, storage_dict):
         """s_id: An integer station id.
         ts_ids: A list containing integer TrackSegment ids. See Station consts.
         split_ts_id: The TrackSegment id upsteam of both the bypass and the
@@ -1063,13 +1251,15 @@ class Station(object):
                       the main track rather than the station's track.
         merge_ts_id: The TrackSegment id downstream of both the bypass and the
                         onramp to the main line.
-
-        onramp_length: Sum of track segment lengths for segments leading to exit.
+        onramp_length: The sum of the ACCEL, ON_RAMP_I, and ON_RAMP_II lengths.
         unload_positions, queue_positions, load_positions:
-        Each of the above are lists of floats, where each float designates
-        a position that the vehicle will target in order to park in the berth.
-        i.e. to unload in berth 1, the vehicle will go to the position found in
-        unload_positions[1].
+            Each of the above are lists of floats, where each float designates
+            a position that the vehicle will target in order to park in the berth.
+            i.e. to unload in berth 1, the vehicle will go to the position found in
+            unload_positions[1].
+        storage_entrances: A sequence of (platform_id, berth_id) pairs.
+        storage_exits: A sequences of (platform_id, berth_id) pairs.
+        storage_dict: A dict keyed by model name, whose values are Storage objects.
         """
         self.id = s_id
         self.ts_ids = ts_ids
@@ -1081,6 +1271,10 @@ class Station(object):
         self.reservations = [[None]*len(unload_positions),
                              [None]*len(queue_positions),
                              [None]*len(load_positions)]
+
+        self.storage_entrances = storage_entrances
+        self.storage_exits = storage_exits
+        self.storage_dict = storage_dict
 
         self.passengers = deque()
         self.v_count = 0
@@ -1294,6 +1488,46 @@ class Station(object):
 
             return max(passenger_demand, load_berth_demand)
 
+    def call_from_storage(self, model_name):
+        if not self.storage_entrances:
+            raise NoVehicleAvailableError # TODO: Use a more accurate error?
+
+        storage = self.storage_dict[model_name]
+        assert isinstance(storage, Storage)
+        if storage.get_num_vehicles() == 0:
+            raise NoVehicleAvailableError
+
+        # Find an open berth that is marked as a storage entrance to move the
+        # vehicle into. Start the search at the end closer to the exit.
+        for platform_id, berth_id in reversed(self.storage_entrances):
+            if self.reservations[platform_id][berth_id] is None:
+                self.reservations[platform_id][berth_id] = api.NONE_ID
+                break
+        else:
+            # Not worth raising a different error type if the behavior is the same
+            raise NoVehicleAvailableError
+
+        storage.start_vehicle_exit()
+        self.v_count += 1
+        cmd = api.CtrlCmdStorageExit()
+        cmd.sID = self.id
+        cmd.platformID = platform_id
+        cmd.berthID = berth_id
+        cmd.position = self.berth_positions[platform_id][berth_id]
+        cmd.model_name = model_name
+        self.controller.send(api.CTRL_CMD_STORAGE_EXIT, cmd)
+
+        # storage.end_vehicle_exit() is called upon receipt of a
+        # SimCompleteStorageExit message.
+
+##    def put_in_storage(self, vehicle):
+##        assert isinstance(vehicle, Vehicle)
+##        storage = self.storage_dict[vehicle.model]
+##        if storage.get_num_vacancies() == 0:
+##            raise NoVacancyAvailableError
+
+
+
 class Passenger(object):
     def __init__(self, pax_id, origin_id, dest_id, origin_time):
         self.id = pax_id
@@ -1311,7 +1545,6 @@ class Passenger(object):
 
 class Vehicle(object):
     SPEED_INCREMENT = 2.77777  # 10 km/hr
-    BERTH_GAP = 0.1 # 10 cm. A little room left between the vehicle's nose and the edge of the berth
 
     # To prevent a vehicle's trajectory from being undefined, splines are extended
     # so as to reach to the end of the simulation (and a little further). This
@@ -1323,14 +1556,14 @@ class Vehicle(object):
     controller = None # interfaces with the sim
     manager = None # high level planner
 
-    def __init__(self, v_id, model, length, capacity, ts_id, pos, vel, accel, j_max, j_min, a_max, a_min, v_max):
+    def __init__(self, v_id, model_name, length, capacity, ts_id, pos, vel, accel, j_max, j_min, a_max, a_min, v_max):
         # Can't handle non-zero initial accelerations at this time
         assert accel == 0
 
         self.id = v_id
-        self.model = model
-        self.capacity = capacity
+        self.model = model_name
         self.length = length
+        self.capacity = capacity
         self.pos = pos
         self.vel = vel
         self.accel = accel
@@ -1420,7 +1653,7 @@ class Vehicle(object):
     def get_path(self):
         return self._path
     def set_path(self, path, send=True):
-        assert path[0] == self._path[self._current_path_index]
+##        assert path[0] == self._path[self._current_path_index]
         self._path = self._path[:self._current_path_index] + path
         if send:
             self.send_path()
@@ -1544,7 +1777,7 @@ class Vehicle(object):
 
             # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
             berth_dist, berth_path = self.manager.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
-            berth_knot = Knot(unload_knot.pos + berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
+            berth_knot = Knot(unload_knot.pos + berth_dist + self.berth_pos, 0, 0, None)
             to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
 
             spline = to_unload_spline.concat(to_berth_spline)
@@ -1553,7 +1786,7 @@ class Vehicle(object):
             # When used during sim startup the vehicle is stationary and
             # doesn't need a separate spline for the decel to station speed limit.
             berth_dist, berth_path = self.manager.get_path(self.ts_id, self.plat_ts)
-            berth_knot = Knot(berth_dist + self.berth_pos - self.BERTH_GAP, 0, 0, None)
+            berth_knot = Knot(berth_dist + self.berth_pos, 0, 0, None)
             spline = self.traj_solver.target_position(current_knot, berth_knot, max_speed=self.controller.LINE_SPEED)
             path = berth_path
 
@@ -1623,11 +1856,11 @@ class Vehicle(object):
         vehicle's reserved berth.
         Returns the time at which the vehicle will arrive."""
         if self.plat_ts == self.ts_id: # staying on the same platform
-            dist = (self.berth_pos - self.BERTH_GAP) - self.pos # stop a little short of the end
+            dist = (self.berth_pos) - self.pos # stop a little short of the end
 
         else: # advancing to another next platform
             path_length, path = self.manager.get_path(self.ts_id, self.plat_ts)
-            dist = (path_length - self.pos) + (self.berth_pos - self.BERTH_GAP) # stop a little short of the end
+            dist = (path_length - self.pos) + (self.berth_pos)
 
             # Set the path, but don't stomp on the existing path if it's the same but longer
             p = self._path[self._current_path_index:]
@@ -2297,7 +2530,7 @@ class Merge(object):
                     # Do a quick check, and if it passes that, do a more accurate, expensive check
                     if self.offsets[slot.vehicle.ts_id] < station_merge_offset \
                        and slot.vehicle.estimate_pose(now + min_launch_duration, self.outlet) < station_merge_offset:  # more accurate check
-                            break
+                        break
                     else: # Vehicle's nose is past the station merge point and is a blocking vehicle.
                         blocking_slot_idx = i
                 except KeyError:
@@ -2808,7 +3041,7 @@ class Merge(object):
             return 0
 
     # DEPRECATED!!!
-    def _calc_max_slips(vehicles):
+    def _calc_max_slips(self, vehicles):
         # TODO: This uses vehicle's max velocity, and doesn't check the track's max vel
         if Merge._slips:
             return # only do calcs once

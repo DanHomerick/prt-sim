@@ -23,6 +23,20 @@ def same_sign(x, y):
     """Returns true if x and y have the same sign. Zeros are treated as positive."""
     return (x<0) == (y<0)
 
+def is_string_true(string):
+    """Primarily intended for interpretting XML boolean input"""
+    if string == 'true' or string == '1':
+        return True
+    else:
+        return False
+
+def is_string_false(string):
+    """Primarily intended for interpretting XML boolean input"""
+    if not string or string == 'false':
+        return True
+    else:
+        return False
+
 class deque(collections.deque):
     """An extension of the deque class which includes an insert method."""
 

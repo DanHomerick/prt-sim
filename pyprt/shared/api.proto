@@ -19,6 +19,7 @@ enum Misc {
     MSG_SEP = -32123;
     MSG_HEADER_SIZE = 16;
     NONE_ID = -1;   // For those cases when a real ID isn't applicable.
+    STORAGE_ID = -2;   // Used in place of a track segment ID for a vehicle's location when it's in storage.
 }
 
 // Protocol Buffers messages do not specify their message type within the
@@ -31,6 +32,8 @@ enum CtrlMsgType {
     CTRL_CMD_PASSENGERS_EMBARK = 4;
     CTRL_CMD_PASSENGERS_DISEMBARK = 5;
     CTRL_CMD_PASSENGER_WALK = 6;
+    CTRL_CMD_STORAGE_ENTER = 7;
+    CTRL_CMD_STORAGE_EXIT = 8;
 
     CTRL_REQUEST_VEHICLE_STATUS = 10;
     CTRL_REQUEST_STATION_STATUS = 11;
@@ -150,6 +153,27 @@ message CtrlCmdPassengerWalk {
     required double         travel_time = 4; // in seconds
 }
 
+// Move a vehicle that is stopped in the berth into the station's storage area.
+// The vehicle must be stopped and entirely within the specified berth.
+message CtrlCmdStorageEnter {
+    required int32          vID = 1; // vehicleID
+    required int32          sID = 2; // stationID
+    required int32          platformID = 3;
+    required int32          berthID = 4;
+}
+
+// Move a vehicle from a station's storage area to the berth. 'position' is the
+// desired position for the vehicle's nose, where 0 is the start of the platform.
+// The position must be chosen such that the vehicle will be entirely within
+// the berth.
+message CtrlCmdStorageExit {
+    required int32          sID = 1; // stationID
+    required int32          platformID = 2;
+    required int32          berthID = 3;
+    required float          position = 4;
+    required string         model_name = 5;
+}
+
 // For simulating a network where the switching
 // mechanism resides in the track, not the vehicle.
 // trackID is the 'switch' track segment.
@@ -243,46 +267,48 @@ enum SimMsgType {
     SIM_COMPLETE_PASSENGERS_DISEMBARK = 1011;
     SIM_COMPLETE_PASSENGER_WALK = 1012;
     SIM_COMPLETE_SWITCH = 1013;
+    SIM_COMPLETE_STORAGE_ENTER = 1014;
+    SIM_COMPLETE_STORAGE_EXIT = 1015;
 
-    SIM_RESPONSE_VEHICLE_STATUS = 1020;
-    SIM_RESPONSE_STATION_STATUS = 1021;
-    SIM_RESPONSE_PASSENGER_STATUS = 1022;
-    SIM_RESPONSE_SWITCH_STATUS = 1023;
-    SIM_RESPONSE_TRACK_STATUS = 1024;
-    SIM_RESPONSE_TOTAL_STATUS = 1025;
+    SIM_RESPONSE_VEHICLE_STATUS = 1030;
+    SIM_RESPONSE_STATION_STATUS = 1031;
+    SIM_RESPONSE_PASSENGER_STATUS = 1032;
+    SIM_RESPONSE_SWITCH_STATUS = 1033;
+    SIM_RESPONSE_TRACK_STATUS = 1034;
+    SIM_RESPONSE_TOTAL_STATUS = 1035;
 
-    SIM_NOTIFY_VEHICLE_POSITION = 1030;
-    SIM_NOTIFY_VEHICLE_ARRIVE = 1031;
-    SIM_NOTIFY_VEHICLE_EXIT = 1032;
-    SIM_NOTIFY_VEHICLE_STOPPED = 1033;
-    SIM_NOTIFY_VEHICLE_SPEEDING = 1034;
-    SIM_NOTIFY_VEHICLE_COLLISION = 1035;
-    SIM_NOTIFY_VEHICLE_CRASH = 1036;
-    SIM_NOTIFY_PASSENGER_EMBARK_START = 1037;
-    SIM_NOTIFY_PASSENGER_EMBARK_END = 1038;
-    SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1039;
-    SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1040;
-    SIM_NOTIFY_TIME = 1041;
+    SIM_NOTIFY_VEHICLE_POSITION = 1040;
+    SIM_NOTIFY_VEHICLE_ARRIVE = 1041;
+    SIM_NOTIFY_VEHICLE_EXIT = 1042;
+    SIM_NOTIFY_VEHICLE_STOPPED = 1043;
+    SIM_NOTIFY_VEHICLE_SPEEDING = 1044;
+    SIM_NOTIFY_VEHICLE_COLLISION = 1045;
+    SIM_NOTIFY_VEHICLE_CRASH = 1046;
+    SIM_NOTIFY_PASSENGER_EMBARK_START = 1047;
+    SIM_NOTIFY_PASSENGER_EMBARK_END = 1048;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1049;
+    SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1050;
+    SIM_NOTIFY_TIME = 1051;
 
-    SIM_EVENT_TRACK_DISABLED = 1050;
-    SIM_EVENT_TRACK_REENABLED = 1051;
-    SIM_EVENT_SWITCH_DISABLED = 1052;
-    SIM_EVENT_SWITCH_REENABLED = 1053;
-    SIM_EVENT_STATION_DISABLED = 1054;
-    SIM_EVENT_STATION_REENABLED = 1055;
-    SIM_EVENT_VEHICLE_DISABLED = 1056;
-    SIM_EVENT_VEHICLE_REENABLED = 1057;
-    SIM_EVENT_PASSENGER_CREATED = 1058;
-    SIM_EVENT_PASSENGER_CHANGEDEST = 1059;
+    SIM_EVENT_TRACK_DISABLED = 1060;
+    SIM_EVENT_TRACK_REENABLED = 1061;
+    SIM_EVENT_SWITCH_DISABLED = 1062;
+    SIM_EVENT_SWITCH_REENABLED = 1063;
+    SIM_EVENT_STATION_DISABLED = 1064;
+    SIM_EVENT_STATION_REENABLED = 1065;
+    SIM_EVENT_VEHICLE_DISABLED = 1066;
+    SIM_EVENT_VEHICLE_REENABLED = 1067;
+    SIM_EVENT_PASSENGER_CREATED = 1068;
+    SIM_EVENT_PASSENGER_CHANGEDEST = 1069;
 
-    SIM_MSG_HDR_INVALID_SEPARATOR = 1070;
-    SIM_MSG_HDR_INVALID_TYPE = 1071;
-    SIM_MSG_HDR_INVALID_ID = 1072;
-    SIM_MSG_HDR_INVALID_TIME = 1073;
-    SIM_MSG_HDR_INVALID_SIZE = 1074;
-    SIM_MSG_BODY_INVALID = 1075;
-    SIM_MSG_BODY_INVALID_TIME = 1076;
-    SIM_MSG_BODY_INVALID_ID = 1077;
+    SIM_MSG_HDR_INVALID_SEPARATOR = 1080;
+    SIM_MSG_HDR_INVALID_TYPE = 1081;
+    SIM_MSG_HDR_INVALID_ID = 1082;
+    SIM_MSG_HDR_INVALID_TIME = 1083;
+    SIM_MSG_HDR_INVALID_SIZE = 1084;
+    SIM_MSG_BODY_INVALID = 1085;
+    SIM_MSG_BODY_INVALID_TIME = 1086;
+    SIM_MSG_BODY_INVALID_ID = 1087;
 }
 
 message SimGreeting {
@@ -326,6 +352,21 @@ message SimCompleteSwitch {
     required int32           trackID = 2;
     required int32           nextID = 3;
     required double          time = 4; // time of completion
+}
+
+// Sent once the vehicle has been moved into storage and is no longer occupying the berth.
+message SimCompleteStorageEnter {
+    required int32               msgID = 1; // msgID of the CtrlCmdStorageEnter msg
+    required double              time = 2;  // time of completion
+    optional CtrlCmdStorageEnter cmd = 3;   // the original message
+}
+
+// Sent once the vehicle has been moved out of storage into the berth and is available to control.
+message SimCompleteStorageExit {
+    required int32               msgID = 1;    // msgID of the CtrlCmdStorageExit msg
+    required double              time = 2;     // time of completion
+    optional CtrlCmdStorageExit  cmd = 3;      // the original message
+    required VehicleStatus       v_status = 4; // vehicle that was brought out of storage
 }
 
 message SimResponseVehicleStatus {
@@ -553,7 +594,6 @@ message SimMsgBodyInvalidId {
     required LocationType  id_type = 2;
     required int32	   ID = 3;
 }
-
 
 // ------------- Status Types ----------------
 message VehicleStatus {

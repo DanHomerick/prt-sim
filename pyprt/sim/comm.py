@@ -291,7 +291,10 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
                     passengers = map(self.get_passenger, msg.passengerIDs)
-                    b.embark(v, passengers, msg, msgID)
+                    if b.loading and not b.is_busy():
+                        b.embark(v, passengers, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b
 
                 elif msg_type == api.CTRL_CMD_PASSENGERS_DISEMBARK:
                     msg = api.CtrlCmdPassengersDisembark()
@@ -300,7 +303,10 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
                     passengers = map(self.get_passenger, msg.passengerIDs)
-                    b.disembark(v, passengers, msg, msgID)
+                    if b.unloading and not b.is_busy():
+                        b.disembark(v, passengers, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b
 
                 elif msg_type == api.CTRL_CMD_PASSENGER_WALK:
                     msg = api.CtrlCmdPassengerWalk()
@@ -315,6 +321,36 @@ class ControlInterface(Sim.Process):
                     if travel_time < 0:
                         raise common.InvalidTime, travel_time
                     pax.walk(origin, dest, travel_time, msg, msgID)
+
+                elif msg_type == api.CTRL_CMD_STORAGE_ENTER:
+                    msg = api.CtrlCmdStorageEnter()
+                    msg.MergeFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    v = self.get_vehicle(msg.vID)
+                    b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
+                    if b.storage_entrance and not b.is_busy() :
+                        b.enter_storage(v, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b.ID
+
+                elif msg_type == api.CTRL_CMD_STORAGE_EXIT:
+                    msg = api.CtrlCmdStorageExit()
+                    msg.MergeFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    try:
+                        model = common.vehicle_models[msg.model_name]
+                    except KeyError:
+                        raise common.MsgError
+                    b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
+
+                    position = msg.position
+                    if b.storage_exit \
+                            and not b.is_busy() \
+                            and position - model.length >= b.start_pos \
+                            and position <= b.end_pos:
+                        b.exit_storage(position, model.model_name, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b.ID
 
                 # REQUESTS
                 elif msg_type == api.CTRL_REQUEST_VEHICLE_STATUS:

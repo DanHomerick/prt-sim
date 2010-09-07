@@ -1,5 +1,4 @@
 import logging
-import enthought.traits.api as traits
 import os.path
 
 from station import Berth
@@ -8,6 +7,7 @@ import layout
 import station
 import events
 import vehicle
+import pyprt.shared.api_pb2 as api
 
 class ScenarioManager(object):
     def __init__(self):
@@ -19,9 +19,6 @@ class ScenarioManager(object):
         Sets self.scenario_loaded to True upon success."""
         import xml.dom.minidom
         doc = xml.dom.minidom.parse(xml_path)
-
-#        src_nodes = dict()
-#        sink_nodes = dict()
 
         # Track Segments
         tracks_xml = doc.getElementsByTagName('TrackSegments')[0]
@@ -144,13 +141,13 @@ class ScenarioManager(object):
                 raise common.ScenarioError("Vehicle %s starting position: %s "
                                            "is greater than location %s length: %s"
                                            % (v_intId, position, loc.ID, loc.length))
-            vehicle = vehicle_classes[v_model](
+            v = vehicle_classes[v_model](
                                 ID=v_intId,
                                 loc=loc,
                                 position=position,
                                 vel=float(vehicle_xml.getAttribute('velocity'))
                             )
-            all_vehicles[vehicle.ID] = vehicle
+            all_vehicles[v.ID] = v
         return all_vehicles
 
 
@@ -159,14 +156,66 @@ class ScenarioManager(object):
         for station_xml in stations_xml.getElementsByTagName('Station'):
             station_label = station_xml.getAttribute('label')
             station_id = int(station_xml.getAttribute('id').split('_')[0])
+            try:
+                storage_entrance_delay = int(station_xml.getAttribute('storage_entrance_delay'))
+            except ValueError:
+                logging.warn("station '%s' is missing or has an invalid 'storage_entrance_delay' attribute. Defaulting to 0.", station_label)
+                storage_entrance_delay = 0
+
+            try:
+                storage_exit_delay = int(station_xml.getAttribute('storage_exit_delay'))
+            except ValueError:
+                logging.warn("station '%s' is missing or has an invalid 'storage_exit_delay' attribute. Defaulting to 0.", station_label)
+                storage_exit_delay = 0
 
             # Get the TrackSegments
             track_segments = set() # using a set because 'TrackSegmentID' includes the duplicate ts from Platform
             for track_id_xml in station_xml.getElementsByTagName('TrackSegmentID'):
-                    track_id = self._to_numeric_id(track_id_xml)
-                    track_segments.add(common.track_segments[track_id])
+                track_id = self._to_numeric_id(track_id_xml)
+                track_segments.add(common.track_segments[track_id])
 
-            station_ = station.Station(station_id, station_label, track_segments)
+            # Make the Storage objects and place them in a dict keyed by model_name
+            storage_dict = {}
+            for storage_xml in station_xml.getElementsByTagName('Storage'):
+                model_name = storage_xml.getAttribute('model_name')
+                if len(model_name) == 0:
+                    raise common.ScenarioError(
+                        "Storage for station '%s' is missing or has an invalid or missing 'model_name' attribute" \
+                        % (station_label))
+
+                initial_supply_str = storage_xml.getAttribute('initial_supply').lower()
+                if initial_supply_str == 'inf':
+                    initial_supply = float('inf')
+                else:
+                    try:
+                        initial_supply = int(storage_xml.getAttribute('initial_supply'))
+                    except ValueError:
+                        raise common.ScenarioError(
+                            "Storage for station '%s' is missing or has an invalid 'initial_supply' attribute: %s." \
+                            % (station_label, initial_supply_str))
+
+                max_capacity_str = storage_xml.getAttribute('max_capacity').lower()
+                if max_capacity_str == 'inf':
+                    max_capacity = float('inf')
+                else:
+                    try:
+                        max_capacity = int(storage_xml.getAttribute('max_capacity'))
+                    except ValueError:
+                        raise common.ScenarioError(
+                            "Storage for station '%s' has an invalid or missing 'max_capacity' attribute: %s." \
+                            % (station_label, max_capacity_str))
+
+                storage = station.Storage(model_name,
+                                          initial_supply,
+                                          max_capacity)
+                storage_dict[storage.model_name] = storage
+
+            station_ = station.Station(station_id,
+                                       station_label,
+                                       track_segments,
+                                       storage_entrance_delay,
+                                       storage_exit_delay,
+                                       storage_dict)
 
             # Make the Platforms
             platforms_xml = station_xml.getElementsByTagName('Platform')
@@ -186,9 +235,12 @@ class ScenarioManager(object):
                     end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
                     unloading = True if berth_xml.getAttribute('unloading') == 'true' else False
                     loading = True if berth_xml.getAttribute('loading') == 'true' else False
+                    storage_entrance = True if berth_xml.getAttribute('storage_entrance') == 'true' else False
+                    storage_exit = True if berth_xml.getAttribute('storage_exit') == 'true' else False
                     berths[berth_index] = Berth(berth_index, station_,
                                                 platform, start_pos, end_pos,
-                                                unloading, loading)
+                                                unloading, loading,
+                                                storage_entrance, storage_exit)
 
                 platform.berths = berths
                 platforms[platform_index] = platform
@@ -409,4 +461,4 @@ if __name__ == '__main__':
         print common.track_segments.values()
         print "------"
         print "Vehicles:"
-        print [v.ID for v in common.vehicles.itervalues()];
+        print [v.ID for v in common.vehicles.itervalues()]

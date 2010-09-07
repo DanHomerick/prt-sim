@@ -596,7 +596,10 @@ class VisDataCollector(SimPy.Process):
             pax_cnt = []
             for v in common.vehicle_list:
                 position = array([v.pos, 1])
-                x, y = numpy.dot(pos2img[v.loc], position) # matrix mult
+                try:
+                    x, y = numpy.dot(pos2img[v.loc], position) # matrix mult
+                except KeyError: # A TrackSegment that wasn't registered... expected to be a storage segment
+                    continue
                 x_coords.append(x)
                 y_coords.append(y)
                 pax_cnt.append(v.get_pax_count())

@@ -38,8 +38,8 @@ package edu.ucsc.track_builder
 			) 
 			
 			var xml:XML = <VehicleModels/>;
-			for each (var m:VehicleModel in scenarioModels) {
-				xml.appendChild(m.toXML()) 
+			for each (var model:VehicleModel in scenarioModels) {
+				xml.appendChild(model.toXML())
 			}
 			
 			return xml;

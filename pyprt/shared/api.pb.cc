@@ -35,6 +35,12 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* CtrlCmdPassengerWalk_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   CtrlCmdPassengerWalk_reflection_ = NULL;
+const ::google::protobuf::Descriptor* CtrlCmdStorageEnter_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  CtrlCmdStorageEnter_reflection_ = NULL;
+const ::google::protobuf::Descriptor* CtrlCmdStorageExit_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  CtrlCmdStorageExit_reflection_ = NULL;
 const ::google::protobuf::Descriptor* CtrlCmdSwitch_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   CtrlCmdSwitch_reflection_ = NULL;
@@ -92,6 +98,12 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* SimCompleteSwitch_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   SimCompleteSwitch_reflection_ = NULL;
+const ::google::protobuf::Descriptor* SimCompleteStorageEnter_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  SimCompleteStorageEnter_reflection_ = NULL;
+const ::google::protobuf::Descriptor* SimCompleteStorageExit_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  SimCompleteStorageExit_reflection_ = NULL;
 const ::google::protobuf::Descriptor* SimResponseVehicleStatus_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   SimResponseVehicleStatus_reflection_ = NULL;
@@ -359,7 +371,44 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlCmdPassengerWalk));
-  CtrlCmdSwitch_descriptor_ = file->message_type(7);
+  CtrlCmdStorageEnter_descriptor_ = file->message_type(7);
+  static const int CtrlCmdStorageEnter_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageEnter, vid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageEnter, sid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageEnter, platformid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageEnter, berthid_),
+  };
+  CtrlCmdStorageEnter_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      CtrlCmdStorageEnter_descriptor_,
+      CtrlCmdStorageEnter::default_instance_,
+      CtrlCmdStorageEnter_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageEnter, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageEnter, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(CtrlCmdStorageEnter));
+  CtrlCmdStorageExit_descriptor_ = file->message_type(8);
+  static const int CtrlCmdStorageExit_offsets_[5] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageExit, sid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageExit, platformid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageExit, berthid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageExit, position_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageExit, model_name_),
+  };
+  CtrlCmdStorageExit_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      CtrlCmdStorageExit_descriptor_,
+      CtrlCmdStorageExit::default_instance_,
+      CtrlCmdStorageExit_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageExit, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdStorageExit, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(CtrlCmdStorageExit));
+  CtrlCmdSwitch_descriptor_ = file->message_type(9);
   static const int CtrlCmdSwitch_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdSwitch, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlCmdSwitch, nextid_),
@@ -375,7 +424,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlCmdSwitch));
-  CtrlRequestVehicleStatus_descriptor_ = file->message_type(8);
+  CtrlRequestVehicleStatus_descriptor_ = file->message_type(10);
   static const int CtrlRequestVehicleStatus_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlRequestVehicleStatus, vid_),
   };
@@ -390,7 +439,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlRequestVehicleStatus));
-  CtrlRequestStationStatus_descriptor_ = file->message_type(9);
+  CtrlRequestStationStatus_descriptor_ = file->message_type(11);
   static const int CtrlRequestStationStatus_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlRequestStationStatus, sid_),
   };
@@ -405,7 +454,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlRequestStationStatus));
-  CtrlRequestPassengerStatus_descriptor_ = file->message_type(10);
+  CtrlRequestPassengerStatus_descriptor_ = file->message_type(12);
   static const int CtrlRequestPassengerStatus_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlRequestPassengerStatus, pid_),
   };
@@ -420,7 +469,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlRequestPassengerStatus));
-  CtrlRequestSwitchStatus_descriptor_ = file->message_type(11);
+  CtrlRequestSwitchStatus_descriptor_ = file->message_type(13);
   static const int CtrlRequestSwitchStatus_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlRequestSwitchStatus, swid_),
   };
@@ -435,7 +484,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlRequestSwitchStatus));
-  CtrlRequestTrackSegmentStatus_descriptor_ = file->message_type(12);
+  CtrlRequestTrackSegmentStatus_descriptor_ = file->message_type(14);
   static const int CtrlRequestTrackSegmentStatus_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlRequestTrackSegmentStatus, trackid_),
   };
@@ -450,7 +499,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlRequestTrackSegmentStatus));
-  CtrlRequestTotalStatus_descriptor_ = file->message_type(13);
+  CtrlRequestTotalStatus_descriptor_ = file->message_type(15);
   static const int CtrlRequestTotalStatus_offsets_[1] = {
   };
   CtrlRequestTotalStatus_reflection_ =
@@ -464,7 +513,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlRequestTotalStatus));
-  CtrlSetnotifyVehiclePosition_descriptor_ = file->message_type(14);
+  CtrlSetnotifyVehiclePosition_descriptor_ = file->message_type(16);
   static const int CtrlSetnotifyVehiclePosition_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlSetnotifyVehiclePosition, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlSetnotifyVehiclePosition, pos_),
@@ -480,7 +529,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlSetnotifyVehiclePosition));
-  CtrlSetnotifyTime_descriptor_ = file->message_type(15);
+  CtrlSetnotifyTime_descriptor_ = file->message_type(17);
   static const int CtrlSetnotifyTime_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlSetnotifyTime, time_),
   };
@@ -495,7 +544,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlSetnotifyTime));
-  CtrlResume_descriptor_ = file->message_type(16);
+  CtrlResume_descriptor_ = file->message_type(18);
   static const int CtrlResume_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlResume, last_sim_msgid_),
   };
@@ -510,7 +559,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlResume));
-  CtrlScenarioError_descriptor_ = file->message_type(17);
+  CtrlScenarioError_descriptor_ = file->message_type(19);
   static const int CtrlScenarioError_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlScenarioError, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CtrlScenarioError, vehicleid_),
@@ -530,7 +579,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CtrlScenarioError));
-  SimGreeting_descriptor_ = file->message_type(18);
+  SimGreeting_descriptor_ = file->message_type(20);
   static const int SimGreeting_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimGreeting, sim_end_time_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimGreeting, scenario_xml_),
@@ -546,7 +595,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimGreeting));
-  SimStart_descriptor_ = file->message_type(19);
+  SimStart_descriptor_ = file->message_type(21);
   static const int SimStart_offsets_[1] = {
   };
   SimStart_reflection_ =
@@ -560,7 +609,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimStart));
-  SimEnd_descriptor_ = file->message_type(20);
+  SimEnd_descriptor_ = file->message_type(22);
   static const int SimEnd_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEnd, sim_end_time_),
   };
@@ -575,7 +624,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEnd));
-  SimUnimplemented_descriptor_ = file->message_type(21);
+  SimUnimplemented_descriptor_ = file->message_type(23);
   static const int SimUnimplemented_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimUnimplemented, msgid_),
   };
@@ -590,7 +639,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimUnimplemented));
-  SimCompletePassengersEmbark_descriptor_ = file->message_type(22);
+  SimCompletePassengersEmbark_descriptor_ = file->message_type(24);
   static const int SimCompletePassengersEmbark_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompletePassengersEmbark, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompletePassengersEmbark, time_),
@@ -607,7 +656,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimCompletePassengersEmbark));
-  SimCompletePassengersDisembark_descriptor_ = file->message_type(23);
+  SimCompletePassengersDisembark_descriptor_ = file->message_type(25);
   static const int SimCompletePassengersDisembark_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompletePassengersDisembark, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompletePassengersDisembark, time_),
@@ -624,7 +673,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimCompletePassengersDisembark));
-  SimCompletePassengerWalk_descriptor_ = file->message_type(24);
+  SimCompletePassengerWalk_descriptor_ = file->message_type(26);
   static const int SimCompletePassengerWalk_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompletePassengerWalk, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompletePassengerWalk, time_),
@@ -641,7 +690,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimCompletePassengerWalk));
-  SimCompleteSwitch_descriptor_ = file->message_type(25);
+  SimCompleteSwitch_descriptor_ = file->message_type(27);
   static const int SimCompleteSwitch_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteSwitch, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteSwitch, trackid_),
@@ -659,7 +708,42 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimCompleteSwitch));
-  SimResponseVehicleStatus_descriptor_ = file->message_type(26);
+  SimCompleteStorageEnter_descriptor_ = file->message_type(28);
+  static const int SimCompleteStorageEnter_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageEnter, msgid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageEnter, time_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageEnter, cmd_),
+  };
+  SimCompleteStorageEnter_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      SimCompleteStorageEnter_descriptor_,
+      SimCompleteStorageEnter::default_instance_,
+      SimCompleteStorageEnter_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageEnter, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageEnter, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(SimCompleteStorageEnter));
+  SimCompleteStorageExit_descriptor_ = file->message_type(29);
+  static const int SimCompleteStorageExit_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageExit, msgid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageExit, time_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageExit, cmd_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageExit, v_status_),
+  };
+  SimCompleteStorageExit_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      SimCompleteStorageExit_descriptor_,
+      SimCompleteStorageExit::default_instance_,
+      SimCompleteStorageExit_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageExit, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimCompleteStorageExit, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(SimCompleteStorageExit));
+  SimResponseVehicleStatus_descriptor_ = file->message_type(30);
   static const int SimResponseVehicleStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseVehicleStatus, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseVehicleStatus, time_),
@@ -676,7 +760,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimResponseVehicleStatus));
-  SimResponseStationStatus_descriptor_ = file->message_type(27);
+  SimResponseStationStatus_descriptor_ = file->message_type(31);
   static const int SimResponseStationStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseStationStatus, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseStationStatus, time_),
@@ -693,7 +777,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimResponseStationStatus));
-  SimResponsePassengerStatus_descriptor_ = file->message_type(28);
+  SimResponsePassengerStatus_descriptor_ = file->message_type(32);
   static const int SimResponsePassengerStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponsePassengerStatus, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponsePassengerStatus, time_),
@@ -710,7 +794,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimResponsePassengerStatus));
-  SimResponseSwitchStatus_descriptor_ = file->message_type(29);
+  SimResponseSwitchStatus_descriptor_ = file->message_type(33);
   static const int SimResponseSwitchStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseSwitchStatus, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseSwitchStatus, time_),
@@ -727,7 +811,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimResponseSwitchStatus));
-  SimResponseTrackStatus_descriptor_ = file->message_type(30);
+  SimResponseTrackStatus_descriptor_ = file->message_type(34);
   static const int SimResponseTrackStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseTrackStatus, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseTrackStatus, time_),
@@ -744,7 +828,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimResponseTrackStatus));
-  SimResponseTotalStatus_descriptor_ = file->message_type(31);
+  SimResponseTotalStatus_descriptor_ = file->message_type(35);
   static const int SimResponseTotalStatus_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseTotalStatus, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimResponseTotalStatus, time_),
@@ -765,7 +849,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimResponseTotalStatus));
-  SimNotifyVehiclePosition_descriptor_ = file->message_type(32);
+  SimNotifyVehiclePosition_descriptor_ = file->message_type(36);
   static const int SimNotifyVehiclePosition_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehiclePosition, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehiclePosition, time_),
@@ -782,7 +866,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehiclePosition));
-  SimNotifyTime_descriptor_ = file->message_type(33);
+  SimNotifyTime_descriptor_ = file->message_type(37);
   static const int SimNotifyTime_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyTime, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyTime, time_),
@@ -798,7 +882,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyTime));
-  SimNotifyVehicleArrive_descriptor_ = file->message_type(34);
+  SimNotifyVehicleArrive_descriptor_ = file->message_type(38);
   static const int SimNotifyVehicleArrive_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleArrive, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleArrive, v_status_),
@@ -815,7 +899,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleArrive));
-  SimNotifyVehicleExit_descriptor_ = file->message_type(35);
+  SimNotifyVehicleExit_descriptor_ = file->message_type(39);
   static const int SimNotifyVehicleExit_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleExit, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleExit, v_status_),
@@ -832,7 +916,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleExit));
-  SimNotifyVehicleStopped_descriptor_ = file->message_type(36);
+  SimNotifyVehicleStopped_descriptor_ = file->message_type(40);
   static const int SimNotifyVehicleStopped_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleStopped, v_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleStopped, time_),
@@ -848,7 +932,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleStopped));
-  SimNotifyVehicleSpeeding_descriptor_ = file->message_type(37);
+  SimNotifyVehicleSpeeding_descriptor_ = file->message_type(41);
   static const int SimNotifyVehicleSpeeding_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleSpeeding, v_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleSpeeding, time_),
@@ -865,7 +949,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleSpeeding));
-  SimNotifyVehicleCollision_descriptor_ = file->message_type(38);
+  SimNotifyVehicleCollision_descriptor_ = file->message_type(42);
   static const int SimNotifyVehicleCollision_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, v1_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCollision, v2_status_),
@@ -882,7 +966,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleCollision));
-  SimNotifyVehicleCrash_descriptor_ = file->message_type(39);
+  SimNotifyVehicleCrash_descriptor_ = file->message_type(43);
   static const int SimNotifyVehicleCrash_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCrash, v_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyVehicleCrash, time_),
@@ -898,7 +982,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyVehicleCrash));
-  SimNotifyPassengerEmbarkStart_descriptor_ = file->message_type(40);
+  SimNotifyPassengerEmbarkStart_descriptor_ = file->message_type(44);
   static const int SimNotifyPassengerEmbarkStart_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkStart, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkStart, sid_),
@@ -918,7 +1002,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerEmbarkStart));
-  SimNotifyPassengerEmbarkEnd_descriptor_ = file->message_type(41);
+  SimNotifyPassengerEmbarkEnd_descriptor_ = file->message_type(45);
   static const int SimNotifyPassengerEmbarkEnd_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkEnd, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerEmbarkEnd, sid_),
@@ -938,7 +1022,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerEmbarkEnd));
-  SimNotifyPassengerDisembarkStart_descriptor_ = file->message_type(42);
+  SimNotifyPassengerDisembarkStart_descriptor_ = file->message_type(46);
   static const int SimNotifyPassengerDisembarkStart_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkStart, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkStart, sid_),
@@ -958,7 +1042,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerDisembarkStart));
-  SimNotifyPassengerDisembarkEnd_descriptor_ = file->message_type(43);
+  SimNotifyPassengerDisembarkEnd_descriptor_ = file->message_type(47);
   static const int SimNotifyPassengerDisembarkEnd_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkEnd, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimNotifyPassengerDisembarkEnd, sid_),
@@ -978,7 +1062,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimNotifyPassengerDisembarkEnd));
-  SimEventTrackDisabled_descriptor_ = file->message_type(44);
+  SimEventTrackDisabled_descriptor_ = file->message_type(48);
   static const int SimEventTrackDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackDisabled, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackDisabled, time_),
@@ -994,7 +1078,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventTrackDisabled));
-  SimEventTrackReenabled_descriptor_ = file->message_type(45);
+  SimEventTrackReenabled_descriptor_ = file->message_type(49);
   static const int SimEventTrackReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackReenabled, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventTrackReenabled, time_),
@@ -1010,7 +1094,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventTrackReenabled));
-  SimEventSwitchDisabled_descriptor_ = file->message_type(46);
+  SimEventSwitchDisabled_descriptor_ = file->message_type(50);
   static const int SimEventSwitchDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchDisabled, swid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchDisabled, time_),
@@ -1026,7 +1110,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventSwitchDisabled));
-  SimEventSwitchReenabled_descriptor_ = file->message_type(47);
+  SimEventSwitchReenabled_descriptor_ = file->message_type(51);
   static const int SimEventSwitchReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchReenabled, swid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventSwitchReenabled, time_),
@@ -1042,7 +1126,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventSwitchReenabled));
-  SimEventStationDisabled_descriptor_ = file->message_type(48);
+  SimEventStationDisabled_descriptor_ = file->message_type(52);
   static const int SimEventStationDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationDisabled, sid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationDisabled, time_),
@@ -1058,7 +1142,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventStationDisabled));
-  SimEventStationReenabled_descriptor_ = file->message_type(49);
+  SimEventStationReenabled_descriptor_ = file->message_type(53);
   static const int SimEventStationReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationReenabled, sid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventStationReenabled, time_),
@@ -1074,7 +1158,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventStationReenabled));
-  SimEventVehicleDisabled_descriptor_ = file->message_type(50);
+  SimEventVehicleDisabled_descriptor_ = file->message_type(54);
   static const int SimEventVehicleDisabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleDisabled, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleDisabled, time_),
@@ -1090,7 +1174,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventVehicleDisabled));
-  SimEventVehicleReenabled_descriptor_ = file->message_type(51);
+  SimEventVehicleReenabled_descriptor_ = file->message_type(55);
   static const int SimEventVehicleReenabled_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleReenabled, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventVehicleReenabled, time_),
@@ -1106,7 +1190,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventVehicleReenabled));
-  SimEventPassengerCreated_descriptor_ = file->message_type(52);
+  SimEventPassengerCreated_descriptor_ = file->message_type(56);
   static const int SimEventPassengerCreated_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerCreated, p_status_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerCreated, time_),
@@ -1122,7 +1206,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventPassengerCreated));
-  SimEventPassengerChangedest_descriptor_ = file->message_type(53);
+  SimEventPassengerChangedest_descriptor_ = file->message_type(57);
   static const int SimEventPassengerChangedest_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerChangedest, pid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimEventPassengerChangedest, time_),
@@ -1138,7 +1222,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimEventPassengerChangedest));
-  SimMsgHdrInvalidSeparator_descriptor_ = file->message_type(54);
+  SimMsgHdrInvalidSeparator_descriptor_ = file->message_type(58);
   static const int SimMsgHdrInvalidSeparator_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSeparator, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSeparator, msg_sep_),
@@ -1154,7 +1238,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidSeparator));
-  SimMsgHdrInvalidType_descriptor_ = file->message_type(55);
+  SimMsgHdrInvalidType_descriptor_ = file->message_type(59);
   static const int SimMsgHdrInvalidType_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidType, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidType, msg_type_),
@@ -1170,7 +1254,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidType));
-  SimMsgHdrInvalidId_descriptor_ = file->message_type(56);
+  SimMsgHdrInvalidId_descriptor_ = file->message_type(60);
   static const int SimMsgHdrInvalidId_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidId, msgid_),
   };
@@ -1185,7 +1269,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidId));
-  SimMsgHdrInvalidTime_descriptor_ = file->message_type(57);
+  SimMsgHdrInvalidTime_descriptor_ = file->message_type(61);
   static const int SimMsgHdrInvalidTime_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidTime, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidTime, msg_time_),
@@ -1201,7 +1285,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidTime));
-  SimMsgHdrInvalidSize_descriptor_ = file->message_type(58);
+  SimMsgHdrInvalidSize_descriptor_ = file->message_type(62);
   static const int SimMsgHdrInvalidSize_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSize, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgHdrInvalidSize, msg_size_),
@@ -1217,7 +1301,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgHdrInvalidSize));
-  SimMsgBodyInvalid_descriptor_ = file->message_type(59);
+  SimMsgBodyInvalid_descriptor_ = file->message_type(63);
   static const int SimMsgBodyInvalid_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalid, msgid_),
   };
@@ -1232,7 +1316,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgBodyInvalid));
-  SimMsgBodyInvalidTime_descriptor_ = file->message_type(60);
+  SimMsgBodyInvalidTime_descriptor_ = file->message_type(64);
   static const int SimMsgBodyInvalidTime_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidTime, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidTime, time_),
@@ -1248,7 +1332,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgBodyInvalidTime));
-  SimMsgBodyInvalidId_descriptor_ = file->message_type(61);
+  SimMsgBodyInvalidId_descriptor_ = file->message_type(65);
   static const int SimMsgBodyInvalidId_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidId, msgid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SimMsgBodyInvalidId, id_type_),
@@ -1265,7 +1349,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SimMsgBodyInvalidId));
-  VehicleStatus_descriptor_ = file->message_type(62);
+  VehicleStatus_descriptor_ = file->message_type(66);
   static const int VehicleStatus_offsets_[10] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VehicleStatus, nose_locid_),
@@ -1289,7 +1373,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(VehicleStatus));
-  StationStatus_descriptor_ = file->message_type(63);
+  StationStatus_descriptor_ = file->message_type(67);
   static const int StationStatus_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StationStatus, sid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StationStatus, label_),
@@ -1309,7 +1393,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(StationStatus));
-  PlatformStatus_descriptor_ = file->message_type(64);
+  PlatformStatus_descriptor_ = file->message_type(68);
   static const int PlatformStatus_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PlatformStatus, platid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PlatformStatus, trackid_),
@@ -1328,7 +1412,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(PlatformStatus));
-  BerthStatus_descriptor_ = file->message_type(65);
+  BerthStatus_descriptor_ = file->message_type(69);
   static const int BerthStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BerthStatus, bid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BerthStatus, vid_),
@@ -1345,7 +1429,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BerthStatus));
-  PassengerStatus_descriptor_ = file->message_type(66);
+  PassengerStatus_descriptor_ = file->message_type(70);
   static const int PassengerStatus_offsets_[8] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PassengerStatus, pid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PassengerStatus, loc_type_),
@@ -1367,7 +1451,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(PassengerStatus));
-  RoutingEntry_descriptor_ = file->message_type(67);
+  RoutingEntry_descriptor_ = file->message_type(71);
   static const int RoutingEntry_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RoutingEntry, vid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RoutingEntry, trackid_),
@@ -1384,7 +1468,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(RoutingEntry));
-  SwitchStatus_descriptor_ = file->message_type(68);
+  SwitchStatus_descriptor_ = file->message_type(72);
   static const int SwitchStatus_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwitchStatus, swid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwitchStatus, label_),
@@ -1401,7 +1485,7 @@ void protobuf_AssignDesc_api_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SwitchStatus));
-  TrackStatus_descriptor_ = file->message_type(69);
+  TrackStatus_descriptor_ = file->message_type(73);
   static const int TrackStatus_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackStatus, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrackStatus, label_),
@@ -1453,6 +1537,10 @@ void protobuf_RegisterTypes(const ::std::string&) {
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     CtrlCmdPassengerWalk_descriptor_, &CtrlCmdPassengerWalk::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    CtrlCmdStorageEnter_descriptor_, &CtrlCmdStorageEnter::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    CtrlCmdStorageExit_descriptor_, &CtrlCmdStorageExit::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     CtrlCmdSwitch_descriptor_, &CtrlCmdSwitch::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     CtrlRequestVehicleStatus_descriptor_, &CtrlRequestVehicleStatus::default_instance());
@@ -1490,6 +1578,10 @@ void protobuf_RegisterTypes(const ::std::string&) {
     SimCompletePassengerWalk_descriptor_, &SimCompletePassengerWalk::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     SimCompleteSwitch_descriptor_, &SimCompleteSwitch::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    SimCompleteStorageEnter_descriptor_, &SimCompleteStorageEnter::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    SimCompleteStorageExit_descriptor_, &SimCompleteStorageExit::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     SimResponseVehicleStatus_descriptor_, &SimResponseVehicleStatus::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
@@ -1597,6 +1689,10 @@ void protobuf_ShutdownFile_api_2eproto() {
   delete CtrlCmdPassengersDisembark_reflection_;
   delete CtrlCmdPassengerWalk::default_instance_;
   delete CtrlCmdPassengerWalk_reflection_;
+  delete CtrlCmdStorageEnter::default_instance_;
+  delete CtrlCmdStorageEnter_reflection_;
+  delete CtrlCmdStorageExit::default_instance_;
+  delete CtrlCmdStorageExit_reflection_;
   delete CtrlCmdSwitch::default_instance_;
   delete CtrlCmdSwitch_reflection_;
   delete CtrlRequestVehicleStatus::default_instance_;
@@ -1635,6 +1731,10 @@ void protobuf_ShutdownFile_api_2eproto() {
   delete SimCompletePassengerWalk_reflection_;
   delete SimCompleteSwitch::default_instance_;
   delete SimCompleteSwitch_reflection_;
+  delete SimCompleteStorageEnter::default_instance_;
+  delete SimCompleteStorageEnter_reflection_;
+  delete SimCompleteStorageExit::default_instance_;
+  delete SimCompleteStorageExit_reflection_;
   delete SimResponseVehicleStatus::default_instance_;
   delete SimResponseVehicleStatus_reflection_;
   delete SimResponseStationStatus::default_instance_;
@@ -1747,187 +1847,201 @@ void protobuf_AddDesc_api_2eproto() {
     "IDs\030\005 \003(\005B\002\020\001\"r\n\024CtrlCmdPassengerWalk\022\023\n"
     "\013passengerID\030\001 \002(\005\022\030\n\020origin_stationID\030\002"
     " \002(\005\022\026\n\016dest_stationID\030\003 \002(\005\022\023\n\013travel_t"
-    "ime\030\004 \002(\001\"0\n\rCtrlCmdSwitch\022\017\n\007trackID\030\001 "
-    "\002(\005\022\016\n\006nextID\030\002 \002(\005\"\'\n\030CtrlRequestVehicl"
-    "eStatus\022\013\n\003vID\030\002 \002(\005\"\'\n\030CtrlRequestStati"
-    "onStatus\022\013\n\003sID\030\002 \002(\005\")\n\032CtrlRequestPass"
-    "engerStatus\022\013\n\003pID\030\002 \002(\005\"\'\n\027CtrlRequestS"
-    "witchStatus\022\014\n\004swID\030\002 \002(\005\"0\n\035CtrlRequest"
-    "TrackSegmentStatus\022\017\n\007trackID\030\002 \002(\005\"\030\n\026C"
-    "trlRequestTotalStatus\"8\n\034CtrlSetnotifyVe"
-    "hiclePosition\022\013\n\003vID\030\001 \002(\005\022\013\n\003pos\030\002 \002(\002\""
-    "!\n\021CtrlSetnotifyTime\022\014\n\004time\030\001 \002(\001\"$\n\nCt"
-    "rlResume\022\026\n\016last_sim_msgID\030\001 \002(\005\"\230\001\n\021Ctr"
-    "lScenarioError\022\023\n\007trackID\030\001 \001(\005:\002-1\022\025\n\tv"
-    "ehicleID\030\002 \001(\005:\002-1\022\025\n\tstationID\030\003 \001(\005:\002-"
-    "1\022\023\n\007mergeID\030\004 \001(\005:\002-1\022\024\n\010switchID\030\005 \001(\005"
-    ":\002-1\022\025\n\rerror_message\030\006 \001(\t\"9\n\013SimGreeti"
-    "ng\022\024\n\014sim_end_time\030\001 \002(\001\022\024\n\014scenario_xml"
-    "\030\002 \001(\t\"\n\n\010SimStart\"\036\n\006SimEnd\022\024\n\014sim_end_"
-    "time\030\001 \002(\001\"!\n\020SimUnimplemented\022\r\n\005msgID\030"
-    "\001 \002(\005\"e\n\033SimCompletePassengersEmbark\022\r\n\005"
-    "msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022)\n\003cmd\030\003 \001(\0132\034"
-    ".prt.CtrlCmdPassengersEmbark\"k\n\036SimCompl"
-    "etePassengersDisembark\022\r\n\005msgID\030\001 \002(\005\022\014\n"
-    "\004time\030\002 \002(\001\022,\n\003cmd\030\003 \001(\0132\037.prt.CtrlCmdPa"
-    "ssengersDisembark\"_\n\030SimCompletePassenge"
-    "rWalk\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022&\n\003cm"
-    "d\030\003 \001(\0132\031.prt.CtrlCmdPassengerWalk\"Q\n\021Si"
-    "mCompleteSwitch\022\r\n\005msgID\030\001 \002(\005\022\017\n\007trackI"
-    "D\030\002 \002(\005\022\016\n\006nextID\030\003 \002(\005\022\014\n\004time\030\004 \002(\001\"]\n"
-    "\030SimResponseVehicleStatus\022\r\n\005msgID\030\001 \002(\005"
-    "\022\014\n\004time\030\002 \002(\001\022$\n\010v_status\030\003 \002(\0132\022.prt.V"
-    "ehicleStatus\"]\n\030SimResponseStationStatus"
-    "\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022$\n\010s_statu"
-    "s\030\003 \002(\0132\022.prt.StationStatus\"a\n\032SimRespon"
-    "sePassengerStatus\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time"
-    "\030\002 \002(\001\022&\n\010p_status\030\003 \002(\0132\024.prt.Passenger"
-    "Status\"\\\n\027SimResponseSwitchStatus\022\r\n\005msg"
-    "ID\030\001 \001(\005\022\014\n\004time\030\002 \002(\001\022$\n\tsw_status\030\003 \002("
-    "\0132\021.prt.SwitchStatus\"]\n\026SimResponseTrack"
-    "Status\022\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030\002 \002(\001\022&\n\014t"
-    "rack_status\030\003 \002(\0132\020.prt.TrackStatus\"\375\001\n\026"
-    "SimResponseTotalStatus\022\r\n\005msgID\030\001 \002(\005\022\014\n"
-    "\004time\030\002 \002(\001\022&\n\nv_statuses\030\003 \003(\0132\022.prt.Ve"
-    "hicleStatus\022&\n\ns_statuses\030\004 \003(\0132\022.prt.St"
-    "ationStatus\022(\n\np_statuses\030\005 \003(\0132\024.prt.Pa"
-    "ssengerStatus\022&\n\013sw_statuses\030\006 \003(\0132\021.prt"
-    ".SwitchStatus\022$\n\nt_statuses\030\007 \003(\0132\020.prt."
-    "TrackStatus\"]\n\030SimNotifyVehiclePosition\022"
-    "\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030\002 \002(\001\022$\n\010v_status"
-    "\030\003 \002(\0132\022.prt.VehicleStatus\",\n\rSimNotifyT"
-    "ime\022\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030\002 \002(\001\"]\n\026SimN"
-    "otifyVehicleArrive\022\017\n\007trackID\030\001 \002(\005\022$\n\010v"
-    "_status\030\002 \002(\0132\022.prt.VehicleStatus\022\014\n\004tim"
-    "e\030\003 \002(\001\"[\n\024SimNotifyVehicleExit\022\017\n\007track"
-    "ID\030\001 \002(\005\022$\n\010v_status\030\002 \002(\0132\022.prt.Vehicle"
-    "Status\022\014\n\004time\030\003 \002(\001\"M\n\027SimNotifyVehicle"
-    "Stopped\022$\n\010v_status\030\001 \002(\0132\022.prt.VehicleS"
-    "tatus\022\014\n\004time\030\002 \002(\001\"c\n\030SimNotifyVehicleS"
-    "peeding\022$\n\010v_status\030\001 \002(\0132\022.prt.VehicleS"
-    "tatus\022\014\n\004time\030\002 \002(\001\022\023\n\013speed_limit\030\003 \002(\002"
-    "\"w\n\031SimNotifyVehicleCollision\022%\n\tv1_stat"
-    "us\030\001 \002(\0132\022.prt.VehicleStatus\022%\n\tv2_statu"
-    "s\030\002 \002(\0132\022.prt.VehicleStatus\022\014\n\004time\030\003 \002("
-    "\001\"7\n\025SimNotifyVehicleCrash\022\020\n\010v_status\030\001"
-    " \002(\005\022\014\n\004time\030\002 \002(\001\"y\n\035SimNotifyPassenger"
-    "EmbarkStart\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n"
-    "\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthI"
-    "D\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"w\n\033SimNotifyPassen"
-    "gerEmbarkEnd\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022"
-    "\n\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berth"
-    "ID\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"|\n SimNotifyPasse"
-    "ngerDisembarkStart\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002"
-    " \002(\005\022\022\n\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n"
-    "\007berthID\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"z\n\036SimNotif"
-    "yPassengerDisembarkEnd\022\013\n\003vID\030\001 \002(\005\022\013\n\003s"
-    "ID\030\002 \002(\005\022\022\n\nplatformID\030\003 \002(\005\022\013\n\003pID\030\004 \002("
-    "\005\022\017\n\007berthID\030\005 \002(\005\022\014\n\004time\030\006 \002(\001\"6\n\025SimE"
-    "ventTrackDisabled\022\017\n\007trackID\030\001 \002(\005\022\014\n\004ti"
-    "me\030\002 \002(\001\"7\n\026SimEventTrackReenabled\022\017\n\007tr"
-    "ackID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"4\n\026SimEventSwi"
-    "tchDisabled\022\014\n\004swID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\""
-    "5\n\027SimEventSwitchReenabled\022\014\n\004swID\030\001 \002(\005"
-    "\022\014\n\004time\030\002 \002(\001\"4\n\027SimEventStationDisable"
-    "d\022\013\n\003sID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"5\n\030SimEvent"
-    "StationReenabled\022\013\n\003sID\030\001 \002(\005\022\014\n\004time\030\002 "
-    "\002(\001\"4\n\027SimEventVehicleDisabled\022\013\n\003vID\030\001 "
-    "\002(\005\022\014\n\004time\030\002 \002(\001\"5\n\030SimEventVehicleReen"
-    "abled\022\013\n\003vID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"P\n\030SimE"
-    "ventPassengerCreated\022&\n\010p_status\030\001 \002(\0132\024"
-    ".prt.PassengerStatus\022\014\n\004time\030\002 \002(\001\"8\n\033Si"
-    "mEventPassengerChangedest\022\013\n\003pID\030\001 \002(\005\022\014"
-    "\n\004time\030\002 \002(\001\";\n\031SimMsgHdrInvalidSeparato"
-    "r\022\r\n\005msgID\030\001 \002(\005\022\017\n\007msg_sep\030\002 \002(\005\"7\n\024Sim"
-    "MsgHdrInvalidType\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_"
-    "type\030\002 \002(\005\"#\n\022SimMsgHdrInvalidId\022\r\n\005msgI"
-    "D\030\001 \002(\005\"7\n\024SimMsgHdrInvalidTime\022\r\n\005msgID"
-    "\030\001 \002(\005\022\020\n\010msg_time\030\002 \002(\005\"7\n\024SimMsgHdrInv"
-    "alidSize\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_size\030\002 \002("
-    "\005\"\"\n\021SimMsgBodyInvalid\022\r\n\005msgID\030\001 \002(\005\"4\n"
-    "\025SimMsgBodyInvalidTime\022\r\n\005msgID\030\001 \002(\005\022\014\n"
-    "\004time\030\002 \002(\001\"T\n\023SimMsgBodyInvalidId\022\r\n\005ms"
-    "gID\030\001 \002(\005\022\"\n\007id_type\030\002 \002(\0162\021.prt.Locatio"
-    "nType\022\n\n\002ID\030\003 \002(\005\"\305\001\n\rVehicleStatus\022\013\n\003v"
-    "ID\030\001 \002(\005\022\022\n\nnose_locID\030\003 \002(\005\022\020\n\010nose_pos"
-    "\030\004 \002(\002\022\022\n\ntail_locID\030\006 \002(\005\022\020\n\010tail_pos\030\007"
-    " \002(\002\022\013\n\003vel\030\010 \002(\002\022\r\n\005accel\030\t \002(\002\022\030\n\014pass"
-    "engerIDs\030\n \003(\005B\002\020\001\022\020\n\004lvID\030\013 \001(\005:\002-1\022\023\n\013"
-    "lv_distance\030\014 \001(\002\"\242\001\n\rStationStatus\022\013\n\003s"
-    "ID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022,\n\017platform_stat"
-    "us\030\003 \003(\0132\023.prt.PlatformStatus\022\017\n\003pID\030\004 \003"
-    "(\005B\002\020\001\022\022\n\nv_adv_time\030\005 \002(\005\022\"\n\006policy\030\006 \002"
-    "(\0162\022.prt.StationPolicy\"w\n\016PlatformStatus"
-    "\022\016\n\006platID\030\001 \002(\005\022\017\n\007trackID\030\002 \002(\005\022\021\n\tunl"
-    "oading\030\003 \002(\010\022\017\n\007loading\030\004 \002(\010\022 \n\006berths\030"
-    "\005 \003(\0132\020.prt.BerthStatus\"5\n\013BerthStatus\022\013"
-    "\n\003bID\030\001 \002(\005\022\013\n\003vID\030\002 \002(\005\022\014\n\004busy\030\003 \002(\010\"\274"
-    "\001\n\017PassengerStatus\022\013\n\003pID\030\001 \002(\005\022#\n\010loc_t"
-    "ype\030\003 \002(\0162\021.prt.LocationType\022\r\n\005locID\030\004 "
-    "\002(\005\022\025\n\rsrc_stationID\030\005 \002(\005\022\026\n\016dest_stati"
-    "onID\030\006 \002(\005\022\025\n\rcreation_time\030\007 \002(\001\022\014\n\004mas"
-    "s\030\013 \002(\005\022\024\n\014trip_success\030\r \002(\010\";\n\014Routing"
-    "Entry\022\013\n\003vID\030\001 \002(\005\022\017\n\007trackID\030\002 \002(\005\022\r\n\005m"
-    "sgID\030\003 \001(\005\"M\n\014SwitchStatus\022\014\n\004swID\030\001 \002(\005"
-    "\022\r\n\005label\030\002 \001(\t\022 \n\005entry\030\003 \003(\0132\021.prt.Rou"
-    "tingEntry\"o\n\013TrackStatus\022\017\n\007trackID\030\001 \002("
-    "\005\022\r\n\005label\030\002 \001(\t\022\021\n\tmax_speed\030\003 \002(\005\022\016\n\006l"
-    "ength\030\004 \002(\005\022\017\n\003vID\030\005 \003(\005B\002\020\001\022\014\n\004next\030\006 \002"
-    "(\005*G\n\004Misc\022\024\n\007MSG_SEP\020\205\205\376\377\377\377\377\377\377\001\022\023\n\017MSG_"
-    "HEADER_SIZE\020\020\022\024\n\007NONE_ID\020\377\377\377\377\377\377\377\377\377\001*\365\003\n\013"
-    "CtrlMsgType\022\037\n\033CTRL_CMD_VEHICLE_TRAJECTO"
-    "RY\020\001\022\036\n\032CTRL_CMD_VEHICLE_ITINERARY\020\002\022\023\n\017"
-    "CTRL_CMD_SWITCH\020\003\022\036\n\032CTRL_CMD_PASSENGERS"
-    "_EMBARK\020\004\022!\n\035CTRL_CMD_PASSENGERS_DISEMBA"
-    "RK\020\005\022\033\n\027CTRL_CMD_PASSENGER_WALK\020\006\022\037\n\033CTR"
-    "L_REQUEST_VEHICLE_STATUS\020\n\022\037\n\033CTRL_REQUE"
-    "ST_STATION_STATUS\020\013\022!\n\035CTRL_REQUEST_PASS"
-    "ENGER_STATUS\020\014\022\036\n\032CTRL_REQUEST_SWITCH_ST"
-    "ATUS\020\r\022$\n CTRL_REQUEST_TRACKSEGMENT_STAT"
-    "US\020\016\022\035\n\031CTRL_REQUEST_TOTAL_STATUS\020\017\022#\n\037C"
-    "TRL_SETNOTIFY_VEHICLE_POSITION\020\024\022\027\n\023CTRL"
-    "_SETNOTIFY_TIME\020\025\022\017\n\013CTRL_RESUME\020\036\022\027\n\023CT"
-    "RL_SCENARIO_ERROR\0202*\206\001\n\014LocationType\022\021\n\r"
-    "TRACK_SEGMENT\020\000\022\n\n\006SWITCH\020\n\022\013\n\007STATION\020\024"
-    "\022\014\n\010PLATFORM\020\036\022\t\n\005BERTH\020(\022\013\n\007VEHICLE\0202\022\r"
-    "\n\tPASSENGER\020<\022\013\n\007WALKING\020F\022\010\n\004NONE\020P*%\n\r"
-    "StationPolicy\022\t\n\005LOBBY\020\001\022\t\n\005QUEUE\020\002*\210\013\n\n"
-    "SimMsgType\022\021\n\014SIM_GREETING\020\350\007\022\016\n\tSIM_STA"
-    "RT\020\351\007\022\014\n\007SIM_END\020\352\007\022\026\n\021SIM_UNIMPLEMENTED"
-    "\020\353\007\022#\n\036SIM_COMPLETE_PASSENGERS_EMBARK\020\362\007"
-    "\022&\n!SIM_COMPLETE_PASSENGERS_DISEMBARK\020\363\007"
-    "\022 \n\033SIM_COMPLETE_PASSENGER_WALK\020\364\007\022\030\n\023SI"
-    "M_COMPLETE_SWITCH\020\365\007\022 \n\033SIM_RESPONSE_VEH"
-    "ICLE_STATUS\020\374\007\022 \n\033SIM_RESPONSE_STATION_S"
-    "TATUS\020\375\007\022\"\n\035SIM_RESPONSE_PASSENGER_STATU"
-    "S\020\376\007\022\037\n\032SIM_RESPONSE_SWITCH_STATUS\020\377\007\022\036\n"
-    "\031SIM_RESPONSE_TRACK_STATUS\020\200\010\022\036\n\031SIM_RES"
-    "PONSE_TOTAL_STATUS\020\201\010\022 \n\033SIM_NOTIFY_VEHI"
-    "CLE_POSITION\020\206\010\022\036\n\031SIM_NOTIFY_VEHICLE_AR"
-    "RIVE\020\207\010\022\034\n\027SIM_NOTIFY_VEHICLE_EXIT\020\210\010\022\037\n"
-    "\032SIM_NOTIFY_VEHICLE_STOPPED\020\211\010\022 \n\033SIM_NO"
-    "TIFY_VEHICLE_SPEEDING\020\212\010\022!\n\034SIM_NOTIFY_V"
-    "EHICLE_COLLISION\020\213\010\022\035\n\030SIM_NOTIFY_VEHICL"
-    "E_CRASH\020\214\010\022&\n!SIM_NOTIFY_PASSENGER_EMBAR"
-    "K_START\020\215\010\022$\n\037SIM_NOTIFY_PASSENGER_EMBAR"
-    "K_END\020\216\010\022)\n$SIM_NOTIFY_PASSENGER_DISEMBA"
-    "RK_START\020\217\010\022\'\n\"SIM_NOTIFY_PASSENGER_DISE"
-    "MBARK_END\020\220\010\022\024\n\017SIM_NOTIFY_TIME\020\221\010\022\035\n\030SI"
-    "M_EVENT_TRACK_DISABLED\020\232\010\022\036\n\031SIM_EVENT_T"
-    "RACK_REENABLED\020\233\010\022\036\n\031SIM_EVENT_SWITCH_DI"
-    "SABLED\020\234\010\022\037\n\032SIM_EVENT_SWITCH_REENABLED\020"
-    "\235\010\022\037\n\032SIM_EVENT_STATION_DISABLED\020\236\010\022 \n\033S"
-    "IM_EVENT_STATION_REENABLED\020\237\010\022\037\n\032SIM_EVE"
-    "NT_VEHICLE_DISABLED\020\240\010\022 \n\033SIM_EVENT_VEHI"
-    "CLE_REENABLED\020\241\010\022 \n\033SIM_EVENT_PASSENGER_"
-    "CREATED\020\242\010\022#\n\036SIM_EVENT_PASSENGER_CHANGE"
-    "DEST\020\243\010\022\"\n\035SIM_MSG_HDR_INVALID_SEPARATOR"
-    "\020\256\010\022\035\n\030SIM_MSG_HDR_INVALID_TYPE\020\257\010\022\033\n\026SI"
-    "M_MSG_HDR_INVALID_ID\020\260\010\022\035\n\030SIM_MSG_HDR_I"
-    "NVALID_TIME\020\261\010\022\035\n\030SIM_MSG_HDR_INVALID_SI"
-    "ZE\020\262\010\022\031\n\024SIM_MSG_BODY_INVALID\020\263\010\022\036\n\031SIM_"
-    "MSG_BODY_INVALID_TIME\020\264\010\022\034\n\027SIM_MSG_BODY"
-    "_INVALID_ID\020\265\010", 7814);
+    "ime\030\004 \002(\001\"T\n\023CtrlCmdStorageEnter\022\013\n\003vID\030"
+    "\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatformID\030\003 \002(\005\022\017"
+    "\n\007berthID\030\004 \002(\005\"l\n\022CtrlCmdStorageExit\022\013\n"
+    "\003sID\030\001 \002(\005\022\022\n\nplatformID\030\002 \002(\005\022\017\n\007berthI"
+    "D\030\003 \002(\005\022\020\n\010position\030\004 \002(\002\022\022\n\nmodel_name\030"
+    "\005 \002(\t\"0\n\rCtrlCmdSwitch\022\017\n\007trackID\030\001 \002(\005\022"
+    "\016\n\006nextID\030\002 \002(\005\"\'\n\030CtrlRequestVehicleSta"
+    "tus\022\013\n\003vID\030\002 \002(\005\"\'\n\030CtrlRequestStationSt"
+    "atus\022\013\n\003sID\030\002 \002(\005\")\n\032CtrlRequestPassenge"
+    "rStatus\022\013\n\003pID\030\002 \002(\005\"\'\n\027CtrlRequestSwitc"
+    "hStatus\022\014\n\004swID\030\002 \002(\005\"0\n\035CtrlRequestTrac"
+    "kSegmentStatus\022\017\n\007trackID\030\002 \002(\005\"\030\n\026CtrlR"
+    "equestTotalStatus\"8\n\034CtrlSetnotifyVehicl"
+    "ePosition\022\013\n\003vID\030\001 \002(\005\022\013\n\003pos\030\002 \002(\002\"!\n\021C"
+    "trlSetnotifyTime\022\014\n\004time\030\001 \002(\001\"$\n\nCtrlRe"
+    "sume\022\026\n\016last_sim_msgID\030\001 \002(\005\"\230\001\n\021CtrlSce"
+    "narioError\022\023\n\007trackID\030\001 \001(\005:\002-1\022\025\n\tvehic"
+    "leID\030\002 \001(\005:\002-1\022\025\n\tstationID\030\003 \001(\005:\002-1\022\023\n"
+    "\007mergeID\030\004 \001(\005:\002-1\022\024\n\010switchID\030\005 \001(\005:\002-1"
+    "\022\025\n\rerror_message\030\006 \001(\t\"9\n\013SimGreeting\022\024"
+    "\n\014sim_end_time\030\001 \002(\001\022\024\n\014scenario_xml\030\002 \001"
+    "(\t\"\n\n\010SimStart\"\036\n\006SimEnd\022\024\n\014sim_end_time"
+    "\030\001 \002(\001\"!\n\020SimUnimplemented\022\r\n\005msgID\030\001 \002("
+    "\005\"e\n\033SimCompletePassengersEmbark\022\r\n\005msgI"
+    "D\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022)\n\003cmd\030\003 \001(\0132\034.prt"
+    ".CtrlCmdPassengersEmbark\"k\n\036SimCompleteP"
+    "assengersDisembark\022\r\n\005msgID\030\001 \002(\005\022\014\n\004tim"
+    "e\030\002 \002(\001\022,\n\003cmd\030\003 \001(\0132\037.prt.CtrlCmdPassen"
+    "gersDisembark\"_\n\030SimCompletePassengerWal"
+    "k\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022&\n\003cmd\030\003 "
+    "\001(\0132\031.prt.CtrlCmdPassengerWalk\"Q\n\021SimCom"
+    "pleteSwitch\022\r\n\005msgID\030\001 \002(\005\022\017\n\007trackID\030\002 "
+    "\002(\005\022\016\n\006nextID\030\003 \002(\005\022\014\n\004time\030\004 \002(\001\"]\n\027Sim"
+    "CompleteStorageEnter\022\r\n\005msgID\030\001 \002(\005\022\014\n\004t"
+    "ime\030\002 \002(\001\022%\n\003cmd\030\003 \001(\0132\030.prt.CtrlCmdStor"
+    "ageEnter\"\201\001\n\026SimCompleteStorageExit\022\r\n\005m"
+    "sgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022$\n\003cmd\030\003 \001(\0132\027."
+    "prt.CtrlCmdStorageExit\022$\n\010v_status\030\004 \002(\013"
+    "2\022.prt.VehicleStatus\"]\n\030SimResponseVehic"
+    "leStatus\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022$\n"
+    "\010v_status\030\003 \002(\0132\022.prt.VehicleStatus\"]\n\030S"
+    "imResponseStationStatus\022\r\n\005msgID\030\001 \002(\005\022\014"
+    "\n\004time\030\002 \002(\001\022$\n\010s_status\030\003 \002(\0132\022.prt.Sta"
+    "tionStatus\"a\n\032SimResponsePassengerStatus"
+    "\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022&\n\010p_statu"
+    "s\030\003 \002(\0132\024.prt.PassengerStatus\"\\\n\027SimResp"
+    "onseSwitchStatus\022\r\n\005msgID\030\001 \001(\005\022\014\n\004time\030"
+    "\002 \002(\001\022$\n\tsw_status\030\003 \002(\0132\021.prt.SwitchSta"
+    "tus\"]\n\026SimResponseTrackStatus\022\r\n\005msgID\030\001"
+    " \001(\005\022\014\n\004time\030\002 \002(\001\022&\n\014track_status\030\003 \002(\013"
+    "2\020.prt.TrackStatus\"\375\001\n\026SimResponseTotalS"
+    "tatus\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\022&\n\nv_"
+    "statuses\030\003 \003(\0132\022.prt.VehicleStatus\022&\n\ns_"
+    "statuses\030\004 \003(\0132\022.prt.StationStatus\022(\n\np_"
+    "statuses\030\005 \003(\0132\024.prt.PassengerStatus\022&\n\013"
+    "sw_statuses\030\006 \003(\0132\021.prt.SwitchStatus\022$\n\n"
+    "t_statuses\030\007 \003(\0132\020.prt.TrackStatus\"]\n\030Si"
+    "mNotifyVehiclePosition\022\r\n\005msgID\030\001 \001(\005\022\014\n"
+    "\004time\030\002 \002(\001\022$\n\010v_status\030\003 \002(\0132\022.prt.Vehi"
+    "cleStatus\",\n\rSimNotifyTime\022\r\n\005msgID\030\001 \001("
+    "\005\022\014\n\004time\030\002 \002(\001\"]\n\026SimNotifyVehicleArriv"
+    "e\022\017\n\007trackID\030\001 \002(\005\022$\n\010v_status\030\002 \002(\0132\022.p"
+    "rt.VehicleStatus\022\014\n\004time\030\003 \002(\001\"[\n\024SimNot"
+    "ifyVehicleExit\022\017\n\007trackID\030\001 \002(\005\022$\n\010v_sta"
+    "tus\030\002 \002(\0132\022.prt.VehicleStatus\022\014\n\004time\030\003 "
+    "\002(\001\"M\n\027SimNotifyVehicleStopped\022$\n\010v_stat"
+    "us\030\001 \002(\0132\022.prt.VehicleStatus\022\014\n\004time\030\002 \002"
+    "(\001\"c\n\030SimNotifyVehicleSpeeding\022$\n\010v_stat"
+    "us\030\001 \002(\0132\022.prt.VehicleStatus\022\014\n\004time\030\002 \002"
+    "(\001\022\023\n\013speed_limit\030\003 \002(\002\"w\n\031SimNotifyVehi"
+    "cleCollision\022%\n\tv1_status\030\001 \002(\0132\022.prt.Ve"
+    "hicleStatus\022%\n\tv2_status\030\002 \002(\0132\022.prt.Veh"
+    "icleStatus\022\014\n\004time\030\003 \002(\001\"7\n\025SimNotifyVeh"
+    "icleCrash\022\020\n\010v_status\030\001 \002(\005\022\014\n\004time\030\002 \002("
+    "\001\"y\n\035SimNotifyPassengerEmbarkStart\022\013\n\003vI"
+    "D\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatformID\030\003 \002(\005"
+    "\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 \002(\005\022\014\n\004time\030\006"
+    " \002(\001\"w\n\033SimNotifyPassengerEmbarkEnd\022\013\n\003v"
+    "ID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatformID\030\003 \002("
+    "\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 \002(\005\022\014\n\004time\030"
+    "\006 \002(\001\"|\n SimNotifyPassengerDisembarkStar"
+    "t\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatformI"
+    "D\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 \002(\005\022\014\n"
+    "\004time\030\006 \002(\001\"z\n\036SimNotifyPassengerDisemba"
+    "rkEnd\022\013\n\003vID\030\001 \002(\005\022\013\n\003sID\030\002 \002(\005\022\022\n\nplatf"
+    "ormID\030\003 \002(\005\022\013\n\003pID\030\004 \002(\005\022\017\n\007berthID\030\005 \002("
+    "\005\022\014\n\004time\030\006 \002(\001\"6\n\025SimEventTrackDisabled"
+    "\022\017\n\007trackID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"7\n\026SimEv"
+    "entTrackReenabled\022\017\n\007trackID\030\001 \002(\005\022\014\n\004ti"
+    "me\030\002 \002(\001\"4\n\026SimEventSwitchDisabled\022\014\n\004sw"
+    "ID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"5\n\027SimEventSwitch"
+    "Reenabled\022\014\n\004swID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"4\n"
+    "\027SimEventStationDisabled\022\013\n\003sID\030\001 \002(\005\022\014\n"
+    "\004time\030\002 \002(\001\"5\n\030SimEventStationReenabled\022"
+    "\013\n\003sID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"4\n\027SimEventVe"
+    "hicleDisabled\022\013\n\003vID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001"
+    "\"5\n\030SimEventVehicleReenabled\022\013\n\003vID\030\001 \002("
+    "\005\022\014\n\004time\030\002 \002(\001\"P\n\030SimEventPassengerCrea"
+    "ted\022&\n\010p_status\030\001 \002(\0132\024.prt.PassengerSta"
+    "tus\022\014\n\004time\030\002 \002(\001\"8\n\033SimEventPassengerCh"
+    "angedest\022\013\n\003pID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\";\n\031S"
+    "imMsgHdrInvalidSeparator\022\r\n\005msgID\030\001 \002(\005\022"
+    "\017\n\007msg_sep\030\002 \002(\005\"7\n\024SimMsgHdrInvalidType"
+    "\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_type\030\002 \002(\005\"#\n\022Sim"
+    "MsgHdrInvalidId\022\r\n\005msgID\030\001 \002(\005\"7\n\024SimMsg"
+    "HdrInvalidTime\022\r\n\005msgID\030\001 \002(\005\022\020\n\010msg_tim"
+    "e\030\002 \002(\005\"7\n\024SimMsgHdrInvalidSize\022\r\n\005msgID"
+    "\030\001 \002(\005\022\020\n\010msg_size\030\002 \002(\005\"\"\n\021SimMsgBodyIn"
+    "valid\022\r\n\005msgID\030\001 \002(\005\"4\n\025SimMsgBodyInvali"
+    "dTime\022\r\n\005msgID\030\001 \002(\005\022\014\n\004time\030\002 \002(\001\"T\n\023Si"
+    "mMsgBodyInvalidId\022\r\n\005msgID\030\001 \002(\005\022\"\n\007id_t"
+    "ype\030\002 \002(\0162\021.prt.LocationType\022\n\n\002ID\030\003 \002(\005"
+    "\"\305\001\n\rVehicleStatus\022\013\n\003vID\030\001 \002(\005\022\022\n\nnose_"
+    "locID\030\003 \002(\005\022\020\n\010nose_pos\030\004 \002(\002\022\022\n\ntail_lo"
+    "cID\030\006 \002(\005\022\020\n\010tail_pos\030\007 \002(\002\022\013\n\003vel\030\010 \002(\002"
+    "\022\r\n\005accel\030\t \002(\002\022\030\n\014passengerIDs\030\n \003(\005B\002\020"
+    "\001\022\020\n\004lvID\030\013 \001(\005:\002-1\022\023\n\013lv_distance\030\014 \001(\002"
+    "\"\242\001\n\rStationStatus\022\013\n\003sID\030\001 \002(\005\022\r\n\005label"
+    "\030\002 \001(\t\022,\n\017platform_status\030\003 \003(\0132\023.prt.Pl"
+    "atformStatus\022\017\n\003pID\030\004 \003(\005B\002\020\001\022\022\n\nv_adv_t"
+    "ime\030\005 \002(\005\022\"\n\006policy\030\006 \002(\0162\022.prt.StationP"
+    "olicy\"w\n\016PlatformStatus\022\016\n\006platID\030\001 \002(\005\022"
+    "\017\n\007trackID\030\002 \002(\005\022\021\n\tunloading\030\003 \002(\010\022\017\n\007l"
+    "oading\030\004 \002(\010\022 \n\006berths\030\005 \003(\0132\020.prt.Berth"
+    "Status\"5\n\013BerthStatus\022\013\n\003bID\030\001 \002(\005\022\013\n\003vI"
+    "D\030\002 \002(\005\022\014\n\004busy\030\003 \002(\010\"\274\001\n\017PassengerStatu"
+    "s\022\013\n\003pID\030\001 \002(\005\022#\n\010loc_type\030\003 \002(\0162\021.prt.L"
+    "ocationType\022\r\n\005locID\030\004 \002(\005\022\025\n\rsrc_statio"
+    "nID\030\005 \002(\005\022\026\n\016dest_stationID\030\006 \002(\005\022\025\n\rcre"
+    "ation_time\030\007 \002(\001\022\014\n\004mass\030\013 \002(\005\022\024\n\014trip_s"
+    "uccess\030\r \002(\010\";\n\014RoutingEntry\022\013\n\003vID\030\001 \002("
+    "\005\022\017\n\007trackID\030\002 \002(\005\022\r\n\005msgID\030\003 \001(\005\"M\n\014Swi"
+    "tchStatus\022\014\n\004swID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022 "
+    "\n\005entry\030\003 \003(\0132\021.prt.RoutingEntry\"o\n\013Trac"
+    "kStatus\022\017\n\007trackID\030\001 \002(\005\022\r\n\005label\030\002 \001(\t\022"
+    "\021\n\tmax_speed\030\003 \002(\005\022\016\n\006length\030\004 \002(\005\022\017\n\003vI"
+    "D\030\005 \003(\005B\002\020\001\022\014\n\004next\030\006 \002(\005*`\n\004Misc\022\024\n\007MSG"
+    "_SEP\020\205\205\376\377\377\377\377\377\377\001\022\023\n\017MSG_HEADER_SIZE\020\020\022\024\n\007"
+    "NONE_ID\020\377\377\377\377\377\377\377\377\377\001\022\027\n\nSTORAGE_ID\020\376\377\377\377\377\377\377"
+    "\377\377\001*\254\004\n\013CtrlMsgType\022\037\n\033CTRL_CMD_VEHICLE_"
+    "TRAJECTORY\020\001\022\036\n\032CTRL_CMD_VEHICLE_ITINERA"
+    "RY\020\002\022\023\n\017CTRL_CMD_SWITCH\020\003\022\036\n\032CTRL_CMD_PA"
+    "SSENGERS_EMBARK\020\004\022!\n\035CTRL_CMD_PASSENGERS"
+    "_DISEMBARK\020\005\022\033\n\027CTRL_CMD_PASSENGER_WALK\020"
+    "\006\022\032\n\026CTRL_CMD_STORAGE_ENTER\020\007\022\031\n\025CTRL_CM"
+    "D_STORAGE_EXIT\020\010\022\037\n\033CTRL_REQUEST_VEHICLE"
+    "_STATUS\020\n\022\037\n\033CTRL_REQUEST_STATION_STATUS"
+    "\020\013\022!\n\035CTRL_REQUEST_PASSENGER_STATUS\020\014\022\036\n"
+    "\032CTRL_REQUEST_SWITCH_STATUS\020\r\022$\n CTRL_RE"
+    "QUEST_TRACKSEGMENT_STATUS\020\016\022\035\n\031CTRL_REQU"
+    "EST_TOTAL_STATUS\020\017\022#\n\037CTRL_SETNOTIFY_VEH"
+    "ICLE_POSITION\020\024\022\027\n\023CTRL_SETNOTIFY_TIME\020\025"
+    "\022\017\n\013CTRL_RESUME\020\036\022\027\n\023CTRL_SCENARIO_ERROR"
+    "\0202*\206\001\n\014LocationType\022\021\n\rTRACK_SEGMENT\020\000\022\n"
+    "\n\006SWITCH\020\n\022\013\n\007STATION\020\024\022\014\n\010PLATFORM\020\036\022\t\n"
+    "\005BERTH\020(\022\013\n\007VEHICLE\0202\022\r\n\tPASSENGER\020<\022\013\n\007"
+    "WALKING\020F\022\010\n\004NONE\020P*%\n\rStationPolicy\022\t\n\005"
+    "LOBBY\020\001\022\t\n\005QUEUE\020\002*\311\013\n\nSimMsgType\022\021\n\014SIM"
+    "_GREETING\020\350\007\022\016\n\tSIM_START\020\351\007\022\014\n\007SIM_END\020"
+    "\352\007\022\026\n\021SIM_UNIMPLEMENTED\020\353\007\022#\n\036SIM_COMPLE"
+    "TE_PASSENGERS_EMBARK\020\362\007\022&\n!SIM_COMPLETE_"
+    "PASSENGERS_DISEMBARK\020\363\007\022 \n\033SIM_COMPLETE_"
+    "PASSENGER_WALK\020\364\007\022\030\n\023SIM_COMPLETE_SWITCH"
+    "\020\365\007\022\037\n\032SIM_COMPLETE_STORAGE_ENTER\020\366\007\022\036\n\031"
+    "SIM_COMPLETE_STORAGE_EXIT\020\367\007\022 \n\033SIM_RESP"
+    "ONSE_VEHICLE_STATUS\020\206\010\022 \n\033SIM_RESPONSE_S"
+    "TATION_STATUS\020\207\010\022\"\n\035SIM_RESPONSE_PASSENG"
+    "ER_STATUS\020\210\010\022\037\n\032SIM_RESPONSE_SWITCH_STAT"
+    "US\020\211\010\022\036\n\031SIM_RESPONSE_TRACK_STATUS\020\212\010\022\036\n"
+    "\031SIM_RESPONSE_TOTAL_STATUS\020\213\010\022 \n\033SIM_NOT"
+    "IFY_VEHICLE_POSITION\020\220\010\022\036\n\031SIM_NOTIFY_VE"
+    "HICLE_ARRIVE\020\221\010\022\034\n\027SIM_NOTIFY_VEHICLE_EX"
+    "IT\020\222\010\022\037\n\032SIM_NOTIFY_VEHICLE_STOPPED\020\223\010\022 "
+    "\n\033SIM_NOTIFY_VEHICLE_SPEEDING\020\224\010\022!\n\034SIM_"
+    "NOTIFY_VEHICLE_COLLISION\020\225\010\022\035\n\030SIM_NOTIF"
+    "Y_VEHICLE_CRASH\020\226\010\022&\n!SIM_NOTIFY_PASSENG"
+    "ER_EMBARK_START\020\227\010\022$\n\037SIM_NOTIFY_PASSENG"
+    "ER_EMBARK_END\020\230\010\022)\n$SIM_NOTIFY_PASSENGER"
+    "_DISEMBARK_START\020\231\010\022\'\n\"SIM_NOTIFY_PASSEN"
+    "GER_DISEMBARK_END\020\232\010\022\024\n\017SIM_NOTIFY_TIME\020"
+    "\233\010\022\035\n\030SIM_EVENT_TRACK_DISABLED\020\244\010\022\036\n\031SIM"
+    "_EVENT_TRACK_REENABLED\020\245\010\022\036\n\031SIM_EVENT_S"
+    "WITCH_DISABLED\020\246\010\022\037\n\032SIM_EVENT_SWITCH_RE"
+    "ENABLED\020\247\010\022\037\n\032SIM_EVENT_STATION_DISABLED"
+    "\020\250\010\022 \n\033SIM_EVENT_STATION_REENABLED\020\251\010\022\037\n"
+    "\032SIM_EVENT_VEHICLE_DISABLED\020\252\010\022 \n\033SIM_EV"
+    "ENT_VEHICLE_REENABLED\020\253\010\022 \n\033SIM_EVENT_PA"
+    "SSENGER_CREATED\020\254\010\022#\n\036SIM_EVENT_PASSENGE"
+    "R_CHANGEDEST\020\255\010\022\"\n\035SIM_MSG_HDR_INVALID_S"
+    "EPARATOR\020\270\010\022\035\n\030SIM_MSG_HDR_INVALID_TYPE\020"
+    "\271\010\022\033\n\026SIM_MSG_HDR_INVALID_ID\020\272\010\022\035\n\030SIM_M"
+    "SG_HDR_INVALID_TIME\020\273\010\022\035\n\030SIM_MSG_HDR_IN"
+    "VALID_SIZE\020\274\010\022\031\n\024SIM_MSG_BODY_INVALID\020\275\010"
+    "\022\036\n\031SIM_MSG_BODY_INVALID_TIME\020\276\010\022\034\n\027SIM_"
+    "MSG_BODY_INVALID_ID\020\277\010", 8382);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "api.proto", &protobuf_RegisterTypes);
   PolyCoeffs::default_instance_ = new PolyCoeffs();
@@ -1937,6 +2051,8 @@ void protobuf_AddDesc_api_2eproto() {
   CtrlCmdPassengersEmbark::default_instance_ = new CtrlCmdPassengersEmbark();
   CtrlCmdPassengersDisembark::default_instance_ = new CtrlCmdPassengersDisembark();
   CtrlCmdPassengerWalk::default_instance_ = new CtrlCmdPassengerWalk();
+  CtrlCmdStorageEnter::default_instance_ = new CtrlCmdStorageEnter();
+  CtrlCmdStorageExit::default_instance_ = new CtrlCmdStorageExit();
   CtrlCmdSwitch::default_instance_ = new CtrlCmdSwitch();
   CtrlRequestVehicleStatus::default_instance_ = new CtrlRequestVehicleStatus();
   CtrlRequestStationStatus::default_instance_ = new CtrlRequestStationStatus();
@@ -1956,6 +2072,8 @@ void protobuf_AddDesc_api_2eproto() {
   SimCompletePassengersDisembark::default_instance_ = new SimCompletePassengersDisembark();
   SimCompletePassengerWalk::default_instance_ = new SimCompletePassengerWalk();
   SimCompleteSwitch::default_instance_ = new SimCompleteSwitch();
+  SimCompleteStorageEnter::default_instance_ = new SimCompleteStorageEnter();
+  SimCompleteStorageExit::default_instance_ = new SimCompleteStorageExit();
   SimResponseVehicleStatus::default_instance_ = new SimResponseVehicleStatus();
   SimResponseStationStatus::default_instance_ = new SimResponseStationStatus();
   SimResponsePassengerStatus::default_instance_ = new SimResponsePassengerStatus();
@@ -2007,6 +2125,8 @@ void protobuf_AddDesc_api_2eproto() {
   CtrlCmdPassengersEmbark::default_instance_->InitAsDefaultInstance();
   CtrlCmdPassengersDisembark::default_instance_->InitAsDefaultInstance();
   CtrlCmdPassengerWalk::default_instance_->InitAsDefaultInstance();
+  CtrlCmdStorageEnter::default_instance_->InitAsDefaultInstance();
+  CtrlCmdStorageExit::default_instance_->InitAsDefaultInstance();
   CtrlCmdSwitch::default_instance_->InitAsDefaultInstance();
   CtrlRequestVehicleStatus::default_instance_->InitAsDefaultInstance();
   CtrlRequestStationStatus::default_instance_->InitAsDefaultInstance();
@@ -2026,6 +2146,8 @@ void protobuf_AddDesc_api_2eproto() {
   SimCompletePassengersDisembark::default_instance_->InitAsDefaultInstance();
   SimCompletePassengerWalk::default_instance_->InitAsDefaultInstance();
   SimCompleteSwitch::default_instance_->InitAsDefaultInstance();
+  SimCompleteStorageEnter::default_instance_->InitAsDefaultInstance();
+  SimCompleteStorageExit::default_instance_->InitAsDefaultInstance();
   SimResponseVehicleStatus::default_instance_->InitAsDefaultInstance();
   SimResponseStationStatus::default_instance_->InitAsDefaultInstance();
   SimResponsePassengerStatus::default_instance_->InitAsDefaultInstance();
@@ -2087,6 +2209,7 @@ const ::google::protobuf::EnumDescriptor* Misc_descriptor() {
 bool Misc_IsValid(int value) {
   switch(value) {
     case -32123:
+    case -2:
     case -1:
     case 16:
       return true;
@@ -2107,6 +2230,8 @@ bool CtrlMsgType_IsValid(int value) {
     case 4:
     case 5:
     case 6:
+    case 7:
+    case 8:
     case 10:
     case 11:
     case 12:
@@ -2172,42 +2297,44 @@ bool SimMsgType_IsValid(int value) {
     case 1011:
     case 1012:
     case 1013:
-    case 1020:
-    case 1021:
-    case 1022:
-    case 1023:
-    case 1024:
-    case 1025:
+    case 1014:
+    case 1015:
     case 1030:
     case 1031:
     case 1032:
     case 1033:
     case 1034:
     case 1035:
-    case 1036:
-    case 1037:
-    case 1038:
-    case 1039:
     case 1040:
     case 1041:
+    case 1042:
+    case 1043:
+    case 1044:
+    case 1045:
+    case 1046:
+    case 1047:
+    case 1048:
+    case 1049:
     case 1050:
     case 1051:
-    case 1052:
-    case 1053:
-    case 1054:
-    case 1055:
-    case 1056:
-    case 1057:
-    case 1058:
-    case 1059:
-    case 1070:
-    case 1071:
-    case 1072:
-    case 1073:
-    case 1074:
-    case 1075:
-    case 1076:
-    case 1077:
+    case 1060:
+    case 1061:
+    case 1062:
+    case 1063:
+    case 1064:
+    case 1065:
+    case 1066:
+    case 1067:
+    case 1068:
+    case 1069:
+    case 1080:
+    case 1081:
+    case 1082:
+    case 1083:
+    case 1084:
+    case 1085:
+    case 1086:
+    case 1087:
       return true;
     default:
       return false;
@@ -4369,6 +4496,718 @@ void CtrlCmdPassengerWalk::Swap(CtrlCmdPassengerWalk* other) {
   ::google::protobuf::Metadata metadata;
   metadata.descriptor = CtrlCmdPassengerWalk_descriptor_;
   metadata.reflection = CtrlCmdPassengerWalk_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int CtrlCmdStorageEnter::kVIDFieldNumber;
+const int CtrlCmdStorageEnter::kSIDFieldNumber;
+const int CtrlCmdStorageEnter::kPlatformIDFieldNumber;
+const int CtrlCmdStorageEnter::kBerthIDFieldNumber;
+#endif  // !_MSC_VER
+
+CtrlCmdStorageEnter::CtrlCmdStorageEnter()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void CtrlCmdStorageEnter::InitAsDefaultInstance() {
+}
+
+CtrlCmdStorageEnter::CtrlCmdStorageEnter(const CtrlCmdStorageEnter& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void CtrlCmdStorageEnter::SharedCtor() {
+  _cached_size_ = 0;
+  vid_ = 0;
+  sid_ = 0;
+  platformid_ = 0;
+  berthid_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+CtrlCmdStorageEnter::~CtrlCmdStorageEnter() {
+  SharedDtor();
+}
+
+void CtrlCmdStorageEnter::SharedDtor() {
+  if (this != default_instance_) {
+  }
+}
+
+void CtrlCmdStorageEnter::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* CtrlCmdStorageEnter::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return CtrlCmdStorageEnter_descriptor_;
+}
+
+const CtrlCmdStorageEnter& CtrlCmdStorageEnter::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_api_2eproto();  return *default_instance_;
+}
+
+CtrlCmdStorageEnter* CtrlCmdStorageEnter::default_instance_ = NULL;
+
+CtrlCmdStorageEnter* CtrlCmdStorageEnter::New() const {
+  return new CtrlCmdStorageEnter;
+}
+
+void CtrlCmdStorageEnter::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    vid_ = 0;
+    sid_ = 0;
+    platformid_ = 0;
+    berthid_ = 0;
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool CtrlCmdStorageEnter::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 vID = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &vid_)));
+          _set_bit(0);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(16)) goto parse_sID;
+        break;
+      }
+      
+      // required int32 sID = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_sID:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &sid_)));
+          _set_bit(1);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(24)) goto parse_platformID;
+        break;
+      }
+      
+      // required int32 platformID = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_platformID:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &platformid_)));
+          _set_bit(2);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(32)) goto parse_berthID;
+        break;
+      }
+      
+      // required int32 berthID = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_berthID:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &berthid_)));
+          _set_bit(3);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void CtrlCmdStorageEnter::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 vID = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->vid(), output);
+  }
+  
+  // required int32 sID = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->sid(), output);
+  }
+  
+  // required int32 platformID = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->platformid(), output);
+  }
+  
+  // required int32 berthID = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->berthid(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* CtrlCmdStorageEnter::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 vID = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->vid(), target);
+  }
+  
+  // required int32 sID = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->sid(), target);
+  }
+  
+  // required int32 platformID = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->platformid(), target);
+  }
+  
+  // required int32 berthID = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->berthid(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int CtrlCmdStorageEnter::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 vID = 1;
+    if (has_vid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->vid());
+    }
+    
+    // required int32 sID = 2;
+    if (has_sid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->sid());
+    }
+    
+    // required int32 platformID = 3;
+    if (has_platformid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->platformid());
+    }
+    
+    // required int32 berthID = 4;
+    if (has_berthid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->berthid());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void CtrlCmdStorageEnter::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const CtrlCmdStorageEnter* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const CtrlCmdStorageEnter*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void CtrlCmdStorageEnter::MergeFrom(const CtrlCmdStorageEnter& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_vid(from.vid());
+    }
+    if (from._has_bit(1)) {
+      set_sid(from.sid());
+    }
+    if (from._has_bit(2)) {
+      set_platformid(from.platformid());
+    }
+    if (from._has_bit(3)) {
+      set_berthid(from.berthid());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void CtrlCmdStorageEnter::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void CtrlCmdStorageEnter::CopyFrom(const CtrlCmdStorageEnter& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CtrlCmdStorageEnter::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000000f) != 0x0000000f) return false;
+  
+  return true;
+}
+
+void CtrlCmdStorageEnter::Swap(CtrlCmdStorageEnter* other) {
+  if (other != this) {
+    std::swap(vid_, other->vid_);
+    std::swap(sid_, other->sid_);
+    std::swap(platformid_, other->platformid_);
+    std::swap(berthid_, other->berthid_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata CtrlCmdStorageEnter::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = CtrlCmdStorageEnter_descriptor_;
+  metadata.reflection = CtrlCmdStorageEnter_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+const ::std::string CtrlCmdStorageExit::_default_model_name_;
+#ifndef _MSC_VER
+const int CtrlCmdStorageExit::kSIDFieldNumber;
+const int CtrlCmdStorageExit::kPlatformIDFieldNumber;
+const int CtrlCmdStorageExit::kBerthIDFieldNumber;
+const int CtrlCmdStorageExit::kPositionFieldNumber;
+const int CtrlCmdStorageExit::kModelNameFieldNumber;
+#endif  // !_MSC_VER
+
+CtrlCmdStorageExit::CtrlCmdStorageExit()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void CtrlCmdStorageExit::InitAsDefaultInstance() {
+}
+
+CtrlCmdStorageExit::CtrlCmdStorageExit(const CtrlCmdStorageExit& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void CtrlCmdStorageExit::SharedCtor() {
+  _cached_size_ = 0;
+  sid_ = 0;
+  platformid_ = 0;
+  berthid_ = 0;
+  position_ = 0;
+  model_name_ = const_cast< ::std::string*>(&_default_model_name_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+CtrlCmdStorageExit::~CtrlCmdStorageExit() {
+  SharedDtor();
+}
+
+void CtrlCmdStorageExit::SharedDtor() {
+  if (model_name_ != &_default_model_name_) {
+    delete model_name_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void CtrlCmdStorageExit::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* CtrlCmdStorageExit::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return CtrlCmdStorageExit_descriptor_;
+}
+
+const CtrlCmdStorageExit& CtrlCmdStorageExit::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_api_2eproto();  return *default_instance_;
+}
+
+CtrlCmdStorageExit* CtrlCmdStorageExit::default_instance_ = NULL;
+
+CtrlCmdStorageExit* CtrlCmdStorageExit::New() const {
+  return new CtrlCmdStorageExit;
+}
+
+void CtrlCmdStorageExit::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    sid_ = 0;
+    platformid_ = 0;
+    berthid_ = 0;
+    position_ = 0;
+    if (_has_bit(4)) {
+      if (model_name_ != &_default_model_name_) {
+        model_name_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool CtrlCmdStorageExit::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 sID = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &sid_)));
+          _set_bit(0);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(16)) goto parse_platformID;
+        break;
+      }
+      
+      // required int32 platformID = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_platformID:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &platformid_)));
+          _set_bit(1);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(24)) goto parse_berthID;
+        break;
+      }
+      
+      // required int32 berthID = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+         parse_berthID:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &berthid_)));
+          _set_bit(2);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(37)) goto parse_position;
+        break;
+      }
+      
+      // required float position = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED32) {
+         parse_position:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &position_)));
+          _set_bit(3);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(42)) goto parse_model_name;
+        break;
+      }
+      
+      // required string model_name = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_model_name:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_model_name()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->model_name().data(), this->model_name().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void CtrlCmdStorageExit::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 sID = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->sid(), output);
+  }
+  
+  // required int32 platformID = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->platformid(), output);
+  }
+  
+  // required int32 berthID = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->berthid(), output);
+  }
+  
+  // required float position = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(4, this->position(), output);
+  }
+  
+  // required string model_name = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->model_name().data(), this->model_name().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      5, this->model_name(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* CtrlCmdStorageExit::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 sID = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->sid(), target);
+  }
+  
+  // required int32 platformID = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->platformid(), target);
+  }
+  
+  // required int32 berthID = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->berthid(), target);
+  }
+  
+  // required float position = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(4, this->position(), target);
+  }
+  
+  // required string model_name = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->model_name().data(), this->model_name().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        5, this->model_name(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int CtrlCmdStorageExit::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 sID = 1;
+    if (has_sid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->sid());
+    }
+    
+    // required int32 platformID = 2;
+    if (has_platformid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->platformid());
+    }
+    
+    // required int32 berthID = 3;
+    if (has_berthid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->berthid());
+    }
+    
+    // required float position = 4;
+    if (has_position()) {
+      total_size += 1 + 4;
+    }
+    
+    // required string model_name = 5;
+    if (has_model_name()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->model_name());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void CtrlCmdStorageExit::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const CtrlCmdStorageExit* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const CtrlCmdStorageExit*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void CtrlCmdStorageExit::MergeFrom(const CtrlCmdStorageExit& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_sid(from.sid());
+    }
+    if (from._has_bit(1)) {
+      set_platformid(from.platformid());
+    }
+    if (from._has_bit(2)) {
+      set_berthid(from.berthid());
+    }
+    if (from._has_bit(3)) {
+      set_position(from.position());
+    }
+    if (from._has_bit(4)) {
+      set_model_name(from.model_name());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void CtrlCmdStorageExit::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void CtrlCmdStorageExit::CopyFrom(const CtrlCmdStorageExit& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CtrlCmdStorageExit::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000001f) != 0x0000001f) return false;
+  
+  return true;
+}
+
+void CtrlCmdStorageExit::Swap(CtrlCmdStorageExit* other) {
+  if (other != this) {
+    std::swap(sid_, other->sid_);
+    std::swap(platformid_, other->platformid_);
+    std::swap(berthid_, other->berthid_);
+    std::swap(position_, other->position_);
+    std::swap(model_name_, other->model_name_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata CtrlCmdStorageExit::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = CtrlCmdStorageExit_descriptor_;
+  metadata.reflection = CtrlCmdStorageExit_reflection_;
   return metadata;
 }
 
@@ -8938,6 +9777,642 @@ void SimCompleteSwitch::Swap(SimCompleteSwitch* other) {
   ::google::protobuf::Metadata metadata;
   metadata.descriptor = SimCompleteSwitch_descriptor_;
   metadata.reflection = SimCompleteSwitch_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int SimCompleteStorageEnter::kMsgIDFieldNumber;
+const int SimCompleteStorageEnter::kTimeFieldNumber;
+const int SimCompleteStorageEnter::kCmdFieldNumber;
+#endif  // !_MSC_VER
+
+SimCompleteStorageEnter::SimCompleteStorageEnter()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void SimCompleteStorageEnter::InitAsDefaultInstance() {
+  cmd_ = const_cast< ::prt::CtrlCmdStorageEnter*>(&::prt::CtrlCmdStorageEnter::default_instance());
+}
+
+SimCompleteStorageEnter::SimCompleteStorageEnter(const SimCompleteStorageEnter& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void SimCompleteStorageEnter::SharedCtor() {
+  _cached_size_ = 0;
+  msgid_ = 0;
+  time_ = 0;
+  cmd_ = NULL;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+SimCompleteStorageEnter::~SimCompleteStorageEnter() {
+  SharedDtor();
+}
+
+void SimCompleteStorageEnter::SharedDtor() {
+  if (this != default_instance_) {
+    delete cmd_;
+  }
+}
+
+void SimCompleteStorageEnter::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* SimCompleteStorageEnter::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return SimCompleteStorageEnter_descriptor_;
+}
+
+const SimCompleteStorageEnter& SimCompleteStorageEnter::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_api_2eproto();  return *default_instance_;
+}
+
+SimCompleteStorageEnter* SimCompleteStorageEnter::default_instance_ = NULL;
+
+SimCompleteStorageEnter* SimCompleteStorageEnter::New() const {
+  return new SimCompleteStorageEnter;
+}
+
+void SimCompleteStorageEnter::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    msgid_ = 0;
+    time_ = 0;
+    if (_has_bit(2)) {
+      if (cmd_ != NULL) cmd_->::prt::CtrlCmdStorageEnter::Clear();
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool SimCompleteStorageEnter::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 msgID = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &msgid_)));
+          _set_bit(0);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(17)) goto parse_time;
+        break;
+      }
+      
+      // required double time = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED64) {
+         parse_time:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &time_)));
+          _set_bit(1);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(26)) goto parse_cmd;
+        break;
+      }
+      
+      // optional .prt.CtrlCmdStorageEnter cmd = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_cmd:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_cmd()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void SimCompleteStorageEnter::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 msgID = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->msgid(), output);
+  }
+  
+  // required double time = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(2, this->time(), output);
+  }
+  
+  // optional .prt.CtrlCmdStorageEnter cmd = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      3, this->cmd(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* SimCompleteStorageEnter::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 msgID = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->msgid(), target);
+  }
+  
+  // required double time = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(2, this->time(), target);
+  }
+  
+  // optional .prt.CtrlCmdStorageEnter cmd = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        3, this->cmd(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int SimCompleteStorageEnter::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 msgID = 1;
+    if (has_msgid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->msgid());
+    }
+    
+    // required double time = 2;
+    if (has_time()) {
+      total_size += 1 + 8;
+    }
+    
+    // optional .prt.CtrlCmdStorageEnter cmd = 3;
+    if (has_cmd()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->cmd());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void SimCompleteStorageEnter::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const SimCompleteStorageEnter* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const SimCompleteStorageEnter*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void SimCompleteStorageEnter::MergeFrom(const SimCompleteStorageEnter& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_msgid(from.msgid());
+    }
+    if (from._has_bit(1)) {
+      set_time(from.time());
+    }
+    if (from._has_bit(2)) {
+      mutable_cmd()->::prt::CtrlCmdStorageEnter::MergeFrom(from.cmd());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void SimCompleteStorageEnter::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void SimCompleteStorageEnter::CopyFrom(const SimCompleteStorageEnter& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SimCompleteStorageEnter::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+  
+  if (has_cmd()) {
+    if (!this->cmd().IsInitialized()) return false;
+  }
+  return true;
+}
+
+void SimCompleteStorageEnter::Swap(SimCompleteStorageEnter* other) {
+  if (other != this) {
+    std::swap(msgid_, other->msgid_);
+    std::swap(time_, other->time_);
+    std::swap(cmd_, other->cmd_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata SimCompleteStorageEnter::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = SimCompleteStorageEnter_descriptor_;
+  metadata.reflection = SimCompleteStorageEnter_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int SimCompleteStorageExit::kMsgIDFieldNumber;
+const int SimCompleteStorageExit::kTimeFieldNumber;
+const int SimCompleteStorageExit::kCmdFieldNumber;
+const int SimCompleteStorageExit::kVStatusFieldNumber;
+#endif  // !_MSC_VER
+
+SimCompleteStorageExit::SimCompleteStorageExit()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void SimCompleteStorageExit::InitAsDefaultInstance() {
+  cmd_ = const_cast< ::prt::CtrlCmdStorageExit*>(&::prt::CtrlCmdStorageExit::default_instance());
+  v_status_ = const_cast< ::prt::VehicleStatus*>(&::prt::VehicleStatus::default_instance());
+}
+
+SimCompleteStorageExit::SimCompleteStorageExit(const SimCompleteStorageExit& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void SimCompleteStorageExit::SharedCtor() {
+  _cached_size_ = 0;
+  msgid_ = 0;
+  time_ = 0;
+  cmd_ = NULL;
+  v_status_ = NULL;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+SimCompleteStorageExit::~SimCompleteStorageExit() {
+  SharedDtor();
+}
+
+void SimCompleteStorageExit::SharedDtor() {
+  if (this != default_instance_) {
+    delete cmd_;
+    delete v_status_;
+  }
+}
+
+void SimCompleteStorageExit::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* SimCompleteStorageExit::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return SimCompleteStorageExit_descriptor_;
+}
+
+const SimCompleteStorageExit& SimCompleteStorageExit::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_api_2eproto();  return *default_instance_;
+}
+
+SimCompleteStorageExit* SimCompleteStorageExit::default_instance_ = NULL;
+
+SimCompleteStorageExit* SimCompleteStorageExit::New() const {
+  return new SimCompleteStorageExit;
+}
+
+void SimCompleteStorageExit::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    msgid_ = 0;
+    time_ = 0;
+    if (_has_bit(2)) {
+      if (cmd_ != NULL) cmd_->::prt::CtrlCmdStorageExit::Clear();
+    }
+    if (_has_bit(3)) {
+      if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool SimCompleteStorageExit::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 msgID = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &msgid_)));
+          _set_bit(0);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(17)) goto parse_time;
+        break;
+      }
+      
+      // required double time = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED64) {
+         parse_time:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &time_)));
+          _set_bit(1);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(26)) goto parse_cmd;
+        break;
+      }
+      
+      // optional .prt.CtrlCmdStorageExit cmd = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_cmd:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_cmd()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(34)) goto parse_v_status;
+        break;
+      }
+      
+      // required .prt.VehicleStatus v_status = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_v_status:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_v_status()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void SimCompleteStorageExit::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 msgID = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->msgid(), output);
+  }
+  
+  // required double time = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(2, this->time(), output);
+  }
+  
+  // optional .prt.CtrlCmdStorageExit cmd = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      3, this->cmd(), output);
+  }
+  
+  // required .prt.VehicleStatus v_status = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      4, this->v_status(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* SimCompleteStorageExit::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 msgID = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->msgid(), target);
+  }
+  
+  // required double time = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(2, this->time(), target);
+  }
+  
+  // optional .prt.CtrlCmdStorageExit cmd = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        3, this->cmd(), target);
+  }
+  
+  // required .prt.VehicleStatus v_status = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        4, this->v_status(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int SimCompleteStorageExit::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 msgID = 1;
+    if (has_msgid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->msgid());
+    }
+    
+    // required double time = 2;
+    if (has_time()) {
+      total_size += 1 + 8;
+    }
+    
+    // optional .prt.CtrlCmdStorageExit cmd = 3;
+    if (has_cmd()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->cmd());
+    }
+    
+    // required .prt.VehicleStatus v_status = 4;
+    if (has_v_status()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->v_status());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void SimCompleteStorageExit::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const SimCompleteStorageExit* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const SimCompleteStorageExit*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void SimCompleteStorageExit::MergeFrom(const SimCompleteStorageExit& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_msgid(from.msgid());
+    }
+    if (from._has_bit(1)) {
+      set_time(from.time());
+    }
+    if (from._has_bit(2)) {
+      mutable_cmd()->::prt::CtrlCmdStorageExit::MergeFrom(from.cmd());
+    }
+    if (from._has_bit(3)) {
+      mutable_v_status()->::prt::VehicleStatus::MergeFrom(from.v_status());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void SimCompleteStorageExit::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void SimCompleteStorageExit::CopyFrom(const SimCompleteStorageExit& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SimCompleteStorageExit::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000000b) != 0x0000000b) return false;
+  
+  if (has_cmd()) {
+    if (!this->cmd().IsInitialized()) return false;
+  }
+  if (has_v_status()) {
+    if (!this->v_status().IsInitialized()) return false;
+  }
+  return true;
+}
+
+void SimCompleteStorageExit::Swap(SimCompleteStorageExit* other) {
+  if (other != this) {
+    std::swap(msgid_, other->msgid_);
+    std::swap(time_, other->time_);
+    std::swap(cmd_, other->cmd_);
+    std::swap(v_status_, other->v_status_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata SimCompleteStorageExit::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = SimCompleteStorageExit_descriptor_;
+  metadata.reflection = SimCompleteStorageExit_reflection_;
   return metadata;
 }
 

@@ -54,6 +54,8 @@ class BaseController(object):
             api.SIM_COMPLETE_PASSENGERS_DISEMBARK : api.SimCompletePassengersDisembark(),
             api.SIM_COMPLETE_PASSENGER_WALK : api.SimCompletePassengerWalk(),
             api.SIM_COMPLETE_SWITCH : api.SimCompleteSwitch(),
+            api.SIM_COMPLETE_STORAGE_ENTER : api.SimCompleteStorageEnter(),
+            api.SIM_COMPLETE_STORAGE_EXIT : api.SimCompleteStorageExit(),
             api.SIM_RESPONSE_VEHICLE_STATUS : api.SimResponseVehicleStatus(),
             api.SIM_RESPONSE_STATION_STATUS : api.SimResponseStationStatus(),
             api.SIM_RESPONSE_PASSENGER_STATUS : api.SimResponsePassengerStatus(),
@@ -103,6 +105,8 @@ class BaseController(object):
             api.SIM_COMPLETE_PASSENGERS_DISEMBARK : self.on_SIM_COMPLETE_PASSENGERS_DISEMBARK,
             api.SIM_COMPLETE_PASSENGER_WALK : self.on_SIM_COMPLETE_PASSENGER_WALK,
             api.SIM_COMPLETE_SWITCH : self.on_SIM_COMPLETE_SWITCH,
+            api.SIM_COMPLETE_STORAGE_ENTER : self.on_SIM_COMPLETE_STORAGE_ENTER,
+            api.SIM_COMPLETE_STORAGE_EXIT : self.on_SIM_COMPLETE_STORAGE_EXIT,
             api.SIM_RESPONSE_VEHICLE_STATUS : self.on_SIM_RESPONSE_VEHICLE_STATUS,
             api.SIM_RESPONSE_STATION_STATUS : self.on_SIM_RESPONSE_STATION_STATUS,
             api.SIM_RESPONSE_PASSENGER_STATUS : self.on_SIM_RESPONSE_PASSENGER_STATUS,
@@ -313,6 +317,12 @@ class BaseController(object):
         pass
 
     def on_SIM_COMPLETE_SWITCH(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_COMPLETE_STORAGE_ENTER(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_COMPLETE_STORAGE_EXIT(self, msg, msgID, msg_time):
         pass
 
     def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):

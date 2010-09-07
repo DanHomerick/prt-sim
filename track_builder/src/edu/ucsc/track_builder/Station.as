@@ -79,7 +79,7 @@ package edu.ucsc.track_builder
 		}
 		
 		public function toXML(modelNames:Vector.<String>):XML {			
-			var xml:XML = <Station id={id} label={label}/>;
+			var xml:XML = <Station id={id} label={label} storage_entrance_delay={10} storage_exit_delay={10} />; // TEMP: Hardcoding the delays
 			
 			for each (var ts:TrackSegment in allSegments) {
 				xml.appendChild(<TrackSegmentID>{ts.id}</TrackSegmentID>);

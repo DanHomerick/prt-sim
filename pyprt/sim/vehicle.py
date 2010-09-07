@@ -26,25 +26,28 @@ def create_vehicle_class(
         accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
         vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg):
     """Creates a new vehicle class, which inherits from BaseVehicle, and which
-    has the function parameters as attributes.
+    has the function parameters as class level attributes.
     """
 
-    class_dict = {'model_name':traits.String(model_name),
-                 'length':traits.Float(length),
-                 'vehicle_mass':traits.Int(vehicle_mass),
-                 'max_pax_capacity':traits.Int(max_pax_capacity),
-                 'jerk_max_norm':traits.Float(jerk_max_norm),
-                 'jerk_min_norm':traits.Float(jerk_min_norm),
-                 'jerk_max_emerg':traits.Float(jerk_max_emerg),
-                 'jerk_min_emerg':traits.Float(jerk_min_emerg),
-                 'accel_max_norm':traits.Float(accel_max_norm),
-                 'accel_min_norm':traits.Float(accel_min_norm),
-                 'accel_max_emerg':traits.Float(accel_max_emerg),
-                 'accel_min_emerg':traits.Float(accel_min_emerg),
-                 'vel_max_norm':traits.Float(vel_max_norm),
-                 'vel_min_norm':traits.Float(vel_min_norm),
-                 'vel_max_emerg':traits.Float(vel_max_emerg),
-                 'vel_min_emerg':traits.Float(vel_min_emerg)
+    # Originally implemented as Traits, but that made the attributes only
+    # accessible from an instance, not from the class.
+    class_dict = {
+                 'model_name':model_name,
+                 'length':length,
+                 'vehicle_mass':vehicle_mass,
+                 'max_pax_capacity':max_pax_capacity,
+                 'jerk_max_norm':jerk_max_norm,
+                 'jerk_min_norm':jerk_min_norm,
+                 'jerk_max_emerg':jerk_max_emerg,
+                 'jerk_min_emerg':jerk_min_emerg,
+                 'accel_max_norm':accel_max_norm,
+                 'accel_min_norm':accel_min_norm,
+                 'accel_max_emerg':accel_max_emerg,
+                 'accel_min_emerg':accel_min_emerg,
+                 'vel_max_norm':vel_max_norm,
+                 'vel_min_norm':vel_min_norm,
+                 'vel_max_emerg':vel_max_emerg,
+                 'vel_min_emerg':vel_min_emerg
                 }
 
     return type(model_name, (BaseVehicle,), class_dict)
@@ -71,8 +74,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     # The CType indicates that the Type can be coerced from a string.
     ID              = traits.CInt     # Unique numeric ID.
     label           = traits.Str
-    length          = traits.CFloat # Length of vehicle, in meters.
-    v_mass          = traits.CInt   # mass of vehicle, in kg
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg
     max_pax_capacity = traits.CInt
@@ -93,7 +94,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                           ui.Item(name='loc', label='Location'),
                           ui.Item(name='pos', label='Position'),
                           ui.Item(name='vel'),
-                          ui.Item(name='v_mass'),
                           ui.Item(name='passenger_mass'),
                           ui.Item(name='total_mass'),
                           ui.Item(name='max_pax_capacity', label='Max. Passenger Capacity'),
@@ -143,7 +143,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                                           expression='object.get_dist_ave_pax()',
                                           tooltip='Average number of passengers, weighted by distance')
                    ],
-        other_columns = [ui_tc.ObjectColumn(name='v_mass', label='Vehicle Mass',
+        other_columns = [ui_tc.ObjectColumn(name='vehicle_mass', label='Vehicle Mass',
                                             tooltip='Excludes passenger or cargo weight (kg)'),
                          ui_tc.ObjectColumn(name='passenger_mass', label='Passenger Mass',
                                             tooltip="Includes passengers' luggage (kg)"),
@@ -219,7 +219,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self._actions_queue = [] # contains 3-tuples: (time, action, data)
 
         self.total_pax = 0
-        self._pax_times = [(0,0)] # elements are (time, num_pax)
+        self._pax_times = [(Sim.now(),0)] # elements are (time, num_pax)
 
         # attributes: max_speed, maxG, maxlatG
         # forces: gravity (if z), drag, friction, braking, centripital, thrust
@@ -349,7 +349,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     accel = property(fget=get_accel)
 
     def get_dist_travelled(self):
-        return self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(0.0).pos
+        return self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(self._spline.t[0]).pos
     dist_travelled = property(fget=get_dist_travelled)
 
     def get_empty_dist(self):
@@ -386,6 +386,43 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """Adds new locations to the planned itinerary."""
         assert locs[0] in common.digraph.neighbors(self._path[-1])
         self._path.extend(locs)
+
+    def _move_to(self, pos, loc):
+        """Abruptly moves the vehicle to a new position and location.
+        The vehicle's spline is unaffected; velocity and acceleration are
+        not changed. The vehicle's future path is cleared.
+        'pos' must be >= the vehicle's length.
+        """
+        follower = self.find_following_vehicle()
+
+        self.loc.vehicles.remove(self)
+
+        # insert the vehicle in loc.vehicles
+        for i in range(len(loc.vehicles)-1, -1, -1): # indexes in reverse order
+            i_pos = loc.vehicles[i].pos
+            if pos <= i_pos:
+                loc.vehicles.insert(i+1, self)
+                break
+        else:
+            loc.vehicles.insert(0, self)
+
+        # Change the position offset to alter the position.
+        self._pos_offset_nose -= (pos - self.pos)
+        assert abs(self.pos - pos) < 0.01 # loose sanity check
+
+        # Add the new location to the path, and adjust the path index.
+        self._path = self._path[:self._path_idx_nose+1] + [loc]
+        self._path_idx_nose = len(self._path)-1
+        self._path_idx_tail = len(self._path)-1
+        assert self.loc is loc
+
+        # Notify the vehicle behind me to clear any upcoming collisions
+        if follower is not None:
+            self.interrupt(follower)
+
+        # Interrupt this vehicle to allow its current hold time to be changed.
+        # Leads to the action queue being cleared and repopulated.
+        self.interrupt(self)
 
     def process_spline_msg(self, spline_msg):
         """Unpacks the contents of an api.Spline message,
@@ -477,7 +514,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         if follower is not None:
             self.interrupt(follower)
 
-        # Interrupt this vehicle to allow it's current hold time to be changed.
+        # Interrupt this vehicle to allow its current hold time to be changed.
         # Leads to the action queue being cleared and repopulated.
         self.interrupt(self)
 
