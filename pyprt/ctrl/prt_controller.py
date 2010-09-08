@@ -537,11 +537,6 @@ class PrtController(BaseController):
             # TODO: Rethink whether I should have dictionaries containing both
             # merges and switches.
 
-            # manage the vehicle through a merge
-            obj = self.manager.inlets.get(msg.v_status.tail_locID)
-            if obj and isinstance(obj, Merge):
-                vehicle.do_merge(obj, self.current_time)
-
             obj = self.manager.outlets.get(msg.v_status.tail_locID)
             # Vehicle just left a merge's zone of control
             if obj and isinstance(obj, Merge):
@@ -551,6 +546,12 @@ class PrtController(BaseController):
                         assert vehicle.merge_slot is merge_slot
                         break
                 vehicle.set_merge_slot(None)
+
+            obj = self.manager.inlets.get(msg.v_status.tail_locID)
+            # Vehicle just entered a merge's zone of control
+            if obj and isinstance(obj, Merge):
+                vehicle.do_merge(obj, self.current_time)
+
 
     def on_SIM_NOTIFY_VEHICLE_STOPPED(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
@@ -2076,8 +2077,8 @@ class Merge(object):
         # Force vehicles to be synched up and ready to merge 'cutoff' meters before the merge.
         self.cutoff = cutoff
 
-        # Distance from the merge by which the Merge's zone of control extends.
-        # Expressed as a negative number. The decision point is normally found
+        # The decision point is the distance which the Merge's zone of control extends,
+        # expressed as a negative number. The decision point is normally found
         # as the length of the shortest leg. If the point would land between
         # a station's mergepoint and an "onramp's length" upstream of the
         # station's merge, then the decision point is moved downstream to coincide
