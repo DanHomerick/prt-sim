@@ -65,91 +65,33 @@ class PrtController(BaseController):
         notification is relevant to."""
         key = int(time*1000)
         try:
-            v_list, s_list, fnc_list = self.t_reminders[key]
+            v_list, fnc_list = self.t_reminders[key]
             if vehicle not in v_list:
                 v_list.append(vehicle)
         except KeyError:
             notify = api.CtrlSetnotifyTime()
             notify.time = time
             self.send(api.CTRL_SETNOTIFY_TIME, notify)
-            self.t_reminders[key] = ([vehicle], [], [])
+            self.t_reminders[key] = ([vehicle], [])
 
-    def set_s_notification(self, station, time):
-        """Request a time notification from sim and store which station the
-        notification is relevant to."""
-        assert isinstance(station, Station)
-        key = int(time*1000)
-        try:
-            v_list, s_list, fnc_list = self.t_reminders[key]
-            assert station not in s_list
-            s_list.append(station)
-
-        except KeyError:
-            notify = api.CtrlSetnotifyTime()
-            notify.time = time
-            self.send(api.CTRL_SETNOTIFY_TIME, notify)
-            self.t_reminders[key] = ([], [station], [])
 
     def set_fnc_notification(self, fnc, args, time):
         """Request that function fnc be called with arguments args when time is
         reached."""
         key = int(time*1000)
         try:
-            v_list, s_list, fnc_list = self.t_reminders[key]
+            v_list, fnc_list = self.t_reminders[key]
             fnc_list.append( (fnc, args) )
         except KeyError:
             notify = api.CtrlSetnotifyTime()
             notify.time = time
             self.send(api.CTRL_SETNOTIFY_TIME, notify)
-            self.t_reminders[key] = ([], [], [ (fnc, args) ])
+            self.t_reminders[key] = ([], [ (fnc, args) ])
 
     def request_v_status(self, vehicle_id):
         msg = api.CtrlRequestVehicleStatus()
         msg.vID = vehicle_id
         self.send(api.CTRL_REQUEST_VEHICLE_STATUS, msg)
-
-    def heartbeat(self, station):
-        """Triggers synchronized advancement of vehicles in the station."""
-        self.log.debug("t:%5.3f Station %d heartbeat.", self.current_time, station.id)
-        assert isinstance(station, Station)
-        for plat in (Station.LOAD_PLATFORM, Station.QUEUE_PLATFORM, Station.UNLOAD_PLATFORM):
-            for v in reversed(station.reservations[plat]):
-                if v is not None and v != api.NONE_ID:
-                    # If vehicle is capable of moving forward, do so
-                    self.trigger_advance(v, station) # changes v.state to *_ADVANCING if able to move
-
-                    # For the vehicle's that are stuck in their current position
-                    # try to do something useful with the time.
-                    if v.state is self.UNLOAD_WAITING:
-                        v.state = self.DISEMBARKING
-                        v.disembark(v.trip.passengers)
-
-                    elif v.state is self.LOAD_WAITING:
-                        if v.platform_id == station.LOAD_PLATFORM:
-                            try:
-                                v.trip = self.manager.request_trip(v)
-                                v.set_path(v.trip.path)
-                                v.state = self.EMBARKING
-                                v.embark(v.trip.passengers)
-                            except NoPaxAvailableError:
-                                if station.is_launch_berth(v.berth_id, v.platform_id):
-                                    trip = self.manager.deadhead(v)
-                                    if trip.dest_station is not station:
-                                        v.trip = trip
-                                        v.set_path(v.trip.path)
-                                        v.state = self.LAUNCH_WAITING
-                                        self.log.info("%5.3f Vehicle %d deadheading from station %d. Going to station %d.",
-                                                      self.current_time, v.id, station.id, v.trip.dest_station.id)
-
-
-                    elif v.state is self.EXIT_WAITING:
-                        if station.is_launch_berth(v.berth_id, v.platform_id):
-                            v.state = self.LAUNCH_WAITING
-
-                    self.request_v_status(v.id)
-
-        # schedule the next heartbeat
-        self.set_s_notification(station, self.current_time + self.HEARTBEAT_INTERVAL)
 
     def trigger_advance(self, vehicle, station):
         """Triggers a vehicle to advance, if able. May be called on a vehicle
@@ -338,13 +280,13 @@ class PrtController(BaseController):
                                         (v.id, v.ts_id)
                     self.send(api.CTRL_SCENARIO_ERROR, msg)
 
-        # station's heartbeats are all synchronized for now. Change that in the future?
+        # Trigger a heartberat for each station.
         for station in self.manager.stations.itervalues():
-            self.set_s_notification(station, self.HEARTBEAT_INTERVAL)
+            station.heartbeat()
 
     def on_SIM_NOTIFY_TIME(self, msg, msgID, msg_time):
         ms_msg_time = int(msg.time*1000) # millisec integer for easy comparison
-        vehicles, stations, functions = self.t_reminders[ms_msg_time]
+        vehicles, functions = self.t_reminders[ms_msg_time]
 
         for vehicle in vehicles:
             if vehicle.state is self.LAUNCH_WAITING:
@@ -356,6 +298,7 @@ class PrtController(BaseController):
                     vehicle.station.release_berth(vehicle)
                     self.log.info("t:%5.3f Launched vehicle %d from station %d.",
                                   self.current_time, vehicle.id, vehicle.station.id)
+                    vehicle.station.heartbeat()
 
                 else:
                     self.set_v_notification(vehicle, blocked_time)
@@ -365,9 +308,6 @@ class PrtController(BaseController):
             else:
                 warnings.warn("Huh? What was this reminder for again? vehicle %d, state: %s" % (vehicle.id, vehicle.state))
 ##                raise Exception("Huh? What was this reminder for again? Current State: %s" % vehicle.state)
-
-        for station in stations:
-            self.heartbeat(station)
 
         for fnc, args in functions:
             fnc(*args)
@@ -389,7 +329,12 @@ class PrtController(BaseController):
                 vehicle._launch_begun = True
                 self.log.info("t:%5.3f Launched vehicle %d from station %d.",
                               self.current_time, vehicle.id, vehicle.station.id)
-                self.set_fnc_notification(vehicle.station.release_berth, (vehicle,), launch_time)
+
+                def release_and_heartbeat():
+                    vehicle.station.release_berth(vehicle)
+                    vehicle.station.heartbeat()
+
+                self.set_fnc_notification(release_and_heartbeat, tuple(), launch_time)
 
             else:
                 blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
@@ -401,6 +346,7 @@ class PrtController(BaseController):
                     vehicle.station.release_berth(vehicle)
                     self.log.info("t:%5.3f Launched vehicle %d from station %d.",
                                   self.current_time, vehicle.id, vehicle.station.id)
+                    vehicle.station.heartbeat()
                 else:
                     self.set_v_notification(vehicle, blocked_time)
                     self.log.info("t:%5.3f Delaying launch of vehicle %d from station %d until %.3f (%.3f delay)",
@@ -419,6 +365,8 @@ class PrtController(BaseController):
         if len(self.manager.vehicles) == 0 or station.get_demand() >= self.DEMAND_THRESHOLD:
             self.manager.retrieve_vehicle_from_storage(station, self.manager.MODEL_NAME)
 
+        station.heartbeat()
+
     def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.cmd.vID]
         assert isinstance(vehicle, Vehicle)
@@ -428,6 +376,7 @@ class PrtController(BaseController):
 
         vehicle.state = self.LOAD_WAITING
         vehicle.trip = None
+        vehicle.station.heartbeat()
 
     def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.cmd.vID]
@@ -435,8 +384,8 @@ class PrtController(BaseController):
         assert vehicle.state is self.EMBARKING
         self.log.info("t:%5.3f Vehicle %d at station %d, berth %d, plat %d has completed embark of %s",
                        self.current_time, vehicle.id, vehicle.station.id, vehicle.berth_id, vehicle.platform_id, msg.cmd.passengerIDs)
-
         vehicle.state = self.EXIT_WAITING
+        vehicle.station.heartbeat()
 
     def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
@@ -577,6 +526,9 @@ class PrtController(BaseController):
         else:
             self.log.warn("Vehicle %s stopped for unknown reason.", str(vehicle))
 
+        if vehicle.station:
+            vehicle.station.heartbeat()
+
     def on_SIM_NOTIFY_VEHICLE_SPEEDING(self, msg, msgID, msg_time):
         self.log.warn("Speed limit violation: %s", str(msg))
 
@@ -618,6 +570,16 @@ class PrtController(BaseController):
 
         station.reservations[msg.cmd.platformID][msg.cmd.berthID] = vehicle
         storage.end_vehicle_exit()
+
+        station.heartbeat()
+
+    def on_SIM_COMPLETE_STORAGE_ENTER(self, msg, msgID, msg_time):
+        raise NotImplementedError
+        station = self.manager.stations[msg.cmd.sID]
+
+        # ...
+
+        station.heartbeat()
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     # TODO: Is there any reasonable way to handle multiple vehicle types, without
@@ -1527,6 +1489,46 @@ class Station(object):
 ##        if storage.get_num_vacancies() == 0:
 ##            raise NoVacancyAvailableError
 
+    def heartbeat(self):
+        """Triggers synchronized advancement of vehicles in the station."""
+        self.controller.log.debug("t:%5.3f Station %d heartbeat.", self.controller.current_time, self.id)
+        for plat in (Station.LOAD_PLATFORM, Station.QUEUE_PLATFORM, Station.UNLOAD_PLATFORM):
+            for v in reversed(self.reservations[plat]):
+                if v is not None and v != api.NONE_ID:
+                    assert self.reservations[v.platform_id][v.berth_id] is v
+
+                    # If vehicle is capable of moving forward, do so
+                    self.controller.trigger_advance(v, self) # changes v.state to *_ADVANCING if able to move
+
+                    # For the vehicle's that are stuck in their current position
+                    # try to do something useful with the time.
+                    if v.state is PrtController.UNLOAD_WAITING:
+                        v.state = PrtController.DISEMBARKING
+                        v.disembark(v.trip.passengers)
+
+                    elif v.state is PrtController.LOAD_WAITING:
+                        if v.platform_id == self.LOAD_PLATFORM:
+                            try:
+                                v.trip = self.controller.manager.request_trip(v)
+                                v.set_path(v.trip.path)
+                                v.state = PrtController.EMBARKING
+                                v.embark(v.trip.passengers)
+                            except NoPaxAvailableError:
+                                if self.is_launch_berth(v.berth_id, v.platform_id):
+                                    trip = self.controller.manager.deadhead(v)
+                                    if trip.dest_station is not self:
+                                        v.trip = trip
+                                        v.set_path(v.trip.path)
+                                        v.state = PrtController.LAUNCH_WAITING
+                                        self.controller.log.info("%5.3f Vehicle %d deadheading from station %d. Going to station %d.",
+                                                      self.controller.current_time, v.id, self.id, v.trip.dest_station.id)
+
+
+                    elif v.state is PrtController.EXIT_WAITING:
+                        if self.is_launch_berth(v.berth_id, v.platform_id):
+                            v.state = PrtController.LAUNCH_WAITING
+
+                    self.controller.request_v_status(v.id)
 
 
 class Passenger(object):

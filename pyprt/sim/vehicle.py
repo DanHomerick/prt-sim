@@ -623,6 +623,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 for time, action, data in old_actions_queue:
                     if action == self.NOTIFY_POSITION:
                         self.notify_position(data[0], data[1])
+                    elif action == self.STOPPED:
+                        # If the vehicle is currently at the stop position, the
+                        # STOPPED event is skipped. This is to prevent a stop
+                        # from being ommitted due to an interrupt.
+                        if abs(self._spline.evaluate(time).pos - self.pos) <= 1E-4:
+                            self._actions_queue.append( (time, action, data) )
+                            self._actions_queue.sort()
 
                 delay = self._actions_queue[0][0] - Sim.now()
                 assert delay >= 0, delay
