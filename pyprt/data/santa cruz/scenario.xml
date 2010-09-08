@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Network>
-  <Image filename="scenario.png" width="1402" height="838">
-    <Center lat="36.97902537467797" lng="-122.0532578166626"/>
-    <Northwest lat="37.007754668758274" lng="-122.11342512928468"/>
-    <Southeast lat="36.95029608059767" lng="-121.99309050404054"/>
+  <Image extension=".png" width="698" height="771">
+    <Center lat="36.9775307091285" lng="-122.04601079999998"/>
+    <Northwest lat="37.00396355056967" lng="-122.0759657102783"/>
+    <Southeast lat="36.95109786768733" lng="-122.01605588972167"/>
   </Image>
   <TrackSegments>
     <TrackSegment id="8_trackSegment_forward" length="66.920" max_speed="20">
@@ -672,7 +672,7 @@
       <Point lat="36.9974436" lng="-122.0636478" position="11.539" ground_level="224.1"/>
       <Point lat="36.9973538" lng="-122.0636478" position="21.539" ground_level="223.6"/>
       <Point lat="36.9972640" lng="-122.0636478" position="31.539" ground_level="223.2"/>
-      <Point lat="36.9971741" lng="-122.0636478" position="41.539" ground_level="222.7"/>
+      <Point lat="36.9971741" lng="-122.0636478" position="41.539" ground_level="222.8"/>
       <Point lat="36.9970843" lng="-122.0636478" position="51.539" ground_level="222.2"/>
       <Point lat="36.9969945" lng="-122.0636478" position="61.539" ground_level="221.8"/>
       <Point lat="36.9969047" lng="-122.0636478" position="71.539" ground_level="221.3"/>
@@ -3325,7 +3325,7 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9997091" lng="-122.0560091" position="0.000" ground_level="225.5"/>
-      <Point lat="36.9997430" lng="-122.0560441" position="4.893" ground_level="225.4"/>
+      <Point lat="36.9997430" lng="-122.0560441" position="4.893" ground_level="225.3"/>
       <Point lat="36.9998124" lng="-122.0561156" position="14.893" ground_level="225.2"/>
       <Point lat="36.9998463" lng="-122.0561506" position="19.787" ground_level="225.4"/>
     </TrackSegment>
@@ -3600,7 +3600,7 @@
       <Point lat="36.9993762" lng="-122.0556205" position="0.000" ground_level="227"/>
       <Point lat="36.9994010" lng="-122.0556473" position="3.646" ground_level="226.9"/>
       <Point lat="36.9994691" lng="-122.0557206" position="13.646" ground_level="226.8"/>
-      <Point lat="36.9995372" lng="-122.0557940" position="23.646" ground_level="226.8"/>
+      <Point lat="36.9995372" lng="-122.0557940" position="23.646" ground_level="227.6"/>
       <Point lat="36.9995620" lng="-122.0558208" position="27.293" ground_level="226.6"/>
     </TrackSegment>
     <TrackSegment id="318_trackSegment_forward" length="6.351" max_speed="20" radius="20" arc_angle="18.1948723">
@@ -10146,7 +10146,7 @@
       <Point lat="36.9998076" lng="-122.0590740" position="0.000" ground_level="241.3"/>
       <Point lat="36.9998160" lng="-122.0591040" position="2.825" ground_level="241.3"/>
       <Point lat="36.9998459" lng="-122.0592101" position="12.825" ground_level="240.9"/>
-      <Point lat="36.9998758" lng="-122.0593161" position="22.825" ground_level="239.7"/>
+      <Point lat="36.9998758" lng="-122.0593161" position="22.825" ground_level="239.8"/>
       <Point lat="36.9999056" lng="-122.0594222" position="32.825" ground_level="237.9"/>
       <Point lat="36.9999355" lng="-122.0595283" position="42.825" ground_level="235.5"/>
       <Point lat="36.9999654" lng="-122.0596344" position="52.825" ground_level="232.8"/>
@@ -10193,7 +10193,7 @@
       <Point lat="37.0002192" lng="-122.0608687" position="10.286" ground_level="244.9"/>
       <Point lat="37.0001937" lng="-122.0609766" position="20.286" ground_level="245.8"/>
       <Point lat="37.0001682" lng="-122.0610844" position="30.286" ground_level="246.3"/>
-      <Point lat="37.0001427" lng="-122.0611923" position="40.286" ground_level="246.6"/>
+      <Point lat="37.0001427" lng="-122.0611923" position="40.286" ground_level="246.5"/>
       <Point lat="37.0001171" lng="-122.0613001" position="50.286" ground_level="246.8"/>
       <Point lat="37.0000916" lng="-122.0614080" position="60.286" ground_level="246.9"/>
       <Point lat="37.0000661" lng="-122.0615158" position="70.286" ground_level="246.9"/>
@@ -10318,7 +10318,7 @@
       <ParallelTo/>
       <Point lat="36.9981771" lng="-122.0642935" position="0.000" ground_level="227.6"/>
       <Point lat="36.9981565" lng="-122.0642553" position="4.099" ground_level="227.7"/>
-      <Point lat="36.9981062" lng="-122.0641621" position="14.099" ground_level="228.2"/>
+      <Point lat="36.9981062" lng="-122.0641621" position="14.099" ground_level="228.4"/>
       <Point lat="36.9980559" lng="-122.0640689" position="24.099" ground_level="228.5"/>
       <Point lat="36.9980056" lng="-122.0639757" position="34.099" ground_level="228.4"/>
       <Point lat="36.9979553" lng="-122.0638825" position="44.099" ground_level="227.9"/>
@@ -11072,7 +11072,7 @@
     </TrackSegment>
   </TrackSegments>
   <Stations>
-    <Station id="5_station" label="">
+    <Station id="5_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>311_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>312_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>313_trackSegment_forward</TrackSegmentID>
@@ -11084,19 +11084,19 @@
       <TrackSegmentID>319_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>314_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11106,27 +11106,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>316_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="7_station" label="">
+    <Station id="7_station" label="UCSC East Field Storage Depot" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>331_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>332_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>333_trackSegment_forward</TrackSegmentID>
@@ -11138,19 +11139,19 @@
       <TrackSegmentID>339_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>334_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11160,27 +11161,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>336_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="9_station" label="">
+    <Station id="9_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>365_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>366_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>367_trackSegment_forward</TrackSegmentID>
@@ -11192,19 +11194,19 @@
       <TrackSegmentID>373_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>368_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11214,27 +11216,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>370_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="10_station" label="">
+    <Station id="10_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>376_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>377_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>378_trackSegment_forward</TrackSegmentID>
@@ -11246,19 +11249,19 @@
       <TrackSegmentID>384_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>379_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11268,27 +11271,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>381_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="12_station" label="">
+    <Station id="12_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>398_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>399_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>400_trackSegment_forward</TrackSegmentID>
@@ -11300,19 +11304,19 @@
       <TrackSegmentID>406_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>401_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11322,27 +11326,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>403_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="13_station" label="">
+    <Station id="13_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>408_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>409_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>410_trackSegment_forward</TrackSegmentID>
@@ -11354,19 +11359,19 @@
       <TrackSegmentID>416_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>411_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11376,27 +11381,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>413_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="14_station" label="">
+    <Station id="14_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>419_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>420_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>421_trackSegment_forward</TrackSegmentID>
@@ -11408,19 +11414,19 @@
       <TrackSegmentID>427_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>422_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11430,27 +11436,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>424_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="15_station" label="">
+    <Station id="15_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>461_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>462_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>463_trackSegment_forward</TrackSegmentID>
@@ -11462,19 +11469,19 @@
       <TrackSegmentID>469_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>464_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11484,27 +11491,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>466_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="16_station" label="">
+    <Station id="16_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>472_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>473_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>474_trackSegment_forward</TrackSegmentID>
@@ -11516,15 +11524,15 @@
       <TrackSegmentID>480_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>475_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
@@ -11534,23 +11542,24 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>477_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="17_station" label="">
+    <Station id="17_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>482_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>483_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>484_trackSegment_forward</TrackSegmentID>
@@ -11562,19 +11571,19 @@
       <TrackSegmentID>490_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>485_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11584,27 +11593,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>487_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="18_station" label="">
+    <Station id="18_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>493_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>494_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>495_trackSegment_forward</TrackSegmentID>
@@ -11616,19 +11626,19 @@
       <TrackSegmentID>501_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>496_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11638,27 +11648,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>498_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="19_station" label="">
+    <Station id="19_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>503_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>504_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>505_trackSegment_forward</TrackSegmentID>
@@ -11670,19 +11681,19 @@
       <TrackSegmentID>511_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>506_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11692,27 +11703,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>508_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="20_station" label="">
+    <Station id="20_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>514_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>515_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>516_trackSegment_forward</TrackSegmentID>
@@ -11724,19 +11736,19 @@
       <TrackSegmentID>522_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>517_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11746,27 +11758,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>519_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="21_station" label="">
+    <Station id="21_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>525_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>526_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>527_trackSegment_forward</TrackSegmentID>
@@ -11778,19 +11791,19 @@
       <TrackSegmentID>533_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>528_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11800,27 +11813,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>530_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="22_station" label="">
+    <Station id="22_station" label="Delaware Storage Depot" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>535_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>536_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>537_trackSegment_forward</TrackSegmentID>
@@ -11832,19 +11846,19 @@
       <TrackSegmentID>543_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>538_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11854,27 +11868,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>540_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="true" storage_exit="true">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="23_station" label="">
+    <Station id="23_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>546_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>547_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>548_trackSegment_forward</TrackSegmentID>
@@ -11886,19 +11901,19 @@
       <TrackSegmentID>554_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>549_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11908,27 +11923,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>551_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="24_station" label="">
+    <Station id="24_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>557_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>558_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>559_trackSegment_forward</TrackSegmentID>
@@ -11940,19 +11956,19 @@
       <TrackSegmentID>565_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>560_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -11962,27 +11978,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>562_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="25_station" label="">
+    <Station id="25_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>568_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>569_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>570_trackSegment_forward</TrackSegmentID>
@@ -11994,19 +12011,19 @@
       <TrackSegmentID>576_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>571_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12016,27 +12033,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>573_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="26_station" label="">
+    <Station id="26_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>578_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>579_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>580_trackSegment_forward</TrackSegmentID>
@@ -12048,19 +12066,19 @@
       <TrackSegmentID>586_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>581_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12070,27 +12088,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>583_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="27_station" label="">
+    <Station id="27_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>589_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>590_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>591_trackSegment_forward</TrackSegmentID>
@@ -12102,19 +12121,19 @@
       <TrackSegmentID>597_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>592_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12124,27 +12143,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>594_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="28_station" label="">
+    <Station id="28_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>600_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>601_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>602_trackSegment_forward</TrackSegmentID>
@@ -12156,19 +12176,19 @@
       <TrackSegmentID>608_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>603_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12178,27 +12198,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>605_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="4_station" label="">
+    <Station id="4_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>611_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>612_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>613_trackSegment_forward</TrackSegmentID>
@@ -12210,19 +12231,19 @@
       <TrackSegmentID>619_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>614_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12232,27 +12253,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>616_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="0_station" label="">
+    <Station id="0_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>622_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>623_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>624_trackSegment_forward</TrackSegmentID>
@@ -12264,19 +12286,19 @@
       <TrackSegmentID>630_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>625_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12286,27 +12308,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>627_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="31_station" label="">
+    <Station id="31_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>633_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>634_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>635_trackSegment_forward</TrackSegmentID>
@@ -12318,19 +12341,19 @@
       <TrackSegmentID>641_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>636_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12340,27 +12363,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>638_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="33_station" label="">
+    <Station id="33_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>655_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>656_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>657_trackSegment_forward</TrackSegmentID>
@@ -12372,19 +12396,19 @@
       <TrackSegmentID>663_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>658_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12394,27 +12418,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>660_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="6_station" label="">
+    <Station id="6_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>666_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>667_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>668_trackSegment_forward</TrackSegmentID>
@@ -12426,19 +12451,19 @@
       <TrackSegmentID>674_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>669_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12448,27 +12473,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>671_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="35_station" label="">
+    <Station id="35_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>677_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>678_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>679_trackSegment_forward</TrackSegmentID>
@@ -12480,19 +12506,19 @@
       <TrackSegmentID>685_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>680_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12502,27 +12528,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>682_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="36_station" label="">
+    <Station id="36_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>688_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>689_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>690_trackSegment_forward</TrackSegmentID>
@@ -12534,19 +12561,19 @@
       <TrackSegmentID>696_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>691_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12556,27 +12583,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>693_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="11_station" label="">
+    <Station id="11_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>699_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>700_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>701_trackSegment_forward</TrackSegmentID>
@@ -12588,19 +12616,19 @@
       <TrackSegmentID>707_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>702_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12610,27 +12638,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>704_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="38_station" label="">
+    <Station id="38_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>710_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>711_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>712_trackSegment_forward</TrackSegmentID>
@@ -12642,19 +12671,19 @@
       <TrackSegmentID>718_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>713_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12664,27 +12693,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>715_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="1_station" label="">
+    <Station id="1_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>731_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>732_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>733_trackSegment_forward</TrackSegmentID>
@@ -12696,19 +12726,19 @@
       <TrackSegmentID>739_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>734_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12718,27 +12748,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>736_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="2_station" label="">
+    <Station id="2_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>742_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>743_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>744_trackSegment_forward</TrackSegmentID>
@@ -12750,19 +12781,19 @@
       <TrackSegmentID>750_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>745_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12772,27 +12803,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>747_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="3_station" label="">
+    <Station id="3_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>770_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>771_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>772_trackSegment_forward</TrackSegmentID>
@@ -12804,19 +12836,19 @@
       <TrackSegmentID>778_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>773_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12826,27 +12858,28 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>775_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
-    <Station id="8_station" label="">
+    <Station id="8_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>780_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>781_trackSegment_forward</TrackSegmentID>
       <TrackSegmentID>782_trackSegment_forward</TrackSegmentID>
@@ -12858,19 +12891,19 @@
       <TrackSegmentID>788_trackSegment_forward</TrackSegmentID>
       <Platform index="0">
         <TrackSegmentID>783_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
@@ -12880,25 +12913,26 @@
       </Platform>
       <Platform index="2">
         <TrackSegmentID>785_trackSegment_forward</TrackSegmentID>
-        <Berth index="0" unloading="true" loading="true">
+        <Berth index="0" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>0</StartPosition>
           <EndPosition>4.5</EndPosition>
         </Berth>
-        <Berth index="1" unloading="true" loading="true">
+        <Berth index="1" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>4.5</StartPosition>
           <EndPosition>9</EndPosition>
         </Berth>
-        <Berth index="2" unloading="true" loading="true">
+        <Berth index="2" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>9</StartPosition>
           <EndPosition>13.5</EndPosition>
         </Berth>
-        <Berth index="3" unloading="true" loading="true">
+        <Berth index="3" unloading="true" loading="true" storage_entrance="false" storage_exit="false">
           <StartPosition>13.5</StartPosition>
           <EndPosition>18</EndPosition>
         </Berth>
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
   </Stations>
   <VehicleModels>
