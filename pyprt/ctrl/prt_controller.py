@@ -1031,15 +1031,14 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         # pushed back and enlarge and will be increasing likely to have a merge
         # or station lie between the conflict zone and the onramp.
         headway_dist = PrtController.HEADWAY * PrtController.LINE_SPEED
-        conflict_zone_start_dist = PrtController.LINE_SPEED * merge_delay - headway_dist
+        conflict_zone_start_dist = PrtController.LINE_SPEED * merge_delay - headway_dist - vehicle.length
         conflict_zone_end_dist = conflict_zone_start_dist + headway_dist + vehicle.length + headway_dist
 
         # walk back from the merge point finding the tracksegments and positions
         # that are in the conflict zone
-        merge_seg = self.graph.successors(station.ts_ids[Station.ON_RAMP_II])[0] # assuming only one
-        nodes, starts, ends = self.find_distant_segs_reverse(merge_seg,
-                           conflict_zone_start_dist, conflict_zone_end_dist, [], [], [])
 
+        nodes, starts, ends = self.find_distant_segs_reverse(station.merge,
+                           conflict_zone_start_dist, conflict_zone_end_dist, [], [], [])
         # TODO optimize this?
         times = []
         for v in self.vehicles.itervalues():
@@ -1057,11 +1056,12 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                           (v.id, v.ts_id, v.vel, v.accel))
             v_pos = v.pos + (now - v.last_update)*v.vel
 
-            if v_pos > starts[idx] and v_pos < ends[idx]:
+            if v_pos > starts[idx] + TrajectorySolver.q_threshold \
+               and v_pos < ends[idx] - TrajectorySolver.q_threshold:
                 # find the distance, and thus time, until v clears the conflict zone
                 seg = v.ts_id
                 clearing_dist = ends[idx] - v_pos
-                path = networkx.shortest_path(self.graph, seg, merge_seg)
+                path = networkx.shortest_path(self.graph, seg, station.merge, weighted=True)
                 for seg in path[1:]:
                     try:
                         idx = nodes.index(seg)
