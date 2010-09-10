@@ -393,6 +393,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         not changed. The vehicle's future path is cleared.
         'pos' must be >= the vehicle's length.
         """
+        assert pos >= self.length
         follower = self.find_following_vehicle()
 
         self.loc.vehicles.remove(self)
@@ -408,13 +409,15 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         # Change the position offset to alter the position.
         self._pos_offset_nose -= (pos - self.pos)
-        assert abs(self.pos - pos) < 0.01 # loose sanity check
+        self._pos_offset_tail = self._pos_offset_nose + self.length
 
         # Add the new location to the path, and adjust the path index.
         self._path = self._path[:self._path_idx_nose+1] + [loc]
         self._path_idx_nose = len(self._path)-1
         self._path_idx_tail = len(self._path)-1
         assert self.loc is loc
+        assert abs(self.pos - pos) < 0.01 # loose sanity check
+        assert abs(self.tail_pos - (pos - self.length)) < 0.01 # loose sanity check
 
         # Notify the vehicle behind me to clear any upcoming collisions
         if follower is not None:

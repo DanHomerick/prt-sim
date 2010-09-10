@@ -3,6 +3,7 @@ import optparse
 from collections import defaultdict
 from collections import deque
 import warnings
+import math
 
 import networkx
 from numpy import arange, inf
@@ -38,6 +39,9 @@ class PrtController(BaseController):
     LOAD_WAITING = "LOAD_WAITING"           # Capable of immediately embarking passengers.
     LOAD_ADVANCING = "LOAD_ADVANCING"       # On or approaching the load platform.
     EMBARKING = "EMBARKING"                 # Parked in load berth, loading passengers
+    STORAGE_ENTERING = "STORAGE_ENTERING"   # Parked in a berth, in the process of moving into storage.
+    STORAGE = "STORAGE"                     # In storage
+    STORAGE_EXITING = "STORAGE_EXITING"     # In the process of moving from storage to a berth
     EXIT_WAITING = "EXIT_WAITING"           # Waiting to reach launch berth.
     EXIT_ADVANCING = "EXIT_ADVANCING"       # Moving towards launch berth.
     LAUNCH_WAITING = "LAUNCH_WAITING"       # In the launch berth. Ready to lauch at any time.
@@ -137,9 +141,11 @@ class PrtController(BaseController):
         # TODO: Move this into scenario validation function
         # If every single berth is full, then a vehicle will not have anywhere
         # to go if it's kicked out of a station (to make room for incoming vehicles).
+
+        total_vacancies = sum(station.get_num_storage_vacancies(self.manager.MODEL_NAME) for station in self.manager.stations.itervalues())
         total_berths = sum(station.NUM_BERTHS for station in self.manager.stations.itervalues())
         total_vehicles = len(self.manager.vehicles)
-        if total_vehicles >= total_berths:
+        if total_vehicles >= total_berths + total_vacancies:
             msg = api.CtrlScenarioError()
             msg.error_message = \
                 "Total number of vehicles must be less than the total number of " \
@@ -568,17 +574,26 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         assert isinstance(storage, Storage)
 
+        # TODO: Wrap this in a Station method?
         station.reservations[msg.cmd.platformID][msg.cmd.berthID] = vehicle
         storage.end_vehicle_exit()
 
         station.heartbeat()
 
     def on_SIM_COMPLETE_STORAGE_ENTER(self, msg, msgID, msg_time):
-        raise NotImplementedError
         station = self.manager.stations[msg.cmd.sID]
+        vehicle = self.manager.vehicles[msg.cmd.vID]
+        storage = station.storage_dict[vehicle.model]
 
-        # ...
+        station.reservations[vehicle.platform_id][vehicle.berth_id] = None
+        vehicle.set_path([api.STORAGE_ID], False)
+        vehicle.station = None
+        vehicle.plat_ts = None
+        vehicle.berth_id = None
+        vehicle.platform_id = None
+        vehicle.state = self.STORAGE
 
+        storage.end_vehicle_entry()
         station.heartbeat()
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
@@ -899,9 +914,15 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         return Trip(dest_station, path, (pax.id,) ) # just one pax for now
 
     def deadhead(self, vehicle, exclude=tuple()):
-        """Go to a station that has waiting passengers and needs more vehicles.
-        The exclude parameter is a tuple of Station instances that the vehicle
-        should not pick as a destination.
+        """Request a trip for an empty vehicle. Go to a station that has waiting
+         passengers and needs more vehicles. If no stations have positive demand
+         then it sends the vehicle to the nearest station with capacity to store
+         this vehicle's model, if there are any such stations available.
+
+        Parameters:
+          vehicle -- The empty vehicle requesting a trip.
+          exclued -- A tuple of Station instances that the vehicle should not
+                     pick as a destination.
 
         Side Effects:
           None
@@ -923,7 +944,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             station_ts = station.ts_ids[Station.LOAD]
             try:
                 dist = dists[station_ts]
-            except: # Not all stations must be reachable
+            except KeyError: # Not all stations must be reachable
                 continue
 
             demand = station.get_demand()
@@ -933,7 +954,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
             # will leave a station as soon as demand drops to 0, resulting in
             # the station increasing it's demand again.
             if vehicle.station is station:
-                demand += 0.1
+                demand += 0.09 # Note that one passenger at the furthest station gives a demand of 0.1
 
             # The distance weight is 1 when dist is 0, and decays down to 1/10
             # as the distance increases to max_dist.
@@ -948,9 +969,37 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                 closest_dist = dist
 
         if best_value > 0:
-            return Trip(best_station, paths[best_station.ts_ids[Station.LOAD]], tuple())
-        else: # no demand anywhere, choose the closest station
-            return Trip(closest_station, paths[closest_station.ts_ids[Station.LOAD]], tuple())
+            return Trip(best_station,
+                        paths[best_station.ts_ids[Station.LOAD]],
+                        tuple())
+        else:
+            # Consider sending the vehicle to a station where it can be put into storage.
+            vehicle_model = vehicle.model
+            closest_storage_station = None
+            closest_storage_dist = inf
+            for station in self.stations.itervalues():
+                if station in exclude:
+                    continue
+
+                if station.get_num_storage_vacancies(vehicle_model) > 0:
+                    try:
+                        dist = dists[station.ts_ids[Station.LOAD]]
+                        if dist < closest_storage_dist:
+                            closest_storage_dist = dist
+                            closest_storage_station = station
+                    except KeyError: # Not all stations must be reachable
+                        continue
+
+            if closest_storage_station is not None:
+                # Found a station that can store the vehicle
+                return Trip(closest_storage_station,
+                            paths[closest_storage_station.ts_ids[Station.LOAD]],
+                            tuple())
+            else:
+                # No storage available anywhere, send it to the closest station
+                return Trip(closest_station,
+                            paths[closest_station.ts_ids[Station.LOAD]],
+                            tuple())
 
     def wave_off(self, vehicle):
         """Sends a vehicle around in a loop so as to come back and try entering the
@@ -1061,7 +1110,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
                 # find the distance, and thus time, until v clears the conflict zone
                 seg = v.ts_id
                 clearing_dist = ends[idx] - v_pos
-                path = networkx.shortest_path(self.graph, seg, station.merge, weighted=True)
+                path = networkx.dijkstra_path(self.graph, seg, station.merge)
                 for seg in path[1:]:
                     try:
                         idx = nodes.index(seg)
@@ -1156,13 +1205,14 @@ class Storage(object):
 
     def get_num_vehicles(self):
         n = self._num_vehicles - self._num_pending_exit
-        assert 0 <= n <= self.max_capacity
         return n
 
     def get_num_vacancies(self):
-        n = self.max_capacity - self._num_vehicles - self._num_pending_entry
-        assert 0 <= n <= self.max_capacity
-        return n
+        if math.isinf(self.max_capacity):
+            # avoid case where inf is may be subtracted from inf, resulting in nan
+            return self.max_capacity
+        else:
+            return self.max_capacity - self._num_vehicles - self._num_pending_entry
 
     def start_vehicle_entry(self):
         self._num_pending_entry += 1
@@ -1451,8 +1501,22 @@ class Station(object):
 
             return max(passenger_demand, load_berth_demand)
 
+    def get_num_storage_vehicles(self, model_name):
+        try:
+            storage = self.storage_dict[model_name]
+            return storage.get_num_vehicles()
+        except KeyError:
+            return 0
+
+    def get_num_storage_vacancies(self, model_name):
+        try:
+            storage = self.storage_dict[model_name]
+            return storage.get_num_vacancies()
+        except KeyError:
+            return 0
+
     def call_from_storage(self, model_name):
-        if not self.storage_entrances:
+        if not self.storage_exits:
             raise NoVehicleAvailableError # TODO: Use a more accurate error?
 
         storage = self.storage_dict[model_name]
@@ -1462,7 +1526,7 @@ class Station(object):
 
         # Find an open berth that is marked as a storage entrance to move the
         # vehicle into. Start the search at the end closer to the exit.
-        for platform_id, berth_id in reversed(self.storage_entrances):
+        for platform_id, berth_id in reversed(self.storage_exits):
             if self.reservations[platform_id][berth_id] is None:
                 self.reservations[platform_id][berth_id] = api.NONE_ID
                 break
@@ -1483,18 +1547,41 @@ class Station(object):
         # storage.end_vehicle_exit() is called upon receipt of a
         # SimCompleteStorageExit message.
 
-##    def put_in_storage(self, vehicle):
-##        assert isinstance(vehicle, Vehicle)
-##        storage = self.storage_dict[vehicle.model]
-##        if storage.get_num_vacancies() == 0:
-##            raise NoVacancyAvailableError
+    def put_into_storage(self, vehicle):
+        """Moves a vehicle into Storage.
+
+        PreConditions:
+          Vehicle is parked in one of the self.storage_entrances berths
+        """
+        assert isinstance(vehicle, Vehicle)
+        assert (vehicle.platform_id, vehicle.berth_id) in self.storage_entrances
+        storage = self.storage_dict[vehicle.model]
+        if storage.get_num_vacancies() == 0:
+            raise NoVacancyAvailableError
+
+        assert isinstance(storage, Storage)
+        storage.start_vehicle_entry()
+        self.v_count -=1
+        vehicle.state = PrtController.STORAGE_ENTERING
+        cmd = api.CtrlCmdStorageEnter()
+        cmd.vID = vehicle.id
+        cmd.sID = self.id
+        cmd.platformID = vehicle.platform_id
+        cmd.berthID = vehicle.berth_id
+        self.controller.send(api.CTRL_CMD_STORAGE_ENTER, cmd)
+
+        # storage.end_vehicle_enter() is called upon receipt of
+        # the SimCompleteStorageEnter message.
 
     def heartbeat(self):
         """Triggers synchronized advancement of vehicles in the station."""
         self.controller.log.debug("t:%5.3f Station %d heartbeat.", self.controller.current_time, self.id)
-        for plat in (Station.LOAD_PLATFORM, Station.QUEUE_PLATFORM, Station.UNLOAD_PLATFORM):
+        max_demand = max(s.get_demand() for s in self.controller.manager.stations.itervalues())
+        for plat in (self.LOAD_PLATFORM, self.QUEUE_PLATFORM, self.UNLOAD_PLATFORM):
             for v in reversed(self.reservations[plat]):
-                if v is not None and v != api.NONE_ID:
+                if v is not None and v != api.NONE_ID \
+                   and v.state not in (PrtController.STORAGE_ENTERING, PrtController.STORAGE_EXITING):
+
                     assert self.reservations[v.platform_id][v.berth_id] is v
 
                     # If vehicle is capable of moving forward, do so
@@ -1507,7 +1594,15 @@ class Station(object):
                         v.disembark(v.trip.passengers)
 
                     elif v.state is PrtController.LOAD_WAITING:
-                        if v.platform_id == self.LOAD_PLATFORM:
+                        # If there is no postive demand anywhere, start putting vehicles into storage
+                        if max_demand <= 0 and (v.platform_id, v.berth_id) in self.storage_entrances:
+                            try:
+                                self.put_into_storage(v)
+                                max_demand = self.get_demand() # Only put vehicles into storage until this station's demand goes non-negative.
+                            except NoVacancyAvailableError:
+                                pass
+
+                        elif v.platform_id == self.LOAD_PLATFORM:
                             try:
                                 v.trip = self.controller.manager.request_trip(v)
                                 v.set_path(v.trip.path)
@@ -1522,7 +1617,6 @@ class Station(object):
                                         v.state = PrtController.LAUNCH_WAITING
                                         self.controller.log.info("%5.3f Vehicle %d deadheading from station %d. Going to station %d.",
                                                       self.controller.current_time, v.id, self.id, v.trip.dest_station.id)
-
 
                     elif v.state is PrtController.EXIT_WAITING:
                         if self.is_launch_berth(v.berth_id, v.platform_id):

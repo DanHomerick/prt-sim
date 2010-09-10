@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Network>
-  <Image extension=".png" width="984" height="1059">
-    <Center lat="36.99999986463819" lng="-122.05999999999999"/>
-    <Northwest lat="37.00453684803448" lng="-122.0652785873413"/>
-    <Southeast lat="36.99546288124189" lng="-122.05472141265868"/>
+  <Image extension=".png" width="698" height="771">
+    <Center lat="36.99897254679797" lng="-122.05923400767212"/>
+    <Northwest lat="37.00227572098524" lng="-122.06297837145691"/>
+    <Southeast lat="36.9956693726107" lng="-122.05548964388733"/>
   </Image>
   <TrackSegments>
-    <TrackSegment id="0_trackSegment_forward" length="66.551" max_speed="15">
+    <TrackSegment id="0_trackSegment_forward" length="66.547" max_speed="15">
       <Start lat="37.0003828" lng="-122.0608622" ground_level="245.1" offset="3" elevation="248.1"/>
       <End lat="37.0004002" lng="-122.0601330" ground_level="230.2" offset="3" elevation="233.2"/>
       <ConnectsFrom>
@@ -18,14 +18,14 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0003828" lng="-122.0608622" position="0.000" ground_level="245.1"/>
-      <Point lat="37.0003835" lng="-122.0608349" position="2.431" ground_level="244.9"/>
-      <Point lat="37.0003861" lng="-122.0607225" position="12.431" ground_level="243.5"/>
-      <Point lat="37.0003888" lng="-122.0606100" position="22.431" ground_level="241.1"/>
-      <Point lat="37.0003915" lng="-122.0604976" position="32.431" ground_level="238"/>
-      <Point lat="37.0003942" lng="-122.0603852" position="42.431" ground_level="234.9"/>
-      <Point lat="37.0003969" lng="-122.0602728" position="52.431" ground_level="232.2"/>
-      <Point lat="37.0003996" lng="-122.0601603" position="62.431" ground_level="230.5"/>
-      <Point lat="37.0004002" lng="-122.0601330" position="64.862" ground_level="230.2"/>
+      <Point lat="37.0003835" lng="-122.0608349" position="2.429" ground_level="244.9"/>
+      <Point lat="37.0003861" lng="-122.0607225" position="12.429" ground_level="243.5"/>
+      <Point lat="37.0003888" lng="-122.0606100" position="22.429" ground_level="241.1"/>
+      <Point lat="37.0003915" lng="-122.0604976" position="32.429" ground_level="238"/>
+      <Point lat="37.0003942" lng="-122.0603852" position="42.429" ground_level="234.9"/>
+      <Point lat="37.0003969" lng="-122.0602727" position="52.429" ground_level="232.2"/>
+      <Point lat="37.0003995" lng="-122.0601603" position="62.429" ground_level="230.5"/>
+      <Point lat="37.0004002" lng="-122.0601330" position="64.857" ground_level="230.2"/>
     </TrackSegment>
     <TrackSegment id="1_trackSegment_forward" length="101.216" max_speed="15" radius="65" arc_angle="-89.2189392">
       <Start lat="37.0004583" lng="-122.0577061" ground_level="247.3" offset="3" elevation="250.3"/>
@@ -43,16 +43,16 @@
       <Point lat="37.0004534" lng="-122.0575871" position="10.608" ground_level="246.6"/>
       <Point lat="37.0004347" lng="-122.0574772" position="20.608" ground_level="245.8"/>
       <Point lat="37.0004027" lng="-122.0573722" position="30.608" ground_level="244.6"/>
-      <Point lat="37.0003583" lng="-122.0572745" position="40.608" ground_level="242.8"/>
-      <Point lat="37.0003024" lng="-122.0571866" position="50.608" ground_level="241"/>
+      <Point lat="37.0003583" lng="-122.0572746" position="40.608" ground_level="242.8"/>
+      <Point lat="37.0003025" lng="-122.0571866" position="50.608" ground_level="241"/>
       <Point lat="37.0002365" lng="-122.0571104" position="60.608" ground_level="239"/>
-      <Point lat="37.0001620" lng="-122.0570477" position="70.608" ground_level="237.2"/>
-      <Point lat="37.0000807" lng="-122.0570001" position="80.608" ground_level="235.9"/>
-      <Point lat="36.9999945" lng="-122.0569687" position="90.608" ground_level="234.9"/>
-      <Point lat="36.9999055" lng="-122.0569541" position="100.608" ground_level="234.3"/>
+      <Point lat="37.0001620" lng="-122.0570478" position="70.608" ground_level="237.2"/>
+      <Point lat="37.0000807" lng="-122.0570002" position="80.608" ground_level="235.9"/>
+      <Point lat="36.9999946" lng="-122.0569687" position="90.608" ground_level="234.9"/>
+      <Point lat="36.9999056" lng="-122.0569542" position="100.608" ground_level="234.3"/>
       <Point lat="36.9999001" lng="-122.0569538" position="101.216" ground_level="234.3"/>
     </TrackSegment>
-    <TrackSegment id="2_trackSegment_forward" length="197.795" max_speed="15">
+    <TrackSegment id="2_trackSegment_forward" length="197.798" max_speed="15">
       <Start lat="36.9999001" lng="-122.0569538" ground_level="234.3" offset="3" elevation="237.3"/>
       <End lat="36.9981257" lng="-122.0568569" ground_level="228.5" offset="3" elevation="231.5"/>
       <ConnectsFrom>
@@ -63,27 +63,27 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9999001" lng="-122.0569538" position="0.000" ground_level="234.3"/>
-      <Point lat="36.9998655" lng="-122.0569519" position="3.855" ground_level="234.3"/>
-      <Point lat="36.9997758" lng="-122.0569470" position="13.855" ground_level="234.4"/>
-      <Point lat="36.9996860" lng="-122.0569421" position="23.855" ground_level="234.1"/>
-      <Point lat="36.9995963" lng="-122.0569372" position="33.855" ground_level="233.7"/>
-      <Point lat="36.9995065" lng="-122.0569323" position="43.855" ground_level="232.5"/>
-      <Point lat="36.9994168" lng="-122.0569274" position="53.855" ground_level="230.6"/>
-      <Point lat="36.9993270" lng="-122.0569225" position="63.855" ground_level="227"/>
-      <Point lat="36.9992373" lng="-122.0569176" position="73.855" ground_level="222"/>
-      <Point lat="36.9991475" lng="-122.0569127" position="83.855" ground_level="217.4"/>
-      <Point lat="36.9990578" lng="-122.0569078" position="93.855" ground_level="215.1"/>
-      <Point lat="36.9989680" lng="-122.0569029" position="103.855" ground_level="214.1"/>
-      <Point lat="36.9988783" lng="-122.0568980" position="113.855" ground_level="213.4"/>
-      <Point lat="36.9987885" lng="-122.0568931" position="123.855" ground_level="212.9"/>
-      <Point lat="36.9986988" lng="-122.0568882" position="133.855" ground_level="213.2"/>
-      <Point lat="36.9986091" lng="-122.0568833" position="143.855" ground_level="214.4"/>
-      <Point lat="36.9985193" lng="-122.0568784" position="153.855" ground_level="216.4"/>
-      <Point lat="36.9984296" lng="-122.0568735" position="163.855" ground_level="219.8"/>
-      <Point lat="36.9983398" lng="-122.0568686" position="173.855" ground_level="223.8"/>
-      <Point lat="36.9982501" lng="-122.0568637" position="183.855" ground_level="227.2"/>
-      <Point lat="36.9981603" lng="-122.0568588" position="193.855" ground_level="228.6"/>
-      <Point lat="36.9981257" lng="-122.0568569" position="197.710" ground_level="228.5"/>
+      <Point lat="36.9998655" lng="-122.0569519" position="3.857" ground_level="234.3"/>
+      <Point lat="36.9997757" lng="-122.0569470" position="13.857" ground_level="234.4"/>
+      <Point lat="36.9996860" lng="-122.0569421" position="23.857" ground_level="234.1"/>
+      <Point lat="36.9995963" lng="-122.0569372" position="33.857" ground_level="233.7"/>
+      <Point lat="36.9995065" lng="-122.0569323" position="43.857" ground_level="232.5"/>
+      <Point lat="36.9994168" lng="-122.0569274" position="53.857" ground_level="230.6"/>
+      <Point lat="36.9993270" lng="-122.0569225" position="63.857" ground_level="227"/>
+      <Point lat="36.9992373" lng="-122.0569176" position="73.857" ground_level="222"/>
+      <Point lat="36.9991475" lng="-122.0569127" position="83.857" ground_level="217.4"/>
+      <Point lat="36.9990578" lng="-122.0569078" position="93.857" ground_level="215.1"/>
+      <Point lat="36.9989680" lng="-122.0569029" position="103.857" ground_level="214.1"/>
+      <Point lat="36.9988783" lng="-122.0568980" position="113.857" ground_level="213.4"/>
+      <Point lat="36.9987885" lng="-122.0568931" position="123.857" ground_level="212.9"/>
+      <Point lat="36.9986988" lng="-122.0568882" position="133.857" ground_level="213.2"/>
+      <Point lat="36.9986090" lng="-122.0568833" position="143.857" ground_level="214.4"/>
+      <Point lat="36.9985193" lng="-122.0568784" position="153.857" ground_level="216.4"/>
+      <Point lat="36.9984295" lng="-122.0568735" position="163.857" ground_level="219.8"/>
+      <Point lat="36.9983398" lng="-122.0568686" position="173.857" ground_level="223.8"/>
+      <Point lat="36.9982501" lng="-122.0568637" position="183.857" ground_level="227.2"/>
+      <Point lat="36.9981603" lng="-122.0568588" position="193.857" ground_level="228.6"/>
+      <Point lat="36.9981257" lng="-122.0568569" position="197.713" ground_level="228.5"/>
     </TrackSegment>
     <TrackSegment id="3_trackSegment_forward" length="103.687" max_speed="15" radius="65" arc_angle="-91.3977138">
       <Start lat="36.9981257" lng="-122.0568569" ground_level="228.5" offset="3" elevation="231.5"/>
@@ -97,7 +97,7 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9981257" lng="-122.0568569" position="0.000" ground_level="228.5"/>
-      <Point lat="36.9981092" lng="-122.0568563" position="1.844" ground_level="228.4"/>
+      <Point lat="36.9981091" lng="-122.0568563" position="1.844" ground_level="228.4"/>
       <Point lat="36.9980196" lng="-122.0568632" position="11.844" ground_level="227.8"/>
       <Point lat="36.9979319" lng="-122.0568873" position="21.844" ground_level="227.3"/>
       <Point lat="36.9978482" lng="-122.0569278" position="31.844" ground_level="227.2"/>
@@ -105,12 +105,12 @@
       <Point lat="36.9977006" lng="-122.0570544" position="51.844" ground_level="227"/>
       <Point lat="36.9976401" lng="-122.0571374" position="61.844" ground_level="226.4"/>
       <Point lat="36.9975904" lng="-122.0572310" position="71.844" ground_level="225.6"/>
-      <Point lat="36.9975528" lng="-122.0573330" position="81.844" ground_level="224.8"/>
+      <Point lat="36.9975529" lng="-122.0573331" position="81.844" ground_level="224.8"/>
       <Point lat="36.9975282" lng="-122.0574411" position="91.844" ground_level="224.1"/>
-      <Point lat="36.9975170" lng="-122.0575526" position="101.844" ground_level="223.3"/>
+      <Point lat="36.9975171" lng="-122.0575526" position="101.844" ground_level="223.3"/>
       <Point lat="36.9975165" lng="-122.0575733" position="103.687" ground_level="223.2"/>
     </TrackSegment>
-    <TrackSegment id="4_trackSegment_forward" length="65.279" max_speed="15">
+    <TrackSegment id="4_trackSegment_forward" length="65.274" max_speed="15">
       <Start lat="36.9975165" lng="-122.0575733" ground_level="223.2" offset="3" elevation="226.2"/>
       <End lat="36.9975053" lng="-122.0583059" ground_level="219.1" offset="3" elevation="222.1"/>
       <ConnectsFrom>
@@ -122,14 +122,14 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975165" lng="-122.0575733" position="0.000" ground_level="223.2"/>
-      <Point lat="36.9975160" lng="-122.0576022" position="2.575" ground_level="222.9"/>
-      <Point lat="36.9975143" lng="-122.0577147" position="12.575" ground_level="221.7"/>
-      <Point lat="36.9975126" lng="-122.0578272" position="22.575" ground_level="220.5"/>
-      <Point lat="36.9975109" lng="-122.0579396" position="32.575" ground_level="219.7"/>
-      <Point lat="36.9975092" lng="-122.0580521" position="42.575" ground_level="219"/>
-      <Point lat="36.9975074" lng="-122.0581645" position="52.575" ground_level="218.4"/>
-      <Point lat="36.9975057" lng="-122.0582770" position="62.575" ground_level="218.5"/>
-      <Point lat="36.9975053" lng="-122.0583059" position="65.150" ground_level="219.1"/>
+      <Point lat="36.9975161" lng="-122.0576022" position="2.572" ground_level="222.9"/>
+      <Point lat="36.9975143" lng="-122.0577147" position="12.572" ground_level="221.7"/>
+      <Point lat="36.9975126" lng="-122.0578271" position="22.572" ground_level="220.5"/>
+      <Point lat="36.9975109" lng="-122.0579396" position="32.572" ground_level="219.7"/>
+      <Point lat="36.9975092" lng="-122.0580521" position="42.572" ground_level="219"/>
+      <Point lat="36.9975075" lng="-122.0581645" position="52.572" ground_level="218.4"/>
+      <Point lat="36.9975057" lng="-122.0582770" position="62.572" ground_level="218.5"/>
+      <Point lat="36.9975053" lng="-122.0583059" position="65.145" ground_level="219.1"/>
     </TrackSegment>
     <TrackSegment id="5_trackSegment_forward" length="97.231" max_speed="15" radius="65" arc_angle="-85.7065922">
       <Start lat="36.9974698" lng="-122.0606200" ground_level="230.4" offset="3" elevation="233.4"/>
@@ -148,14 +148,14 @@
       <Point lat="36.9975039" lng="-122.0608807" position="23.616" ground_level="229.5"/>
       <Point lat="36.9975406" lng="-122.0609833" position="33.616" ground_level="229.6"/>
       <Point lat="36.9975894" lng="-122.0610776" position="43.616" ground_level="229.8"/>
-      <Point lat="36.9976492" lng="-122.0611614" position="53.616" ground_level="230.2"/>
-      <Point lat="36.9977185" lng="-122.0612328" position="63.616" ground_level="231"/>
+      <Point lat="36.9976491" lng="-122.0611614" position="53.616" ground_level="230.2"/>
+      <Point lat="36.9977184" lng="-122.0612328" position="63.616" ground_level="231"/>
       <Point lat="36.9977957" lng="-122.0612900" position="73.616" ground_level="232"/>
-      <Point lat="36.9978791" lng="-122.0613317" position="83.616" ground_level="233.4"/>
-      <Point lat="36.9979665" lng="-122.0613570" position="93.616" ground_level="235.2"/>
+      <Point lat="36.9978790" lng="-122.0613318" position="83.616" ground_level="233.4"/>
+      <Point lat="36.9979664" lng="-122.0613570" position="93.616" ground_level="235.2"/>
       <Point lat="36.9979987" lng="-122.0613619" position="97.231" ground_level="235.8"/>
     </TrackSegment>
-    <TrackSegment id="6_trackSegment_forward" length="195.418" max_speed="15">
+    <TrackSegment id="6_trackSegment_forward" length="195.424" max_speed="15">
       <Start lat="36.9979987" lng="-122.0613619" ground_level="235.8" offset="3" elevation="238.8"/>
       <End lat="36.9997443" lng="-122.0615682" ground_level="245.5" offset="3" elevation="248.5"/>
       <ConnectsFrom>
@@ -166,27 +166,27 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9979987" lng="-122.0613619" position="0.000" ground_level="235.8"/>
-      <Point lat="36.9980219" lng="-122.0613647" position="2.589" ground_level="236.3"/>
-      <Point lat="36.9981113" lng="-122.0613752" position="12.589" ground_level="238.1"/>
-      <Point lat="36.9982008" lng="-122.0613858" position="22.589" ground_level="239.4"/>
-      <Point lat="36.9982902" lng="-122.0613964" position="32.589" ground_level="240.5"/>
-      <Point lat="36.9983796" lng="-122.0614069" position="42.589" ground_level="241.4"/>
-      <Point lat="36.9984691" lng="-122.0614175" position="52.589" ground_level="242"/>
-      <Point lat="36.9985585" lng="-122.0614281" position="62.589" ground_level="242.2"/>
-      <Point lat="36.9986479" lng="-122.0614387" position="72.589" ground_level="242.2"/>
-      <Point lat="36.9987374" lng="-122.0614492" position="82.589" ground_level="242.1"/>
-      <Point lat="36.9988268" lng="-122.0614598" position="92.589" ground_level="242.2"/>
-      <Point lat="36.9989162" lng="-122.0614704" position="102.589" ground_level="242.4"/>
-      <Point lat="36.9990057" lng="-122.0614809" position="112.589" ground_level="242.6"/>
-      <Point lat="36.9990951" lng="-122.0614915" position="122.589" ground_level="242.7"/>
-      <Point lat="36.9991845" lng="-122.0615021" position="132.589" ground_level="243"/>
-      <Point lat="36.9992740" lng="-122.0615127" position="142.589" ground_level="243.5"/>
-      <Point lat="36.9993634" lng="-122.0615232" position="152.589" ground_level="244.1"/>
-      <Point lat="36.9994528" lng="-122.0615338" position="162.589" ground_level="244.6"/>
-      <Point lat="36.9995423" lng="-122.0615444" position="172.589" ground_level="244.9"/>
-      <Point lat="36.9996317" lng="-122.0615549" position="182.589" ground_level="245.1"/>
-      <Point lat="36.9997211" lng="-122.0615655" position="192.589" ground_level="245.4"/>
-      <Point lat="36.9997443" lng="-122.0615682" position="195.177" ground_level="245.5"/>
+      <Point lat="36.9980219" lng="-122.0613646" position="2.591" ground_level="236.3"/>
+      <Point lat="36.9981113" lng="-122.0613752" position="12.591" ground_level="238.1"/>
+      <Point lat="36.9982007" lng="-122.0613858" position="22.591" ground_level="239.4"/>
+      <Point lat="36.9982902" lng="-122.0613963" position="32.591" ground_level="240.5"/>
+      <Point lat="36.9983796" lng="-122.0614069" position="42.591" ground_level="241.4"/>
+      <Point lat="36.9984690" lng="-122.0614175" position="52.591" ground_level="242"/>
+      <Point lat="36.9985585" lng="-122.0614281" position="62.591" ground_level="242.2"/>
+      <Point lat="36.9986479" lng="-122.0614386" position="72.591" ground_level="242.2"/>
+      <Point lat="36.9987373" lng="-122.0614492" position="82.591" ground_level="242.1"/>
+      <Point lat="36.9988268" lng="-122.0614598" position="92.591" ground_level="242.2"/>
+      <Point lat="36.9989162" lng="-122.0614703" position="102.591" ground_level="242.4"/>
+      <Point lat="36.9990057" lng="-122.0614809" position="112.591" ground_level="242.6"/>
+      <Point lat="36.9990951" lng="-122.0614915" position="122.591" ground_level="242.7"/>
+      <Point lat="36.9991845" lng="-122.0615020" position="132.591" ground_level="243"/>
+      <Point lat="36.9992740" lng="-122.0615126" position="142.591" ground_level="243.5"/>
+      <Point lat="36.9993634" lng="-122.0615232" position="152.591" ground_level="244.1"/>
+      <Point lat="36.9994528" lng="-122.0615338" position="162.591" ground_level="244.6"/>
+      <Point lat="36.9995423" lng="-122.0615443" position="172.591" ground_level="244.9"/>
+      <Point lat="36.9996317" lng="-122.0615549" position="182.591" ground_level="245.1"/>
+      <Point lat="36.9997211" lng="-122.0615655" position="192.591" ground_level="245.4"/>
+      <Point lat="36.9997443" lng="-122.0615682" position="195.183" ground_level="245.5"/>
     </TrackSegment>
     <TrackSegment id="7_trackSegment_forward" length="106.273" max_speed="15" radius="65" arc_angle="-93.6767568">
       <Start lat="36.9997443" lng="-122.0615682" ground_level="245.5" offset="3" elevation="248.5"/>
@@ -202,15 +202,15 @@
       <Point lat="36.9997443" lng="-122.0615682" position="0.000" ground_level="245.5"/>
       <Point lat="36.9997724" lng="-122.0615707" position="3.136" ground_level="245.6"/>
       <Point lat="36.9998621" lng="-122.0615672" position="13.136" ground_level="246.1"/>
-      <Point lat="36.9999503" lng="-122.0615466" position="23.136" ground_level="246.5"/>
-      <Point lat="37.0000349" lng="-122.0615092" position="33.136" ground_level="246.8"/>
+      <Point lat="36.9999503" lng="-122.0615465" position="23.136" ground_level="246.5"/>
+      <Point lat="37.0000350" lng="-122.0615092" position="33.136" ground_level="246.8"/>
       <Point lat="37.0001140" lng="-122.0614561" position="43.136" ground_level="247"/>
       <Point lat="37.0001857" lng="-122.0613884" position="53.136" ground_level="247.2"/>
-      <Point lat="37.0002482" lng="-122.0613078" position="63.136" ground_level="247.1"/>
+      <Point lat="37.0002482" lng="-122.0613077" position="63.136" ground_level="247.1"/>
       <Point lat="37.0003001" lng="-122.0612161" position="73.136" ground_level="247"/>
-      <Point lat="37.0003401" lng="-122.0611155" position="83.136" ground_level="246.6"/>
-      <Point lat="37.0003674" lng="-122.0610085" position="93.136" ground_level="246"/>
-      <Point lat="37.0003813" lng="-122.0608975" position="103.136" ground_level="245.4"/>
+      <Point lat="37.0003402" lng="-122.0611155" position="83.136" ground_level="246.6"/>
+      <Point lat="37.0003675" lng="-122.0610085" position="93.136" ground_level="246"/>
+      <Point lat="37.0003813" lng="-122.0608974" position="103.136" ground_level="245.4"/>
       <Point lat="37.0003828" lng="-122.0608622" position="106.273" ground_level="245.1"/>
     </TrackSegment>
     <TrackSegment id="8_trackSegment_forward" length="11.416" max_speed="15" radius="65" arc_angle="-10.0632744">
@@ -226,7 +226,7 @@
       <ParallelTo/>
       <Point lat="37.0004002" lng="-122.0601330" position="0.000" ground_level="230.2"/>
       <Point lat="37.0004004" lng="-122.0601250" position="0.708" ground_level="230.2"/>
-      <Point lat="37.0003952" lng="-122.0600128" position="10.708" ground_level="229.7"/>
+      <Point lat="37.0003952" lng="-122.0600129" position="10.708" ground_level="229.7"/>
       <Point lat="37.0003943" lng="-122.0600050" position="11.416" ground_level="229.6"/>
     </TrackSegment>
     <TrackSegment id="9_trackSegment_forward" length="11.416" max_speed="15" radius="65" arc_angle="10.0632744">
@@ -245,7 +245,7 @@
       <Point lat="37.0003882" lng="-122.0598849" position="10.708" ground_level="230.5"/>
       <Point lat="37.0003884" lng="-122.0598769" position="11.416" ground_level="230.5"/>
     </TrackSegment>
-    <TrackSegment id="10_trackSegment_forward" length="19.926" max_speed="15">
+    <TrackSegment id="10_trackSegment_forward" length="19.924" max_speed="15">
       <Start lat="37.0003884" lng="-122.0598769" ground_level="230.5" offset="3" elevation="233.5"/>
       <End lat="37.0003937" lng="-122.0596558" ground_level="233.7" offset="3" elevation="236.7"/>
       <ConnectsFrom>
@@ -256,11 +256,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0003884" lng="-122.0598769" position="0.000" ground_level="230.5"/>
-      <Point lat="37.0003897" lng="-122.0598226" position="4.834" ground_level="231.1"/>
-      <Point lat="37.0003924" lng="-122.0597101" position="14.834" ground_level="232.7"/>
-      <Point lat="37.0003937" lng="-122.0596558" position="19.667" ground_level="233.7"/>
+      <Point lat="37.0003897" lng="-122.0598226" position="4.833" ground_level="231.1"/>
+      <Point lat="37.0003924" lng="-122.0597101" position="14.833" ground_level="232.7"/>
+      <Point lat="37.0003937" lng="-122.0596558" position="19.665" ground_level="233.7"/>
     </TrackSegment>
-    <TrackSegment id="11_trackSegment_forward" length="15.749" max_speed="3.5">
+    <TrackSegment id="11_trackSegment_forward" length="15.745" max_speed="3.5">
       <Start lat="37.0003937" lng="-122.0596558" ground_level="233.7" offset="3" elevation="236.7"/>
       <End lat="37.0003977" lng="-122.0594872" ground_level="238.5" offset="3" elevation="241.5"/>
       <ConnectsFrom>
@@ -271,11 +271,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0003937" lng="-122.0596558" position="0.000" ground_level="233.7"/>
-      <Point lat="37.0003944" lng="-122.0596277" position="2.500" ground_level="234.5"/>
-      <Point lat="37.0003970" lng="-122.0595153" position="12.500" ground_level="237.6"/>
-      <Point lat="37.0003977" lng="-122.0594872" position="15.000" ground_level="238.5"/>
+      <Point lat="37.0003944" lng="-122.0596277" position="2.498" ground_level="234.5"/>
+      <Point lat="37.0003970" lng="-122.0595153" position="12.498" ground_level="237.6"/>
+      <Point lat="37.0003977" lng="-122.0594872" position="14.996" ground_level="238.5"/>
     </TrackSegment>
-    <TrackSegment id="12_trackSegment_forward" length="10.595" max_speed="3.5">
+    <TrackSegment id="12_trackSegment_forward" length="10.601" max_speed="3.5">
       <Start lat="37.0003977" lng="-122.0594872" ground_level="238.5" offset="3" elevation="241.5"/>
       <End lat="37.0004004" lng="-122.0593747" ground_level="242.0" offset="3" elevation="245.0"/>
       <ConnectsFrom>
@@ -286,9 +286,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0003977" lng="-122.0594872" position="0.000" ground_level="238.5"/>
-      <Point lat="37.0004004" lng="-122.0593747" position="10.000" ground_level="242"/>
+      <Point lat="37.0003977" lng="-122.0594872" position="0.003" ground_level="238.5"/>
+      <Point lat="37.0004004" lng="-122.0593747" position="10.003" ground_level="242"/>
+      <Point lat="37.0004004" lng="-122.0593747" position="10.006" ground_level="242"/>
     </TrackSegment>
-    <TrackSegment id="13_trackSegment_forward" length="15.338" max_speed="3.5">
+    <TrackSegment id="13_trackSegment_forward" length="15.333" max_speed="3.5">
       <Start lat="37.0004004" lng="-122.0593747" ground_level="242.0" offset="3" elevation="245.0"/>
       <End lat="37.0004044" lng="-122.0592061" ground_level="245.2" offset="3" elevation="248.2"/>
       <ConnectsFrom>
@@ -299,11 +301,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0004004" lng="-122.0593747" position="0.000" ground_level="242"/>
-      <Point lat="37.0004011" lng="-122.0593466" position="2.500" ground_level="242.6"/>
-      <Point lat="37.0004038" lng="-122.0592342" position="12.500" ground_level="245"/>
-      <Point lat="37.0004044" lng="-122.0592061" position="15.000" ground_level="245.2"/>
+      <Point lat="37.0004011" lng="-122.0593466" position="2.498" ground_level="242.6"/>
+      <Point lat="37.0004037" lng="-122.0592342" position="12.498" ground_level="245"/>
+      <Point lat="37.0004044" lng="-122.0592061" position="14.996" ground_level="245.2"/>
     </TrackSegment>
-    <TrackSegment id="14_trackSegment_forward" length="19.740" max_speed="15">
+    <TrackSegment id="14_trackSegment_forward" length="19.739" max_speed="15">
       <Start lat="37.0004044" lng="-122.0592061" ground_level="245.2" offset="3" elevation="248.2"/>
       <End lat="37.0004097" lng="-122.0589850" ground_level="246.9" offset="3" elevation="249.9"/>
       <ConnectsFrom>
@@ -314,9 +316,9 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0004044" lng="-122.0592061" position="0.000" ground_level="245.2"/>
-      <Point lat="37.0004057" lng="-122.0591517" position="4.834" ground_level="245.7"/>
-      <Point lat="37.0004084" lng="-122.0590393" position="14.834" ground_level="246.6"/>
-      <Point lat="37.0004097" lng="-122.0589850" position="19.667" ground_level="246.9"/>
+      <Point lat="37.0004057" lng="-122.0591518" position="4.833" ground_level="245.7"/>
+      <Point lat="37.0004084" lng="-122.0590393" position="14.833" ground_level="246.6"/>
+      <Point lat="37.0004097" lng="-122.0589850" position="19.665" ground_level="246.9"/>
     </TrackSegment>
     <TrackSegment id="15_trackSegment_forward" length="11.416" max_speed="15" radius="65" arc_angle="10.0632744">
       <Start lat="37.0004097" lng="-122.0589850" ground_level="246.9" offset="3" elevation="249.9"/>
@@ -330,7 +332,7 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0004097" lng="-122.0589850" position="0.000" ground_level="246.9"/>
-      <Point lat="37.0004100" lng="-122.0589770" position="0.708" ground_level="246.9"/>
+      <Point lat="37.0004099" lng="-122.0589770" position="0.708" ground_level="246.9"/>
       <Point lat="37.0004205" lng="-122.0588654" position="10.708" ground_level="247.1"/>
       <Point lat="37.0004218" lng="-122.0588576" position="11.416" ground_level="247"/>
     </TrackSegment>
@@ -346,11 +348,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0004218" lng="-122.0588576" position="0.000" ground_level="247"/>
-      <Point lat="37.0004230" lng="-122.0588498" position="0.708" ground_level="247"/>
+      <Point lat="37.0004231" lng="-122.0588498" position="0.708" ground_level="247"/>
       <Point lat="37.0004336" lng="-122.0587382" position="10.708" ground_level="246.4"/>
       <Point lat="37.0004338" lng="-122.0587302" position="11.416" ground_level="246.4"/>
     </TrackSegment>
-    <TrackSegment id="17_trackSegment_forward" length="125.813" max_speed="15">
+    <TrackSegment id="17_trackSegment_forward" length="125.817" max_speed="15">
       <Start lat="37.0004002" lng="-122.0601330" ground_level="230.2" offset="3" elevation="233.2"/>
       <End lat="37.0004338" lng="-122.0587302" ground_level="246.4" offset="3" elevation="249.4"/>
       <ConnectsFrom>
@@ -361,22 +363,22 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0004002" lng="-122.0601330" position="0.000" ground_level="230.2"/>
-      <Point lat="37.0004009" lng="-122.0601062" position="2.383" ground_level="230"/>
-      <Point lat="37.0004036" lng="-122.0599938" position="12.383" ground_level="229.7"/>
-      <Point lat="37.0004063" lng="-122.0598813" position="22.383" ground_level="230.6"/>
-      <Point lat="37.0004090" lng="-122.0597689" position="32.383" ground_level="231.9"/>
-      <Point lat="37.0004116" lng="-122.0596565" position="42.383" ground_level="233.9"/>
-      <Point lat="37.0004143" lng="-122.0595440" position="52.383" ground_level="237.2"/>
-      <Point lat="37.0004170" lng="-122.0594316" position="62.383" ground_level="240.4"/>
-      <Point lat="37.0004197" lng="-122.0593192" position="72.383" ground_level="243.5"/>
-      <Point lat="37.0004224" lng="-122.0592068" position="82.383" ground_level="245.2"/>
-      <Point lat="37.0004251" lng="-122.0590943" position="92.383" ground_level="246.3"/>
-      <Point lat="37.0004278" lng="-122.0589819" position="102.383" ground_level="246.9"/>
-      <Point lat="37.0004305" lng="-122.0588695" position="112.383" ground_level="247.1"/>
-      <Point lat="37.0004332" lng="-122.0587570" position="122.383" ground_level="246.5"/>
-      <Point lat="37.0004338" lng="-122.0587302" position="124.766" ground_level="246.4"/>
+      <Point lat="37.0004008" lng="-122.0601062" position="2.385" ground_level="230"/>
+      <Point lat="37.0004035" lng="-122.0599938" position="12.385" ground_level="229.7"/>
+      <Point lat="37.0004062" lng="-122.0598813" position="22.385" ground_level="230.6"/>
+      <Point lat="37.0004089" lng="-122.0597689" position="32.385" ground_level="231.9"/>
+      <Point lat="37.0004116" lng="-122.0596565" position="42.385" ground_level="233.9"/>
+      <Point lat="37.0004143" lng="-122.0595440" position="52.385" ground_level="237.2"/>
+      <Point lat="37.0004170" lng="-122.0594316" position="62.385" ground_level="240.4"/>
+      <Point lat="37.0004197" lng="-122.0593192" position="72.385" ground_level="243.5"/>
+      <Point lat="37.0004224" lng="-122.0592067" position="82.385" ground_level="245.2"/>
+      <Point lat="37.0004251" lng="-122.0590943" position="92.385" ground_level="246.3"/>
+      <Point lat="37.0004278" lng="-122.0589819" position="102.385" ground_level="246.9"/>
+      <Point lat="37.0004305" lng="-122.0588694" position="112.385" ground_level="247.1"/>
+      <Point lat="37.0004332" lng="-122.0587570" position="122.385" ground_level="246.5"/>
+      <Point lat="37.0004338" lng="-122.0587302" position="124.770" ground_level="246.4"/>
     </TrackSegment>
-    <TrackSegment id="18_trackSegment_forward" length="91.093" max_speed="15">
+    <TrackSegment id="18_trackSegment_forward" length="91.091" max_speed="15">
       <Start lat="37.0004338" lng="-122.0587302" ground_level="246.4" offset="3" elevation="249.4"/>
       <End lat="37.0004583" lng="-122.0577061" ground_level="247.3" offset="3" elevation="250.3"/>
       <ConnectsFrom>
@@ -388,17 +390,17 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="37.0004338" lng="-122.0587302" position="0.000" ground_level="246.4"/>
-      <Point lat="37.0004339" lng="-122.0587241" position="0.545" ground_level="246.4"/>
-      <Point lat="37.0004366" lng="-122.0586117" position="10.545" ground_level="245.5"/>
-      <Point lat="37.0004393" lng="-122.0584992" position="20.545" ground_level="245.3"/>
-      <Point lat="37.0004420" lng="-122.0583868" position="30.545" ground_level="245.2"/>
-      <Point lat="37.0004447" lng="-122.0582744" position="40.545" ground_level="245.2"/>
-      <Point lat="37.0004474" lng="-122.0581620" position="50.545" ground_level="245.5"/>
-      <Point lat="37.0004501" lng="-122.0580495" position="60.545" ground_level="245.9"/>
-      <Point lat="37.0004528" lng="-122.0579371" position="70.545" ground_level="246.7"/>
-      <Point lat="37.0004555" lng="-122.0578247" position="80.545" ground_level="247.4"/>
-      <Point lat="37.0004582" lng="-122.0577122" position="90.545" ground_level="247.3"/>
-      <Point lat="37.0004583" lng="-122.0577061" position="91.089" ground_level="247.3"/>
+      <Point lat="37.0004339" lng="-122.0587241" position="0.543" ground_level="246.4"/>
+      <Point lat="37.0004366" lng="-122.0586117" position="10.543" ground_level="245.5"/>
+      <Point lat="37.0004393" lng="-122.0584992" position="20.543" ground_level="245.3"/>
+      <Point lat="37.0004420" lng="-122.0583868" position="30.543" ground_level="245.2"/>
+      <Point lat="37.0004447" lng="-122.0582744" position="40.543" ground_level="245.2"/>
+      <Point lat="37.0004474" lng="-122.0581619" position="50.543" ground_level="245.5"/>
+      <Point lat="37.0004501" lng="-122.0580495" position="60.543" ground_level="245.9"/>
+      <Point lat="37.0004528" lng="-122.0579371" position="70.543" ground_level="246.7"/>
+      <Point lat="37.0004555" lng="-122.0578246" position="80.543" ground_level="247.4"/>
+      <Point lat="37.0004582" lng="-122.0577122" position="90.543" ground_level="247.3"/>
+      <Point lat="37.0004583" lng="-122.0577061" position="91.087" ground_level="247.3"/>
     </TrackSegment>
     <TrackSegment id="19_trackSegment_forward" length="11.416" max_speed="15" radius="65" arc_angle="-10.0632744">
       <Start lat="36.9975053" lng="-122.0583059" ground_level="219.1" offset="3" elevation="222.1"/>
@@ -413,7 +415,7 @@
       <ParallelTo/>
       <Point lat="36.9975053" lng="-122.0583059" position="0.000" ground_level="219.1"/>
       <Point lat="36.9975052" lng="-122.0583139" position="0.708" ground_level="219.1"/>
-      <Point lat="36.9975113" lng="-122.0584260" position="10.708" ground_level="222.4"/>
+      <Point lat="36.9975114" lng="-122.0584260" position="10.708" ground_level="222.4"/>
       <Point lat="36.9975123" lng="-122.0584339" position="11.416" ground_level="222.4"/>
     </TrackSegment>
     <TrackSegment id="20_trackSegment_forward" length="11.416" max_speed="15" radius="65" arc_angle="10.0632744">
@@ -428,11 +430,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975123" lng="-122.0584339" position="0.000" ground_level="222.4"/>
-      <Point lat="36.9975132" lng="-122.0584418" position="0.708" ground_level="222.7"/>
+      <Point lat="36.9975133" lng="-122.0584418" position="0.708" ground_level="222.7"/>
       <Point lat="36.9975194" lng="-122.0585539" position="10.708" ground_level="226.3"/>
       <Point lat="36.9975193" lng="-122.0585618" position="11.416" ground_level="226.6"/>
     </TrackSegment>
-    <TrackSegment id="21_trackSegment_forward" length="20.198" max_speed="15">
+    <TrackSegment id="21_trackSegment_forward" length="20.201" max_speed="15">
       <Start lat="36.9975193" lng="-122.0585618" ground_level="226.6" offset="3" elevation="229.6"/>
       <End lat="36.9975159" lng="-122.0587830" ground_level="231.2" offset="3" elevation="234.2"/>
       <ConnectsFrom>
@@ -443,11 +445,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975193" lng="-122.0585618" position="0.000" ground_level="226.6"/>
-      <Point lat="36.9975185" lng="-122.0586162" position="4.834" ground_level="228.2"/>
-      <Point lat="36.9975168" lng="-122.0587286" position="14.834" ground_level="230.4"/>
-      <Point lat="36.9975159" lng="-122.0587830" position="19.667" ground_level="231.2"/>
+      <Point lat="36.9975185" lng="-122.0586162" position="4.835" ground_level="228.2"/>
+      <Point lat="36.9975167" lng="-122.0587286" position="14.835" ground_level="230.4"/>
+      <Point lat="36.9975159" lng="-122.0587830" position="19.670" ground_level="231.2"/>
     </TrackSegment>
-    <TrackSegment id="22_trackSegment_forward" length="15.096" max_speed="3.5">
+    <TrackSegment id="22_trackSegment_forward" length="15.097" max_speed="3.5">
       <Start lat="36.9975159" lng="-122.0587830" ground_level="231.2" offset="3" elevation="234.2"/>
       <End lat="36.9975133" lng="-122.0589517" ground_level="232.9" offset="3" elevation="235.9"/>
       <ConnectsFrom>
@@ -458,11 +460,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975159" lng="-122.0587830" position="0.000" ground_level="231.2"/>
-      <Point lat="36.9975155" lng="-122.0588111" position="2.500" ground_level="231.6"/>
-      <Point lat="36.9975138" lng="-122.0589236" position="12.500" ground_level="232.6"/>
-      <Point lat="36.9975133" lng="-122.0589517" position="15.000" ground_level="232.9"/>
+      <Point lat="36.9975155" lng="-122.0588111" position="2.501" ground_level="231.6"/>
+      <Point lat="36.9975137" lng="-122.0589236" position="12.501" ground_level="232.6"/>
+      <Point lat="36.9975133" lng="-122.0589517" position="15.001" ground_level="232.9"/>
     </TrackSegment>
-    <TrackSegment id="23_trackSegment_forward" length="10.008" max_speed="3.5">
+    <TrackSegment id="23_trackSegment_forward" length="10.003" max_speed="3.5">
       <Start lat="36.9975133" lng="-122.0589517" ground_level="232.9" offset="3" elevation="235.9"/>
       <End lat="36.9975116" lng="-122.0590641" ground_level="233.3" offset="3" elevation="236.3"/>
       <ConnectsFrom>
@@ -473,11 +475,9 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975133" lng="-122.0589517" position="0.000" ground_level="232.9"/>
-      <Point lat="36.9975133" lng="-122.0589517" position="0.001" ground_level="232.9"/>
-      <Point lat="36.9975116" lng="-122.0590641" position="10.000" ground_level="233.3"/>
-      <Point lat="36.9975116" lng="-122.0590641" position="10.000" ground_level="233.3"/>
+      <Point lat="36.9975116" lng="-122.0590641" position="9.995" ground_level="233.3"/>
     </TrackSegment>
-    <TrackSegment id="24_trackSegment_forward" length="15.003" max_speed="3.5">
+    <TrackSegment id="24_trackSegment_forward" length="15.004" max_speed="3.5">
       <Start lat="36.9975116" lng="-122.0590641" ground_level="233.3" offset="3" elevation="236.3"/>
       <End lat="36.9975090" lng="-122.0592328" ground_level="233.6" offset="3" elevation="236.6"/>
       <ConnectsFrom>
@@ -488,11 +488,11 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975116" lng="-122.0590641" position="0.000" ground_level="233.3"/>
-      <Point lat="36.9975112" lng="-122.0590923" position="2.500" ground_level="233.4"/>
-      <Point lat="36.9975095" lng="-122.0592047" position="12.500" ground_level="233.6"/>
-      <Point lat="36.9975090" lng="-122.0592328" position="15.000" ground_level="233.6"/>
+      <Point lat="36.9975112" lng="-122.0590922" position="2.501" ground_level="233.4"/>
+      <Point lat="36.9975094" lng="-122.0592047" position="12.501" ground_level="233.6"/>
+      <Point lat="36.9975090" lng="-122.0592328" position="15.001" ground_level="233.6"/>
     </TrackSegment>
-    <TrackSegment id="25_trackSegment_forward" length="19.667" max_speed="15">
+    <TrackSegment id="25_trackSegment_forward" length="19.670" max_speed="15">
       <Start lat="36.9975090" lng="-122.0592328" ground_level="233.6" offset="3" elevation="236.6"/>
       <End lat="36.9975056" lng="-122.0594540" ground_level="233.6" offset="3" elevation="236.6"/>
       <ConnectsFrom>
@@ -503,9 +503,9 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975090" lng="-122.0592328" position="0.000" ground_level="233.6"/>
-      <Point lat="36.9975082" lng="-122.0592872" position="4.834" ground_level="233.6"/>
-      <Point lat="36.9975065" lng="-122.0593996" position="14.834" ground_level="233.6"/>
-      <Point lat="36.9975056" lng="-122.0594540" position="19.667" ground_level="233.6"/>
+      <Point lat="36.9975082" lng="-122.0592872" position="4.835" ground_level="233.6"/>
+      <Point lat="36.9975064" lng="-122.0593996" position="14.835" ground_level="233.6"/>
+      <Point lat="36.9975056" lng="-122.0594540" position="19.670" ground_level="233.6"/>
     </TrackSegment>
     <TrackSegment id="26_trackSegment_forward" length="11.416" max_speed="15" radius="65" arc_angle="10.0632744">
       <Start lat="36.9975056" lng="-122.0594540" ground_level="233.6" offset="3" elevation="236.6"/>
@@ -519,7 +519,7 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975056" lng="-122.0594540" position="0.000" ground_level="233.6"/>
-      <Point lat="36.9975055" lng="-122.0594620" position="0.708" ground_level="233.6"/>
+      <Point lat="36.9975054" lng="-122.0594620" position="0.708" ground_level="233.6"/>
       <Point lat="36.9974959" lng="-122.0595737" position="10.708" ground_level="233.6"/>
       <Point lat="36.9974947" lng="-122.0595815" position="11.416" ground_level="233.5"/>
     </TrackSegment>
@@ -539,7 +539,7 @@
       <Point lat="36.9974839" lng="-122.0597011" position="10.708" ground_level="233.5"/>
       <Point lat="36.9974838" lng="-122.0597090" position="11.416" ground_level="233.5"/>
     </TrackSegment>
-    <TrackSegment id="28_trackSegment_forward" length="125.594" max_speed="15">
+    <TrackSegment id="28_trackSegment_forward" length="125.596" max_speed="15">
       <Start lat="36.9975053" lng="-122.0583059" ground_level="219.1" offset="3" elevation="222.1"/>
       <End lat="36.9974838" lng="-122.0597090" ground_level="233.5" offset="3" elevation="236.5"/>
       <ConnectsFrom>
@@ -550,22 +550,22 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9975053" lng="-122.0583059" position="0.000" ground_level="219.1"/>
-      <Point lat="36.9975049" lng="-122.0583327" position="2.383" ground_level="219.6"/>
-      <Point lat="36.9975031" lng="-122.0584452" position="12.383" ground_level="223.3"/>
-      <Point lat="36.9975014" lng="-122.0585577" position="22.383" ground_level="227"/>
-      <Point lat="36.9974997" lng="-122.0586701" position="32.383" ground_level="229.4"/>
-      <Point lat="36.9974980" lng="-122.0587826" position="42.383" ground_level="231.2"/>
-      <Point lat="36.9974962" lng="-122.0588950" position="52.383" ground_level="232.4"/>
-      <Point lat="36.9974945" lng="-122.0590075" position="62.383" ground_level="233"/>
-      <Point lat="36.9974928" lng="-122.0591199" position="72.383" ground_level="233.3"/>
-      <Point lat="36.9974911" lng="-122.0592324" position="82.383" ground_level="233.4"/>
-      <Point lat="36.9974893" lng="-122.0593449" position="92.383" ground_level="233.4"/>
-      <Point lat="36.9974876" lng="-122.0594573" position="102.383" ground_level="233.4"/>
-      <Point lat="36.9974859" lng="-122.0595698" position="112.383" ground_level="233.5"/>
-      <Point lat="36.9974842" lng="-122.0596822" position="122.383" ground_level="233.5"/>
-      <Point lat="36.9974838" lng="-122.0597090" position="124.766" ground_level="233.5"/>
+      <Point lat="36.9975049" lng="-122.0583327" position="2.384" ground_level="219.6"/>
+      <Point lat="36.9975032" lng="-122.0584452" position="12.384" ground_level="223.3"/>
+      <Point lat="36.9975014" lng="-122.0585576" position="22.384" ground_level="227"/>
+      <Point lat="36.9974997" lng="-122.0586701" position="32.384" ground_level="229.4"/>
+      <Point lat="36.9974980" lng="-122.0587825" position="42.384" ground_level="231.2"/>
+      <Point lat="36.9974963" lng="-122.0588950" position="52.384" ground_level="232.4"/>
+      <Point lat="36.9974946" lng="-122.0590075" position="62.384" ground_level="233"/>
+      <Point lat="36.9974928" lng="-122.0591199" position="72.384" ground_level="233.3"/>
+      <Point lat="36.9974911" lng="-122.0592324" position="82.384" ground_level="233.4"/>
+      <Point lat="36.9974894" lng="-122.0593448" position="92.384" ground_level="233.4"/>
+      <Point lat="36.9974877" lng="-122.0594573" position="102.384" ground_level="233.4"/>
+      <Point lat="36.9974859" lng="-122.0595697" position="112.384" ground_level="233.5"/>
+      <Point lat="36.9974842" lng="-122.0596822" position="122.384" ground_level="233.5"/>
+      <Point lat="36.9974838" lng="-122.0597090" position="124.768" ground_level="233.5"/>
     </TrackSegment>
-    <TrackSegment id="29_trackSegment_forward" length="81.070" max_speed="15">
+    <TrackSegment id="29_trackSegment_forward" length="81.068" max_speed="15">
       <Start lat="36.9974838" lng="-122.0597090" ground_level="233.5" offset="3" elevation="236.5"/>
       <End lat="36.9974698" lng="-122.0606200" ground_level="230.4" offset="3" elevation="233.4"/>
       <ConnectsFrom>
@@ -577,16 +577,16 @@
       </ConnectsTo>
       <ParallelTo/>
       <Point lat="36.9974838" lng="-122.0597090" position="0.000" ground_level="233.5"/>
-      <Point lat="36.9974837" lng="-122.0597147" position="0.505" ground_level="233.5"/>
-      <Point lat="36.9974820" lng="-122.0598272" position="10.505" ground_level="233.4"/>
-      <Point lat="36.9974802" lng="-122.0599396" position="20.505" ground_level="233.4"/>
-      <Point lat="36.9974785" lng="-122.0600521" position="30.505" ground_level="233.2"/>
-      <Point lat="36.9974768" lng="-122.0601645" position="40.505" ground_level="232.9"/>
-      <Point lat="36.9974751" lng="-122.0602770" position="50.505" ground_level="232.4"/>
-      <Point lat="36.9974733" lng="-122.0603894" position="60.505" ground_level="231.6"/>
-      <Point lat="36.9974716" lng="-122.0605019" position="70.505" ground_level="231"/>
-      <Point lat="36.9974699" lng="-122.0606144" position="80.505" ground_level="230.4"/>
-      <Point lat="36.9974698" lng="-122.0606200" position="81.011" ground_level="230.4"/>
+      <Point lat="36.9974837" lng="-122.0597147" position="0.504" ground_level="233.5"/>
+      <Point lat="36.9974820" lng="-122.0598271" position="10.504" ground_level="233.4"/>
+      <Point lat="36.9974803" lng="-122.0599396" position="20.504" ground_level="233.4"/>
+      <Point lat="36.9974785" lng="-122.0600520" position="30.504" ground_level="233.2"/>
+      <Point lat="36.9974768" lng="-122.0601645" position="40.504" ground_level="232.9"/>
+      <Point lat="36.9974751" lng="-122.0602770" position="50.504" ground_level="232.4"/>
+      <Point lat="36.9974733" lng="-122.0603894" position="60.504" ground_level="231.6"/>
+      <Point lat="36.9974716" lng="-122.0605019" position="70.504" ground_level="231"/>
+      <Point lat="36.9974699" lng="-122.0606143" position="80.504" ground_level="230.4"/>
+      <Point lat="36.9974698" lng="-122.0606200" position="81.009" ground_level="230.4"/>
     </TrackSegment>
   </TrackSegments>
   <Stations>
@@ -643,6 +643,7 @@
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
       <Storage model_name="PRT_DEFAULT" initial_supply="INF" max_capacity="INF"/>
     </Station>
     <Station id="1_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
@@ -698,6 +699,7 @@
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
       <Storage model_name="PRT_DEFAULT" initial_supply="INF" max_capacity="INF"/>
     </Station>
   </Stations>
@@ -707,10 +709,90 @@
       <Acceleration normal_max="5" normal_min="-5" emergency_max="5" emergency_min="-25"/>
       <Velocity normal_max="30" normal_min="0" emergency_max="45" emergency_min="0"/>
     </VehicleModel>
+    <VehicleModel model_name="Skytran" length="4" passenger_capacity="2" mass="450" frontal_area="1.7" drag_coefficient="0.1" powertrain_efficiency="0.9" regenerative_braking_efficiency="0.9">
+      <Jerk normal_max="7" normal_min="-7" emergency_max="20" emergency_min="-20"/>
+      <Acceleration normal_max="9" normal_min="-9" emergency_max="10" emergency_min="-25"/>
+      <Velocity normal_max="67" normal_min="0" emergency_max="67" emergency_min="0"/>
+    </VehicleModel>
   </VehicleModels>
   <Vehicles>
-    <Vehicle id="0_vehicle" location="2_trackSegment_forward" position="65.107" label="" velocity="0" acceleration="0" model_name="PRT_DEFAULT">
+    <Vehicle id="0_vehicle" location="2_trackSegment_forward" position="65.106" label="" velocity="0" acceleration="0" model_name="PRT_DEFAULT">
       <LatLng lat="36.9993158" lng="-122.0569219" elevation="235.39083716602633"/>
+    </Vehicle>
+    <Vehicle id="1_vehicle" location="6_trackSegment_forward" position="171.720" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9995345" lng="-122.0615434" elevation="247.32344675256783"/>
+    </Vehicle>
+    <Vehicle id="2_vehicle" location="6_trackSegment_forward" position="134.595" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9992024" lng="-122.0615042" elevation="245.48072959458148"/>
+    </Vehicle>
+    <Vehicle id="3_vehicle" location="6_trackSegment_forward" position="95.804" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9988555" lng="-122.0614632" elevation="243.5552774592628"/>
+    </Vehicle>
+    <Vehicle id="4_vehicle" location="6_trackSegment_forward" position="59.001" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9985264" lng="-122.0614243" elevation="241.72853672217582"/>
+    </Vehicle>
+    <Vehicle id="5_vehicle" location="6_trackSegment_forward" position="25.405" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9982259" lng="-122.0613888" elevation="240.06099139859384"/>
+    </Vehicle>
+    <Vehicle id="6_vehicle" location="5_trackSegment_forward" position="75.944" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9978146" lng="-122.0613012" elevation="237.6177632108073"/>
+    </Vehicle>
+    <Vehicle id="7_vehicle" location="5_trackSegment_forward" position="37.733" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9975593" lng="-122.0610232" elevation="235.49559600986487"/>
+    </Vehicle>
+    <Vehicle id="8_vehicle" location="29_trackSegment_forward" position="64.843" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9974726" lng="-122.0604382" elevation="234.02043523755512"/>
+    </Vehicle>
+    <Vehicle id="9_vehicle" location="7_trackSegment_forward" position="20.090" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9999237" lng="-122.0615546" elevation="248.42438212517013"/>
+    </Vehicle>
+    <Vehicle id="10_vehicle" location="7_trackSegment_forward" position="57.634" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0002150" lng="-122.0613536" elevation="248.28307163266922"/>
+    </Vehicle>
+    <Vehicle id="11_vehicle" location="7_trackSegment_forward" position="89.045" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0003579" lng="-122.0610529" elevation="248.16484300568524"/>
+    </Vehicle>
+    <Vehicle id="12_vehicle" location="0_trackSegment_forward" position="22.849" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0003889" lng="-122.0606053" elevation="242.98412608326862"/>
+    </Vehicle>
+    <Vehicle id="13_vehicle" location="0_trackSegment_forward" position="50.412" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0003963" lng="-122.0602954" elevation="236.81263979455696"/>
+    </Vehicle>
+    <Vehicle id="14_vehicle" location="18_trackSegment_forward" position="25.056" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0004405" lng="-122.0584485" elevation="249.64755691980176"/>
+    </Vehicle>
+    <Vehicle id="15_vehicle" location="18_trackSegment_forward" position="54.497" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0004485" lng="-122.0581175" elevation="249.93844225019004"/>
+    </Vehicle>
+    <Vehicle id="16_vehicle" location="18_trackSegment_forward" position="91.087" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0004583" lng="-122.0577061" elevation="250.29995607043438"/>
+    </Vehicle>
+    <Vehicle id="17_vehicle" location="1_trackSegment_forward" position="32.033" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0003972" lng="-122.0573578" elevation="246.1857786358814"/>
+    </Vehicle>
+    <Vehicle id="18_vehicle" location="1_trackSegment_forward" position="66.687" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0001922" lng="-122.0570706" elevation="241.73486986215642"/>
+    </Vehicle>
+    <Vehicle id="19_vehicle" location="2_trackSegment_forward" position="17.343" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9997445" lng="-122.0569453" elevation="236.79144919966018"/>
+    </Vehicle>
+    <Vehicle id="20_vehicle" location="2_trackSegment_forward" position="106.878" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9989409" lng="-122.0569014" elevation="234.16604827294043"/>
+    </Vehicle>
+    <Vehicle id="21_vehicle" location="2_trackSegment_forward" position="149.885" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9985549" lng="-122.0568803" elevation="232.90495802886258"/>
+    </Vehicle>
+    <Vehicle id="22_vehicle" location="2_trackSegment_forward" position="197.713" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9981257" lng="-122.0568569" elevation="231.50249403754253"/>
+    </Vehicle>
+    <Vehicle id="23_vehicle" location="3_trackSegment_forward" position="57.693" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9976639" lng="-122.0571015" elevation="228.55100838271386"/>
+    </Vehicle>
+    <Vehicle id="24_vehicle" location="3_trackSegment_forward" position="87.882" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9975364" lng="-122.0573977" elevation="227.00787200899026"/>
+    </Vehicle>
+    <Vehicle id="25_vehicle" location="4_trackSegment_forward" position="36.104" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9975103" lng="-122.0579793" elevation="223.9322104911651"/>
     </Vehicle>
   </Vehicles>
   <Waypoints>

@@ -163,19 +163,19 @@ class Berth(Sim.Process, traits.HasTraits):
             except VehicleOutOfPositionError as err:
                 nose_pos, tail_pos = err.vehicle.get_positions()
                 logging.info("T=%4.3f Vehicle not in berth for attempted %s. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, DisembarkCmdId: %s, vNosePos: %s, vNoseLoc %s, vTailPos: %s, vTailLoc: %s, berth.start_pos: %s, berth.end_pos: %s",
-                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.cmd_msg_id, nose_pos, err.vehicle.loc, tail_pos, err.vehicle.tail_loc, self.start_pos, self.end_pos)
+                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.msg_id, nose_pos, err.vehicle.loc, tail_pos, err.vehicle.tail_loc, self.start_pos, self.end_pos)
                 error_msg = api.SimMsgBodyInvalidId()
                 error_msg.id_type = api.VEHICLE
-                error_msg.msgID = err.cmd_msg_id
+                error_msg.msgID = err.msg_id
                 error_msg.ID = err.vehicle.ID
                 common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
                 self._busy = False
 
             except PassengerNotAvailableError as err:
                 logging.info("T=%4.3f Passenger not available for attempted %s. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, DisembarkCmdId: %s, Passenger: %s",
-                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.cmd_msg_id, err.pax.ID)
+                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.msg_id, err.pax.ID)
                 error_msg = api.SimMsgBodyInvalidId()
-                error_msg.msgID = err.cmd_msg_id
+                error_msg.msgID = err.msg_id
                 error_msg.id_type = api.PASSENGER
                 error_msg.ID = err.pax.ID
                 common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
@@ -183,9 +183,9 @@ class Berth(Sim.Process, traits.HasTraits):
 
             except VehicleFullError as err:
                 logging.info("T=%4.3f Action %s failed since vehicle is at max passenger capacity. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
-                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.cmd_msg_id, err.pax.ID)
+                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.msg_id, err.pax.ID)
                 error_msg = api.SimMsgBodyInvalidId()
-                error_msg.msgID = err.cmd_msg_id
+                error_msg.msgID = err.msg_id
                 error_msg.id_type = api.PASSENGER
                 error_msg.ID = err.pax.ID
                 common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
@@ -205,9 +205,9 @@ class Berth(Sim.Process, traits.HasTraits):
         self._busy = True
         while passengers:
             pax = passengers.pop()
-            self._do_disembark_pax_start(pax, vehicle)
+            self._do_disembark_pax_start(pax, vehicle, cmd_msg_id)
             yield pax.unload_delay # Wait while passenger disembarks
-            self._do_disembark_pax_finish(pax, vehicle)
+            self._do_disembark_pax_finish(pax, vehicle, cmd_msg_id)
 
         self._busy = False
 
@@ -219,14 +219,14 @@ class Berth(Sim.Process, traits.HasTraits):
         common.interface.send(api.SIM_COMPLETE_PASSENGERS_DISEMBARK,
                               cmd_complete)
 
-    def _do_disembark_pax_start(self, pax, vehicle):
+    def _do_disembark_pax_start(self, pax, vehicle, cmd_msg_id):
         # Error if vehicle not parked in berth
         if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-            raise VehicleOutOfPositionError(vehicle)
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
 
         # Error if pax not in the vehicle
         if pax not in vehicle.passengers:
-            raise PassengerNotAvailableError(pax, vehicle)
+            raise PassengerNotAvailableError(pax, vehicle, cmd_msg_id)
 
         # Notify controller that disembark of this passenger is starting
         start_msg = api.SimNotifyPassengerDisembarkStart()
@@ -239,10 +239,10 @@ class Berth(Sim.Process, traits.HasTraits):
         common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_START,
                               start_msg)
 
-    def _do_disembark_pax_finish(self, pax, vehicle):
+    def _do_disembark_pax_finish(self, pax, vehicle, cmd_msg_id):
         # Error if vehicle is not still parked in berth
         if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-            raise VehicleOutOfPositionError(vehicle)
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
 
         # Move the passenger from the vehicle to the station
         vehicle.disembark(pax)
@@ -279,9 +279,9 @@ class Berth(Sim.Process, traits.HasTraits):
         self._busy = True
         while passengers:
             pax = passengers.pop()
-            self._do_embark_pax_start(pax, vehicle)
+            self._do_embark_pax_start(pax, vehicle, cmd_msg_id)
             yield pax.load_delay
-            self._do_embark_pax_finish(pax, vehicle)
+            self._do_embark_pax_finish(pax, vehicle, cmd_msg_id)
 
         self._busy = False
 
@@ -294,18 +294,18 @@ class Berth(Sim.Process, traits.HasTraits):
                               cmd_complete)
 
 
-    def _do_embark_pax_start(self, pax, vehicle):
+    def _do_embark_pax_start(self, pax, vehicle, cmd_msg_id):
         # Error if vehicle not parked in berth
         if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-            raise VehicleOutOfPositionError(vehicle)
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
 
         # Error if pax not at the station
         if pax not in self.station._passengers:
-            raise PassengerNotAvailableError(pax, vehicle)
+            raise PassengerNotAvailableError(pax, vehicle, cmd_msg_id)
 
         # Error if the vehicle is at full capacity
         if vehicle.get_pax_count() >= vehicle.max_pax_capacity:
-            raise VehicleFullError(pax, vehicle)
+            raise VehicleFullError(pax, vehicle, cmd_msg_id)
 
         # Notify controller that embark of this passenger is starting
         start_msg = api.SimNotifyPassengerEmbarkStart()
@@ -319,10 +319,10 @@ class Berth(Sim.Process, traits.HasTraits):
                               start_msg)
 
 
-    def _do_embark_pax_finish(self, pax, vehicle):
+    def _do_embark_pax_finish(self, pax, vehicle, cmd_msg_id):
         # Error if vehicle is not still parked in berth
         if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-            raise VehicleOutOfPositionError(vehicle)
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
 
         # Move passenger's location to the vehicle
         vehicle.embark(pax)
@@ -346,14 +346,14 @@ class Berth(Sim.Process, traits.HasTraits):
 
     def _do_enter_storage(self, vehicle, cmd_msg, cmd_msg_id):
         if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-            raise VehicleOutOfPositionError(vehicle)
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
 
         storage = self.station._storage_dict[vehicle.model_name]
         storage._reserve_slot()
         self._busy = True
         yield self.station.storage_entrance_delay
         if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-            raise VehicleOutOfPositionError(vehicle)
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
         storage._store_vehicle(vehicle)
 
         self._busy = False
@@ -481,7 +481,7 @@ class Storage(object):
         assert abs(vehicle.vel) < 0.1 # loose sanity check, vehicle should be stopped.
 
         try:
-            pos = self._storage_track.vehicles[-1].pos + vehicle.length + 1 # arbitrary 1 meter spacing
+            pos = self._storage_track.vehicles[0].pos + vehicle.length + 1 # arbitrary 1 meter spacing
         except IndexError:
             pos = vehicle.length + 1
         vehicle._move_to(pos, self._storage_track)
