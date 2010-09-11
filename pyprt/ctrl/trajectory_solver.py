@@ -216,30 +216,22 @@ class TrajectorySolver(object):
 
             if not flip:
                 if spline.get_max_velocity() > max_speed + self.v_threshold:
-##                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with max velocity limit.")
                 if spline.get_min_velocity() < self.v_min - self.v_threshold:
-                    ##                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with min velocity limit.")
                 if spline.get_max_acceleration() > self.a_max + self.a_threshold:
-##                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with max acceleration limit.")
                 if spline.get_min_acceleration() < self.a_min - self.a_threshold:
-##                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with min acceleration limit.")
 
             else:
                 if -spline.get_max_velocity() > max_speed + self.v_threshold:
-##                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with max velocity limit.")
                 if -spline.get_min_velocity() < self.v_min - self.v_threshold:
-                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with min velocity limit.")
                 if -spline.get_max_acceleration() > self.a_max + self.a_threshold:
-##                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with max acceleration limit.")
                 if -spline.get_min_acceleration() < self.a_min - self.a_threshold:
-##                    self._plot(spline)
                     raise FatalTrajectoryError(knot_initial, knot_final, "Unable to comply with min acceleration limit.")
         if fnc_info:
             return spline, fnc
@@ -1387,38 +1379,27 @@ class TrajectorySolver(object):
 
         return result
 
-    def _plot(self, spline, v_max=None, a_max=None, j_max=None, v_min=None, a_min=None, j_min=None, title="", start_idx=0, end_idx=-1):
+    def plot(self, spline, start_idx=0, end_idx=-1, mass=None, title=""):
         """For debugging"""
         from pyprt.shared.cspline_plotter import CSplinePlotter
-        vx = v_max if v_max != None else self.v_max
-        ax = a_max if a_max != None else self.a_max
-        jx = j_max if j_max != None else self.j_max
-        vn = v_min if v_min != None else self.v_min
-        an = a_min if a_min != None else self.a_min
-        jn = j_min if j_min != None else self.j_min
-        plotter = CSplinePlotter(spline, vx, ax, jx, vn, an, jn, title, start_idx, end_idx)
+        plotter = CSplinePlotter(spline, self.v_max, self.a_max, self.j_max, self.v_min, self.a_min, self.j_min, title, start_idx, end_idx, mass=mass)
         plotter.display_plot()
-
-##    def explore(self):
-##        from numpy import linspace
-##        points = linspace(-5, 5, 1000)
-##        out = open('explore.csv', 'w')
-##        out.write("%f,%f,%f,%f,%f,%f\n" % (self.v_max, self.a_max, self.j_max, self.v_min, self.a_min, self.j_min))
-##        for point in points:
-##            spline = self.slip(0, 10, 0, point)
-##            out.write("%f,%f\n" % (point, spline.q[-1]))
-##        out.close()
 
 if __name__ == '__main__':
     # Limited program for targeting velocities.
     # TODO: Make a little Traits.UI based program for playing with splines without writing any code?
     import sys
-    if len(sys.argv) != 9:
-        print "Usage: python %s vel_init vel_final accel_init accel_final max_vel max_accel max_decel max_jerk" % sys.argv[0]
+    if len(sys.argv) == 9:
+        prog_name, vel_init, vel_final, accel_init, accel_final, max_vel, max_accel, max_decel, max_jerk = sys.argv
+        mass = None
+    elif len(sys.argv) == 10:
+        prog_name, vel_init, vel_final, accel_init, accel_final, max_vel, max_accel, max_decel, max_jerk, mass = sys.argv
+    else:
+        print "Usage: python %s vel_init vel_final accel_init accel_final max_vel max_accel max_decel max_jerk [mass]" % sys.argv[0]
         print "\n  max_decel should be provided as a negative number."
+        print "\n  If mass is included, the power will be plotted as well."
         sys.exit()
 
-    prog_name, vel_init, vel_final, accel_init, accel_final, max_vel, max_accel, max_decel, max_jerk = sys.argv
     solver = TrajectorySolver(float(max_vel), float(max_accel), float(max_jerk), 0.0, float(max_decel), -float(max_jerk))
 
     initial_knot = Knot(0,float(vel_init),float(accel_init),0)
@@ -1429,8 +1410,6 @@ if __name__ == '__main__':
     print "\nFinal: " + str(spline_.evaluate(spline_.t[-1]))
 
     try:
-        from pyprt.shared.cspline_plotter import CSplinePlotter
-        plotter = CSplinePlotter(spline_, solver.v_max, solver.a_max, solver.j_max, solver.v_min, solver.a_min, solver.j_min)
-        plotter.display_plot()
+        solver.plot(spline_, mass=float(mass))
     except ImportError:
         pass

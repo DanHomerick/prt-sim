@@ -305,3 +305,8 @@ def sec_to_hms(seconds):
         return "%d:%02d:%02d" % (hours, minutes, sec)
     else:
         return "%d:%02d" % (minutes, sec)
+
+def latlng_dist(lat1, lng1, lat2, lng2):
+    """Returns the great circle distance between two coordinates."""
+    return 2*math.asin(math.sqrt((math.sin((lat1-lat2)/2))^2 + \
+                            math.cos(lat1)*math.cos(lat2)*(math.sin((lng1-lng2)/2))^2))

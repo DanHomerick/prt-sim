@@ -4,7 +4,7 @@ from collections import defaultdict
 from collections import deque
 import warnings
 import math
-from operator import attrgetter
+import operator
 
 import networkx
 from numpy import arange, inf
@@ -436,6 +436,7 @@ class PrtController(BaseController):
                     old_dest = vehicle.trip.dest_station
                     vehicle.trip = self.manager.wave_off(vehicle)
                     vehicle.set_path(vehicle.trip.path)
+                    vehicle.num_wave_offs += 1
                     self.log.info("%5.3f Vehicle %d waved off from dest_station %d because NoBerthAvailable. Going to station %d instead.",
                                    self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
@@ -620,18 +621,8 @@ class PrtController(BaseController):
 
     def on_SIM_END(self, msg, msgID, msg_time):
         super(PrtController, self).on_SIM_END(msg, msgID, msg_time)
-        with open(options.stats_file, 'w') as f:
-            f.write("prt_controller.py Statistics\n\n")
-            f.write("Vehicle Stats\n")
+        write_stats_report(self.manager.vehicles, self.manager.stations, options.stats_file)
 
-            state_string = ', '.join(States.strings)
-            f.write("id, %s\n" % state_string)
-            v_list = self.manager.vehicles.values()
-            v_list.sort()
-            for v in v_list:
-                v.state = States.NONE # Causes the last interval to be recorded.
-                time_spent_str = ', '.join('%.3f' % time for time in v.time_spent_in_states)
-                f.write("%d, %s\n" % (v.id, time_spent_str))
 
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
@@ -1762,6 +1753,9 @@ class Vehicle(object):
         self._dist_to_stop = decel_spline.q[-1]
         self._time_to_stop = decel_spline.t[-1]
 
+        # Runtime stats
+        self.num_wave_offs = 0
+
     def __str__(self):
         return "id:%d, ts_id:%d, pos:%.3f, vel:%.3f, accel:%.3f, last_update:%.3f, model:%s, length:%.3f" \
                % (self.id, self.ts_id, self.pos, self.vel, self.accel, self.last_update, self.model, self.length)
@@ -2070,7 +2064,7 @@ class Vehicle(object):
         if initial_knot is None:
             return self._dist_to_line_speed
         else:
-            final_knot = Knot(None, States.LINE_SPEED, 0, None)
+            final_knot = Knot(None, PrtController.LINE_SPEED, 0, None)
             spline = self.traj_solver.target_velocity(initial_knot, final_knot)
             return spline.q[-1] - spline.q[0]
 
@@ -3438,6 +3432,40 @@ class Switch(object):
 
                 else: # len(down_nodes) == 0:
                     raise Exception("Not able to handle dead end track.")
+
+def write_stats_report(vehicles, stations, file_path):
+    """Writes controller specific statistics to file found at file_path.
+    Uses tables in CSV format.
+
+    Parameters:
+      vehicles -- A dict containing Vehicle objects, keyed by id.
+      stations -- A dict containing Station objects, keyed by id.
+
+    Returns:
+      None
+    """
+    with open(file_path, 'w') as f:
+        f.write("prt_controller.py Statistics\n\n")
+        f.write("Vehicle Stats\n")
+
+        states_string = ', '.join(States.strings)
+        f.write("id, %s, total time, # Wave Offs\n" % states_string)
+        v_list = vehicles.values()
+        v_list.sort()
+
+        num_states = len(States.strings)
+        times = [0]*num_states
+        totals = [0]*num_states
+        for v in v_list:
+            v.state = States.NONE # Causes the last interval to be recorded.
+            for i in range(num_states):
+                times[i] = v.time_spent_in_states[i]
+                totals[i] += v.time_spent_in_states[i]
+
+            times_str = ', '.join('%.3f' % time for time in times)
+            f.write("%d, %s, %.3f, %d\n" % (v.id, times_str, sum(times)), v.num_wave_offs)
+
+        f.write("Total:, %s" % ', '.join('%.3f' % time for time in totals))
 
 def main(options):
     PrtController.LINE_SPEED = options.line_speed
