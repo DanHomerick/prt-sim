@@ -681,7 +681,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         if traverse_time != inf:
             segment_spline = self._spline.slice(Sim.now(), traverse_time)
         else:
-            segment_spline = self._spline.copy_right(Sim.now())
+            segment_spline = self._spline.slice(Sim.now(), common.config_manager.get_sim_end_time())
         extrema_velocties, extrema_times = segment_spline.get_extrema_velocities()
         for vel, time in izip(extrema_velocties, extrema_times):
             # Add stopped notification (if not currently stopped at the same position)

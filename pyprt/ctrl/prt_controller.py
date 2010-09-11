@@ -4,6 +4,7 @@ from collections import defaultdict
 from collections import deque
 import warnings
 import math
+from operator import attrgetter
 
 import networkx
 from numpy import arange, inf
@@ -12,7 +13,7 @@ import pyprt.shared.api_pb2 as api
 from pyprt.ctrl.base_controller import BaseController
 from trajectory_solver import TrajectorySolver, FatalTrajectoryError
 from pyprt.shared.cubic_spline import Knot, CubicSpline, OutOfBoundsError
-from pyprt.shared.utility import pairwise, is_string_false, is_string_true
+from pyprt.shared.utility import pairwise, is_string_false, is_string_true, sec_to_hms
 ##from pyprt.shared.utility import deque # extension of collections.deque which includes 'insert' method
 
 class NoPaxAvailableError(Exception):
@@ -27,34 +28,56 @@ class NoVehicleAvailableError(Exception):
 class NoVacancyAvailableError(Exception):
     pass
 
+class States(object):
+    """Vehicles use a state machine (diagram in /docs) with these states.
+    'ADVANCING' means that the vehicle is moving between berths.
+    """
+    NONE = 0                    # No state has been set yet.
+    RUNNING = 1                 # Travelling from one station to the next.
+    UNLOAD_ADVANCING = 2        # Have passengers to unload, on or approaching unload platform.
+    UNLOAD_WAITING = 3          # Capable of immediately disembarking passengers.
+    DISEMBARKING = 4            # Parked in unload berth, currently unloading passengers.
+    LOAD_WAITING = 5            # Capable of immediately embarking passengers.
+    LOAD_ADVANCING = 6          # On or approaching the load platform.
+    EMBARKING = 7               # Parked in load berth, loading passengers
+    STORAGE_ENTERING = 8        # Parked in a berth, in the process of moving into storage.
+    STORAGE = 9                 # In storage
+    STORAGE_EXITING = 10        # In the process of moving from storage to a berth
+    EXIT_WAITING = 11           # Waiting to reach launch berth.
+    EXIT_ADVANCING = 12         # Moving towards launch berth.
+    LAUNCH_WAITING = 13         # In the launch berth. Ready to lauch at any time.
+    LAUNCHING = 14              # Accelerating towards the main line.
+
+    strings = ["NONE",
+               "RUNNING",
+               "UNLOAD_ADVANCING",
+               "UNLOAD_WAITING",
+               "DISEMBARKING",
+               "LOAD_WAITING",
+               "LOAD_ADVANCING",
+               "EMBARKING",
+               "STORAGE_ENTERING",
+               "STORAGE",
+               "STORAGE_EXITING",
+               "EXIT_WAITING",
+               "EXIT_ADVANCING",
+               "LAUNCH_WAITING",
+               "LAUNCHING"]
+
+    @staticmethod
+    def to_string(state):
+        return States.strings[state]
+
 class PrtController(BaseController):
-
-    # States (for state-machine)
-    # ADVANCING means moving between berths.
-
-    RUNNING = "RUNNING"                     # Travelling from one station to the next.
-    UNLOAD_ADVANCING = "UNLOAD_ADVANCING"   # Have passengers to unload, on or approaching unload platform.
-    UNLOAD_WAITING = "UNLOAD_WAITING"       # Capable of immediately disembarking passengers.
-    DISEMBARKING = "DISEMBARKING"           # Parked in unload berth, currently unloading passengers.
-    LOAD_WAITING = "LOAD_WAITING"           # Capable of immediately embarking passengers.
-    LOAD_ADVANCING = "LOAD_ADVANCING"       # On or approaching the load platform.
-    EMBARKING = "EMBARKING"                 # Parked in load berth, loading passengers
-    STORAGE_ENTERING = "STORAGE_ENTERING"   # Parked in a berth, in the process of moving into storage.
-    STORAGE = "STORAGE"                     # In storage
-    STORAGE_EXITING = "STORAGE_EXITING"     # In the process of moving from storage to a berth
-    EXIT_WAITING = "EXIT_WAITING"           # Waiting to reach launch berth.
-    EXIT_ADVANCING = "EXIT_ADVANCING"       # Moving towards launch berth.
-    LAUNCH_WAITING = "LAUNCH_WAITING"       # In the launch berth. Ready to lauch at any time.
-    LAUNCHING = "LAUNCHING"                 # Accelerating towards the main line.
-
     LINE_SPEED = None  # in meter/sec. Set in main().
     HEADWAY = None     # in sec. Measured from tip-to-tail. Set in main()
     HEARTBEAT_INTERVAL = 5.1  # in seconds. Choosen arbitrarily for testing
     DEMAND_THRESHOLD = 3
 
-    def __init__(self, log_path, commlog_path):
+    def __init__(self, log_path, commlog_path, stats_path):
         super(PrtController, self).__init__(log_path, commlog_path)
         self.t_reminders = dict() # keyed by time (in integer form), values are pairs of lists
+        self.stats_path = stats_path
 
         # Manager is instantiated upon receipt of a SIM_GREETING msg.
         self.manager = None   # Manager instance
@@ -106,22 +129,22 @@ class PrtController(BaseController):
 
         # Exclude vehicles that have reserved berths, but aren't yet in the
         # relevant states.
-        if vehicle.state not in (self.UNLOAD_WAITING, self.LOAD_WAITING, self.EXIT_WAITING, None):
+        if vehicle.state not in (States.UNLOAD_WAITING, States.LOAD_WAITING, States.EXIT_WAITING, States.NONE):
             return
 
         assert vehicle.station is station
 
         # if vehicle hasn't unloaded, only try to advance as far as the last unload berth
         try:
-            if vehicle.state is self.UNLOAD_WAITING:
+            if vehicle.state is States.UNLOAD_WAITING:
                 station.request_unload_berth(vehicle)
-                vehicle.state = self.UNLOAD_ADVANCING
-            elif vehicle.state is self.LOAD_WAITING:
+                vehicle.state = States.UNLOAD_ADVANCING
+            elif vehicle.state is States.LOAD_WAITING:
                 station.request_load_berth(vehicle)
-                vehicle.state = self.LOAD_ADVANCING
-            elif vehicle.state is self.EXIT_WAITING:
+                vehicle.state = States.LOAD_ADVANCING
+            elif vehicle.state is States.EXIT_WAITING:
                 station.request_launch_berth(vehicle)
-                vehicle.state = self.EXIT_ADVANCING
+                vehicle.state = States.EXIT_ADVANCING
             else:
                 raise Exception("Unexpected case. Vehicle.state is: %s" % vehicle.state)
         except NoBerthAvailableError:
@@ -141,7 +164,6 @@ class PrtController(BaseController):
         # TODO: Move this into scenario validation function
         # If every single berth is full, then a vehicle will not have anywhere
         # to go if it's kicked out of a station (to make room for incoming vehicles).
-
         total_vacancies = sum(station.get_num_storage_vacancies(self.manager.MODEL_NAME) for station in self.manager.stations.itervalues())
         total_berths = sum(station.NUM_BERTHS for station in self.manager.stations.itervalues())
         total_vehicles = len(self.manager.vehicles)
@@ -182,7 +204,7 @@ class PrtController(BaseController):
         # are committed to a particular station.
         for vehicle in v_list:
             assert isinstance(vehicle, Vehicle)
-            assert vehicle.state is None
+            assert vehicle.state is States.NONE
 
             station = self.manager.track2station.get(vehicle.ts_id)
 
@@ -197,7 +219,7 @@ class PrtController(BaseController):
                 if vehicle.ts_id in (station.ts_ids[Station.UNLOAD],
                                      station.ts_ids[Station.QUEUE],
                                      station.ts_ids[Station.LOAD]):
-                    vehicle.state = self.LOAD_ADVANCING
+                    vehicle.state = States.LOAD_ADVANCING
                     vehicle.station = station
                     station.request_load_berth(vehicle)
                     berth_dist, berth_path = self.manager.get_path(vehicle.ts_id, vehicle.plat_ts)
@@ -214,7 +236,7 @@ class PrtController(BaseController):
                 elif vehicle.ts_id in (station.ts_ids[Station.OFF_RAMP_I],
                                        station.ts_ids[Station.OFF_RAMP_II],
                                        station.ts_ids[Station.DECEL]):
-                    vehicle.state = self.LOAD_ADVANCING
+                    vehicle.state = States.LOAD_ADVANCING
                     station.request_load_berth(vehicle)
                     vehicle.enter_station(station)
 
@@ -230,7 +252,7 @@ class PrtController(BaseController):
                     raise Exception("Unexpected case: vehicle.ts_id: %d" % vehicle.ts_id)
 
             else: # Not in a station.
-                vehicle.state = self.RUNNING
+                vehicle.state = States.RUNNING
 
                 # Assign trips to vehicles. Don't travel to a station when you
                 # are on it's "split" segment, since the vehicle is already
@@ -295,10 +317,10 @@ class PrtController(BaseController):
         vehicles, functions = self.t_reminders[ms_msg_time]
 
         for vehicle in vehicles:
-            if vehicle.state is self.LAUNCH_WAITING:
+            if vehicle.state is States.LAUNCH_WAITING:
                 blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
                 if not blocked_time:
-                    vehicle.state = self.LAUNCHING
+                    vehicle.state = States.LAUNCHING
                     vehicle.run(speed_limit=self.LINE_SPEED)
                     vehicle._launch_begun = True
                     vehicle.station.release_berth(vehicle)
@@ -325,10 +347,10 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
-        if vehicle.state is self.LAUNCH_WAITING:
+        if vehicle.state is States.LAUNCH_WAITING:
             merge = self.manager.track2merge.get(vehicle.station.bypass)
             if merge and vehicle.station in merge.stations:
-                vehicle.state = self.LAUNCHING
+                vehicle.state = States.LAUNCHING
                 slot, launch_time = merge.create_station_merge_slot_II(vehicle.station, vehicle, self.current_time)
                 vehicle.set_merge_slot(slot)
                 vehicle.set_spline(vehicle.merge_slot.spline)
@@ -345,7 +367,7 @@ class PrtController(BaseController):
             else:
                 blocked_time = self.manager.is_launch_blocked(vehicle.station, vehicle, self.current_time)
                 if not blocked_time:
-                    vehicle.state = self.LAUNCHING
+                    vehicle.state = States.LAUNCHING
                     vehicle.send_path()
                     vehicle.run(speed_limit=self.LINE_SPEED)
                     vehicle._launch_begun = True
@@ -376,21 +398,21 @@ class PrtController(BaseController):
     def on_SIM_COMPLETE_PASSENGERS_DISEMBARK(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.cmd.vID]
         assert isinstance(vehicle, Vehicle)
-        assert vehicle.state is self.DISEMBARKING
+        assert vehicle.state is States.DISEMBARKING
         self.log.info("t:%5.3f Vehicle %d at station %d, berth %d, plat %d has completed disembark of %s",
                        self.current_time, vehicle.id, vehicle.station.id, vehicle.berth_id, vehicle.platform_id, msg.cmd.passengerIDs)
 
-        vehicle.state = self.LOAD_WAITING
+        vehicle.state = States.LOAD_WAITING
         vehicle.trip = None
         vehicle.station.heartbeat()
 
     def on_SIM_COMPLETE_PASSENGERS_EMBARK(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.cmd.vID]
         assert isinstance(vehicle, Vehicle)
-        assert vehicle.state is self.EMBARKING
+        assert vehicle.state is States.EMBARKING
         self.log.info("t:%5.3f Vehicle %d at station %d, berth %d, plat %d has completed embark of %s",
                        self.current_time, vehicle.id, vehicle.station.id, vehicle.berth_id, vehicle.platform_id, msg.cmd.passengerIDs)
-        vehicle.state = self.EXIT_WAITING
+        vehicle.state = States.EXIT_WAITING
         vehicle.station.heartbeat()
 
     def on_SIM_NOTIFY_VEHICLE_ARRIVE(self, msg, msgID, msg_time):
@@ -403,7 +425,7 @@ class PrtController(BaseController):
         # Note: Some track networks will have one station's ON_RAMP_II lead straight into
         #       another station's "split" track seg, thus LAUNCHING is a viable state.
         station = self.manager.split2station.get(msg.trackID)
-        if vehicle.state in (self.RUNNING, self.LAUNCHING) and station:
+        if vehicle.state in (States.RUNNING, States.LAUNCHING) and station:
             # Has passengers and this is the dest station
             if vehicle.pax and station is vehicle.trip.dest_station:
                 try:   # Reserve an unload berth
@@ -452,11 +474,11 @@ class PrtController(BaseController):
             # If the vehicle is empty, and the assigned berth is the entrance
             # berth, give it up and waive off so as to not clog up the station
             # with an empty vehicle.
-            if vehicle.has_berth_reservation() and vehicle.pax is None \
+            if vehicle.has_berth_reservation() and not vehicle.pax \
                     and vehicle.platform_id == Station.UNLOAD_PLATFORM \
                     and vehicle.berth_id == 0:
                 old_dest = vehicle.trip.dest_station
-                vehicle.trip.dest_station.release_berth(vehicle)
+                old_dest.release_berth(vehicle)
                 vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
                 vehicle.set_path(vehicle.trip.path)
                 self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d to avoid clogging entrance berth. Going to station %d instead.",
@@ -467,28 +489,28 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
-        if vehicle.state is self.RUNNING:
+        if vehicle.state is States.RUNNING:
             # Tail just cleared the main line by entering into a station.
             station = self.manager.split2station.get(msg.trackID)
             if station is not None and vehicle.ts_id in station.ts_ids: # don't check against OFF_RAMP_I explicitly, because nose may already be past it.
                 assert vehicle.berth_id is not None
                 if vehicle.pax:
                     assert vehicle.platform_id == station.UNLOAD_PLATFORM
-                    vehicle.state = self.UNLOAD_ADVANCING
+                    vehicle.state = States.UNLOAD_ADVANCING
                 else:
-                    vehicle.state = self.LOAD_ADVANCING
+                    vehicle.state = States.LOAD_ADVANCING
 
                 vehicle.enter_station(station)
 
-        elif vehicle.state is self.LAUNCHING:
+        elif vehicle.state is States.LAUNCHING:
             station = self.manager.track2station.get(msg.trackID)
             # Just joined the main line, entirely exiting the station zone
             if msg.trackID == station.ts_ids[Station.ON_RAMP_II]:
-                vehicle.state = self.RUNNING
+                vehicle.state = States.RUNNING
                 vehicle.station = None
 
         # Check if just entered a merge's zone of control.
-        if vehicle.state is self.RUNNING: # may have been LAUNCHING at beginning of function
+        if vehicle.state is States.RUNNING: # may have been LAUNCHING at beginning of function
             # TODO: Rethink whether I should have dictionaries containing both
             # merges and switches.
 
@@ -513,19 +535,19 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
-        if vehicle.state in (self.UNLOAD_ADVANCING, self.LOAD_ADVANCING, self.EXIT_ADVANCING):
+        if vehicle.state in (States.UNLOAD_ADVANCING, States.LOAD_ADVANCING, States.EXIT_ADVANCING):
             # Check that I'm stopped and where I expect to be
             assert abs(vehicle.vel) < TrajectorySolver.v_threshold, str(vehicle)
             assert abs(vehicle.accel) < TrajectorySolver.a_threshold, str(vehicle)
             assert vehicle.ts_id == vehicle.plat_ts, str(vehicle)
             assert abs(vehicle.berth_pos - vehicle.pos) < 0.1, (str(vehicle), vehicle.berth_pos)
 
-            if vehicle.state is self.UNLOAD_ADVANCING:
-                vehicle.state = self.UNLOAD_WAITING
-            elif vehicle.state is self.LOAD_ADVANCING:
-                vehicle.state = self.LOAD_WAITING
-            elif vehicle.state is self.EXIT_ADVANCING:
-                vehicle.state = self.EXIT_WAITING
+            if vehicle.state is States.UNLOAD_ADVANCING:
+                vehicle.state = States.UNLOAD_WAITING
+            elif vehicle.state is States.LOAD_ADVANCING:
+                vehicle.state = States.LOAD_WAITING
+            elif vehicle.state is States.EXIT_ADVANCING:
+                vehicle.state = States.EXIT_WAITING
             else:
                 raise Exception("Unexpected state: %s" % vehicle.state)
 
@@ -567,7 +589,7 @@ class PrtController(BaseController):
         vehicle.plat_ts = vehicle.ts_id
         vehicle.berth_id = msg.cmd.berthID
         vehicle.platform_id = msg.cmd.platformID
-        vehicle.state = self.LOAD_WAITING
+        vehicle.state = States.LOAD_WAITING
         storage = station.storage_dict[vehicle.model]
 
         assert isinstance(station, Station)
@@ -591,10 +613,26 @@ class PrtController(BaseController):
         vehicle.plat_ts = None
         vehicle.berth_id = None
         vehicle.platform_id = None
-        vehicle.state = self.STORAGE
+        vehicle.state = States.STORAGE
 
         storage.end_vehicle_entry()
         station.heartbeat()
+
+    def on_SIM_END(self, msg, msgID, msg_time):
+        super(PrtController, self).on_SIM_END(msg, msgID, msg_time)
+        with open(options.stats_file, 'w') as f:
+            f.write("prt_controller.py Statistics\n\n")
+            f.write("Vehicle Stats\n")
+
+            state_string = ', '.join(States.strings)
+            f.write("id, %s\n" % state_string)
+            v_list = self.manager.vehicles.values()
+            v_list.sort()
+            for v in v_list:
+                v.state = States.NONE # Causes the last interval to be recorded.
+                time_spent_str = ', '.join('%.3f' % time for time in v.time_spent_in_states)
+                f.write("%d, %s\n" % (v.id, time_spent_str))
+
 
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     # TODO: Is there any reasonable way to handle multiple vehicle types, without
@@ -1091,7 +1129,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         # TODO optimize this?
         times = []
         for v in self.vehicles.itervalues():
-            if v.station != None:
+            if v.station is not None:
                 continue
 
             try:
@@ -1297,6 +1335,12 @@ class Station(object):
         self.NUM_LOAD_BERTHS = len(load_positions)
         self.NUM_BERTHS = self.NUM_UNLOAD_BERTHS + self.NUM_QUEUE_BERTHS + self.NUM_LOAD_BERTHS
 
+    def __cmp__(self, other):
+        if not isinstance(other, Station):
+            raise ValueError
+        else:
+            return cmp(self.id, other.id)
+
     def add_passenger(self, pax):
         self.passengers.append(pax)
 
@@ -1482,24 +1526,28 @@ class Station(object):
     def get_demand(self):
         """Returns a value indicating vehicle demand. Higher values indicate
         more demand, and values may be negative."""
-        # All berths are full, and no passengers are waiting.
-        if self.v_count == self.NUM_BERTHS and len(self.passengers) == 0:
+        if self.v_count == self.NUM_BERTHS:
             # Being full prevents vehicles from arriving, so we want to actively
-            # reduce the number of vehicles.
-            return -1
+            # reduce the number of vehicles, regardless of how many passengers
+            # are waiting.
+            return -float('inf')
+
+        # Provide demand based on the discrepency between the number of
+        # passengers waiting and the number of vehicles in the station
+        passenger_demand = len(self.passengers) - self.v_count
+
+        if passenger_demand <= 0:
+            # Provide some demand until there are enough vehicles in the
+            # station to fill the LOAD and QUEUE berths. When no vehicles are present,
+            # advertise slightly less than 1 passenger's worth of demand. When
+            # there are more vehicles than can fit in LOAD + QUEUE, demand
+            # becomes negative.
+            berth_demand = (self.NUM_QUEUE_BERTHS + self.NUM_LOAD_BERTHS - self.v_count) \
+                            * 1/(self.NUM_QUEUE_BERTHS + self.NUM_LOAD_BERTHS + 1)
+            return berth_demand
 
         else:
-            # Provide some demand until there are enough vehicles in the
-            # station to fill the load berths. When no vehicles are present,
-            # advertise slightly less than 1 passenger's worth of demand.
-            load_berth_demand = max((self.NUM_LOAD_BERTHS - self.v_count) *
-                                    1/(self.NUM_LOAD_BERTHS + 1), 0)
-
-            # Provide demand based on the discrepency between the number of
-            # passengers waiting and the number of vehicles in the station
-            passenger_demand = len(self.passengers) - self.v_count
-
-            return max(passenger_demand, load_berth_demand)
+            return passenger_demand
 
     def get_num_storage_vehicles(self, model_name):
         try:
@@ -1562,7 +1610,7 @@ class Station(object):
         assert isinstance(storage, Storage)
         storage.start_vehicle_entry()
         self.v_count -=1
-        vehicle.state = PrtController.STORAGE_ENTERING
+        vehicle.state = States.STORAGE_ENTERING
         cmd = api.CtrlCmdStorageEnter()
         cmd.vID = vehicle.id
         cmd.sID = self.id
@@ -1579,8 +1627,8 @@ class Station(object):
         max_demand = max(s.get_demand() for s in self.controller.manager.stations.itervalues())
         for plat in (self.LOAD_PLATFORM, self.QUEUE_PLATFORM, self.UNLOAD_PLATFORM):
             for v in reversed(self.reservations[plat]):
-                if v is not None and v != api.NONE_ID \
-                   and v.state not in (PrtController.STORAGE_ENTERING, PrtController.STORAGE_EXITING):
+                if isinstance(v, Vehicle) \
+                   and v.state not in (States.STORAGE_ENTERING, States.STORAGE_EXITING):
 
                     assert self.reservations[v.platform_id][v.berth_id] is v
 
@@ -1589,11 +1637,11 @@ class Station(object):
 
                     # For the vehicle's that are stuck in their current position
                     # try to do something useful with the time.
-                    if v.state is PrtController.UNLOAD_WAITING:
-                        v.state = PrtController.DISEMBARKING
+                    if v.state is States.UNLOAD_WAITING:
+                        v.state = States.DISEMBARKING
                         v.disembark(v.trip.passengers)
 
-                    elif v.state is PrtController.LOAD_WAITING:
+                    elif v.state is States.LOAD_WAITING:
                         # If there is no postive demand anywhere, start putting vehicles into storage
                         if max_demand <= 0 and (v.platform_id, v.berth_id) in self.storage_entrances:
                             try:
@@ -1606,7 +1654,7 @@ class Station(object):
                             try:
                                 v.trip = self.controller.manager.request_trip(v)
                                 v.set_path(v.trip.path)
-                                v.state = PrtController.EMBARKING
+                                v.state = States.EMBARKING
                                 v.embark(v.trip.passengers)
                             except NoPaxAvailableError:
                                 if self.is_launch_berth(v.berth_id, v.platform_id):
@@ -1614,13 +1662,13 @@ class Station(object):
                                     if trip.dest_station is not self:
                                         v.trip = trip
                                         v.set_path(v.trip.path)
-                                        v.state = PrtController.LAUNCH_WAITING
+                                        v.state = States.LAUNCH_WAITING
                                         self.controller.log.info("%5.3f Vehicle %d deadheading from station %d. Going to station %d.",
                                                       self.controller.current_time, v.id, self.id, v.trip.dest_station.id)
 
-                    elif v.state is PrtController.EXIT_WAITING:
+                    elif v.state is States.EXIT_WAITING:
                         if self.is_launch_berth(v.berth_id, v.platform_id):
-                            v.state = PrtController.LAUNCH_WAITING
+                            v.state = States.LAUNCH_WAITING
 
                     self.controller.request_v_status(v.id)
 
@@ -1686,7 +1734,10 @@ class Vehicle(object):
                                             0, self.a_min, self.j_min)
         self.last_update = 0.0
         self.trip = None
-        self.state = None
+
+        self._state_change_time = self.controller.current_time
+        self._state = States.NONE
+        self.time_spent_in_states = [0.0]*len(States.strings)
 
         # Station that the vehicle is currently in.
         self.station = None
@@ -1714,6 +1765,12 @@ class Vehicle(object):
     def __str__(self):
         return "id:%d, ts_id:%d, pos:%.3f, vel:%.3f, accel:%.3f, last_update:%.3f, model:%s, length:%.3f" \
                % (self.id, self.ts_id, self.pos, self.vel, self.accel, self.last_update, self.model, self.length)
+
+    def __cmp__(self, other):
+        if not isinstance(other, Vehicle):
+            raise ValueError
+        else:
+            return cmp(self.id, other.id)
 
     def get_ts_id(self):
         return self._path[self._current_path_index]
@@ -1755,6 +1812,18 @@ class Vehicle(object):
         if send:
             self.send_path()
     path = property(get_path, doc="""A vehicle's planned path, as a list of tracksegment id's. The first id must be the vehicle's current location.""")
+
+    def get_state(self):
+        return self._state
+    def set_state(self, state):
+        """Changes the state, and keeps a tally of how long the vehicle spends
+        in each state.
+        """
+        now = self.controller.current_time
+        self.time_spent_in_states[self._state] += now - self._state_change_time
+        self._state_change_time = now
+        self._state = state
+    state = property(get_state, set_state, None, "Current state in the state machine.")
 
     def update_vehicle(self, v_status, time):
         """Updates the relevant vehicle data."""
@@ -2001,7 +2070,7 @@ class Vehicle(object):
         if initial_knot is None:
             return self._dist_to_line_speed
         else:
-            final_knot = Knot(None, PrtController.LINE_SPEED, 0, None)
+            final_knot = Knot(None, States.LINE_SPEED, 0, None)
             spline = self.traj_solver.target_velocity(initial_knot, final_knot)
             return spline.q[-1] - spline.q[0]
 
@@ -3377,7 +3446,7 @@ def main(options):
     Merge.HEADWAY = options.headway
     Station.SPEED_LIMIT = options.station_speed
 
-    ctrl = PrtController(options.logfile, options.comm_logfile)
+    ctrl = PrtController(options.logfile, options.comm_logfile, options.stats_file)
     ctrl.connect(options.server, options.port)
 
 if __name__ == '__main__':
@@ -3386,6 +3455,8 @@ if __name__ == '__main__':
                 metavar="FILE", help="Log events to FILE.")
     options_parser.add_option("--comm_logfile", dest="comm_logfile", default="./ctrl_comm.log",
                 metavar="FILE", help="Log communication messages to FILE.")
+    options_parser.add_option("--stats_file", dest="stats_file", default="./ctrl_stats.csv",
+                metavar="FILE", help="Log statistics to FILE.")
     options_parser.add_option("--server", dest="server", default="localhost",
                 help="The IP address of the server (simulator). Default is %default")
     options_parser.add_option("-p", "--port", type="int", dest="port", default=64444,
