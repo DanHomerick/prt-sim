@@ -44,7 +44,7 @@ class CSplinePlotter(traits.HasTraits):
             end_idx = len(self.cspline.t) + end_idx # convert to absolute index
 
         knot_times = self.cspline.t[start_idx:end_idx+1]
-        sample_times = numpy.linspace(self.cspline.t[start_idx], self.cspline.t[end_idx], 50)
+        sample_times = numpy.linspace(self.cspline.t[start_idx], self.cspline.t[end_idx], 200)
         endpoint_times = numpy.array([self.cspline.t[start_idx], self.cspline.t[end_idx]])
 
         positions = []
