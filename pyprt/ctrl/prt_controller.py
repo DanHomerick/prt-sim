@@ -3463,7 +3463,7 @@ def write_stats_report(vehicles, stations, file_path):
                 totals[i] += v.time_spent_in_states[i]
 
             times_str = ', '.join('%.3f' % time for time in times)
-            f.write("%d, %s, %.3f, %d\n" % (v.id, times_str, sum(times)), v.num_wave_offs)
+            f.write("%d, %s, %.3f, %d\n" % (v.id, times_str, sum(times), v.num_wave_offs))
 
         f.write("Total:, %s" % ', '.join('%.3f' % time for time in totals))
 

@@ -4,7 +4,7 @@ from __future__ import division
 import logging
 import warnings
 import heapq
-from itertools import izip
+import itertools
 
 from numpy import inf
 import numpy
@@ -75,7 +75,6 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     ID              = traits.CInt     # Unique numeric ID.
     label           = traits.Str
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
-    total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg
     max_pax_capacity = traits.CInt
     _passengers       = traits.List(traits.Instance('events.Passenger'))
 
@@ -221,8 +220,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self.total_pax = 0
         self._pax_times = [(Sim.now(),0)] # elements are (time, num_pax)
 
-        # attributes: max_speed, maxG, maxlatG
-        # forces: gravity (if z), drag, friction, braking, centripital, thrust
+        self._total_masses = [ (Sim.now(), self.vehicle_mass) ]
 
     def __str__(self):
         return 'vehicle' + str(self.ID)
@@ -347,6 +345,37 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         return self._spline.evaluate(time).accel
 
     accel = property(fget=get_accel)
+
+    def get_total_masses(self, times):
+        """Returns the vehicle's total mass (incl. passengers) at times."""
+        masses = []
+        old_mass = 0
+        sample_times = iter(times)
+        for time, mass in self._total_masses + [ (Sim.now(), self._total_masses[-1][1]) ]:
+            try:
+                while True:
+                    sample_time = sample_times.next()
+                    if sample_time < time:
+                        masses.append(old_mass)
+                    else:
+                        break
+
+                masses.append(mass)
+                old_mass = mass
+            except StopIteration:
+                break
+        assert len(masses) == len(times)
+        return masses
+
+    def get_total_mass(self):
+        """Returns the current total mass, calculated as
+          vehicle mass + passenger(s) mass
+        """
+        return self._total_masses[-1][1]
+    def set_total_mass(self, mass):
+        assert mass >= self.vehicle_mass
+        self._total_masses.append( (Sim.now(), mass) )
+    total_mass = property(fget=get_total_mass, fset=set_total_mass)
 
     def get_dist_travelled(self):
         return self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(self._spline.t[0]).pos
@@ -683,7 +712,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         else:
             segment_spline = self._spline.slice(Sim.now(), common.config_manager.get_sim_end_time())
         extrema_velocties, extrema_times = segment_spline.get_extrema_velocities()
-        for vel, time in izip(extrema_velocties, extrema_times):
+        for vel, time in itertools.izip(extrema_velocties, extrema_times):
             # Add stopped notification (if not currently stopped at the same position)
             if vel == 0 and time > Sim.now() and abs(segment_spline.evaluate(time).pos - self.pos) > 1E-4:
                 heapq.heappush(self._actions_queue, (time, self.STOPPED, None))

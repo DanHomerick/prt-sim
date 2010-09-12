@@ -239,27 +239,6 @@ class MainWindow(wx.Frame):
             # Sim blocks, then resumes once connection is made.
             self.menubar_manager.controllers_connected()
 
-##    def simmenu_pause_handler(self, event):
-##        self.simmenu_speed(0)
-##
-##    def simmenu_1x_handler(self, event):
-##        self.simmenu_speed(1)
-##
-##    def simmenu_2x_handler(self, event):
-##        self.simmenu_speed(2)
-##
-##    def simmenu_4x_handler(self, event):
-##        self.simmenu_speed(4)
-##
-##    def simmenu_8x_handler(self, event):
-##        self.simmenu_speed(8)
-##
-##    def simmenu_32x_handler(self, event):
-##        self.simmenu_speed(32)
-##
-##    def simmenu_fast_handler(self, event):
-##        self.simmenu_speed(inf)
-
     def set_sim_speed(self, speed):
         try:
             SimPy.rtset(speed)
