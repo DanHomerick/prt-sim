@@ -2,6 +2,7 @@ from __future__ import division # use floating point division by default
 
 from sys import stdout
 import itertools
+import math
 
 import numpy
 import enthought.traits.api as traits
@@ -358,14 +359,67 @@ class PowerReport(Report):
         sample_times = numpy.linspace(0, end_time, num_samples)
         power_array = numpy.zeros( (len(v_list), num_samples), dtype=numpy.float32)
 
-        for idx, v in enumerate(v_list):
+        air_density = common.air_density
+        wind_speed = common.wind_speed
+        wind_angle = common.wind_direction # 0 is blowing FROM the East
+
+        g = 9.80665 # m/s^2
+        PI_2 = math.pi/2
+        PI_3_2 = math.pi * 1.5
+
+        for v_idx, v in enumerate(v_list):
             masses = v.get_total_masses(sample_times)
-            for t, mass in itertools.izip(sample_times, masses):
+            CdA = v.frontal_area * v.drag_coefficient
+
+            path_idx = 0
+            path_sum = 0
+            loc = v._path[path_idx]
+
+            last_elevation = loc.get_elevation(v._spline.evaluate(v._spline.t[0]).pos)
+
+            for sample_idx, (t, mass) in enumerate(itertools.izip(sample_times, masses)):
                 try:
                     knot = v._spline.evaluate(t)
-                    power_array[idx, t] = mass * knot.accel * knot.vel
+                    # Power to accelerate / decelerate
+                    accel_power = mass * knot.accel * knot.vel
+
+                    # Track where we are on the vehicle's path
+                    pos = knot.pos - path_sum
+                    if pos >= loc.length:
+                        path_sum += loc.length
+                        path_idx += 1
+                        pos = knot.pos - path_sum
+                        loc = v._path[path_idx]
+
+                    # Power to overcome aero drag
+                    if wind_speed and knot.vel != 0: # No power use when stopped
+                        travel_angle = loc.get_direction(knot.pos - path_sum) # 0 is travelling TOWARDS the East
+                        incidence_angle = wind_angle - travel_angle
+                        if PI_2 <= incidence_angle <= PI_3_2: # tail wind
+                            vel = knot.vel - math.cos(incidence_angle)*wind_speed
+                        else: # head wind
+                            vel = knot.vel + math.cos(incidence_angle)*wind_speed
+                    else:
+                        vel = knot.vel
+                    aero_power = 0.5 * air_density * vel*vel*vel * CdA
+
+                    # Power from elevation changes
+                    elevation = loc.get_elevation(pos)
+                    delta_elevation = elevation - last_elevation
+                    elevation_power = g * delta_elevation
+                    last_elevation = elevation
+
+                    # Adjust power usages by efficiency
+                    net_power = accel_power + aero_power + elevation_power
+                    if net_power > 0:
+                        net_power /= v.powertrain_efficiency # low efficiency increases power required
+                    elif net_power < 0:
+                        net_power *= v.regenerative_braking_efficiency # low efficiency decreases power recovered
+
+                    power_array[v_idx, sample_idx] = net_power
+
                 except OutOfBoundsError:
-                    power_array[idx, t] = 0
+                    power_array[v_idx, sample_idx] = 0
 
         power_array = numpy.divide(power_array, 1000.0) # convert from Watts to KW
 
@@ -458,13 +512,20 @@ class Reports(traits.HasTraits):
         self.station_report = StationReport(station_dict)
         self.power_report = PowerReport(self.v_list)
 
+        self._last_update_time = None
+
     def update(self):
+        if self._last_update_time == Sim.now():
+            return
+
         self.summary_report.update()
         self.pax_report.update()
         self.vehicle_report.update()
         self.station_report.update()
         self.power_report.update()
         self.power_plot = self.power_report.plot
+
+        self._last_update_time = Sim.now()
 
     def display(self, evt=None):
         self.update()

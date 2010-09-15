@@ -8,6 +8,8 @@ package edu.ucsc.track_builder
 	
 	import de.polygonal.ds.Heap;
 	
+	import edu.ucsc.track_builder.elevation.ElevationService;
+	
 	import flash.geom.Matrix3D;
 	import flash.geom.Vector3D;
 	import flash.utils.Dictionary;
@@ -1832,6 +1834,23 @@ package edu.ucsc.track_builder
 				totalElev += Math.abs(seg.endElev - seg.startElev);
 			}
 			return totalElev;
+		}
+		
+		/** Returns the mean elevation for latlngs along the track. Latlngs which do not have elevation data are excluded. */
+		public function getAverageElevation():Number {
+			var sum:Number = 0;
+			var count:int = 0;
+			var ele:Number;
+			for each (var ts:TrackSegment in this.segments) {
+				for each (var latlng:LatLng in ts.latlngs) {
+					ele = ElevationService.getElevation(latlng);
+					if (!isNaN(ele)) {
+						sum += ele;
+						count += 1;
+					}
+				}
+			}
+			return sum/count;
 		}
 		
 		/** Steepest slope in the track network. A track with a 45 degree incline has a slope of 1.*/

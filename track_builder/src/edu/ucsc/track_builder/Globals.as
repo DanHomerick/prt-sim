@@ -16,7 +16,6 @@ package edu.ucsc.track_builder
 	import flash.geom.Rectangle;
 	
 	import mx.controls.ToggleButtonBar;
-	import mx.core.WindowedApplication;
 	
 	public class Globals extends EventDispatcher
 	{
@@ -38,7 +37,8 @@ package edu.ucsc.track_builder
 		[Bindable] public static var tracks:Tracks;
 		[Bindable] public static var stations:Stations;
 		[Bindable] public static var vehicles:Vehicles;		
-		[Bindable] public static var vehicleModels:VehicleModels;		
+		[Bindable] public static var vehicleModels:VehicleModels;
+		[Bindable] public static var weather:Weather;	
 		public static var menu:Menu; // my menu, NOT mx.controls.menu
 		
 		// a couple new pane ids, in addition to the existing ones:
@@ -74,14 +74,16 @@ package edu.ucsc.track_builder
 			tracks = new Tracks(Tracks.RIGHT);
 		    stations = new Stations();
 			vehicles = new Vehicles();		
-			vehicleModels = new VehicleModels();		
-			menu = new Menu();			
+			vehicleModels = new VehicleModels();	
+			weather = new Weather();	
+			menu = new Menu();	
 		}
 
 		public static function reinitialize():void {
 			tracks.reinitialize();
 			stations.reinitialize();
 			vehicles.reinitialize();
+			weather = new Weather();
 			dataXMLFile = null;	
 			gtfXML = null;
 			

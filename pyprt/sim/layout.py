@@ -1,5 +1,7 @@
 # '/' is true division, '//' is truncating division
 from __future__ import division
+import bisect
+import math
 
 from numpy import inf
 import enthought.traits.api as traits
@@ -19,7 +21,22 @@ import vehicle
 
 class Node(traits.HasTraits):
     """An abstract base class for any location that has some length that can be
-    moved along in a continuous manner."""
+    moved along in a continuous manner.
+
+    Parameters:
+      ID -- an unique integer ID
+      x_start -- x coordinate for the start of the segment, e.g. longitude.
+      y_start -- y coordinate for the start of the segment, e.g. latitude.
+      x_end -- x coordinate for the end of the segment
+      y_end -- y coordinate for the end of the segment.
+      length -- length of track segment, including z-dimension, measured in meters.
+      max_speed -- a track-imposed speed limit, measured in meters/second.
+      elevation_positions -- an ordered sequence of position values which forms
+          a parallel array with elevations. Measured in meters.
+      elevations -- a sequence of track elevation values at the positions in
+          'elevation_positions'. Measured in meters.
+      label -- a string identifier which need not be unique.
+    """
     ID        = traits.CInt
     length    = traits.CFloat
     max_speed = traits.CFloat
@@ -29,6 +46,8 @@ class Node(traits.HasTraits):
     y_start   = traits.CFloat
     x_end     = traits.CFloat
     y_end     = traits.CFloat
+    elevation_positions = traits.List
+    elevations= traits.List
     next_loc  = traits.Either(traits.This, None)  # The default next location. May be a Node, or a subclass of Node.
     vehicles  = traits.List(traits.Instance(vehicle.BaseVehicle)) # vehicles[0] is the frontmost vehicle
 
@@ -41,7 +60,8 @@ class Node(traits.HasTraits):
                     ui.Item(name='vehicles')
                    )
 
-    def __init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, label='', **tr):
+    def __init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed,
+                 elevation_positions, elevations, label='', **tr):
         traits.HasTraits.__init__(self, **tr)
         self.ID = ID
         self.label = (label if label else str(ID)+'_'+self.__class__.__name__)
@@ -51,6 +71,12 @@ class Node(traits.HasTraits):
         self.y_end   = y_end
         self.length = length
         self.max_speed = max_speed
+        self.elevation_positions = elevation_positions
+        self.elevations = elevations
+
+        dx = x_end - x_start
+        dy = y_end - y_start
+        self._direction = math.atan2(dy, dx)
 
     def __str__(self):
         return self.label
@@ -61,9 +87,26 @@ class Node(traits.HasTraits):
         else:
             return cmp(id(self), id(other))
 
+    def get_direction(self, position):
+        """Returns the direction of the track at 'position' as an angle away
+        from East, measured in radians. e.g. 0 is due East, pi/2 is North, etc.
+        """
+        # TODO: position is ignored for now, because track curvature is not
+        # currently being used.
+        return self._direction
+
+    def get_elevation(self, position):
+        """Returns the elevation for the sampled point prior to 'position'. That
+        is, no interpolation is done, and the left-hand value is returned.
+        """
+        idx = bisect.bisect_right(self.elevation_positions, position)
+        return self.elevations[idx-1]
+
 class TrackSegment(Node):
-    def __init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, label='', **tr):
-        Node.__init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed, label)
+    def __init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed,
+                 elevation_positions, elevations, label='', **tr):
+        Node.__init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed,
+                      elevation_positions, elevations, label)
 
     def switch(self, new_next, msg_id):
         """Applicable for TrackSegments which have two or more downstream neighbors.

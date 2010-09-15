@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Network>
   <Image extension=".png" width="698" height="771">
-    <Center lat="36.99897254679797" lng="-122.05923400767212"/>
-    <Northwest lat="37.00227572098524" lng="-122.06297837145691"/>
-    <Southeast lat="36.9956693726107" lng="-122.05548964388733"/>
+    <Center lat="36.9992638767777" lng="-122.0591374481476"/>
+    <Northwest lat="37.00256703830905" lng="-122.06288181193239"/>
+    <Southeast lat="36.99596071524633" lng="-122.0553930843628"/>
   </Image>
+  <Weather temperature="298.15" elevation="234.77923728813545" pressure="101418.03441940625" air_density="1.184978147278752" wind_speed="20" wind_direction="180"/>
   <TrackSegments>
     <TrackSegment id="0_trackSegment_forward" length="66.547" max_speed="15">
       <Start lat="37.0003828" lng="-122.0608622" ground_level="245.1" offset="3" elevation="248.1"/>
@@ -643,8 +644,8 @@
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
-      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
       <Storage model_name="PRT_DEFAULT" initial_supply="INF" max_capacity="INF"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
     <Station id="1_station" label="" storage_entrance_delay="10" storage_exit_delay="10">
       <TrackSegmentID>19_trackSegment_forward</TrackSegmentID>
@@ -699,8 +700,8 @@
       </Platform>
       <Coverage radius="500"/>
       <Usage peak_hour="0" daily="0"/>
-      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
       <Storage model_name="PRT_DEFAULT" initial_supply="INF" max_capacity="INF"/>
+      <Storage model_name="Skytran" initial_supply="INF" max_capacity="INF"/>
     </Station>
   </Stations>
   <VehicleModels>
@@ -719,79 +720,79 @@
     <Vehicle id="0_vehicle" location="2_trackSegment_forward" position="65.106" label="" velocity="0" acceleration="0" model_name="PRT_DEFAULT">
       <LatLng lat="36.9993158" lng="-122.0569219" elevation="235.39083716602633"/>
     </Vehicle>
-    <Vehicle id="1_vehicle" location="6_trackSegment_forward" position="171.720" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="1_vehicle" location="6_trackSegment_forward" position="171.724" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9995345" lng="-122.0615434" elevation="247.32344675256783"/>
     </Vehicle>
-    <Vehicle id="2_vehicle" location="6_trackSegment_forward" position="134.595" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="2_vehicle" location="6_trackSegment_forward" position="134.591" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9992024" lng="-122.0615042" elevation="245.48072959458148"/>
     </Vehicle>
-    <Vehicle id="3_vehicle" location="6_trackSegment_forward" position="95.804" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="3_vehicle" location="6_trackSegment_forward" position="95.803" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9988555" lng="-122.0614632" elevation="243.5552774592628"/>
     </Vehicle>
-    <Vehicle id="4_vehicle" location="6_trackSegment_forward" position="59.001" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="36.9985264" lng="-122.0614243" elevation="241.72853672217582"/>
+    <Vehicle id="4_vehicle" location="6_trackSegment_forward" position="59.005" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9985264" lng="-122.0614243" elevation="241.72853672217585"/>
     </Vehicle>
     <Vehicle id="5_vehicle" location="6_trackSegment_forward" position="25.405" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9982259" lng="-122.0613888" elevation="240.06099139859384"/>
     </Vehicle>
-    <Vehicle id="6_vehicle" location="5_trackSegment_forward" position="75.944" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="6_vehicle" location="5_trackSegment_forward" position="75.946" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9978146" lng="-122.0613012" elevation="237.6177632108073"/>
     </Vehicle>
-    <Vehicle id="7_vehicle" location="5_trackSegment_forward" position="37.733" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="7_vehicle" location="5_trackSegment_forward" position="37.734" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9975593" lng="-122.0610232" elevation="235.49559600986487"/>
     </Vehicle>
     <Vehicle id="8_vehicle" location="29_trackSegment_forward" position="64.843" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9974726" lng="-122.0604382" elevation="234.02043523755512"/>
     </Vehicle>
-    <Vehicle id="9_vehicle" location="7_trackSegment_forward" position="20.090" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="9_vehicle" location="7_trackSegment_forward" position="20.087" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9999237" lng="-122.0615546" elevation="248.42438212517013"/>
     </Vehicle>
-    <Vehicle id="10_vehicle" location="7_trackSegment_forward" position="57.634" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="37.0002150" lng="-122.0613536" elevation="248.28307163266922"/>
+    <Vehicle id="10_vehicle" location="7_trackSegment_forward" position="57.633" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0002150" lng="-122.0613536" elevation="248.2830716326692"/>
     </Vehicle>
     <Vehicle id="11_vehicle" location="7_trackSegment_forward" position="89.045" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="37.0003579" lng="-122.0610529" elevation="248.16484300568524"/>
     </Vehicle>
     <Vehicle id="12_vehicle" location="0_trackSegment_forward" position="22.849" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="37.0003889" lng="-122.0606053" elevation="242.98412608326862"/>
+      <LatLng lat="37.0003889" lng="-122.0606053" elevation="242.98412608326865"/>
     </Vehicle>
-    <Vehicle id="13_vehicle" location="0_trackSegment_forward" position="50.412" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="13_vehicle" location="0_trackSegment_forward" position="50.413" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="37.0003963" lng="-122.0602954" elevation="236.81263979455696"/>
     </Vehicle>
-    <Vehicle id="14_vehicle" location="18_trackSegment_forward" position="25.056" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="14_vehicle" location="18_trackSegment_forward" position="25.055" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="37.0004405" lng="-122.0584485" elevation="249.64755691980176"/>
     </Vehicle>
-    <Vehicle id="15_vehicle" location="18_trackSegment_forward" position="54.497" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="15_vehicle" location="18_trackSegment_forward" position="54.496" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="37.0004485" lng="-122.0581175" elevation="249.93844225019004"/>
     </Vehicle>
     <Vehicle id="16_vehicle" location="18_trackSegment_forward" position="91.087" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="37.0004583" lng="-122.0577061" elevation="250.29995607043438"/>
+      <LatLng lat="37.0004583" lng="-122.0577061" elevation="250.2999560704344"/>
     </Vehicle>
-    <Vehicle id="17_vehicle" location="1_trackSegment_forward" position="32.033" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="17_vehicle" location="1_trackSegment_forward" position="32.027" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="37.0003972" lng="-122.0573578" elevation="246.1857786358814"/>
     </Vehicle>
-    <Vehicle id="18_vehicle" location="1_trackSegment_forward" position="66.687" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="37.0001922" lng="-122.0570706" elevation="241.73486986215642"/>
+    <Vehicle id="18_vehicle" location="1_trackSegment_forward" position="66.681" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="37.0001922" lng="-122.0570706" elevation="241.7348698621564"/>
     </Vehicle>
-    <Vehicle id="19_vehicle" location="2_trackSegment_forward" position="17.343" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="36.9997445" lng="-122.0569453" elevation="236.79144919966018"/>
+    <Vehicle id="19_vehicle" location="2_trackSegment_forward" position="17.338" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9997445" lng="-122.0569453" elevation="236.79144919966015"/>
     </Vehicle>
-    <Vehicle id="20_vehicle" location="2_trackSegment_forward" position="106.878" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="20_vehicle" location="2_trackSegment_forward" position="106.879" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9989409" lng="-122.0569014" elevation="234.16604827294043"/>
     </Vehicle>
-    <Vehicle id="21_vehicle" location="2_trackSegment_forward" position="149.885" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="36.9985549" lng="-122.0568803" elevation="232.90495802886258"/>
+    <Vehicle id="21_vehicle" location="2_trackSegment_forward" position="149.889" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9985549" lng="-122.0568803" elevation="232.90495802886255"/>
     </Vehicle>
     <Vehicle id="22_vehicle" location="2_trackSegment_forward" position="197.713" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9981257" lng="-122.0568569" elevation="231.50249403754253"/>
     </Vehicle>
-    <Vehicle id="23_vehicle" location="3_trackSegment_forward" position="57.693" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="36.9976639" lng="-122.0571015" elevation="228.55100838271386"/>
+    <Vehicle id="23_vehicle" location="3_trackSegment_forward" position="57.692" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9976639" lng="-122.0571015" elevation="228.55100838271383"/>
     </Vehicle>
-    <Vehicle id="24_vehicle" location="3_trackSegment_forward" position="87.882" label="" velocity="0" acceleration="0" model_name="Skytran">
-      <LatLng lat="36.9975364" lng="-122.0573977" elevation="227.00787200899026"/>
+    <Vehicle id="24_vehicle" location="3_trackSegment_forward" position="87.878" label="" velocity="0" acceleration="0" model_name="Skytran">
+      <LatLng lat="36.9975364" lng="-122.0573977" elevation="227.00787200899023"/>
     </Vehicle>
-    <Vehicle id="25_vehicle" location="4_trackSegment_forward" position="36.104" label="" velocity="0" acceleration="0" model_name="Skytran">
+    <Vehicle id="25_vehicle" location="4_trackSegment_forward" position="36.103" label="" velocity="0" acceleration="0" model_name="Skytran">
       <LatLng lat="36.9975103" lng="-122.0579793" elevation="223.9322104911651"/>
     </Vehicle>
   </Vehicles>

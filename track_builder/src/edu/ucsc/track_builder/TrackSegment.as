@@ -691,8 +691,7 @@ package edu.ucsc.track_builder
 		public function getElevation(position:Number):Number {
 			var slope:Number = (endElev - startElev) / length;
 			return slope * position + startElev;
-		}
-		
+		}	
 		
 		/** Returns the distance from the start point to latlng in meters. Assumes that LatLng falls on the segment.*/
 		public function getPosition(latlng:LatLng):Number {

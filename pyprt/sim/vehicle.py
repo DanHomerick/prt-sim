@@ -22,6 +22,8 @@ from visual import NoWritebackOnCloseHandler
 
 def create_vehicle_class(
         model_name, length, vehicle_mass, max_pax_capacity,
+        frontal_area, drag_coefficient, powertrain_efficiency,
+        regenerative_braking_efficiency,
         jerk_max_norm, jerk_min_norm, jerk_max_emerg, jerk_min_emerg,
         accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
         vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg):
@@ -36,6 +38,10 @@ def create_vehicle_class(
                  'length':length,
                  'vehicle_mass':vehicle_mass,
                  'max_pax_capacity':max_pax_capacity,
+                 'frontal_area':frontal_area,
+                 'drag_coefficient':drag_coefficient,
+                 'powertrain_efficiency':powertrain_efficiency,
+                 'regenerative_braking_efficiency':regenerative_braking_efficiency,
                  'jerk_max_norm':jerk_max_norm,
                  'jerk_min_norm':jerk_min_norm,
                  'jerk_max_emerg':jerk_max_emerg,

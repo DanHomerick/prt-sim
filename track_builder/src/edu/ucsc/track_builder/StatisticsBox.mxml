@@ -13,6 +13,7 @@
 				statTotalTrackLength.text = Globals.tracks.totalLength.toFixed(1);
 				statTotalROW.text = Globals.tracks.totalROW.toFixed(1);
 				statTotalElevationChange.text = Globals.tracks.totalElevationChange.toFixed(1);
+				statAverageTrackElevation.text = Globals.tracks.getAverageElevation().toFixed(0);
 				statMaxGrade.text = (Globals.tracks.getMaxGrade()*100).toFixed(1) + '%';
 				statNumberOfStations.text = Globals.stations.getNumberOfStations().toString();
 				statStationCoverage.text = Globals.stations.getStationCoverage().toFixed(0);
@@ -30,6 +31,9 @@
         </mx:FormItem>
         <mx:FormItem label="Total Elevation Change:">
             <mx:Text id="statTotalElevationChange" />
+        </mx:FormItem>
+        <mx:FormItem label="Average Track Elevation:">
+        	<mx:Text id="statAverageTrackElevation" />
         </mx:FormItem>
         <mx:FormItem label="Max Grade:">
             <mx:Text id="statMaxGrade" />

@@ -426,7 +426,7 @@ class Storage(object):
 
         # Create a 'private' track segment that is used to store vehicles.
         nan, inf = float('nan'), float('inf')
-        self._storage_track = TrackSegment(api.STORAGE_ID, nan, nan, nan, nan, inf, 0, model_name + '_storage')
+        self._storage_track = TrackSegment(api.STORAGE_ID, nan, nan, nan, nan, inf, 0, [], [], model_name + '_storage')
 
     def _reserve_vehicle(self):
         """Mark a vehicle as unavailable. To be called at the time that the

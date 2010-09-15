@@ -22,6 +22,7 @@ package edu.ucsc.track_builder
 		public static function generateDataXML():XML {
 			var xml:XML = <Network/>
 			xml.appendChild(StaticMap.toDataXML());
+			xml.appendChild(Globals.weather.toDataXML());
 			xml.appendChild(Globals.tracks.toDataXML());	
 			xml.appendChild(Globals.stations.toDataXML(Globals.vehicles.vehicles));
 			xml.appendChild(Globals.vehicleModels.toDataXML(Globals.vehicles.vehicles));
@@ -164,11 +165,12 @@ package edu.ucsc.track_builder
 		/* Converts the xml file to an XML object. */
 		public static function parseDataXML(data:String):void
 		{
-			var xml:XML = new XML(data);
+			var xml:XML = new XML(data);			
 			Globals.vehicleModels.fromDataXML(xml.VehicleModels.VehicleModel) 
 			Globals.tracks.fromDataXML(xml.TrackSegments.TrackSegment);
 			Globals.stations.fromDataXML(xml.Stations.Station);
 			Globals.vehicles.fromDataXML(xml.Vehicles.Vehicle);
+			Globals.weather.fromDataXML(xml.Weather); // depends on TrackSegment info being already loaded if elevation info is missing from XML.
 			Globals.gtfXML = xml.GoogleTransitFeed;
 		}
 		

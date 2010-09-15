@@ -5,6 +5,7 @@
     <Northwest lat="37.00396355056967" lng="-122.0759657102783"/>
     <Southeast lat="36.95109786768733" lng="-122.01605588972167"/>
   </Image>
+  <Weather temperature="298.15" elevation="87.23480278422262" pressure="101359.5579915497" air_density="1.1842949030260153" wind_speed="0" wind_direction="0"/>
   <TrackSegments>
     <TrackSegment id="8_trackSegment_forward" length="66.920" max_speed="20">
       <Start lat="36.9690595" lng="-122.0375543" ground_level="22.9" offset="3" elevation="25.9"/>

@@ -581,7 +581,7 @@ class VisDataCollector(SimPy.Process):
                 dx = track_seg.x_end - track_seg.x_start
                 dy = track_seg.y_end - track_seg.y_start
                 angle = math.atan2(dy, dx)
-                scale = math.sqrt(dx**2 + dy**2) / track_seg.length # scaling factor
+                scale = math.hypot(dx, dy) / track_seg.length # scaling factor
                 pos2img[track_seg] = array([[scale*math.cos(angle), track_seg.x_start],
                                             [scale*math.sin(angle), track_seg.y_start]])
             except ZeroDivisionError:

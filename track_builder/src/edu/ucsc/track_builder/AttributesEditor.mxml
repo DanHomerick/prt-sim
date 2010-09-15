@@ -18,6 +18,11 @@
 			 */ 
 			[Bindable] public var vmCollection:ArrayCollection;
 			
+			private static const windDirStrings:Array = ['N', 'NNE', 'NE', 'ENE',
+												         'E', 'ESE', 'SE', 'SSE',
+												         'S', 'SSW', 'SW', 'WSW',
+												         'W', 'WNW', 'NW', 'NNW'];
+			
 			private function initVehicleModels():void {
 				vehicleModelCollection = new ArrayCollection(Globals.vehicleModels.models);
 								
@@ -195,11 +200,7 @@
 				vmDragCoefficient.enabled = b;
 				vmPowertrainEfficiency.enabled = b;
 				vmRegenerativeBreakingEfficiency.enabled = b;				
-			}
-			
-//			private function updateConversionLabels():void {
-//	
-//			}
+			}			
 			
 			/** Finds the deceleration distance from full speed to station max speed,
 			 * where full speed is defined as min(trackMaxSpeed, vehicleMaxSpeed).
@@ -228,6 +229,16 @@
 				} 	
 			} 
 			
+			private function sixteenPointWindDir(angle:Number):String {
+				var idx:int;
+				if (angle < 360-11.25) {
+					idx = int((angle+11.25)/22.5);
+				} else {
+					idx = 0;
+				}
+				return windDirStrings[idx];				
+			}
+			
 		]]>
 	</mx:Script>
 
@@ -236,19 +247,19 @@
             <mx:Form id="trackForm">
             	<mx:FormHeading label="General" fontStyle="italic" fontSize="10"/>
             
-                <mx:FormItem label="Label (optional):" toolTip="For documentation purposes only. Need not be unique.">
+                <mx:FormItem label="Label (optional)" toolTip="For documentation purposes only. Need not be unique.">
                     <mx:TextInput id="trackLabel" text=""
                     	change="Globals.tracks.label = trackLabel.text;"
                     	initialize="trackLabel.text = Globals.tracks.label;"/>
                 </mx:FormItem>
                 
-                <mx:FormItem label="Bidirectional:" toolTip="Two tracks along the same corridor, in opposite directions.">
+                <mx:FormItem label="Bidirectional" toolTip="Two tracks along the same corridor, in opposite directions.">
                 	<mx:CheckBox id="trackBidirectional"
                 		change="Globals.tracks.bidirectional = trackBidirectional.selected;"
                 		initialize="trackBidirectional.selected = Globals.tracks.bidirectional;"/>
                 </mx:FormItem>
 
-        		<mx:FormItem label="Height: " toolTip="Height of the track above ground level.">
+        		<mx:FormItem label="Height" toolTip="Height of the track above ground level.">
             		<mx:NumericStepper id="trackOffset" minimum="-100" maximum="100" stepSize="0.5"
             		                   change="Globals.tracks.offset = trackOffset.value"
 	        		                   initialize="trackOffset.value = Globals.tracks.offset;" />
@@ -256,7 +267,7 @@
 
             	<mx:FormHeading label="Straight Track" fontStyle="italic" fontSize="10" paddingTop="5"/>
             	
-                <mx:FormItem label="Max Speed:" toolTip="Speed limit for straight track." >
+                <mx:FormItem label="Max Speed" toolTip="Speed limit for straight track." >
                     <mx:NumericStepper id="straightMaxSpeedStepper" minimum="0.5" maximum="150" stepSize="0.5"
                     	change="Globals.tracks.straightMaxSpeed = straightMaxSpeedStepper.value;"
                     	initialize="straightMaxSpeedStepper.value = Globals.tracks.straightMaxSpeed;"/>
@@ -265,13 +276,13 @@
 				
 				<mx:FormHeading label="Curved Track" fontStyle="italic" fontSize="10" paddingTop="5"/>
 					
-				<mx:FormItem label="Max Speed:" toolTip="Speed limit for curved track." >
+				<mx:FormItem label="Max Speed" toolTip="Speed limit for curved track." >
 					<mx:NumericStepper id="curveMaxSpeedStepper" minimum="0.5" maximum="150" stepSize="0.5"
 						change="Globals.tracks.curveMaxSpeed = curveMaxSpeedStepper.value;"
 						initialize="curveMaxSpeedStepper.value = Globals.tracks.curveMaxSpeed;" />							
 				</mx:FormItem>
 																
-				<mx:FormItem label="Radius:" toolTip="Radius of the curve.">
+				<mx:FormItem label="Radius" toolTip="Radius of the curve.">
 					<mx:HBox>
 						<mx:NumericStepper id="curveRadius" minimum="0" maximum="999" stepSize="5"
 										   change="Globals.tracks.radius = curveRadius.value"
@@ -284,34 +295,34 @@
 				
 				<mx:FormHeading label="Interchanges" fontStyle="italic" fontSize="10" paddingTop="5"/>
 				
-				<mx:FormItem label="Ramp Offset:" toolTip="Distance separating an offramp from the main line.">					
+				<mx:FormItem label="Ramp Offset" toolTip="Distance separating an offramp from the main line.">					
 					<mx:NumericStepper id="rampOffsetStepper" minimum="0.5" maximum="50" stepSize="0.5"
 									   change="Globals.tracks.rampOffset = rampOffsetStepper.value;"
 									   initialize="rampOffsetStepper.value = Globals.tracks.rampOffset;"/>						 
 				</mx:FormItem>
 				
-				<mx:FormItem label="Deceleration Length:"
+				<mx:FormItem label="Deceleration Length"
 							 toolTip="Length of the straight, deceleration segment of a connecting ramp.">
 					<mx:NumericStepper id="decelStepper" minimum="0" maximum="999" stepSize="1"
 									   change="Globals.tracks.decelLength = decelStepper.value;"
 									   initialize="decelStepper.value = Globals.tracks.decelLength;"/>
 				</mx:FormItem>
 
-				<mx:FormItem label="Acceleration Length:"
+				<mx:FormItem label="Acceleration Length"
 							 toolTip="Length of the straight, acceleration segment of a connecting ramp.">
 					<mx:NumericStepper id="accelStepper" minimum="0" maximum="999" stepSize="1"
 									   change="Globals.tracks.accelLength = accelStepper.value;"
 									   initialize="accelStepper.value = Globals.tracks.accelLength;"/>
 				</mx:FormItem>
 
-				<mx:FormItem label="Max S-Curve Speed:"
+				<mx:FormItem label="Max S-Curve Speed"
 				             toolTip="Maximum speed in the S-Curves used for exiting and entering the main line." >
 					<mx:NumericStepper id="sCurveSpeedStepper" minimum="0.5" maximum="200" stepSize="0.5"
 					                   change="Globals.tracks.sCurveMaxSpeed = sCurveSpeedStepper.value;"
 					                   initialize="sCurveSpeedStepper.value = Globals.tracks.sCurveMaxSpeed;" />
 				</mx:FormItem>
 
-				<mx:FormItem label="S-Curve Radius:"
+				<mx:FormItem label="S-Curve Radius"
 				             toolTip="Radius for the two curves that form the S-curve. Should be large enough that a vehicle may navigate the S-curve at full speed without excessive lateral acceleration." >
 				    <mx:HBox>
 						<mx:NumericStepper id="sCurveRadiusStepper" minimum="1" maximum="999" stepSize="1"
@@ -322,14 +333,14 @@
 												          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />				    </mx:HBox>
 				</mx:FormItem>								
 				
-				<mx:FormItem label="Max Turn Speed:"
+				<mx:FormItem label="Max Turn Speed"
 				             toolTip="Maximum speed in turn segment." >
 					<mx:NumericStepper id="turnSpeedStepper" minimum="0.5" maximum="200" stepSize="0.5"
 					                   change="Globals.tracks.turnMaxSpeed = turnSpeedStepper.value;"
 					                   initialize="turnSpeedStepper.value = Globals.tracks.turnMaxSpeed;" />
 				</mx:FormItem>
 
-				<mx:FormItem label="Turn Radius:"
+				<mx:FormItem label="Turn Radius"
 							 toolTip="Radius for the turn segment of a connecting ramp." >
 					<mx:HBox>
 						<mx:NumericStepper id="turnRadiusStepper" minimum="1" maximum="999" stepSize="1" 
@@ -344,31 +355,31 @@
 				
 		<mx:VBox label="Stations">
             <mx:Form id="stationForm" >	                	                                        
-                <mx:FormItem label="Label (optional):" toolTip="For documentation purposes only. Need not be unique.">
+                <mx:FormItem label="Label (optional)" toolTip="For documentation purposes only. Need not be unique.">
                     <mx:TextInput id="stationLabel" text=""
                     	change="Globals.stations.label = stationLabel.text;"
                     	initialize="stationLabel.text = Globals.stations.label;"/>
                 </mx:FormItem>
                 
-                <mx:FormItem label="Reverse:" toolTip="Connect to the 'reverse' segment of a bidirectional track.">
+                <mx:FormItem label="Reverse" toolTip="Connect to the 'reverse' segment of a bidirectional track.">
                 	<mx:CheckBox id="stationReverse"
                 		change="Globals.stations.reverse = stationReverse.selected;"
                 		initialize="stationReverse.selected = Globals.stations.reverse;"/>
                 </mx:FormItem>
                 
-                <mx:FormItem id="stationMaxSpeedForm" label="Max Speed:" toolTip="Station speed limit">
+                <mx:FormItem id="stationMaxSpeedForm" label="Max Speed" toolTip="Station speed limit">
                 	<mx:NumericStepper id="stationMaxSpeed" minimum="0" maximum="150" stepSize="0.5"
                     	change="Globals.stations.maxSpeed = stationMaxSpeed.value;"
                     	initialize="stationMaxSpeed.value = Globals.stations.maxSpeed;"/>
                 </mx:FormItem>
                 
-                <mx:FormItem label="Station Offset:" toolTip="How far away from the main line the station lies.">
+                <mx:FormItem label="Station Offset" toolTip="How far away from the main line the station lies.">
                 	<mx:NumericStepper id="stationLateralOffset" minimum="0.5" maximum="50" stepSize="0.5"
                 	        change="Globals.stations.lateralOffset = stationLateralOffset.value;"
                 	        initialize="stationLateralOffset.value = Globals.stations.lateralOffset;" />
                 </mx:FormItem>
 
-                <mx:FormItem label="Decel Length:" >
+                <mx:FormItem label="Decel Length" >
                 	<mx:HBox>                		                
 		            	<mx:NumericStepper id="stationDecelLength" minimum="0" maximum="999" stepSize="0.5"
 							toolTip="Straight length of off-mainline track used for slowing a vehicle down to the station's entrance speed."
@@ -392,7 +403,7 @@
                 </mx:FormItem>
 
                 
-                <mx:FormItem label="Accel Length:" >                	         
+                <mx:FormItem label="Accel Length" >                	         
                 	<mx:HBox>
 		            	<mx:NumericStepper id="stationAccelLength" minimum="0" maximum="999" stepSize="0.5"
 	            			toolTip="Straight length of off-mainline track used for accelerating a vehicle up to full speed."		            			
@@ -412,51 +423,51 @@
         	        </mx:HBox>
                 </mx:FormItem>
               
-                <mx:FormItem label="Slot Length:" toolTip="Per slot length">
+                <mx:FormItem label="Slot Length" toolTip="Per slot length">
                 	<mx:NumericStepper id="stationSlotLength" minimum="0" maximum="200" stepSize="0.5"
                 		change="Globals.stations.slotLength = stationSlotLength.value;"
                 		initialize="stationSlotLength.value = Globals.stations.slotLength;" />
                 </mx:FormItem>
 
-                <mx:FormItem label="Unload Slots:" toolTip="Number of independent unloading berths.">
+                <mx:FormItem label="Unload Slots" toolTip="Number of independent unloading berths.">
                         <mx:NumericStepper id="stationUnloadSlots" minimum="0" maximum="100" stepSize="1"
                     	change="Globals.stations.unloadSlots = stationUnloadSlots.value;"
                     	initialize="stationUnloadSlots.value = Globals.stations.unloadSlots;" />  
                 </mx:FormItem>
                                 
-                <mx:FormItem label="Queue Slots:" toolTip="Number of slots for vehicles waiting to unload. Assumed to be inline with the rest of the station's track.">
+                <mx:FormItem label="Queue Slots" toolTip="Number of slots for vehicles waiting to unload. Assumed to be inline with the rest of the station's track.">
                     <mx:NumericStepper id="stationQueueSlots" minimum="0" maximum="100" stepSize="1"
                     	change="Globals.stations.queueSlots = stationQueueSlots.value;"
                     	initialize="stationQueueSlots.value = Globals.stations.queueSlots;" />                    	
                 </mx:FormItem>               
                 
-                <mx:FormItem label="Load Slots:" toolTip="Number of independent loading berths.">
+                <mx:FormItem label="Load Slots" toolTip="Number of independent loading berths.">
                     <mx:NumericStepper id="stationLoadSlots" minimum="0" maximum="100" stepSize="1" 
                     	change="Globals.stations.loadSlots = stationLoadSlots.value;"
                     	initialize="stationLoadSlots.value = Globals.stations.loadSlots;" /> 
                 </mx:FormItem>
                 
                 <!--
-                <mx:FormItem label="Storage Slots:" toolTip="Number of offline storage berths.">
+                <mx:FormItem label="Storage Slots" toolTip="Number of offline storage berths.">
                     <mx:NumericStepper id="stationStorageSlots" minimum="0" maximum="1000" stepSize="1" 
                     	change="Globals.stations.storage_slots = stationStorageSlots.value;"
                     	initialize="Globals.stations.storage_slots = stationStorageSlots.value;" /> 
                 </mx:FormItem>
                 -->
                 
-                <mx:FormItem label="Coverage Radius:" toolTip="The expected coverage area for this station.">
+                <mx:FormItem label="Coverage Radius" toolTip="The expected coverage area for this station.">
                     <mx:NumericStepper id="stationRadius" minimum="0" maximum="1000000" stepSize="1"
                     	change="Globals.stations.coverageRadius = stationRadius.value;"
                     	initialize="stationRadius.value = Globals.stations.coverageRadius;" /> 
                 </mx:FormItem>
                 
-                <mx:FormItem label="Peak Hourly Usage:" toolTip="The number of passengers during the busiest hour. Currently has no effect.">
+                <mx:FormItem label="Peak Hourly Usage" toolTip="The number of passengers during the busiest hour. Currently has no effect.">
                 	<mx:NumericStepper id="stationPeakHour" minimum="0" maximum="100000" stepSize="1"
                 		change="Globals.stations.peakHour = stationPeakHour.value;"
                 		initialize="stationPeakHour.value = Globals.stations.peakHour;" />
                 </mx:FormItem>
 
-                <mx:FormItem label="Daily Usage:" toolTip="The number of passengers per day. Currently has no effect.">
+                <mx:FormItem label="Daily Usage" toolTip="The number of passengers per day. Currently has no effect.">
                 	<mx:NumericStepper id="stationDaily" minimum="0" maximum="1000000" stepSize="1"
                 		change="Globals.stations.daily = stationDaily.value;"
                 		initialize="stationDaily.value = Globals.stations.daily;" />
@@ -467,7 +478,7 @@
 		
 		<mx:VBox label="Vehicles">
             <mx:Form id="vehicleForm" >
-                <mx:FormItem label="Label (optional):">
+                <mx:FormItem label="Label (optional)">
                     <mx:TextInput id="vehicleLabel"
                     	change="Globals.vehicles.label = vehicleLabel.text;"
                     	initialize="vehicleLabel.text = Globals.vehicles.label;"/>
@@ -479,7 +490,7 @@
 						initialize="vehicleModelComboBox.selectedIndex = vehicleModelCollection.getItemIndex(Globals.vehicles.model);"/>	
 				</mx:FormItem>
 
-                <mx:FormItem label="Reverse Direction:">
+                <mx:FormItem label="Reverse Direction">
                 	<mx:CheckBox id="vehicleReverseDirection"
                 		initialize="vehicleReverseDirection.selected = Globals.vehicles.reverseDir;"
                 		change="Globals.vehicles.reverseDir = vehicleReverseDirection.selected;"/>                	
@@ -496,7 +507,7 @@
 
 		<mx:VBox label="Vehicle Models">
 			<mx:Form>
-				<mx:FormItem label="Choose Model:">
+				<mx:FormItem label="Choose Model">
 					<mx:HBox>
 						<mx:ComboBox id="vmComboBox" dataProvider="{vmCollection}" prompt="Select One..."
 							change="onVehicleModelsSelection(event)"/>
@@ -504,12 +515,12 @@
 					</mx:HBox>					
 				</mx:FormItem>
 				
-				<mx:FormItem label="Model Name:">
+				<mx:FormItem label="Model Name">
 					<mx:TextInput id="vmName" editable="true" text="" enabled="false"
 						change="onVehicleModelsNameChange(event);"/>
 				</mx:FormItem>
 				
-				<mx:FormItem label="Length:">
+				<mx:FormItem label="Length">
 					<mx:HBox>
 						<mx:NumericStepper id="vmLength" minimum="0" maximum="99999" stepSize="0.1" enabled="false"
 							toolTip="Exterior vehicle length, in meters"
@@ -519,7 +530,7 @@
 					</mx:HBox>
 				</mx:FormItem>
 				
-				<mx:FormItem label="Capacity:">
+				<mx:FormItem label="Capacity">
 					<mx:HBox>
 						<mx:NumericStepper id="vmCapacity" minimum="0" maximum="99999" stepSize="1" enabled="false"
 							change="vmSave.enabled = true;"
@@ -528,7 +539,7 @@
 					</mx:HBox>
 				</mx:FormItem>
 				
-				<mx:FormItem label="Mass:">
+				<mx:FormItem label="Mass">
 					<mx:HBox>
 						<mx:NumericStepper id="vmMass" minimum="0" maximum="99999" stepSize="1" enabled="false"
 							toolTip="Vehicle mass when empty of passengers and cargo, in kg"
@@ -636,12 +647,12 @@
 				
 				<mx:FormItem label="Air Resistance">
 					<mx:HBox>
-						<mx:Label text="Area:"/>
+						<mx:Label text="Area"/>
 						<mx:NumericStepper id="vmFrontalArea" minimum="0" maximum="999" stepSize="0.01" enabled="false"
 							toolTip="Measure of frontal area, in sq. meters" 
 							change="vmSave.enabled = true;" />
 						<mx:Spacer/>
-						<mx:Label text="Cd:" />
+						<mx:Label text="Cd" />
 						<mx:NumericStepper id="vmDragCoefficient" minimum="0" maximum="1" stepSize="0.01" enabled="false"
 							toolTip="Coefficient of Drag. Unitless" 
 							change="vmSave.enabled = true;" />						
@@ -669,6 +680,74 @@
 					click="onVehicleModelsSaveButton(event);"/>	
 			</mx:HBox>
 						
+		</mx:VBox>
+
+		<mx:VBox label="Weather">
+			<mx:Form preinitialize="Globals.weather.setToDefaults();">
+				<mx:FormItem label="Temperature">
+					<mx:HBox>
+						<mx:NumericStepper id="temperature" minimum="-60" maximum="60" stepSize="1" toolTip="in Celsius"
+										   initialize="temperature.value = Globals.weather.temperature - 273.15; // Convert from Kelvin" 
+							               change="var weather:Weather = Globals.weather;
+							               		   weather.temperature = temperature.value + 273.15;							                       
+							                       weather.pressure = weather.calcAirPressure(weather.elevation, weather.temperature);
+							                       weather.airDensity = weather.calcAirDensity(weather.pressure, weather.temperature);" />
+						<mx:Label text="{temperature.value * 9/5.0 + 32} °F" fontStyle="italic" />
+					</mx:HBox>
+				</mx:FormItem>
+
+				<mx:FormItem label="Elevation">
+					<mx:HBox>
+						<mx:NumericStepper id="elevation" minimum="-200" maximum="99999" stepSize="1"
+							value="{Globals.weather.elevation}" toolTip="Average elevation in meters" 
+							change="var weather:Weather = Globals.weather;
+							        weather.elevation = elevation.value;
+							        weather.pressure = weather.calcAirPressure(weather.elevation, weather.temperature);
+							        weather.airDensity = weather.calcAirDensity(weather.pressure, weather.temperature);" />
+						<mx:Label text="{(Globals.weather.elevation*3.281).toFixed(0)} ft" fontStyle="italic" />
+						<mx:Button label="Auto"
+							toolTip="Set to average track elevation."
+							click="Globals.weather.elevation = Globals.tracks.getAverageElevation();" />							
+					</mx:HBox>
+				</mx:FormItem>
+
+				<mx:FormItem label="Pressure" toolTip="Calculated from average elevation and the given temperature.">
+					<mx:HBox>
+						<mx:Label text="{(Globals.weather.pressure/1000.0).toFixed(3)} kPa" />
+						<mx:Label text="{(Globals.weather.pressure * .0075006).toFixed(0)} mmHg" fontStyle="italic" />
+						<mx:Label text="{(Globals.weather.pressure * .000295333).toFixed(2)} inHg" fontStyle="italic" />
+					</mx:HBox>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Air Density" toolTip="For dry air (moist air is less dense).">
+					<mx:HBox>
+						<mx:Label text="{(Globals.weather.airDensity).toFixed(4)} kg/m^3" />
+						
+						<mx:Label text="{(Globals.weather.airDensity/1000.0).toFixed(7)} g/ml" fontStyle="italic"/>
+					</mx:HBox>					
+				</mx:FormItem>			
+				
+				<mx:FormItem label="Wind Speed">
+					<mx:HBox>
+						<mx:NumericStepper id="windSpeed" minimum="0" maximum="45" stepSize="1"
+							toolTip="in meters/second"
+							value="{Globals.weather.windSpeed}"
+							change="Globals.weather.windSpeed = windSpeed.value;" />
+						<mx:Label text="{(windSpeed.value*3.6).toFixed(1)} kph" fontStyle="italic" />
+						<mx:Label text="{(windSpeed.value*2.2369).toFixed(1)} mph" fontStyle="italic" />
+					</mx:HBox>					
+				</mx:FormItem>
+				
+				<mx:FormItem label="Wind Direction">
+					<mx:HBox>
+						<mx:NumericStepper id="windDirection" minimum="0" maximum="359" stepSize="1"
+							toolTip="Angle from North. Wind coming from the North would be 0, from the East would be 90, etc."
+							value="{Globals.weather.windDirection}"
+							change="Globals.weather.windDirection = windDirection.value;" />
+						<mx:Label text="{sixteenPointWindDir(windDirection.value)}" fontStyle="italic" />						
+					</mx:HBox>
+				</mx:FormItem>
+			</mx:Form>
 		</mx:VBox>
 
 	</mx:TabNavigator>

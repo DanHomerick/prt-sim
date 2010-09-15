@@ -21,6 +21,10 @@ vehicle_viz_data_collector = None
 station_viz_data_collector = None
 reports = None
 
+air_density = None
+wind_speed = None
+wind_direction = None # Angle from East, in radians
+
 vehicle_data_queue = None
 station_data_queue = None
 
