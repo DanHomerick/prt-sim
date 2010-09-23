@@ -54,6 +54,7 @@ package edu.ucsc.track_builder
 						  		          mass="450"
 						  		          frontal_area="1.7"
 						  		          drag_coefficient="0.2"
+						  		          rolling_coefficient="0.005"
 						  		          powertrain_efficiency="0.8"
 						  		          regenerative_braking_efficiency="0.0">
 						  		<Jerk normal_max="5.0" normal_min="-5.0" emergency_max="20" emergency_min="-20" />

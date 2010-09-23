@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Window xmlns:mx="http://www.adobe.com/2006/mxml" title="Attributes" layout="vertical" showStatusBar="false"
-	width="450" height="700"
+	width="450" height="800"
 	initialize="initVehicleModels();">
 	
 	<mx:Script>
@@ -18,11 +18,6 @@
 			 */ 
 			[Bindable] public var vmCollection:ArrayCollection;
 			
-			private static const windDirStrings:Array = ['N', 'NNE', 'NE', 'ENE',
-												         'E', 'ESE', 'SE', 'SSE',
-												         'S', 'SSW', 'SW', 'WSW',
-												         'W', 'WNW', 'NW', 'NNW'];
-			
 			private function initVehicleModels():void {
 				vehicleModelCollection = new ArrayCollection(Globals.vehicleModels.models);
 								
@@ -34,7 +29,7 @@
 				trace('onVehicleModelsSelection');
 				var model:VehicleModel;
 				if (event.currentTarget.selectedItem == "New Model") {
-					model = new VehicleModel("",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+					model = new VehicleModel("",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
 				} else {
 					model = Globals.vehicleModels.getModelByName(event.currentTarget.selectedItem)
 				}
@@ -122,8 +117,9 @@
 									0,
 									vmFrontalArea.value,
 									vmDragCoefficient.value,
-									vmPowertrainEfficiency.value,
-									vmRegenerativeBreakingEfficiency.value
+									vmRollingCoefficient.value,
+									vmPowertrainEfficiency.value/100.0,
+									vmRegenerativeBreakingEfficiency.value/100.0
 								)
 					Globals.vehicleModels.models.push(model);
 					vmCollection.addItemAt(model.modelName, vmCollection.length-1);
@@ -150,8 +146,9 @@
 					model.velMinEmerg = 0;
 					model.frontalArea = vmFrontalArea.value;
 					model.dragCoefficient = vmDragCoefficient.value;
-					model.powertrainEfficiency = vmPowertrainEfficiency.value;
-					model.regenerativeBrakingEfficiency = vmRegenerativeBreakingEfficiency.value;
+					model.rollingCoefficient = vmRollingCoefficient.value;
+					model.powertrainEfficiency = vmPowertrainEfficiency.value/100.0;
+					model.regenerativeBrakingEfficiency = vmRegenerativeBreakingEfficiency.value/100.0;
 				}
 				
 				// Disable the save button so that it's clear that the button press was responded to.
@@ -175,8 +172,9 @@
 				vmJerkMinEmerg.value = -model.jerkMinEmerg;
 				vmFrontalArea.value = model.frontalArea;
 				vmDragCoefficient.value = model.dragCoefficient;
-				vmPowertrainEfficiency.value = model.powertrainEfficiency;
-				vmRegenerativeBreakingEfficiency.value = model.regenerativeBrakingEfficiency;
+				vmRollingCoefficient.value = model.rollingCoefficient;
+				vmPowertrainEfficiency.value = model.powertrainEfficiency*100.0;
+				vmRegenerativeBreakingEfficiency.value = model.regenerativeBrakingEfficiency*100.0;
 				
 				setVehicleModelFormEnabled(true);
 			}
@@ -198,6 +196,7 @@
 				vmJerkMinEmerg.enabled = b;
 				vmFrontalArea.enabled = b;
 				vmDragCoefficient.enabled = b;
+				vmRollingCoefficient.enabled = b;
 				vmPowertrainEfficiency.enabled = b;
 				vmRegenerativeBreakingEfficiency.enabled = b;				
 			}			
@@ -228,7 +227,12 @@
 					ui.setStyle("color", 0x000000);
 				} 	
 			} 
-			
+
+			private static const windDirStrings:Array = ['N', 'NNE', 'NE', 'ENE',
+												         'E', 'ESE', 'SE', 'SSE',
+												         'S', 'SSW', 'SW', 'WSW',
+												         'W', 'WNW', 'NW', 'NNW'];
+												         			
 			private function sixteenPointWindDir(angle:Number):String {
 				var idx:int;
 				if (angle < 360-11.25) {
@@ -236,7 +240,7 @@
 				} else {
 					idx = 0;
 				}
-				return windDirStrings[idx];				
+				return windDirStrings[idx];		
 			}
 			
 		]]>
@@ -349,7 +353,11 @@
 						<mx:Label text= "lateral: {(Globals.tracks.turnMaxSpeed * Globals.tracks.turnMaxSpeed / Globals.tracks.turnRadius / 9.8).toFixed(2) + ' g'}"
 														  fontStyle="italic" paddingBottom="5"
 												          toolTip="a = v^2 / r   The lateral acceleration in the curve, assuming that it is not banked. Recommended to not exceed 0.35g for passenger comfort." />					</mx:HBox>
-				</mx:FormItem>				
+				</mx:FormItem>
+				
+<!--				<mx:FormHeading label="Power (Optional)" fontStyle="italic" fontSize="10" paddingTop="5"/> -->
+				
+								
             </mx:Form>
 		</mx:VBox>
 				
@@ -654,23 +662,33 @@
 						<mx:Spacer/>
 						<mx:Label text="Cd" />
 						<mx:NumericStepper id="vmDragCoefficient" minimum="0" maximum="1" stepSize="0.01" enabled="false"
-							toolTip="Coefficient of Drag. Unitless" 
+							toolTip="Coefficient of Drag. Dimensionless." 
 							change="vmSave.enabled = true;" />						
-					</mx:HBox>
-					
+					</mx:HBox>					
+				</mx:FormItem>
+				
+				<mx:FormItem label="Rolling Resistance">
+					<mx:NumericStepper id="vmRollingCoefficient" minimum="0.0000" maximum="1" stepSize="0.0001" enabled="false"
+						toolTip="Coefficient of Rolling Friction. Dimensionless."
+						change="vmSave.enabled = true;"  width="65"/>
 				</mx:FormItem>
 				
 				<mx:FormItem label="Powertrain Efficiency">
-					<mx:NumericStepper id="vmPowertrainEfficiency" minimum="0" maximum="100" stepSize="0.1" enabled="false"
-					    toolTip="Average percent. 100 indicates no energy losses."
-					    change="vmSave.enabled = true;" />
+					<mx:HBox>
+						<mx:NumericStepper id="vmPowertrainEfficiency" minimum="0" maximum="100" stepSize="1" enabled="false"
+						    toolTip="Average percent. 100 indicates that there are no losses in the conversion to kinetic energy."
+						    change="vmSave.enabled = true;" />
+						<mx:Label text="percent" fontStyle="italic" />
+					</mx:HBox>	
 				</mx:FormItem>
 				
-				<mx:FormItem label="Regen. Braking">					
-					<mx:NumericStepper id="vmRegenerativeBreakingEfficiency" minimum="0" maximum="100" stepSize="0.1" enabled="false"
-						toolTip="Average percent of energy recovered through regenerative breaking. 100 indicates that all kinetic energy is recovered during braking."
-						change="vmSave.enabled = true;" />
-					
+				<mx:FormItem label="Regen. Braking">
+					<mx:HBox>
+						<mx:NumericStepper id="vmRegenerativeBreakingEfficiency" minimum="0" maximum="100" stepSize="1" enabled="false"
+							toolTip="Average percent of energy recovered through regenerative breaking. 100 indicates that all kinetic energy is recovered during braking."
+							change="vmSave.enabled = true;" />
+						<mx:Label text="percent" fontStyle="italic" />						
+					</mx:HBox>	
 				</mx:FormItem>								
 			</mx:Form>
 			

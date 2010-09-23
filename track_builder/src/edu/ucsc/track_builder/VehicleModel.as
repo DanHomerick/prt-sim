@@ -23,15 +23,16 @@ package edu.ucsc.track_builder
 		public var velMinEmerg:Number;
 		public var frontalArea:Number;
 		public var dragCoefficient:Number;
-		public var powertrainEfficiency:Number;
-		public var regenerativeBrakingEfficiency:Number;
+		public var rollingCoefficient:Number;
+		public var powertrainEfficiency:Number; // In 0 .. 1 range
+		public var regenerativeBrakingEfficiency:Number; // In 0 .. 1 range
 		
 		public function VehicleModel(modelName:String, length:Number, passengerCapacity:int, mass:Number,
 		                             jerkMaxNorm:Number, jerkMinNorm:Number, jerkMaxEmerg:Number, jerkMinEmerg:Number,
 		                             accelMaxNorm:Number, accelMinNorm:Number, accelMaxEmerg:Number, accelMinEmerg:Number,
 		                             velMaxNorm:Number, velMinNorm:Number, velMaxEmerg:Number, velMinEmerg:Number,
-		                             frontalArea:Number, dragCoefficient:Number, powertrainEfficiency:Number,
-		                             regenerativeBrakingEfficiency:Number)
+		                             frontalArea:Number, dragCoefficient:Number, rollingCoefficient:Number, 
+		                             powertrainEfficiency:Number, regenerativeBrakingEfficiency:Number)
 		{
 			this.modelName = modelName;
 			this.length = length;
@@ -51,6 +52,7 @@ package edu.ucsc.track_builder
 			this.velMinEmerg = velMinEmerg;
 			this.frontalArea = frontalArea;
 			this.dragCoefficient = dragCoefficient;
+			this.rollingCoefficient = rollingCoefficient;
 			this.powertrainEfficiency = powertrainEfficiency;
 			this.regenerativeBrakingEfficiency = regenerativeBrakingEfficiency; 
 		}
@@ -63,6 +65,7 @@ package edu.ucsc.track_builder
 							mass={mass}
 							frontal_area={frontalArea}
 							drag_coefficient={dragCoefficient}
+							rolling_coefficient={rollingCoefficient}
 							powertrain_efficiency={powertrainEfficiency}
 							regenerative_braking_efficiency={regenerativeBrakingEfficiency}
 							>
@@ -108,6 +111,7 @@ package edu.ucsc.track_builder
 					Number(xml.Velocity.@emergency_min),
 					Number(xml.@frontal_area),
 					Number(xml.@drag_coefficient),
+					Number(xml.@rolling_coefficient),
 					Number(xml.@powertrain_efficiency),
 					Number(xml.@regenerative_braking_efficiency));
 		}
