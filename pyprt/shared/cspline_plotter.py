@@ -117,7 +117,10 @@ class CSplinePlotter(traits.HasTraits):
         legend.tools.append(tools.LegendTool(legend, drag_button="left"))
         self.container.overlays.append(legend)
 
-        legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot, 'power':power_plot}
+        if self.mass:
+            legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot, 'power':power_plot}
+        else:
+            legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot}
 
         # Add title, if any
         if self.title:

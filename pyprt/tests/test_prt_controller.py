@@ -74,10 +74,24 @@ class TestVehicle(unittest.TestCase):
 
     def test_run(self):
         t = make_Track()
-        v = make_vehicle(0, 0, 0) # pos 0 on ts 0
+        v = make_vehicle(0, 0, 5) # ts:0, pos:5
         v.set_path([0,1,2,3,4,5,6], send=False)
         v.run()
-        self.assertEqual(v.get_spline(), None)
+        spline = v.get_spline()
+
+        # Reached slow segment
+        idx = spline.q.index(t.get_path_length([0,1,2,3]))
+        time = spline.t[idx]
+        knot = spline.evaluate(time)
+        self.assertAlmostEqual(knot.vel, 5)
+        self.assertAlmostEqual(knot.accel, 0)
+
+        # 2nd slow segment
+        idx = spline.q.index(t.get_path_length([0,1,2,3,4,5,6]))
+        time = spline.t[idx]
+        knot = spline.evaluate(time)
+        self.assertAlmostEqual(knot.vel, 5)
+        self.assertAlmostEqual(knot.accel, 0)
 
 class TestMerge(unittest.TestCase):
     """Tests for the Merge class"""
@@ -206,17 +220,20 @@ class TestTracks(unittest.TestCase):
     def test_get_speed_zones(self):
         t = make_Track()
 
+        self.assertEqual(t.get_speed_zones([0,1,2,3,4,5,6]),
+                         [(10, [0,1,2]), (5, [3]), (10, [4,5]), (5, [6])])
+
         self.assertEqual(t.get_speed_zones([0,1,2,3,4,5]),
-                         [(10, [0,1,2,3]), (5, [3,4]), (10, [4,5]), (10, [5])])
+                         [(10, [0,1,2]), (5, [3]), (10, [4,5])])
 
         self.assertEqual(t.get_speed_zones([0,1,2,3,4]),
-                         [(10, [0,1,2,3]), (5, [3,4]), (10, [4])])
+                         [(10, [0,1,2]), (5, [3]), (10, [4])])
 
         self.assertEqual(t.get_speed_zones([0,1,2,3]),
-                         [(10, [0,1,2,3]), (5, [3])])
+                         [(10, [0,1,2]), (5, [3])])
 
         self.assertEqual(t.get_speed_zones([0,1]),
-                         [(10, [0,1]), (10, [1])])
+                         [(10, [0,1])])
 
         self.assertEqual(t.get_speed_zones([0]),
                          [(10, [0])])

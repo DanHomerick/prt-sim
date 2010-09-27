@@ -216,7 +216,7 @@ class Tracks(utility.Singleton):
         Example:
         >>> path = [0,1,2,3,4,5]
         >>> get_speed_zones(path)
-        [(10, [0,1,2,3]), (5, [3,4]), (10, [4,5]), (10, [5])]
+        [(10, [0,1,2]), (5, [3]), (10, [4]), (10, [5])]
 
         In the above example, track segments 0,1,2 have a speed limit of 10.
         Track segment 3 has a speed limit of 5. Track segment 4 has a speed limit
@@ -240,13 +240,11 @@ class Tracks(utility.Singleton):
         for i in xrange(len(wp)-1):
             curr_speed = self._graph[wp[i]][wp[i+1]][Tracks.MAX_SPEED]
             if last_speed != curr_speed:
-                result.append( (last_speed, wp[last_idx:i+1]) )
+                result.append( (last_speed, wp[last_idx:i]) )
                 last_idx = i
                 last_speed = curr_speed
 
-        if last_idx != i:
-            result.append( (curr_speed, wp[last_idx:-1]) )
-        result.append( (curr_speed, [path[-1]]) )
+        result.append( (curr_speed, wp[last_idx:-1]) )
         return result
 
     def predecessors(self, ts_id):
@@ -2242,14 +2240,20 @@ class Vehicle(object):
         # If no distance is specified, just follow the speed limits for the
         # extent of the vehicle's path
         if dist is None:
-            prev_knot = initial_knot
             spline = CubicSpline([initial_knot.pos], [initial_knot.vel], [initial_knot.accel], [], [initial_knot.time])
+            prev_knot = initial_knot
+            path_length = 0
             for (curr_speed, curr_path_frag), (next_speed, next_path_frag) in pairwise(speed_zones):
-                curr_path_length = self.tracks.get_path_length(curr_path_frag)
-                knot = Knot(prev_knot.pos + curr_path_length, min(next_speed, curr_speed, self.v_max), 0, None)
+                path_length += self.tracks.get_path_length(curr_path_frag + [next_path_frag[0]])
+                knot = Knot(path_length, min(next_speed, curr_speed, self.v_max), 0, None)
                 spline = spline.concat(self.traj_solver.target_position(prev_knot, knot, max_speed=curr_speed))
                 prev_knot = knot
                 prev_knot.time = spline.t[-1]
+
+            path_length += self.tracks.get_path_length(next_path_frag)
+            speed = min(next_speed, self.v_max)
+            knot = Knot(path_length, speed, 0, None)
+            spline = spline.concat(self.traj_solver.target_position(prev_knot, knot, max_speed=speed))
 
         else: # TODO: Follow speed limits
             spline = self.traj_solver.target_position(initial_knot,

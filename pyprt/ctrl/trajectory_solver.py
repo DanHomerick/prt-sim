@@ -141,16 +141,27 @@ class TrajectorySolver(object):
 
     def target_position(self, knot_initial, knot_final,
                         max_speed=None, fnc_info=False, max_attempts=10):
-        """Targets the position and velocity values in knot_final. The time
-        supplied by knot_final is ignored, and should be set to None.
+        """Targets the position and velocity values in knot_final.
 
-        Raises FatalTrajectoryError if it is unable to generate a valid spline.
-        Raises OptimizationError if a optimization routine was used and
-           the residual error is greater than 'error_threshold'. Exception
-           contains the residual error value and the final h array.
+        Parameters:
+          knot_initial -- A cubic_spline.Knot containing the initial conditions.
+          knot_final -- A cubic_spline.Knot containing the final conditions.
+              The time supplied by knot_final is ignored, and may be set to None.
+          max_speed -- An optional speed limit constraint. Has no effect if the
+              value is greater than the solver's v_max.
+          fnc_info -- When True, a reference to the target_position_X function
+              that was used to find the solution is returned with the spline.
+          max_attempts -- Used in the case where the spline is solved via
+              'target_position_none' function.
 
-        Returns a cubic_spline.CSpline. If fnc_info is True, then returns the
-        function used to find the solution in addition to the spline: (spline, fnc)
+        Raises:
+          FatalTrajectoryError if it is unable to generate a valid spline.
+
+        Returns:
+          A cubic_spline.CubicSpline.
+          If fnc_info is True, then returns the function used to find the
+            solution in addition to the spline: (spline, fnc)
+
         """
         knot_final = knot_final.copy() # don't alter the original
         knot_final.time = inf
@@ -159,6 +170,12 @@ class TrajectorySolver(object):
             max_speed = self.v_max
 
         max_speed = min(max_speed, self.v_max)
+
+        # Handle the case where initial and final knots are the same
+        if knot_final.pos == knot_initial.pos \
+           and knot_final.vel == knot_initial.vel \
+           and knot_final.accel == knot_initial.accel:
+            return CubicSpline([knot_initial.pos], [knot_initial.vel], [knot_initial.accel], [], [knot_initial.time])
 
         # Basic error checking. Bail if the initial or final conditions lie
         # outside of the velocity and/or acceleration constaints.
@@ -178,9 +195,8 @@ class TrajectorySolver(object):
                         self.a_min - self.a_threshold <= -knot_initial.accel <= self.a_max + self.a_threshold and
                         self.a_min - self.a_threshold <= -knot_final.accel <= self.a_max + self.a_threshold):
                     raise FatalTrajectoryError(knot_initial, knot_final, "Endpoint outside of solver's limit")
-        else: # knot_final.pos == knot_initial.pos
-            # Could return a spline, but in what form? 0 knots, 1 knot, 2 knots?
-            raise FatalTrajectoryError(knot_initial, knot_final, "You didn't bloody well want to move then, did ya?")
+        else:
+            raise FatalTrajectoryError(knot_initial, knot_final, "Cannot change velocity or acceleration without a change in position.")
 
         # Generate the spline
         try:
