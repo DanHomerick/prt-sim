@@ -66,6 +66,10 @@ def run_console_only():
     # TODO: IMPLEMENT
     pass
 
+def run_sim_profiled(end_time, callback, *args):
+    import cProfile
+    cProfile.runctx('run_sim(end_time, callback, *args)', globals(), locals(), common.config_manager.get_profile_path())
+
 def run_sim(end_time, callback, *args):
     """Activate the SimPy Processes and run the simulation.
 

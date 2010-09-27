@@ -277,6 +277,7 @@ class Visualizer(object):
             num_pax = v.get_pax_count()
             vel = v.get_vel()
             mph = vel * 2.237
+            lv, dist_to_lv = v.find_leading_vehicle()
             pax_ids = ",".join(str(pax.ID) for pax in v.passengers)
 
             # Try to find the destination station based on the vehicle's path.
@@ -293,8 +294,10 @@ class Visualizer(object):
                 component=self.plot,
                 data_point = point,
                 lines = ['vID: %d' % v.ID,
+                         'loc: %d' % v.loc.ID,
                          'speed: %.1f m/s (%.0f mph)' % (vel, mph),
                           dest_station_str,
+                          'dist to lv: %.1f m (%.0f ft)' % (dist_to_lv, dist_to_lv*3.28),
                          'numPax: %d' % num_pax,
                          'paxIDs: ' + pax_ids]
             )
@@ -578,7 +581,7 @@ class VisDataCollector(SimPy.Process):
                 dx = track_seg.x_end - track_seg.x_start
                 dy = track_seg.y_end - track_seg.y_start
                 angle = math.atan2(dy, dx)
-                scale = math.sqrt(dx**2 + dy**2) / track_seg.length # scaling factor
+                scale = math.hypot(dx, dy) / track_seg.length # scaling factor
                 pos2img[track_seg] = array([[scale*math.cos(angle), track_seg.x_start],
                                             [scale*math.sin(angle), track_seg.y_start]])
             except ZeroDivisionError:
@@ -593,7 +596,10 @@ class VisDataCollector(SimPy.Process):
             pax_cnt = []
             for v in common.vehicle_list:
                 position = array([v.pos, 1])
-                x, y = numpy.dot(pos2img[v.loc], position) # matrix mult
+                try:
+                    x, y = numpy.dot(pos2img[v.loc], position) # matrix mult
+                except KeyError: # A TrackSegment that wasn't registered... expected to be a storage segment
+                    continue
                 x_coords.append(x)
                 y_coords.append(y)
                 pax_cnt.append(v.get_pax_count())

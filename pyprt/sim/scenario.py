@@ -1,5 +1,5 @@
 import logging
-import enthought.traits.api as traits
+import math
 import os.path
 
 from station import Berth
@@ -19,9 +19,6 @@ class ScenarioManager(object):
         Sets self.scenario_loaded to True upon success."""
         import xml.dom.minidom
         doc = xml.dom.minidom.parse(xml_path)
-
-#        src_nodes = dict()
-#        sink_nodes = dict()
 
         # Track Segments
         tracks_xml = doc.getElementsByTagName('TrackSegments')[0]
@@ -62,6 +59,19 @@ class ScenarioManager(object):
         # Background Image
         self.load_image_meta(doc.getElementsByTagName('Image')[0], xml_path) # only one element
 
+        # Air Density and Wind
+        try:
+            weather_xml = doc.getElementsByTagName('Weather')[0]
+            air_density, wind_speed, wind_direction = self.load_weather(weather_xml)
+            common.air_density = air_density
+            common.wind_speed = wind_speed
+            common.wind_direction = wind_direction
+        except IndexError:
+            # Default to IUPAC standard temperature and pressure: 0C and 100kPa
+            common.air_density = 1.2754
+            common.wind_speed = 0
+            common.wind_direction = 0
+
         # TODO: Necessary?
         common.station_list = sorted(s for s in common.stations.itervalues()) # by ID
         common.switch_list.sort()
@@ -90,6 +100,13 @@ class ScenarioManager(object):
 
             max_speed_str = track_segment_xml.getAttribute('max_speed')
             max_speed = float(max_speed_str) if max_speed_str else 1E1000 # inf if not specified
+
+            elevations = []
+            elevation_positions = []
+            for pt_xml in track_segment_xml.getElementsByTagName('Point'):
+                elevation_positions.append(float(pt_xml.getAttribute('position')))
+                elevations.append(float(pt_xml.getAttribute('ground_level')))
+
             ts = layout.TrackSegment(ID=intId,
                                x_start=start_lng,
                                y_start=start_lat,
@@ -97,7 +114,10 @@ class ScenarioManager(object):
                                y_end=end_lat,
                                length=float(track_segment_xml.getAttribute('length')),
                                max_speed=max_speed,
-                               label=label)
+                               elevation_positions=elevation_positions,
+                               elevations=elevations,
+                               label=label
+                               )
             all_tracks[ts.ID] = ts
         return all_tracks
 
@@ -144,13 +164,13 @@ class ScenarioManager(object):
                 raise common.ScenarioError("Vehicle %s starting position: %s "
                                            "is greater than location %s length: %s"
                                            % (v_intId, position, loc.ID, loc.length))
-            vehicle = vehicle_classes[v_model](
+            v = vehicle_classes[v_model](
                                 ID=v_intId,
                                 loc=loc,
                                 position=position,
                                 vel=float(vehicle_xml.getAttribute('velocity'))
                             )
-            all_vehicles[vehicle.ID] = vehicle
+            all_vehicles[v.ID] = v
         return all_vehicles
 
 
@@ -159,14 +179,66 @@ class ScenarioManager(object):
         for station_xml in stations_xml.getElementsByTagName('Station'):
             station_label = station_xml.getAttribute('label')
             station_id = int(station_xml.getAttribute('id').split('_')[0])
+            try:
+                storage_entrance_delay = int(station_xml.getAttribute('storage_entrance_delay'))
+            except ValueError:
+                logging.warn("station '%s' is missing or has an invalid 'storage_entrance_delay' attribute. Defaulting to 0.", station_label)
+                storage_entrance_delay = 0
+
+            try:
+                storage_exit_delay = int(station_xml.getAttribute('storage_exit_delay'))
+            except ValueError:
+                logging.warn("station '%s' is missing or has an invalid 'storage_exit_delay' attribute. Defaulting to 0.", station_label)
+                storage_exit_delay = 0
 
             # Get the TrackSegments
             track_segments = set() # using a set because 'TrackSegmentID' includes the duplicate ts from Platform
             for track_id_xml in station_xml.getElementsByTagName('TrackSegmentID'):
-                    track_id = self._to_numeric_id(track_id_xml)
-                    track_segments.add(common.track_segments[track_id])
+                track_id = self._to_numeric_id(track_id_xml)
+                track_segments.add(common.track_segments[track_id])
 
-            station_ = station.Station(station_id, station_label, track_segments)
+            # Make the Storage objects and place them in a dict keyed by model_name
+            storage_dict = {}
+            for storage_xml in station_xml.getElementsByTagName('Storage'):
+                model_name = storage_xml.getAttribute('model_name')
+                if len(model_name) == 0:
+                    raise common.ScenarioError(
+                        "Storage for station '%s' is missing or has an invalid or missing 'model_name' attribute" \
+                        % (station_label))
+
+                initial_supply_str = storage_xml.getAttribute('initial_supply').lower()
+                if initial_supply_str == 'inf':
+                    initial_supply = float('inf')
+                else:
+                    try:
+                        initial_supply = int(storage_xml.getAttribute('initial_supply'))
+                    except ValueError:
+                        raise common.ScenarioError(
+                            "Storage for station '%s' is missing or has an invalid 'initial_supply' attribute: %s." \
+                            % (station_label, initial_supply_str))
+
+                max_capacity_str = storage_xml.getAttribute('max_capacity').lower()
+                if max_capacity_str == 'inf':
+                    max_capacity = float('inf')
+                else:
+                    try:
+                        max_capacity = int(storage_xml.getAttribute('max_capacity'))
+                    except ValueError:
+                        raise common.ScenarioError(
+                            "Storage for station '%s' has an invalid or missing 'max_capacity' attribute: %s." \
+                            % (station_label, max_capacity_str))
+
+                storage = station.Storage(model_name,
+                                          initial_supply,
+                                          max_capacity)
+                storage_dict[storage.model_name] = storage
+
+            station_ = station.Station(station_id,
+                                       station_label,
+                                       track_segments,
+                                       storage_entrance_delay,
+                                       storage_exit_delay,
+                                       storage_dict)
 
             # Make the Platforms
             platforms_xml = station_xml.getElementsByTagName('Platform')
@@ -186,9 +258,12 @@ class ScenarioManager(object):
                     end_pos = float(berth_xml.getElementsByTagName('EndPosition')[0].firstChild.data)
                     unloading = True if berth_xml.getAttribute('unloading') == 'true' else False
                     loading = True if berth_xml.getAttribute('loading') == 'true' else False
+                    storage_entrance = True if berth_xml.getAttribute('storage_entrance') == 'true' else False
+                    storage_exit = True if berth_xml.getAttribute('storage_exit') == 'true' else False
                     berths[berth_index] = Berth(berth_index, station_,
                                                 platform, start_pos, end_pos,
-                                                unloading, loading)
+                                                unloading, loading,
+                                                storage_entrance, storage_exit)
 
                 platform.berths = berths
                 platforms[platform_index] = platform
@@ -285,7 +360,12 @@ class ScenarioManager(object):
         common.img_ybounds = (min(lats), max(lats))
         common.img_width = int(image_xml.getAttribute('width'))
         common.img_height = int(image_xml.getAttribute('height'))
-        common.img_path = os.path.dirname(xml_path) + '/' + image_xml.getAttribute('filename')
+
+        if image_xml.hasAttribute('extension'): # Encoding only the filename extension is the current method.
+            common.img_path = os.path.splitext(xml_path)[0] + image_xml.getAttribute('extension')
+        else: # Legacy
+            common.img_path = os.path.dirname(xml_path) + '/' + image_xml.getAttribute('filename')
+
 
     def _to_numeric_id(self, element):
         """For elements similar to:
@@ -308,6 +388,10 @@ class ScenarioManager(object):
             length = float(vehicle_model_xml.getAttribute('length'))
             vehicle_mass = int(vehicle_model_xml.getAttribute('mass'))
             max_pax_capacity = int(vehicle_model_xml.getAttribute('passenger_capacity'))
+            frontal_area = float(vehicle_model_xml.getAttribute('frontal_area'))
+            drag_coefficient = float(vehicle_model_xml.getAttribute('drag_coefficient'))
+            powertrain_efficiency = float(vehicle_model_xml.getAttribute('powertrain_efficiency'))
+            regenerative_braking_efficiency = float(vehicle_model_xml.getAttribute('regenerative_braking_efficiency'))
             jerk_max_norm = float(jerk_xml.getAttribute('normal_max'))
             jerk_min_norm = float(jerk_xml.getAttribute('normal_min'))
             jerk_max_emerg = float(jerk_xml.getAttribute('emergency_max'))
@@ -330,6 +414,14 @@ class ScenarioManager(object):
                 raise common.ScenarioError("Invalid vehicle mass: %s" % vehicle_mass)
             if max_pax_capacity < 0:
                 raise common.ScenarioError("Negative maximum vehicle passenger capacity: %s" % max_pax_capacity)
+            if frontal_area <= 0:
+                raise common.ScenarioError("Frontal area must be positive: %f" % frontal_area)
+            if drag_coefficient <= 0:
+                raise common.ScenarioError("drag_coefficient must be positive: %f" % drag_coefficient)
+            if not (0 < powertrain_efficiency <= 1):
+                raise common.ScenarioError("powertrain_efficiency must be in the range (0,1]: %f" % powertrain_efficiency)
+            if not (0 <= regenerative_braking_efficiency <= 1):
+                raise common.ScenarioError("regenerative_breaking_efficiency must be in the range (0,1]: %f" % regenerative_braking_efficiency)
             if jerk_max_norm < 0:
                 raise common.ScenarioError("Negative jerk_max_norm: %s" % jerk_max_norm)
             if jerk_min_norm > 0:
@@ -366,6 +458,8 @@ class ScenarioManager(object):
                         "and cannot be more constrained than the normal values.")
             model = vehicle.create_vehicle_class(
                 model_name, length, vehicle_mass, max_pax_capacity,
+                frontal_area, drag_coefficient, powertrain_efficiency,
+                regenerative_braking_efficiency,
                 jerk_max_norm, jerk_min_norm, jerk_max_emerg, jerk_min_emerg,
                 accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
                 vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg
@@ -374,6 +468,24 @@ class ScenarioManager(object):
             all_models[model_name] = model
 
         return all_models
+
+    def load_weather(self, weather_xml):
+        """Returns a 3-tuple:
+          (air_density, wind_speed, wind_direction)
+        where air_density is in kg/m^3, wind_speed is in m/s and wind_direction
+        is an angle from East in radians (e.g. 0 is due East, pi/2 is due
+        North, pi is West, and 3pi/2 is South).
+        """
+        air_density = float(weather_xml.getAttribute('air_density'))
+        wind_speed = float(weather_xml.getAttribute('wind_speed'))
+
+        # The xml wind direction has 0 as North and is in degrees, but within
+        # the sim we use 0 as East and work in radians.
+        wind_direction = float(weather_xml.getAttribute('wind_direction')) # in degrees
+        wind_direction = (-wind_direction + 90) % 360 # Go from North based to East based
+        wind_direction = math.radians(wind_direction)
+
+        return (air_density, wind_speed, wind_direction)
 
 # a testing stub
 if __name__ == '__main__':
@@ -404,4 +516,4 @@ if __name__ == '__main__':
         print common.track_segments.values()
         print "------"
         print "Vehicles:"
-        print [v.ID for v in common.vehicles.itervalues()];
+        print [v.ID for v in common.vehicles.itervalues()]

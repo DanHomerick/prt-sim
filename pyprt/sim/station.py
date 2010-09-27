@@ -8,33 +8,64 @@ import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
 import common
+from layout import TrackSegment
 from events import Passenger
 from visual import NoWritebackOnCloseHandler
+
+class BerthError(Exception):
+    pass
+
+class VehicleOutOfPositionError(BerthError):
+    def __init__(self, vehicle, msg_id):
+        self.vehicle = vehicle
+        self.msg_id = msg_id
+
+class VehicleFullError(BerthError):
+    def __init__(self, pax, vehicle, msg_id):
+        self.pax = pax
+        self.vehicle = vehicle
+        self.msg_id = msg_id
+
+class PassengerNotAvailableError(BerthError):
+    def __init__(self, pax, vehicle, msg_id):
+        self.pax = pax
+        self.vehicle = vehicle
+        self.msg_id, = msg_id
+
+class StorageError(Exception):
+    pass
+
+class VehicleNotAvailableError(StorageError):
+    pass
+
+class StorageFullError(StorageError):
+    pass
 
 class Berth(Sim.Process, traits.HasTraits):
     ID = traits.Int
     platform = traits.Instance('Platform')
     station = traits.Instance('Station')
-    start_pos = traits.Float
-    end_pos = traits.Float
-    unloading = traits.Bool
-    loading = traits.Bool
+    start_pos = traits.Float # The 'tail' end of the berth
+    end_pos = traits.Float   # The 'nose' end of the berth
+    unloading = traits.Bool(False)
+    loading = traits.Bool(False)
+    storage_entrance = traits.Bool(False)
+    storage_exit = traits.Bool(False)
 
-    _embark_pax = traits.List(traits.Instance('events.Passenger'))
-    _embark_vehicle = traits.Instance('vehicle.BaseVehicle')
-    _embark_cmd = traits.Instance(api.CtrlCmdPassengersEmbark)
-    _embark_cmd_id = traits.Int(api.NONE_ID)
+    DISEMBARK = "DISEMBARK"
+    EMBARK = "EMBARK"
+    ENTER_STORAGE = "ENTER_STORAGE"
+    EXIT_STORAGE = "EXIT_STORAGE"
 
-    _disembark_pax = traits.List(traits.Instance('events.Passenger'))
-    _disembark_vehicle = traits.Instance('vehicle.BaseVehicle')
-    _disembark_cmd = traits.Instance(api.CtrlCmdPassengersDisembark)
-    _disembark_cmd_id = traits.Int(api.NONE_ID)
+    _action = traits.Enum(None, DISEMBARK, EMBARK, ENTER_STORAGE, EXIT_STORAGE)
+    _error_continue = traits.Bool(False)
 
 ##    traits_view =  ui.View(ui.HGroup(ui.Item(name='vehicle',
 ##                                             editor = ui.TextEditor()),
 ##                                     ui.Item('busy')))
 
-    def __init__(self, ID, station, platform, start_pos, end_pos, unloading, loading):
+    def __init__(self, ID, station, platform, start_pos, end_pos, unloading,
+                 loading, storage_entrance, storage_exit):
         Sim.Process.__init__(self, name='berth_' + str(ID))
         traits.HasTraits.__init__(self)
         self.ID = ID
@@ -44,16 +75,20 @@ class Berth(Sim.Process, traits.HasTraits):
         self.end_pos = end_pos
         self.unloading = unloading
         self.loading = loading
-
-        self._vehicles = []
+        self.storage_entrance = storage_entrance
+        self.storage_exit = storage_exit
 
         # Record keeping for statistics
-        self._occupied_times = [Sim.now(), self._vehicles[:]] # elements are (time, list_of_occupying_vehicle_refs)
+##        self._occupied_times = [Sim.now(), self._vehicles[:]] # elements are (time, list_of_occupying_vehicle_refs)
         self._busy_times = [] # elements are: (time, busy_state)
         self._all_passengers = [] # record of all passengers, including those who have departed
 
         # Control flags/settings for the run loop
         self._busy = False # use the self._busy property to enable record gathering
+
+        self._action = None
+        self._fnc_args = None
+        self._error_continue = False
 
     def __str__(self):
         return self.name
@@ -65,20 +100,32 @@ class Berth(Sim.Process, traits.HasTraits):
     def disembark(self, vehicle, passengers, cmd_msg, cmd_msg_id):
         """If ordering matters, note that passengers at the end of the list
         are serviced first."""
-        self._disembark_pax = passengers
-        self._disembark_vehicle = vehicle
-        self._disembark_cmd = cmd_msg
-        self._disembark_cmd_id = cmd_msg_id
+        assert not self._busy
+        self._action = Berth.DISEMBARK
+        self._fnc_args = (vehicle, passengers, cmd_msg, cmd_msg_id)
         if self.passive:
             Sim.reactivate(self, prior=True)
 
     def embark(self, vehicle, passengers, cmd_msg, cmd_msg_id):
         """If ordering matters, note that passengers at the end of the list
         are serviced first."""
-        self._embark_pax = passengers
-        self._embark_vehicle = vehicle
-        self._embark_cmd = cmd_msg
-        self._embark_cmd_id = cmd_msg_id
+        assert not self._busy
+        self._action = Berth.EMBARK
+        self._fnc_args = (vehicle, passengers, cmd_msg, cmd_msg_id)
+        if self.passive:
+            Sim.reactivate(self, prior=True)
+
+    def enter_storage(self, vehicle, cmd_msg, cmd_msg_id):
+        assert not self._busy
+        self._action = Berth.ENTER_STORAGE
+        self._fnc_args = (vehicle, cmd_msg, cmd_msg_id)
+        if self.passive:
+            Sim.reactivate(self, prior=True)
+
+    def exit_storage(self, position, model_name, cmd_msg, cmd_msg_id):
+        assert not self._busy
+        self._action = Berth.EXIT_STORAGE
+        self._fnc_args = (position, model_name, cmd_msg, cmd_msg_id)
         if self.passive:
             Sim.reactivate(self, prior=True)
 
@@ -93,215 +140,249 @@ class Berth(Sim.Process, traits.HasTraits):
         return self.__busy
 
     def run(self):
+        """ The main loop for the Berth."""
+        # A Berth has four different tasks to accomplish but only one active loop.
         while True:
-            # disembarking
-            while self._disembark_pax:
+            try:
+                if self._action is Berth.DISEMBARK:
+                    for disembark_delay in self._do_disembark(*self._fnc_args):
+                        yield Sim.hold, self, disembark_delay # Wait while passenger disembarks
 
-                # Error if vehicle not parked in berth
-                if not self._disembark_vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-                    nose_pos, tail_pos = self._disembark_vehicle.get_positions()
-                    logging.info("T=%4.3f Vehicle not in berth upon attempted disembark. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, DisembarkCmdId: %s, vNosePos: %s, vNoseLoc %s, vTailPos: %s, vTailLoc: %s, berth.start_pos: %s, berth.end_pos: %s",
-                                 Sim.now(), self._disembark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._disembark_cmd_id, nose_pos, self._disembark_vehicle.loc, tail_pos, self._disembark_vehicle.tail_loc, self.start_pos, self.end_pos)
-                    error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._disembark_cmd_id
-                    error_msg.id_type = api.VEHICLE
-                    error_msg.ID = self._disembark_vehicle.ID
-                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
-                    break
+                elif self._action is Berth.EMBARK:
+                    for embark_delay in self._do_embark(*self._fnc_args):
+                        yield Sim.hold, self, embark_delay
 
-                pax = self._disembark_pax.pop()
+                elif self._action is Berth.ENTER_STORAGE:
+                    for enter_delay in self._do_enter_storage(*self._fnc_args):
+                        yield Sim.hold, self, enter_delay
 
-                # Error if pax not in the vehicle
-                if pax not in self._disembark_vehicle.passengers:
-                    logging.info("T=%4.3f Disembarking passenger not in vehicle. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, DisembarkCmdId: %s, Passenger: %s",
-                                 Sim.now(), self._disembark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._disembark_cmd_id, pax.ID)
-                    error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._disembark_cmd_id
-                    error_msg.id_type = api.PASSENGER
-                    error_msg.ID = pax.ID
-                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
-                    continue # process other passengers
+                elif self._action is Berth.EXIT_STORAGE:
+                    for exit_delay in self._do_exit_storage(*self._fnc_args):
+                        yield Sim.hold, self, exit_delay
 
-                self._busy = True
+            except VehicleOutOfPositionError as err:
+                nose_pos, tail_pos = err.vehicle.get_positions()
+                logging.info("T=%4.3f Vehicle not in berth for attempted %s. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, DisembarkCmdId: %s, vNosePos: %s, vNoseLoc %s, vTailPos: %s, vTailLoc: %s, berth.start_pos: %s, berth.end_pos: %s",
+                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.msg_id, nose_pos, err.vehicle.loc, tail_pos, err.vehicle.tail_loc, self.start_pos, self.end_pos)
+                error_msg = api.SimMsgBodyInvalidId()
+                error_msg.id_type = api.VEHICLE
+                error_msg.msgID = err.msg_id
+                error_msg.ID = err.vehicle.ID
+                common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                self._busy = False
 
-                # Notify controller that disembark of this passenger is starting
-                dis_start_msg = api.SimNotifyPassengerDisembarkStart()
-                dis_start_msg.vID = self._disembark_vehicle.ID
-                dis_start_msg.sID = self.station.ID
-                dis_start_msg.platformID = self.platform.ID
-                dis_start_msg.pID = pax.ID
-                dis_start_msg.berthID = self.ID
-                dis_start_msg.time = Sim.now()
-                common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_START,
-                                       dis_start_msg)
+            except PassengerNotAvailableError as err:
+                logging.info("T=%4.3f Passenger not available for attempted %s. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, DisembarkCmdId: %s, Passenger: %s",
+                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.msg_id, err.pax.ID)
+                error_msg = api.SimMsgBodyInvalidId()
+                error_msg.msgID = err.msg_id
+                error_msg.id_type = api.PASSENGER
+                error_msg.ID = err.pax.ID
+                common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                self._error_continue = True # process other passengers
 
-                # Wait while passenger disembarks
-                yield Sim.hold, self, pax.unload_delay
+            except VehicleFullError as err:
+                logging.info("T=%4.3f Action %s failed since vehicle is at max passenger capacity. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
+                             Sim.now(), self._action, err.vehicle.ID, self.ID, self.platform.ID, self.station.ID, err.msg_id, err.pax.ID)
+                error_msg = api.SimMsgBodyInvalidId()
+                error_msg.msgID = err.msg_id
+                error_msg.id_type = api.PASSENGER
+                error_msg.ID = err.pax.ID
+                common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
+                self._error_continue = True # process other passengers
 
-                # Error if vehicle is not still parked in berth
-                if not self._disembark_vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-                    error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._disembark_cmd_id
-                    error_msg.id_type = api.VEHICLE
-                    error_msg.ID = self._disembark_vehicle.ID
-                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
-                    break
-
-                # Move the passenger from the vehicle to the station
-                self._disembark_vehicle.disembark(pax)
-                pax.loc = self.station
-
-                # Note if the passenger has arrived at final dest (may not be
-                # the case with non-PRT systems)
-                if self.station.ID == pax.dest_station.ID:
-                    pax.trip_end = Sim.now()
-                    pax.trip_success = True
-                    common.delivered_pax.add(pax)
-                    self.station._pax_arrivals_count += 1
-                    self.station._all_passengers.append(pax)
-                    logging.info("T=%4.3f %s delivered to platform %s in %s by %s (%d out of %d), disembarked in berth %s",
-                                 Sim.now(), pax, self.platform.ID, self.station.ID, self._disembark_vehicle.ID, self._disembark_vehicle.get_pax_count(), self._disembark_vehicle.max_pax_capacity,  self.ID)
-                else:
-                    self.station.add_passenger(pax)
-                    self.station._arrivals_count += 1
-
-
-                # Notify that disembark of this passenger is complete
-                dis_end_msg = api.SimNotifyPassengerDisembarkEnd()
-                dis_end_msg.vID = self._disembark_vehicle.ID
-                dis_end_msg.sID = self.station.ID
-                dis_end_msg.platformID = self.platform.ID
-                dis_end_msg.pID = pax.ID
-                dis_end_msg.berthID = self.ID
-                dis_end_msg.time = Sim.now()
-                common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_END,
-                                       dis_end_msg)
-
-            self._busy = False
-
-            # Notify controller that passenger disembarkment is done.
-            if self._disembark_cmd_id != api.NONE_ID:
-                dis_cmd_complete = api.SimCompletePassengersDisembark()
-                dis_cmd_complete.msgID = self._disembark_cmd_id
-                dis_cmd_complete.cmd.CopyFrom(self._disembark_cmd)
-                dis_cmd_complete.time = Sim.now()
-                common.interface.send(api.SIM_COMPLETE_PASSENGERS_DISEMBARK,
-                                       dis_cmd_complete)
-
+            if not self._error_continue:
                 # Reset state
-                self._disembark_pax = []
-                self._disembark_vehicle = None
-                self._disembark_cmd = None
-                self._disembark_cmd_id = api.NONE_ID
+                self._action = None
+                self._fnc_args = None
+                assert not self._busy
+                yield Sim.passivate, self
+            else:
+                # Go through the loop again
+                self._error_continue = False
+
+    def _do_disembark(self, vehicle, passengers, cmd_msg, cmd_msg_id):
+        self._busy = True
+        while passengers:
+            pax = passengers.pop()
+            self._do_disembark_pax_start(pax, vehicle, cmd_msg_id)
+            yield pax.unload_delay # Wait while passenger disembarks
+            self._do_disembark_pax_finish(pax, vehicle, cmd_msg_id)
+
+        self._busy = False
+
+        # Notify controller that all passenger disembarkments are done.
+        cmd_complete = api.SimCompletePassengersDisembark()
+        cmd_complete.msgID = cmd_msg_id
+        cmd_complete.cmd.CopyFrom(cmd_msg)
+        cmd_complete.time = Sim.now()
+        common.interface.send(api.SIM_COMPLETE_PASSENGERS_DISEMBARK,
+                              cmd_complete)
+
+    def _do_disembark_pax_start(self, pax, vehicle, cmd_msg_id):
+        # Error if vehicle not parked in berth
+        if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
+
+        # Error if pax not in the vehicle
+        if pax not in vehicle.passengers:
+            raise PassengerNotAvailableError(pax, vehicle, cmd_msg_id)
+
+        # Notify controller that disembark of this passenger is starting
+        start_msg = api.SimNotifyPassengerDisembarkStart()
+        start_msg.vID = vehicle.ID
+        start_msg.sID = self.station.ID
+        start_msg.platformID = self.platform.ID
+        start_msg.pID = pax.ID
+        start_msg.berthID = self.ID
+        start_msg.time = Sim.now()
+        common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_START,
+                              start_msg)
+
+    def _do_disembark_pax_finish(self, pax, vehicle, cmd_msg_id):
+        # Error if vehicle is not still parked in berth
+        if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
+
+        # Move the passenger from the vehicle to the station
+        vehicle.disembark(pax)
+        pax.loc = self.station
+
+        # Note if the passenger has arrived at final dest (may not be
+        # the case with non-PRT systems)
+        if self.station.ID == pax.dest_station.ID:
+            pax.trip_end = Sim.now()
+            pax.trip_success = True
+            common.delivered_pax.add(pax)
+            self.station._pax_arrivals_count += 1
+            self.station._all_passengers.append(pax)
+            logging.info("T=%4.3f %s delivered to platform %s in %s by %s (%d out of %d), disembarked in berth %s",
+                         Sim.now(), pax, self.platform.ID, self.station.ID, vehicle.ID, vehicle.get_pax_count(), vehicle.max_pax_capacity,  self.ID)
+        else:
+            self.station.add_passenger(pax)
+            self.station._arrivals_count += 1
 
 
-            ### embarking ###
-            while self._embark_pax:
-
-                # Error if vehicle not parked in berth
-                if not self._embark_vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-                    nose_pos, tail_pos = self._embark_vehicle.get_positions()
-                    nose_loc = self._embark_vehicle.loc
-                    tail_loc = self._embark_vehicle.tail_loc
-                    logging.info("T=%4.3f Vehicle not in berth upon attempted embark. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, vNosePos: %s, vNoseLoc %s, vTailPos: %s, vTailLoc: %s, berth.start_pos: %s, berth.end_pos: %s",
-                                 Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, nose_pos, nose_loc, tail_pos, tail_loc, self.start_pos, self.end_pos)
-                    error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._embark_cmd_id
-                    error_msg.id_type = api.VEHICLE
-                    error_msg.ID = self._embark_vehicle.ID
-                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
-                    break
-
-                pax = self._embark_pax.pop()
-
-                # Error if pax not at the station
-                if pax not in self.station._passengers:
-                    logging.info("T=%4.3f Embarking passenger not at station. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
-                                 Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
-                    error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._embark_cmd_id
-                    error_msg.id_type = api.PASSENGER
-                    error_msg.ID = pax.ID
-                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
-                    continue # process other passengers
-
-                # Error if the vehicle is at full capacity
-                if self._embark_vehicle.get_pax_count() >= self._embark_vehicle.max_pax_capacity:
-                    logging.info("T=%4.3f Embarking passenger failed since vehicle is at max capacity. Vehicle: %s, Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
-                                 Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
-                    error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._embark_cmd_id
-                    error_msg.id_type = api.PASSENGER
-                    error_msg.ID = pax.ID
-                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
-                    continue
-
-                self._busy = True
-
-                # Notify controller that embark of this passenger is starting
-                em_start_msg = api.SimNotifyPassengerEmbarkStart()
-                em_start_msg.vID = self._embark_vehicle.ID
-                em_start_msg.sID = self.station.ID
-                em_start_msg.platformID = self.platform.ID
-                em_start_msg.pID = pax.ID
-                em_start_msg.berthID = self.ID
-                em_start_msg.time = Sim.now()
-                common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_START,
-                                       em_start_msg)
-
-                yield Sim.hold, self, pax.load_delay
-
-                # Error if vehicle is not still parked in berth
-                if not self._embark_vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
-                    error_msg = api.SimMsgBodyInvalidId()
-                    error_msg.msgID = self._embark_cmd_id
-                    error_msg.id_type = api.VEHICLE
-                    error_msg.ID = self._embark_vehicle.ID
-                    common.interface.send(api.SIM_MSG_BODY_INVALID_ID, error_msg)
-                    logging.warning("T=%4.3f vehicle %s not parked in berth cannot embark passenger . Berth: %s, Platform: %s, Station: %s, EmbarkCmdId: %s, Passenger: %s",
-                                 Sim.now(), self._embark_vehicle.ID, self.ID, self.platform.ID, self.station.ID, self._embark_cmd_id, pax.ID)
-                    break
-
-                # Move passenger's location to the vehicle
-                self._embark_vehicle.embark(pax)
-                pax.loc = self._embark_vehicle
-                self.station._pax_departures_count += 1
-                self.station.remove_passenger(pax)
-                pax.trip_boarded = Sim.now()
-                logging.info("T=%4.3f %s loaded into %s (%d out of %d) at station %s, platform %s, berth %s ",
-                             Sim.now(), pax, self._embark_vehicle.ID, self._embark_vehicle.get_pax_count(), self._embark_vehicle.max_pax_capacity,  self.station.ID, self.platform.ID, self.ID )
-
-                # Notify that embark of this passenger is complete
-                em_end_msg = api.SimNotifyPassengerEmbarkEnd()
-                em_end_msg.vID = self._embark_vehicle.ID
-                em_end_msg.sID = self.station.ID
-                em_end_msg.platformID = self.platform.ID
-                em_end_msg.pID = pax.ID
-                em_end_msg.berthID = self.ID
-                em_end_msg.time = Sim.now()
-                common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_END,
-                                       em_end_msg)
-
-            self._busy = False
-
-            # Notify controller that passenger embarkment is done.
-            if self._embark_cmd_id != api.NONE_ID:
-                em_cmd_complete = api.SimCompletePassengersEmbark()
-                em_cmd_complete.msgID = self._embark_cmd_id
-                em_cmd_complete.cmd.CopyFrom(self._embark_cmd)
-                em_cmd_complete.time = Sim.now()
-                common.interface.send(api.SIM_COMPLETE_PASSENGERS_EMBARK,
-                                       em_cmd_complete)
-
-                # Reset state
-                self._embark_pax = []
-                self._embark_vehicle = None
-                self._embark_cmd = None
-                self._embark_cmd_id = api.NONE_ID
+        # Notify that disembark of this passenger is complete
+        end_msg = api.SimNotifyPassengerDisembarkEnd()
+        end_msg.vID = vehicle.ID
+        end_msg.sID = self.station.ID
+        end_msg.platformID = self.platform.ID
+        end_msg.pID = pax.ID
+        end_msg.berthID = self.ID
+        end_msg.time = Sim.now()
+        common.interface.send(api.SIM_NOTIFY_PASSENGER_DISEMBARK_END,
+                              end_msg)
 
 
-            assert not self._busy
-            yield Sim.passivate, self
+    def _do_embark(self, vehicle, passengers, cmd_msg, cmd_msg_id):
+        self._busy = True
+        while passengers:
+            pax = passengers.pop()
+            self._do_embark_pax_start(pax, vehicle, cmd_msg_id)
+            yield pax.load_delay
+            self._do_embark_pax_finish(pax, vehicle, cmd_msg_id)
+
+        self._busy = False
+
+        # Notify controller that all passenger embarkments are done.
+        cmd_complete = api.SimCompletePassengersEmbark()
+        cmd_complete.msgID = cmd_msg_id
+        cmd_complete.cmd.CopyFrom(cmd_msg)
+        cmd_complete.time = Sim.now()
+        common.interface.send(api.SIM_COMPLETE_PASSENGERS_EMBARK,
+                              cmd_complete)
+
+
+    def _do_embark_pax_start(self, pax, vehicle, cmd_msg_id):
+        # Error if vehicle not parked in berth
+        if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
+
+        # Error if pax not at the station
+        if pax not in self.station._passengers:
+            raise PassengerNotAvailableError(pax, vehicle, cmd_msg_id)
+
+        # Error if the vehicle is at full capacity
+        if vehicle.get_pax_count() >= vehicle.max_pax_capacity:
+            raise VehicleFullError(pax, vehicle, cmd_msg_id)
+
+        # Notify controller that embark of this passenger is starting
+        start_msg = api.SimNotifyPassengerEmbarkStart()
+        start_msg.vID = vehicle.ID
+        start_msg.sID = self.station.ID
+        start_msg.platformID = self.platform.ID
+        start_msg.pID = pax.ID
+        start_msg.berthID = self.ID
+        start_msg.time = Sim.now()
+        common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_START,
+                              start_msg)
+
+
+    def _do_embark_pax_finish(self, pax, vehicle, cmd_msg_id):
+        # Error if vehicle is not still parked in berth
+        if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
+
+        # Move passenger's location to the vehicle
+        vehicle.embark(pax)
+        pax.loc = vehicle
+        self.station._pax_departures_count += 1
+        self.station.remove_passenger(pax)
+        pax.trip_boarded = Sim.now()
+        logging.info("T=%4.3f %s loaded into %s (%d out of %d) at station %s, platform %s, berth %s ",
+                     Sim.now(), pax, vehicle.ID, vehicle.get_pax_count(), vehicle.max_pax_capacity,  self.station.ID, self.platform.ID, self.ID )
+
+        # Notify that embark of this passenger is complete
+        end_msg = api.SimNotifyPassengerEmbarkEnd()
+        end_msg.vID = vehicle.ID
+        end_msg.sID = self.station.ID
+        end_msg.platformID = self.platform.ID
+        end_msg.pID = pax.ID
+        end_msg.berthID = self.ID
+        end_msg.time = Sim.now()
+        common.interface.send(api.SIM_NOTIFY_PASSENGER_EMBARK_END,
+                              end_msg)
+
+    def _do_enter_storage(self, vehicle, cmd_msg, cmd_msg_id):
+        if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
+
+        storage = self.station._storage_dict[vehicle.model_name]
+        storage._reserve_slot()
+        self._busy = True
+        yield self.station.storage_entrance_delay
+        if not vehicle.is_parked_between(self.start_pos, self.end_pos, self.platform.track_segment):
+            raise VehicleOutOfPositionError(vehicle, cmd_msg_id)
+        storage._store_vehicle(vehicle)
+
+        self._busy = False
+
+        # Notify controller that vehicle entering storage is done.
+        cmd_complete = api.SimCompleteStorageEnter()
+        cmd_complete.msgID = cmd_msg_id
+        cmd_complete.cmd.CopyFrom(cmd_msg)
+        cmd_complete.time = Sim.now()
+        common.interface.send(api.SIM_COMPLETE_STORAGE_ENTER,
+                              cmd_complete)
+
+    def _do_exit_storage(self, position, model_name, cmd_msg, cmd_msg_id):
+        storage = self.station._storage_dict[model_name]
+        storage._reserve_vehicle()
+        self._busy = True
+        yield self.station.storage_exit_delay
+        vehicle = storage._request_vehicle(position, self.platform.track_segment)
+        self._busy = False
+
+        # Notify controller that vehicle exiting storage is done.
+        cmd_complete = api.SimCompleteStorageExit()
+        cmd_complete.msgID = cmd_msg_id
+        cmd_complete.cmd.CopyFrom(cmd_msg)
+        cmd_complete.time = Sim.now()
+        vehicle.fill_VehicleStatus(cmd_complete.v_status)
+        common.interface.send(api.SIM_COMPLETE_STORAGE_EXIT,
+                              cmd_complete)
+
 
 class Platform(traits.HasTraits):
     ID = traits.Int
@@ -322,6 +403,92 @@ class Platform(traits.HasTraits):
 ##                empty = False
 ##                break
 ##        return empty
+
+
+class Storage(object):
+    """Vehicle storage for one model of vehicle at a station.
+
+    When a vehicle is moved into Storage, it is given a new pos and location
+    on a 'private' track segment. This ensures that vehicles always have
+    a legitimate position and location, even when in storage.
+
+    Has no 'public' facing methods. Expected to only be used by classes within
+    this module.
+    """
+
+    def __init__(self, model_name, initial_supply, max_capacity):
+        self.model_name = model_name
+        self.max_capacity = max_capacity
+
+        self._num_vehicles = initial_supply
+        self._num_pending_entry = 0
+        self._num_pending_exit = 0
+
+        # Create a 'private' track segment that is used to store vehicles.
+        nan, inf = float('nan'), float('inf')
+        self._storage_track = TrackSegment(api.STORAGE_ID, nan, nan, nan, nan, inf, 0, [], [], model_name + '_storage')
+
+    def _reserve_vehicle(self):
+        """Mark a vehicle as unavailable. To be called at the time that the
+        command to move a vehicle out of storage is received.
+        """
+        if self._num_vehicles - self._num_pending_exit > 0:
+            self._num_pending_exit += 1
+        else:
+            raise VehicleNotAvailableError
+
+    def _request_vehicle(self, pos, loc):
+        """Request that a vehicle be moved to pos on loc.
+        The effect takes place immediately. To simulate a delay, see reserve_vehicle.
+        """
+        v = None
+        if len(self._storage_track.vehicles):
+            v = self._storage_track.vehicles[0]
+            v._move_to(pos, loc)
+
+        else:
+            # create a new vehicle
+            v_id = max(vehicle.ID for vehicle in common.vehicles.itervalues()) + 1
+            v = common.vehicle_models[self.model_name](
+                    ID=v_id,
+                    loc=loc,
+                    position=pos,
+                    vel=0)
+            common.vehicles[v_id] = v
+            common.vehicle_list.append(v)
+            Sim.activate(v, v.ctrl_loop())
+
+        self._num_pending_exit -= 1
+        self._num_vehicles -= 1
+
+        assert 0 <= self._num_vehicles - self._num_pending_exit <= self.max_capacity
+        return v
+
+    def _reserve_slot(self):
+        """Mark a slot in the storage area as unavailable. To be called at the
+        time the command to move a vehicle into storage is received.
+        """
+        if self._num_vehicles + self._num_pending_entry + 1 <= self.max_capacity:
+            self._num_pending_entry += 1
+        else:
+            raise StorageFullError
+
+    def _store_vehicle(self, vehicle):
+        """Request that vehicle be moved into storage.
+        The effect takes place immediately. To simulate a delay, see reserve_slot
+        """
+        assert vehicle.model_name == self.model_name
+        assert abs(vehicle.vel) < 0.1 # loose sanity check, vehicle should be stopped.
+
+        try:
+            pos = self._storage_track.vehicles[0].pos + vehicle.length + 1 # arbitrary 1 meter spacing
+        except IndexError:
+            pos = vehicle.length + 1
+        vehicle._move_to(pos, self._storage_track)
+        self._num_pending_entry -= 1
+        self._num_vehicles += 1
+
+        assert 0 <= self._num_pending_entry + self._num_vehicles <= self.max_capacity
 
 class Station(traits.HasTraits):
     platforms = traits.List(traits.Instance(Platform))
@@ -367,12 +534,19 @@ class Station(traits.HasTraits):
         row_factory = traits.This)
 
 
-    def __init__(self, ID, label, track_segments):
+    def __init__(self, ID, label, track_segments,
+                 storage_entrance_delay, storage_exit_delay, storage_dict):
+
         traits.HasTraits.__init__(self)
         self.ID = ID
         self.label = label
         self.platforms = []
         self.track_segments = track_segments
+        self.storage_entrance_delay = storage_entrance_delay
+        self.storage_exit_delay = storage_exit_delay
+
+        # Keyed by the VehicleModel name (string) with FIFO queues as the values.
+        self._storage_dict = storage_dict
 
         self._pax_arrivals_count = 0
         self._pax_departures_count = 0

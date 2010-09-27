@@ -54,6 +54,8 @@ class BaseController(object):
             api.SIM_COMPLETE_PASSENGERS_DISEMBARK : api.SimCompletePassengersDisembark(),
             api.SIM_COMPLETE_PASSENGER_WALK : api.SimCompletePassengerWalk(),
             api.SIM_COMPLETE_SWITCH : api.SimCompleteSwitch(),
+            api.SIM_COMPLETE_STORAGE_ENTER : api.SimCompleteStorageEnter(),
+            api.SIM_COMPLETE_STORAGE_EXIT : api.SimCompleteStorageExit(),
             api.SIM_RESPONSE_VEHICLE_STATUS : api.SimResponseVehicleStatus(),
             api.SIM_RESPONSE_STATION_STATUS : api.SimResponseStationStatus(),
             api.SIM_RESPONSE_PASSENGER_STATUS : api.SimResponsePassengerStatus(),
@@ -64,6 +66,7 @@ class BaseController(object):
             api.SIM_NOTIFY_VEHICLE_ARRIVE : api.SimNotifyVehicleArrive(),
             api.SIM_NOTIFY_VEHICLE_EXIT : api.SimNotifyVehicleExit(),
             api.SIM_NOTIFY_VEHICLE_STOPPED : api.SimNotifyVehicleStopped(),
+            api.SIM_NOTIFY_VEHICLE_SPEEDING : api.SimNotifyVehicleSpeeding(),
             api.SIM_NOTIFY_VEHICLE_COLLISION : api.SimNotifyVehicleCollision(),
             api.SIM_NOTIFY_VEHICLE_CRASH : api.SimNotifyVehicleCrash(),
             api.SIM_NOTIFY_PASSENGER_EMBARK_START : api.SimNotifyPassengerEmbarkStart(),
@@ -102,6 +105,8 @@ class BaseController(object):
             api.SIM_COMPLETE_PASSENGERS_DISEMBARK : self.on_SIM_COMPLETE_PASSENGERS_DISEMBARK,
             api.SIM_COMPLETE_PASSENGER_WALK : self.on_SIM_COMPLETE_PASSENGER_WALK,
             api.SIM_COMPLETE_SWITCH : self.on_SIM_COMPLETE_SWITCH,
+            api.SIM_COMPLETE_STORAGE_ENTER : self.on_SIM_COMPLETE_STORAGE_ENTER,
+            api.SIM_COMPLETE_STORAGE_EXIT : self.on_SIM_COMPLETE_STORAGE_EXIT,
             api.SIM_RESPONSE_VEHICLE_STATUS : self.on_SIM_RESPONSE_VEHICLE_STATUS,
             api.SIM_RESPONSE_STATION_STATUS : self.on_SIM_RESPONSE_STATION_STATUS,
             api.SIM_RESPONSE_PASSENGER_STATUS : self.on_SIM_RESPONSE_PASSENGER_STATUS,
@@ -113,6 +118,7 @@ class BaseController(object):
             api.SIM_NOTIFY_VEHICLE_EXIT : self.on_SIM_NOTIFY_VEHICLE_EXIT,
             api.SIM_NOTIFY_VEHICLE_STOPPED : self.on_SIM_NOTIFY_VEHICLE_STOPPED,
             api.SIM_NOTIFY_VEHICLE_COLLISION : self.on_SIM_NOTIFY_VEHICLE_COLLISION,
+            api.SIM_NOTIFY_VEHICLE_SPEEDING : self.on_SIM_NOTIFY_VEHICLE_SPEEDING,
             api.SIM_NOTIFY_VEHICLE_CRASH : self.on_SIM_NOTIFY_VEHICLE_CRASH,
             api.SIM_NOTIFY_PASSENGER_EMBARK_START : self.on_SIM_NOTIFY_PASSENGER_EMBARK_START,
             api.SIM_NOTIFY_PASSENGER_EMBARK_END : self.on_SIM_NOTIFY_PASSENGER_EMBARK_END,
@@ -313,6 +319,12 @@ class BaseController(object):
     def on_SIM_COMPLETE_SWITCH(self, msg, msgID, msg_time):
         pass
 
+    def on_SIM_COMPLETE_STORAGE_ENTER(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_COMPLETE_STORAGE_EXIT(self, msg, msgID, msg_time):
+        pass
+
     def on_SIM_RESPONSE_VEHICLE_STATUS(self, msg, msgID, msg_time):
         pass
 
@@ -341,6 +353,9 @@ class BaseController(object):
         pass
 
     def on_SIM_NOTIFY_VEHICLE_STOPPED(self, msg, msgID, msg_time):
+        pass
+
+    def on_SIM_NOTIFY_VEHICLE_SPEEDING(self, msg, msgID, msg_time):
         pass
 
     def on_SIM_NOTIFY_VEHICLE_READY_LOAD(self, msg, msgID, msg_time):

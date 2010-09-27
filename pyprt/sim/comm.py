@@ -3,7 +3,7 @@ TODO: Rename pyprt.ctrl.base_controller to pyprt.shared.comm and inherit from th
 """
 from __future__ import division # always use floating point division
 
-import sys, socket, logging, heapq, struct, threading, time, Queue
+import sys, socket, logging, heapq, struct, threading, time, Queue, os
 
 import SimPy.SimulationRT as Sim
 import google.protobuf.text_format as text_format
@@ -52,7 +52,7 @@ def receive(sock, queue, comm_idx):
         hdr = ''.join(hdr) # concatenate strings
 
         msg_sep, msg_type, msgID, msg_time, msg_size \
-                = struct.unpack('>hhiii', hdr)
+               = struct.unpack('>hhiii', hdr)
         # TODO: Subtype Exception,  and handle
         if msg_sep != api.MSG_SEP:
             err_msg = api.SimMsgHdrInvalidSeparator()
@@ -119,7 +119,7 @@ class ControlInterface(Sim.Process):
         elif isinstance(log, file):
             self.log = log
         else:
-            raise Exception("ControlInterface constructor expects a string or a file")
+            self.log = os.devnull
 
         self.TCP_server_socket = None
         self.UDP_server_socket = None
@@ -177,8 +177,8 @@ class ControlInterface(Sim.Process):
             sendQ = Queue.Queue(-1) # no size limit
             self.sendQs.append(sendQ)
             transmit_thread = threading.Thread(target = transmit,
-                                           name='sim_transmitter_'+str(idx),
-                                           args = (sock, sendQ))
+                                               name='sim_transmitter_'+str(idx),
+                                               args = (sock, sendQ))
             transmit_thread.setDaemon(True)
             transmit_thread.start()
 
@@ -291,7 +291,10 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
                     passengers = map(self.get_passenger, msg.passengerIDs)
-                    b.embark(v, passengers, msg, msgID)
+                    if b.loading and not b.is_busy():
+                        b.embark(v, passengers, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b
 
                 elif msg_type == api.CTRL_CMD_PASSENGERS_DISEMBARK:
                     msg = api.CtrlCmdPassengersDisembark()
@@ -300,7 +303,10 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
                     passengers = map(self.get_passenger, msg.passengerIDs)
-                    b.disembark(v, passengers, msg, msgID)
+                    if b.unloading and not b.is_busy():
+                        b.disembark(v, passengers, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b
 
                 elif msg_type == api.CTRL_CMD_PASSENGER_WALK:
                     msg = api.CtrlCmdPassengerWalk()
@@ -315,6 +321,36 @@ class ControlInterface(Sim.Process):
                     if travel_time < 0:
                         raise common.InvalidTime, travel_time
                     pax.walk(origin, dest, travel_time, msg, msgID)
+
+                elif msg_type == api.CTRL_CMD_STORAGE_ENTER:
+                    msg = api.CtrlCmdStorageEnter()
+                    msg.MergeFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    v = self.get_vehicle(msg.vID)
+                    b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
+                    if b.storage_entrance and not b.is_busy() :
+                        b.enter_storage(v, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b.ID
+
+                elif msg_type == api.CTRL_CMD_STORAGE_EXIT:
+                    msg = api.CtrlCmdStorageExit()
+                    msg.MergeFromString(msg_str)
+                    self.log_rcvd_msg( msg_type, msgID, msg_time, msg )
+                    try:
+                        model = common.vehicle_models[msg.model_name]
+                    except KeyError:
+                        raise common.MsgError
+                    b = self.get_berth(msg.sID, msg.platformID, msg.berthID)
+
+                    position = msg.position
+                    if b.storage_exit \
+                            and not b.is_busy() \
+                            and position - model.length >= b.start_pos \
+                            and position <= b.end_pos:
+                        b.exit_storage(position, model.model_name, msg, msgID)
+                    else:
+                        raise common.InvalidBerthID, b.ID
 
                 # REQUESTS
                 elif msg_type == api.CTRL_REQUEST_VEHICLE_STATUS:
@@ -501,7 +537,7 @@ class ControlInterface(Sim.Process):
             err.msg_time = msg_time
             self.send(api.SIM_MSG_HDR_INVALID_TIME, err)
             logging.error("Time stamp for RCVD message %s type %s in the past. Stamp: %s Now: %s ",
-                  msgID, msg_type, msg_time, ms_now())
+                          msgID, msg_type, msg_time, ms_now())
             common.errors += 1
 
         return msg_type
@@ -543,17 +579,19 @@ class ControlInterface(Sim.Process):
             # list of events to run.
             Sim.reactivate(self, prior=False)
 
-        print >> self.log, "Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
-                 (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
-        text_format.PrintMessage(msg, out=self.log)
-        print >> self.log, "--"
+        if self.log != os.devnull:
+            print >> self.log, "Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
+                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
+            text_format.PrintMessage(msg, out=self.log)
+            print >> self.log, "--"
 
     def log_rcvd_msg(self, msg_type, msgID, msg_time, msg):
         # log msg
-        print >> self.log, "Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
-                 (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
-        text_format.PrintMessage(msg, out=self.log)
-        print >> self.log, "--"
+        if self.log != os.devnull:
+            print >> self.log, "Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
+                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
+            text_format.PrintMessage(msg, out=self.log)
+            print >> self.log, "--"
 
     def get_trackSeg(self, ID):
         """"Return the TrackSegment object specified by the ID.

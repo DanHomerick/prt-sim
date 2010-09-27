@@ -1,16 +1,24 @@
 from __future__ import division # use floating point division by default
 
 from sys import stdout
+import itertools
+import math
 
+import numpy
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
+import enthought.chaco.api as chaco
+import enthought.chaco.tools.api as tools
+from enthought.enable.component_editor import ComponentEditor
 import SimPy.SimulationRT as Sim
+
 
 import common
 from pyprt.shared.utility import sec_to_hms
 from events import Passenger
 from vehicle import BaseVehicle
 from station import Station
+from pyprt.shared.cubic_spline import OutOfBoundsError
 
 class Report(traits.HasTraits):
     """A base class for detailed reports."""
@@ -176,9 +184,9 @@ class PaxReport(Report):
         return self.LINE_DELIMETER.join(line_strings)
 
 class VehicleReport(Report):
-    def __init__(self, vehicle_dict):
+    def __init__(self, v_list):
         super(VehicleReport, self).__init__(title='Vehicles')
-        self._vehicle_dict = vehicle_dict
+        self._v_list = v_list
         self._units_notice = "All values reported in units of meters and seconds."
         self._header = ["id",
                         "Label",
@@ -203,11 +211,13 @@ class VehicleReport(Report):
         self._lines = []
 
     def update(self):
-        v_list = self._vehicle_dict.values()
-        v_list.sort()
+        # Check if the locally cached vehicle list has gotten stale.
+        if len(self._v_list) != len(common.vehicles):
+            self._v_list[:] = common.vehicles.values()
+            self._v_list.sort()
 
         lines = []
-        for v in v_list:
+        for v in self._v_list:
             assert isinstance(v, BaseVehicle)
             extrema_velocities, extrema_times = v._spline.get_extrema_velocities()
             max_vel = max(extrema_velocities)
@@ -327,11 +337,143 @@ class StationReport(Report):
             line_strings.append(line_str)
         return self.LINE_DELIMETER.join(line_strings)
 
+class PowerReport(Report):
+    def __init__(self, v_list):
+        super(PowerReport, self).__init__(title='Power')
+        self.v_list = v_list
+        self.plot_data = None
+        self.plot = None
+
+    def make_plot_data(self, v_list):
+        """Returns a chaco.ArrayPlotData containing the following:
+          v_power -- A 2D array where each row is a vehicle (indexes match
+                     self.v_list), and each column is a time point.
+          total_power - A 1D row array giving the network-wide power usage
+                     at each time point.
+
+        Parameters:
+          v_list -- a sequence of Vehicle objects, sorted by ID
+        """
+        end_time = min(common.Sim.now(), common.config_manager.get_sim_end_time())
+        num_samples = min(10000, end_time+1) # 10,000 samples, or once per second, whichever is less
+        sample_times = numpy.linspace(0, end_time, num_samples)
+        power_array = numpy.zeros( (len(v_list), num_samples), dtype=numpy.float32)
+
+        air_density = common.air_density
+        wind_speed = common.wind_speed
+        wind_angle = common.wind_direction # 0 is blowing FROM the East
+
+        g = 9.80665 # m/s^2
+        PI_2 = math.pi/2
+        PI_3_2 = math.pi * 1.5
+
+        for v_idx, v in enumerate(v_list):
+            masses = v.get_total_masses(sample_times)
+            CdA = v.frontal_area * v.drag_coefficient
+
+            path_idx = 0
+            path_sum = 0
+            loc = v._path[path_idx]
+
+            last_elevation = loc.get_elevation(v._spline.evaluate(v._spline.t[0]).pos)
+
+            for sample_idx, (t, mass) in enumerate(itertools.izip(sample_times, masses)):
+                try:
+                    knot = v._spline.evaluate(t)
+                    # Power to accelerate / decelerate
+                    accel_power = mass * knot.accel * knot.vel
+
+                    # Track where we are on the vehicle's path
+                    pos = knot.pos - path_sum
+                    if pos >= loc.length:
+                        path_sum += loc.length
+                        path_idx += 1
+                        pos = knot.pos - path_sum
+                        loc = v._path[path_idx]
+
+                    # Power to overcome aero drag
+                    if wind_speed and knot.vel != 0: # No power use when stopped
+                        travel_angle = loc.get_direction(knot.pos - path_sum) # 0 is travelling TOWARDS the East
+                        incidence_angle = wind_angle - travel_angle
+                        if PI_2 <= incidence_angle <= PI_3_2: # tail wind
+                            vel = knot.vel - math.cos(incidence_angle)*wind_speed
+                        else: # head wind
+                            vel = knot.vel + math.cos(incidence_angle)*wind_speed
+                    else:
+                        vel = knot.vel
+                    aero_power = 0.5 * air_density * vel*vel*vel * CdA
+
+                    # Power from elevation changes
+                    elevation = loc.get_elevation(pos)
+                    delta_elevation = elevation - last_elevation
+                    elevation_power = g * delta_elevation
+                    last_elevation = elevation
+
+                    # Adjust power usages by efficiency
+                    net_power = accel_power + aero_power + elevation_power
+                    if net_power > 0:
+                        net_power /= v.powertrain_efficiency # low efficiency increases power required
+                    elif net_power < 0:
+                        net_power *= v.regenerative_braking_efficiency # low efficiency decreases power recovered
+
+                    power_array[v_idx, sample_idx] = net_power
+
+                except OutOfBoundsError:
+                    power_array[v_idx, sample_idx] = 0
+
+        power_array = numpy.divide(power_array, 1000.0) # convert from Watts to KW
+
+        positive_power = numpy.clip(power_array, 0, numpy.inf)
+        positive_total_power = numpy.sum(positive_power, axis=0)
+
+        negative_power = numpy.clip(power_array, -numpy.inf, 0)
+        negative_total_power = numpy.sum(negative_power, axis=0)
+
+        net_total_power = positive_total_power + negative_total_power
+
+        return chaco.ArrayPlotData(sample_times=sample_times,
+                                   v_power=power_array,
+                                   positive_power=positive_power,
+                                   positive_total_power=positive_total_power,
+                                   negative_power=negative_power,
+                                   negative_total_power=negative_total_power,
+                                   net_total_power=net_total_power)
+
+    def make_plot(self, plot_data):
+        plot = chaco.Plot(plot_data)
+        plot.y_axis.title="Power (KW)"
+        plot.x_axis.title="Time (seconds)"
+        positive_plot = plot.plot(("sample_times", "positive_total_power"), type="line", color='black', line_width=2)
+        negative_plot = plot.plot(("sample_times", "negative_total_power"), type="line", color='red', line_width=2)
+        net_plot = plot.plot(("sample_times", "net_total_power"), type="line", color='purple', line_width=2)
+
+        # Zoom tool
+        plot.overlays.append(tools.SimpleZoom(plot, tool_mode='box', always_on=True))
+
+        # Legend
+        legend = chaco.Legend(component=plot, padding=20, align="ur")
+        legend.tools.append(tools.LegendTool(legend, drag_button="left"))
+        legend.plots = {'Positive Power':positive_plot, 'Negative Power':negative_plot, 'Net Power':net_plot}
+        plot.overlays.append(legend)
+
+        return plot
+
+    def update(self):
+        # Check if the locally cached vehicle list has gotten stale.
+        if len(self.v_list) != len(common.vehicles):
+            self.v_list[:] = common.vehicles.values()
+            self.v_list.sort()
+
+        self.plot_data = self.make_plot_data(self.v_list)
+        self.plot = self.make_plot(self.plot_data)
+
 class Reports(traits.HasTraits):
     """A user interface that displays all the reports in a tabbed notebook."""
 
     summary_report = traits.Instance(SummaryReport)
     pax_report = traits.Instance(PaxReport)
+    power_report = traits.Instance(PowerReport)
+    power_plot = traits.Instance(chaco.Plot)
 
     @property
     def passengers(self):
@@ -339,7 +481,7 @@ class Reports(traits.HasTraits):
 
     @property
     def vehicles(self):
-        return self.vehicle_dict.values()
+        return self.v_list
 
     @property
     def stations(self):
@@ -351,6 +493,7 @@ class Reports(traits.HasTraits):
                    ui.Item('passengers@', style='custom', editor=Passenger.table_editor),
                    ui.Item('vehicles@', style='custom', editor=BaseVehicle.table_editor),
                    ui.Item('stations@', style='custom', editor=Station.table_editor),
+                   ui.Item('power_plot', label='Power', editor=ComponentEditor()),
                    show_labels=False,
                 ),
                title = 'Simulation Reports',
@@ -359,22 +502,33 @@ class Reports(traits.HasTraits):
     def __init__(self, pax_dict, vehicle_dict, station_dict):
         super(Reports, self).__init__()
         self.pax_dict = pax_dict
-        self.vehicle_dict = vehicle_dict
         self.station_dict = station_dict
+        self.v_list = vehicle_dict.values()
+        self.v_list.sort()
 
         self.summary_report = SummaryReport()
         self.pax_report = PaxReport(self.pax_dict)
-        self.vehicle_report = VehicleReport(vehicle_dict)
+        self.vehicle_report = VehicleReport(self.v_list)
         self.station_report = StationReport(station_dict)
+        self.power_report = PowerReport(self.v_list)
+
+        self._last_update_time = None
 
     def update(self):
+        if self._last_update_time == Sim.now():
+            return
+
         self.summary_report.update()
         self.pax_report.update()
         self.vehicle_report.update()
         self.station_report.update()
+        self.power_report.update()
+        self.power_plot = self.power_report.plot
+
+        self._last_update_time = Sim.now()
 
     def display(self, evt=None):
-        self.summary_report.update()
+        self.update()
         self.edit_traits()
 
     def write(self, report_path, update=True):

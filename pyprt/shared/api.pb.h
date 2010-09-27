@@ -39,6 +39,8 @@ class CtrlCmdVehicleItinerary;
 class CtrlCmdPassengersEmbark;
 class CtrlCmdPassengersDisembark;
 class CtrlCmdPassengerWalk;
+class CtrlCmdStorageEnter;
+class CtrlCmdStorageExit;
 class CtrlCmdSwitch;
 class CtrlRequestVehicleStatus;
 class CtrlRequestStationStatus;
@@ -58,6 +60,8 @@ class SimCompletePassengersEmbark;
 class SimCompletePassengersDisembark;
 class SimCompletePassengerWalk;
 class SimCompleteSwitch;
+class SimCompleteStorageEnter;
+class SimCompleteStorageExit;
 class SimResponseVehicleStatus;
 class SimResponseStationStatus;
 class SimResponsePassengerStatus;
@@ -69,6 +73,7 @@ class SimNotifyTime;
 class SimNotifyVehicleArrive;
 class SimNotifyVehicleExit;
 class SimNotifyVehicleStopped;
+class SimNotifyVehicleSpeeding;
 class SimNotifyVehicleCollision;
 class SimNotifyVehicleCrash;
 class SimNotifyPassengerEmbarkStart;
@@ -105,7 +110,8 @@ class TrackStatus;
 enum Misc {
   MSG_SEP = -32123,
   MSG_HEADER_SIZE = 16,
-  NONE_ID = -1
+  NONE_ID = -1,
+  STORAGE_ID = -2
 };
 bool Misc_IsValid(int value);
 const Misc Misc_MIN = MSG_SEP;
@@ -129,6 +135,8 @@ enum CtrlMsgType {
   CTRL_CMD_PASSENGERS_EMBARK = 4,
   CTRL_CMD_PASSENGERS_DISEMBARK = 5,
   CTRL_CMD_PASSENGER_WALK = 6,
+  CTRL_CMD_STORAGE_ENTER = 7,
+  CTRL_CMD_STORAGE_EXIT = 8,
   CTRL_REQUEST_VEHICLE_STATUS = 10,
   CTRL_REQUEST_STATION_STATUS = 11,
   CTRL_REQUEST_PASSENGER_STATUS = 12,
@@ -209,41 +217,44 @@ enum SimMsgType {
   SIM_COMPLETE_PASSENGERS_DISEMBARK = 1011,
   SIM_COMPLETE_PASSENGER_WALK = 1012,
   SIM_COMPLETE_SWITCH = 1013,
-  SIM_RESPONSE_VEHICLE_STATUS = 1020,
-  SIM_RESPONSE_STATION_STATUS = 1021,
-  SIM_RESPONSE_PASSENGER_STATUS = 1022,
-  SIM_RESPONSE_SWITCH_STATUS = 1023,
-  SIM_RESPONSE_TRACK_STATUS = 1024,
-  SIM_RESPONSE_TOTAL_STATUS = 1025,
-  SIM_NOTIFY_VEHICLE_POSITION = 1030,
-  SIM_NOTIFY_VEHICLE_ARRIVE = 1031,
-  SIM_NOTIFY_VEHICLE_EXIT = 1032,
-  SIM_NOTIFY_VEHICLE_STOPPED = 1033,
-  SIM_NOTIFY_VEHICLE_COLLISION = 1034,
-  SIM_NOTIFY_VEHICLE_CRASH = 1035,
-  SIM_NOTIFY_PASSENGER_EMBARK_START = 1036,
-  SIM_NOTIFY_PASSENGER_EMBARK_END = 1037,
-  SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1038,
-  SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1039,
-  SIM_NOTIFY_TIME = 1040,
-  SIM_EVENT_TRACK_DISABLED = 1050,
-  SIM_EVENT_TRACK_REENABLED = 1051,
-  SIM_EVENT_SWITCH_DISABLED = 1052,
-  SIM_EVENT_SWITCH_REENABLED = 1053,
-  SIM_EVENT_STATION_DISABLED = 1054,
-  SIM_EVENT_STATION_REENABLED = 1055,
-  SIM_EVENT_VEHICLE_DISABLED = 1056,
-  SIM_EVENT_VEHICLE_REENABLED = 1057,
-  SIM_EVENT_PASSENGER_CREATED = 1058,
-  SIM_EVENT_PASSENGER_CHANGEDEST = 1059,
-  SIM_MSG_HDR_INVALID_SEPARATOR = 1070,
-  SIM_MSG_HDR_INVALID_TYPE = 1071,
-  SIM_MSG_HDR_INVALID_ID = 1072,
-  SIM_MSG_HDR_INVALID_TIME = 1073,
-  SIM_MSG_HDR_INVALID_SIZE = 1074,
-  SIM_MSG_BODY_INVALID = 1075,
-  SIM_MSG_BODY_INVALID_TIME = 1076,
-  SIM_MSG_BODY_INVALID_ID = 1077
+  SIM_COMPLETE_STORAGE_ENTER = 1014,
+  SIM_COMPLETE_STORAGE_EXIT = 1015,
+  SIM_RESPONSE_VEHICLE_STATUS = 1030,
+  SIM_RESPONSE_STATION_STATUS = 1031,
+  SIM_RESPONSE_PASSENGER_STATUS = 1032,
+  SIM_RESPONSE_SWITCH_STATUS = 1033,
+  SIM_RESPONSE_TRACK_STATUS = 1034,
+  SIM_RESPONSE_TOTAL_STATUS = 1035,
+  SIM_NOTIFY_VEHICLE_POSITION = 1040,
+  SIM_NOTIFY_VEHICLE_ARRIVE = 1041,
+  SIM_NOTIFY_VEHICLE_EXIT = 1042,
+  SIM_NOTIFY_VEHICLE_STOPPED = 1043,
+  SIM_NOTIFY_VEHICLE_SPEEDING = 1044,
+  SIM_NOTIFY_VEHICLE_COLLISION = 1045,
+  SIM_NOTIFY_VEHICLE_CRASH = 1046,
+  SIM_NOTIFY_PASSENGER_EMBARK_START = 1047,
+  SIM_NOTIFY_PASSENGER_EMBARK_END = 1048,
+  SIM_NOTIFY_PASSENGER_DISEMBARK_START = 1049,
+  SIM_NOTIFY_PASSENGER_DISEMBARK_END = 1050,
+  SIM_NOTIFY_TIME = 1051,
+  SIM_EVENT_TRACK_DISABLED = 1060,
+  SIM_EVENT_TRACK_REENABLED = 1061,
+  SIM_EVENT_SWITCH_DISABLED = 1062,
+  SIM_EVENT_SWITCH_REENABLED = 1063,
+  SIM_EVENT_STATION_DISABLED = 1064,
+  SIM_EVENT_STATION_REENABLED = 1065,
+  SIM_EVENT_VEHICLE_DISABLED = 1066,
+  SIM_EVENT_VEHICLE_REENABLED = 1067,
+  SIM_EVENT_PASSENGER_CREATED = 1068,
+  SIM_EVENT_PASSENGER_CHANGEDEST = 1069,
+  SIM_MSG_HDR_INVALID_SEPARATOR = 1080,
+  SIM_MSG_HDR_INVALID_TYPE = 1081,
+  SIM_MSG_HDR_INVALID_ID = 1082,
+  SIM_MSG_HDR_INVALID_TIME = 1083,
+  SIM_MSG_HDR_INVALID_SIZE = 1084,
+  SIM_MSG_BODY_INVALID = 1085,
+  SIM_MSG_BODY_INVALID_TIME = 1086,
+  SIM_MSG_BODY_INVALID_ID = 1087
 };
 bool SimMsgType_IsValid(int value);
 const SimMsgType SimMsgType_MIN = SIM_GREETING;
@@ -1037,6 +1048,244 @@ class CtrlCmdPassengerWalk : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static CtrlCmdPassengerWalk* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class CtrlCmdStorageEnter : public ::google::protobuf::Message {
+ public:
+  CtrlCmdStorageEnter();
+  virtual ~CtrlCmdStorageEnter();
+  
+  CtrlCmdStorageEnter(const CtrlCmdStorageEnter& from);
+  
+  inline CtrlCmdStorageEnter& operator=(const CtrlCmdStorageEnter& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CtrlCmdStorageEnter& default_instance();
+  
+  void Swap(CtrlCmdStorageEnter* other);
+  
+  // implements Message ----------------------------------------------
+  
+  CtrlCmdStorageEnter* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const CtrlCmdStorageEnter& from);
+  void MergeFrom(const CtrlCmdStorageEnter& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 vID = 1;
+  inline bool has_vid() const;
+  inline void clear_vid();
+  static const int kVIDFieldNumber = 1;
+  inline ::google::protobuf::int32 vid() const;
+  inline void set_vid(::google::protobuf::int32 value);
+  
+  // required int32 sID = 2;
+  inline bool has_sid() const;
+  inline void clear_sid();
+  static const int kSIDFieldNumber = 2;
+  inline ::google::protobuf::int32 sid() const;
+  inline void set_sid(::google::protobuf::int32 value);
+  
+  // required int32 platformID = 3;
+  inline bool has_platformid() const;
+  inline void clear_platformid();
+  static const int kPlatformIDFieldNumber = 3;
+  inline ::google::protobuf::int32 platformid() const;
+  inline void set_platformid(::google::protobuf::int32 value);
+  
+  // required int32 berthID = 4;
+  inline bool has_berthid() const;
+  inline void clear_berthid();
+  static const int kBerthIDFieldNumber = 4;
+  inline ::google::protobuf::int32 berthid() const;
+  inline void set_berthid(::google::protobuf::int32 value);
+  
+  // @@protoc_insertion_point(class_scope:prt.CtrlCmdStorageEnter)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 vid_;
+  ::google::protobuf::int32 sid_;
+  ::google::protobuf::int32 platformid_;
+  ::google::protobuf::int32 berthid_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static CtrlCmdStorageEnter* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class CtrlCmdStorageExit : public ::google::protobuf::Message {
+ public:
+  CtrlCmdStorageExit();
+  virtual ~CtrlCmdStorageExit();
+  
+  CtrlCmdStorageExit(const CtrlCmdStorageExit& from);
+  
+  inline CtrlCmdStorageExit& operator=(const CtrlCmdStorageExit& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CtrlCmdStorageExit& default_instance();
+  
+  void Swap(CtrlCmdStorageExit* other);
+  
+  // implements Message ----------------------------------------------
+  
+  CtrlCmdStorageExit* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const CtrlCmdStorageExit& from);
+  void MergeFrom(const CtrlCmdStorageExit& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 sID = 1;
+  inline bool has_sid() const;
+  inline void clear_sid();
+  static const int kSIDFieldNumber = 1;
+  inline ::google::protobuf::int32 sid() const;
+  inline void set_sid(::google::protobuf::int32 value);
+  
+  // required int32 platformID = 2;
+  inline bool has_platformid() const;
+  inline void clear_platformid();
+  static const int kPlatformIDFieldNumber = 2;
+  inline ::google::protobuf::int32 platformid() const;
+  inline void set_platformid(::google::protobuf::int32 value);
+  
+  // required int32 berthID = 3;
+  inline bool has_berthid() const;
+  inline void clear_berthid();
+  static const int kBerthIDFieldNumber = 3;
+  inline ::google::protobuf::int32 berthid() const;
+  inline void set_berthid(::google::protobuf::int32 value);
+  
+  // required float position = 4;
+  inline bool has_position() const;
+  inline void clear_position();
+  static const int kPositionFieldNumber = 4;
+  inline float position() const;
+  inline void set_position(float value);
+  
+  // required string model_name = 5;
+  inline bool has_model_name() const;
+  inline void clear_model_name();
+  static const int kModelNameFieldNumber = 5;
+  inline const ::std::string& model_name() const;
+  inline void set_model_name(const ::std::string& value);
+  inline void set_model_name(const char* value);
+  inline void set_model_name(const char* value, size_t size);
+  inline ::std::string* mutable_model_name();
+  
+  // @@protoc_insertion_point(class_scope:prt.CtrlCmdStorageExit)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 sid_;
+  ::google::protobuf::int32 platformid_;
+  ::google::protobuf::int32 berthid_;
+  float position_;
+  ::std::string* model_name_;
+  static const ::std::string _default_model_name_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static CtrlCmdStorageExit* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -2859,6 +3108,224 @@ class SimCompleteSwitch : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
+class SimCompleteStorageEnter : public ::google::protobuf::Message {
+ public:
+  SimCompleteStorageEnter();
+  virtual ~SimCompleteStorageEnter();
+  
+  SimCompleteStorageEnter(const SimCompleteStorageEnter& from);
+  
+  inline SimCompleteStorageEnter& operator=(const SimCompleteStorageEnter& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SimCompleteStorageEnter& default_instance();
+  
+  void Swap(SimCompleteStorageEnter* other);
+  
+  // implements Message ----------------------------------------------
+  
+  SimCompleteStorageEnter* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const SimCompleteStorageEnter& from);
+  void MergeFrom(const SimCompleteStorageEnter& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 msgID = 1;
+  inline bool has_msgid() const;
+  inline void clear_msgid();
+  static const int kMsgIDFieldNumber = 1;
+  inline ::google::protobuf::int32 msgid() const;
+  inline void set_msgid(::google::protobuf::int32 value);
+  
+  // required double time = 2;
+  inline bool has_time() const;
+  inline void clear_time();
+  static const int kTimeFieldNumber = 2;
+  inline double time() const;
+  inline void set_time(double value);
+  
+  // optional .prt.CtrlCmdStorageEnter cmd = 3;
+  inline bool has_cmd() const;
+  inline void clear_cmd();
+  static const int kCmdFieldNumber = 3;
+  inline const ::prt::CtrlCmdStorageEnter& cmd() const;
+  inline ::prt::CtrlCmdStorageEnter* mutable_cmd();
+  
+  // @@protoc_insertion_point(class_scope:prt.SimCompleteStorageEnter)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 msgid_;
+  double time_;
+  ::prt::CtrlCmdStorageEnter* cmd_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static SimCompleteStorageEnter* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class SimCompleteStorageExit : public ::google::protobuf::Message {
+ public:
+  SimCompleteStorageExit();
+  virtual ~SimCompleteStorageExit();
+  
+  SimCompleteStorageExit(const SimCompleteStorageExit& from);
+  
+  inline SimCompleteStorageExit& operator=(const SimCompleteStorageExit& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SimCompleteStorageExit& default_instance();
+  
+  void Swap(SimCompleteStorageExit* other);
+  
+  // implements Message ----------------------------------------------
+  
+  SimCompleteStorageExit* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const SimCompleteStorageExit& from);
+  void MergeFrom(const SimCompleteStorageExit& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 msgID = 1;
+  inline bool has_msgid() const;
+  inline void clear_msgid();
+  static const int kMsgIDFieldNumber = 1;
+  inline ::google::protobuf::int32 msgid() const;
+  inline void set_msgid(::google::protobuf::int32 value);
+  
+  // required double time = 2;
+  inline bool has_time() const;
+  inline void clear_time();
+  static const int kTimeFieldNumber = 2;
+  inline double time() const;
+  inline void set_time(double value);
+  
+  // optional .prt.CtrlCmdStorageExit cmd = 3;
+  inline bool has_cmd() const;
+  inline void clear_cmd();
+  static const int kCmdFieldNumber = 3;
+  inline const ::prt::CtrlCmdStorageExit& cmd() const;
+  inline ::prt::CtrlCmdStorageExit* mutable_cmd();
+  
+  // required .prt.VehicleStatus v_status = 4;
+  inline bool has_v_status() const;
+  inline void clear_v_status();
+  static const int kVStatusFieldNumber = 4;
+  inline const ::prt::VehicleStatus& v_status() const;
+  inline ::prt::VehicleStatus* mutable_v_status();
+  
+  // @@protoc_insertion_point(class_scope:prt.SimCompleteStorageExit)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 msgid_;
+  double time_;
+  ::prt::CtrlCmdStorageExit* cmd_;
+  ::prt::VehicleStatus* v_status_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static SimCompleteStorageExit* default_instance_;
+};
+// -------------------------------------------------------------------
+
 class SimResponseVehicleStatus : public ::google::protobuf::Message {
  public:
   SimResponseVehicleStatus();
@@ -4052,6 +4519,111 @@ class SimNotifyVehicleStopped : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static SimNotifyVehicleStopped* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class SimNotifyVehicleSpeeding : public ::google::protobuf::Message {
+ public:
+  SimNotifyVehicleSpeeding();
+  virtual ~SimNotifyVehicleSpeeding();
+  
+  SimNotifyVehicleSpeeding(const SimNotifyVehicleSpeeding& from);
+  
+  inline SimNotifyVehicleSpeeding& operator=(const SimNotifyVehicleSpeeding& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SimNotifyVehicleSpeeding& default_instance();
+  
+  void Swap(SimNotifyVehicleSpeeding* other);
+  
+  // implements Message ----------------------------------------------
+  
+  SimNotifyVehicleSpeeding* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const SimNotifyVehicleSpeeding& from);
+  void MergeFrom(const SimNotifyVehicleSpeeding& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required .prt.VehicleStatus v_status = 1;
+  inline bool has_v_status() const;
+  inline void clear_v_status();
+  static const int kVStatusFieldNumber = 1;
+  inline const ::prt::VehicleStatus& v_status() const;
+  inline ::prt::VehicleStatus* mutable_v_status();
+  
+  // required double time = 2;
+  inline bool has_time() const;
+  inline void clear_time();
+  static const int kTimeFieldNumber = 2;
+  inline double time() const;
+  inline void set_time(double value);
+  
+  // required float speed_limit = 3;
+  inline bool has_speed_limit() const;
+  inline void clear_speed_limit();
+  static const int kSpeedLimitFieldNumber = 3;
+  inline float speed_limit() const;
+  inline void set_speed_limit(float value);
+  
+  // @@protoc_insertion_point(class_scope:prt.SimNotifyVehicleSpeeding)
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::prt::VehicleStatus* v_status_;
+  double time_;
+  float speed_limit_;
+  friend void  protobuf_AddDesc_api_2eproto();
+  friend void protobuf_AssignDesc_api_2eproto();
+  friend void protobuf_ShutdownFile_api_2eproto();
+  
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static SimNotifyVehicleSpeeding* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -7994,6 +8566,184 @@ inline void CtrlCmdPassengerWalk::set_travel_time(double value) {
 
 // -------------------------------------------------------------------
 
+// CtrlCmdStorageEnter
+
+// required int32 vID = 1;
+inline bool CtrlCmdStorageEnter::has_vid() const {
+  return _has_bit(0);
+}
+inline void CtrlCmdStorageEnter::clear_vid() {
+  vid_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 CtrlCmdStorageEnter::vid() const {
+  return vid_;
+}
+inline void CtrlCmdStorageEnter::set_vid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  vid_ = value;
+}
+
+// required int32 sID = 2;
+inline bool CtrlCmdStorageEnter::has_sid() const {
+  return _has_bit(1);
+}
+inline void CtrlCmdStorageEnter::clear_sid() {
+  sid_ = 0;
+  _clear_bit(1);
+}
+inline ::google::protobuf::int32 CtrlCmdStorageEnter::sid() const {
+  return sid_;
+}
+inline void CtrlCmdStorageEnter::set_sid(::google::protobuf::int32 value) {
+  _set_bit(1);
+  sid_ = value;
+}
+
+// required int32 platformID = 3;
+inline bool CtrlCmdStorageEnter::has_platformid() const {
+  return _has_bit(2);
+}
+inline void CtrlCmdStorageEnter::clear_platformid() {
+  platformid_ = 0;
+  _clear_bit(2);
+}
+inline ::google::protobuf::int32 CtrlCmdStorageEnter::platformid() const {
+  return platformid_;
+}
+inline void CtrlCmdStorageEnter::set_platformid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  platformid_ = value;
+}
+
+// required int32 berthID = 4;
+inline bool CtrlCmdStorageEnter::has_berthid() const {
+  return _has_bit(3);
+}
+inline void CtrlCmdStorageEnter::clear_berthid() {
+  berthid_ = 0;
+  _clear_bit(3);
+}
+inline ::google::protobuf::int32 CtrlCmdStorageEnter::berthid() const {
+  return berthid_;
+}
+inline void CtrlCmdStorageEnter::set_berthid(::google::protobuf::int32 value) {
+  _set_bit(3);
+  berthid_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// CtrlCmdStorageExit
+
+// required int32 sID = 1;
+inline bool CtrlCmdStorageExit::has_sid() const {
+  return _has_bit(0);
+}
+inline void CtrlCmdStorageExit::clear_sid() {
+  sid_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 CtrlCmdStorageExit::sid() const {
+  return sid_;
+}
+inline void CtrlCmdStorageExit::set_sid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  sid_ = value;
+}
+
+// required int32 platformID = 2;
+inline bool CtrlCmdStorageExit::has_platformid() const {
+  return _has_bit(1);
+}
+inline void CtrlCmdStorageExit::clear_platformid() {
+  platformid_ = 0;
+  _clear_bit(1);
+}
+inline ::google::protobuf::int32 CtrlCmdStorageExit::platformid() const {
+  return platformid_;
+}
+inline void CtrlCmdStorageExit::set_platformid(::google::protobuf::int32 value) {
+  _set_bit(1);
+  platformid_ = value;
+}
+
+// required int32 berthID = 3;
+inline bool CtrlCmdStorageExit::has_berthid() const {
+  return _has_bit(2);
+}
+inline void CtrlCmdStorageExit::clear_berthid() {
+  berthid_ = 0;
+  _clear_bit(2);
+}
+inline ::google::protobuf::int32 CtrlCmdStorageExit::berthid() const {
+  return berthid_;
+}
+inline void CtrlCmdStorageExit::set_berthid(::google::protobuf::int32 value) {
+  _set_bit(2);
+  berthid_ = value;
+}
+
+// required float position = 4;
+inline bool CtrlCmdStorageExit::has_position() const {
+  return _has_bit(3);
+}
+inline void CtrlCmdStorageExit::clear_position() {
+  position_ = 0;
+  _clear_bit(3);
+}
+inline float CtrlCmdStorageExit::position() const {
+  return position_;
+}
+inline void CtrlCmdStorageExit::set_position(float value) {
+  _set_bit(3);
+  position_ = value;
+}
+
+// required string model_name = 5;
+inline bool CtrlCmdStorageExit::has_model_name() const {
+  return _has_bit(4);
+}
+inline void CtrlCmdStorageExit::clear_model_name() {
+  if (model_name_ != &_default_model_name_) {
+    model_name_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& CtrlCmdStorageExit::model_name() const {
+  return *model_name_;
+}
+inline void CtrlCmdStorageExit::set_model_name(const ::std::string& value) {
+  _set_bit(4);
+  if (model_name_ == &_default_model_name_) {
+    model_name_ = new ::std::string;
+  }
+  model_name_->assign(value);
+}
+inline void CtrlCmdStorageExit::set_model_name(const char* value) {
+  _set_bit(4);
+  if (model_name_ == &_default_model_name_) {
+    model_name_ = new ::std::string;
+  }
+  model_name_->assign(value);
+}
+inline void CtrlCmdStorageExit::set_model_name(const char* value, size_t size) {
+  _set_bit(4);
+  if (model_name_ == &_default_model_name_) {
+    model_name_ = new ::std::string;
+  }
+  model_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CtrlCmdStorageExit::mutable_model_name() {
+  _set_bit(4);
+  if (model_name_ == &_default_model_name_) {
+    model_name_ = new ::std::string;
+  }
+  return model_name_;
+}
+
+// -------------------------------------------------------------------
+
 // CtrlCmdSwitch
 
 // required int32 trackID = 1;
@@ -8669,6 +9419,129 @@ inline void SimCompleteSwitch::set_time(double value) {
 
 // -------------------------------------------------------------------
 
+// SimCompleteStorageEnter
+
+// required int32 msgID = 1;
+inline bool SimCompleteStorageEnter::has_msgid() const {
+  return _has_bit(0);
+}
+inline void SimCompleteStorageEnter::clear_msgid() {
+  msgid_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 SimCompleteStorageEnter::msgid() const {
+  return msgid_;
+}
+inline void SimCompleteStorageEnter::set_msgid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  msgid_ = value;
+}
+
+// required double time = 2;
+inline bool SimCompleteStorageEnter::has_time() const {
+  return _has_bit(1);
+}
+inline void SimCompleteStorageEnter::clear_time() {
+  time_ = 0;
+  _clear_bit(1);
+}
+inline double SimCompleteStorageEnter::time() const {
+  return time_;
+}
+inline void SimCompleteStorageEnter::set_time(double value) {
+  _set_bit(1);
+  time_ = value;
+}
+
+// optional .prt.CtrlCmdStorageEnter cmd = 3;
+inline bool SimCompleteStorageEnter::has_cmd() const {
+  return _has_bit(2);
+}
+inline void SimCompleteStorageEnter::clear_cmd() {
+  if (cmd_ != NULL) cmd_->::prt::CtrlCmdStorageEnter::Clear();
+  _clear_bit(2);
+}
+inline const ::prt::CtrlCmdStorageEnter& SimCompleteStorageEnter::cmd() const {
+  return cmd_ != NULL ? *cmd_ : *default_instance_->cmd_;
+}
+inline ::prt::CtrlCmdStorageEnter* SimCompleteStorageEnter::mutable_cmd() {
+  _set_bit(2);
+  if (cmd_ == NULL) cmd_ = new ::prt::CtrlCmdStorageEnter;
+  return cmd_;
+}
+
+// -------------------------------------------------------------------
+
+// SimCompleteStorageExit
+
+// required int32 msgID = 1;
+inline bool SimCompleteStorageExit::has_msgid() const {
+  return _has_bit(0);
+}
+inline void SimCompleteStorageExit::clear_msgid() {
+  msgid_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 SimCompleteStorageExit::msgid() const {
+  return msgid_;
+}
+inline void SimCompleteStorageExit::set_msgid(::google::protobuf::int32 value) {
+  _set_bit(0);
+  msgid_ = value;
+}
+
+// required double time = 2;
+inline bool SimCompleteStorageExit::has_time() const {
+  return _has_bit(1);
+}
+inline void SimCompleteStorageExit::clear_time() {
+  time_ = 0;
+  _clear_bit(1);
+}
+inline double SimCompleteStorageExit::time() const {
+  return time_;
+}
+inline void SimCompleteStorageExit::set_time(double value) {
+  _set_bit(1);
+  time_ = value;
+}
+
+// optional .prt.CtrlCmdStorageExit cmd = 3;
+inline bool SimCompleteStorageExit::has_cmd() const {
+  return _has_bit(2);
+}
+inline void SimCompleteStorageExit::clear_cmd() {
+  if (cmd_ != NULL) cmd_->::prt::CtrlCmdStorageExit::Clear();
+  _clear_bit(2);
+}
+inline const ::prt::CtrlCmdStorageExit& SimCompleteStorageExit::cmd() const {
+  return cmd_ != NULL ? *cmd_ : *default_instance_->cmd_;
+}
+inline ::prt::CtrlCmdStorageExit* SimCompleteStorageExit::mutable_cmd() {
+  _set_bit(2);
+  if (cmd_ == NULL) cmd_ = new ::prt::CtrlCmdStorageExit;
+  return cmd_;
+}
+
+// required .prt.VehicleStatus v_status = 4;
+inline bool SimCompleteStorageExit::has_v_status() const {
+  return _has_bit(3);
+}
+inline void SimCompleteStorageExit::clear_v_status() {
+  if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
+  _clear_bit(3);
+}
+inline const ::prt::VehicleStatus& SimCompleteStorageExit::v_status() const {
+  return v_status_ != NULL ? *v_status_ : *default_instance_->v_status_;
+}
+inline ::prt::VehicleStatus* SimCompleteStorageExit::mutable_v_status() {
+  _set_bit(3);
+  if (v_status_ == NULL) v_status_ = new ::prt::VehicleStatus;
+  return v_status_;
+}
+
+// -------------------------------------------------------------------
+
 // SimResponseVehicleStatus
 
 // required int32 msgID = 1;
@@ -9323,6 +10196,59 @@ inline double SimNotifyVehicleStopped::time() const {
 inline void SimNotifyVehicleStopped::set_time(double value) {
   _set_bit(1);
   time_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// SimNotifyVehicleSpeeding
+
+// required .prt.VehicleStatus v_status = 1;
+inline bool SimNotifyVehicleSpeeding::has_v_status() const {
+  return _has_bit(0);
+}
+inline void SimNotifyVehicleSpeeding::clear_v_status() {
+  if (v_status_ != NULL) v_status_->::prt::VehicleStatus::Clear();
+  _clear_bit(0);
+}
+inline const ::prt::VehicleStatus& SimNotifyVehicleSpeeding::v_status() const {
+  return v_status_ != NULL ? *v_status_ : *default_instance_->v_status_;
+}
+inline ::prt::VehicleStatus* SimNotifyVehicleSpeeding::mutable_v_status() {
+  _set_bit(0);
+  if (v_status_ == NULL) v_status_ = new ::prt::VehicleStatus;
+  return v_status_;
+}
+
+// required double time = 2;
+inline bool SimNotifyVehicleSpeeding::has_time() const {
+  return _has_bit(1);
+}
+inline void SimNotifyVehicleSpeeding::clear_time() {
+  time_ = 0;
+  _clear_bit(1);
+}
+inline double SimNotifyVehicleSpeeding::time() const {
+  return time_;
+}
+inline void SimNotifyVehicleSpeeding::set_time(double value) {
+  _set_bit(1);
+  time_ = value;
+}
+
+// required float speed_limit = 3;
+inline bool SimNotifyVehicleSpeeding::has_speed_limit() const {
+  return _has_bit(2);
+}
+inline void SimNotifyVehicleSpeeding::clear_speed_limit() {
+  speed_limit_ = 0;
+  _clear_bit(2);
+}
+inline float SimNotifyVehicleSpeeding::speed_limit() const {
+  return speed_limit_;
+}
+inline void SimNotifyVehicleSpeeding::set_speed_limit(float value) {
+  _set_bit(2);
+  speed_limit_ = value;
 }
 
 // -------------------------------------------------------------------

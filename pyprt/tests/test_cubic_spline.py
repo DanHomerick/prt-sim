@@ -10,7 +10,7 @@ from pyprt.shared.cubic_spline import SplineError
 from pyprt.shared.cubic_spline import OutOfBoundsError
 from pyprt.shared.utility import pairwise
 
-class  TestCubicSpline(unittest.TestCase):
+class TestCubicSpline(unittest.TestCase):
     #def setUp(self):
     #    self.foo = TestCubicSpline()
     #
@@ -54,9 +54,41 @@ class  TestCubicSpline(unittest.TestCase):
         bad_knot = Knot(0,0,0,1) # The time is too early
         self.assertRaises(SplineError, spline.append, bad_knot, None)
 
+    def test_append_II(self):
+        """Similar to test_append, but the evaluation of coeffs is forced prior
+        to appending the new knot."""
+        spline = CubicSpline([0,1/6,1], [0,1/2,1], [0,1,0], [1,-1], [0,1,2])
+        knot = Knot(11/3,2,1,4) # calculated with jerk = 1/2
+        spline.coeffs # Trigger the lazy evaluation of coeffs
+        spline.append(knot, 1/2)
+        self.assertEqual(spline.q, [0,1/6,1,11/3])
+        self.assertEqual(spline.v, [0,1/2,1,2])
+        self.assertEqual(spline.a, [0,1,0,1])
+        self.assertEqual(spline.j, [1,-1,1/2])
+        self.assertEqual(spline.t, [0,1,2,4])
+        self.assertEqual(spline.h, [1,1,2])
+        self.polys_coeffs_check(spline)
+
+    def test_append_III(self):
+        """Check that append works properly when starting with an empty spline."""
+        spline = CubicSpline([], [], [], [], [])
+        spline.coeffs # Trigger the lazy evaluation of coeffs
+        knot = Knot(11/3,2,1,4)
+        spline.append(knot, None)
+        self.assertEqual(spline.q, [knot.pos])
+        self.assertEqual(spline.v, [knot.vel])
+        self.assertEqual(spline.a, [knot.accel])
+        self.assertEqual(spline.j, [])
+        self.assertEqual(spline.t, [knot.time])
+        self.assertEqual(spline.h, [])
+        self.polys_coeffs_check(spline)
+
+
     def test_concat(self):
         spline1 = CubicSpline([0,1/6,1], [0,1/2,1], [0,1,0], [1,-1], [0,1,2])
+        spline1.coeffs # Trigger the lazy evaluation of coeffs
         spline2 = CubicSpline([1,11/3], [1,2], [0,1], [1/2], [2,4])
+        spline2.coeffs # Trigger the lazy evaluation of coeffs
         spline = spline1.concat(spline2)
         self.assertEqual(spline.q, [0,1/6,1,11/3])
         self.assertEqual(spline.v, [0,1/2,1,2])
@@ -95,6 +127,7 @@ class  TestCubicSpline(unittest.TestCase):
 
     def test_copy_left(self):
         orig_spline = self.make_test_spline_I()
+        orig_spline.coeffs # Trigger the lazy evaluation of coeffs
         spline = orig_spline.copy_left(5.5)
 ##        self.plot_it(spline, 'test_copy_left')
 
@@ -109,20 +142,23 @@ class  TestCubicSpline(unittest.TestCase):
         initial = orig_spline.evaluate(orig_spline.t[0])
         final = orig_spline.evaluate(5.5)
         self.validate_endpoints(spline, initial, final)
+        self.polys_coeffs_check(spline)
 
     def test_copy_right(self):
         orig_spline = self.make_test_spline_I()
+        orig_spline.coeffs # Trigger the lazy evaluation of coeffs
         initial = orig_spline.evaluate(5.5)
         final = orig_spline.evaluate(orig_spline.t[-1])
         spline = orig_spline.copy_right(5.5)
 ##        self.plot_it(spline, 'test_copy_right')
         self.assertEqual(len(spline.t), 4)
         self.validate_endpoints(spline, initial, final)
+        self.polys_coeffs_check(spline)
 
     def test_slice_I(self):
         """Test that a slice with equal start and stop times returns a one element spline."""
         orig_spline = self.make_test_spline_I()
-
+        orig_spline.coeffs # Trigger the lazy evaluation of coeffs
         knot = orig_spline.evaluate(5.5)
         spline = orig_spline.slice(5.5, 5.5)
         self.assertEqual(spline.q, [knot.pos])
@@ -131,6 +167,7 @@ class  TestCubicSpline(unittest.TestCase):
         self.assertEqual(spline.j, [])
         self.assertEqual(spline.t, [knot.time])
         self.assertEqual(spline.coeffs, [])
+        self.polys_coeffs_check(spline)
 
     def test_slice_II(self):
         """Test for OutOfBoundsErrors"""
@@ -146,23 +183,27 @@ class  TestCubicSpline(unittest.TestCase):
     def test_slice_III(self):
         """Test that a slice holds correct data."""
         orig_spline = self.make_test_spline_I()
+        orig_spline.coeffs # Trigger the lazy evaluation of coeffs
         spline = orig_spline.slice(1.5, 5.5)
         self.assertEqual(spline.q, [1.40625, 3.3333333333333335, 49.30209095900485, 51.457954512233492])
         self.assertEqual(spline.v, [2.8125, 5.0, 22.015621187164243, 22.488268858283792])
         self.assertEqual(spline.a, [3.75, 5, 5, 4.7578105935821213])
         self.assertEqual(spline.j, [2.5, 0, -2.5])
         self.assertEqual(spline.t, [1.5, 2.0, 5.4031242374328485, 5.5])
+        self.polys_coeffs_check(spline)
 
     def tests_splice_IV(self):
         """Test that the first|last elements aren't duplicated if they happen to
         fall on a knot point."""
         orig_spline = self.make_test_spline_I()
+        orig_spline.coeffs # Trigger the lazy evaluation of coeffs
         spline = orig_spline.slice(0, 2.0)
         self.assertEqual(spline.q, [0, 3.3333333333333335])
         self.assertEqual(spline.v, [0, 5.0])
         self.assertEqual(spline.a, [0, 5])
         self.assertEqual(spline.j, [2.5])
         self.assertEqual(spline.t, [0, 2.0])
+        self.polys_coeffs_check(spline)
 
     def test_time_shift(self):
         spline = self.make_test_spline_I()
@@ -170,6 +211,7 @@ class  TestCubicSpline(unittest.TestCase):
         shifted = spline.time_shift(time)
         for t_orig, t_shift in zip(spline.t, shifted.t):
             self.assertEqual(t_orig + time, t_shift)
+        self.polys_coeffs_check(shifted)
 
     def test_position_shift(self):
         spline = self.make_test_spline_I()
@@ -177,6 +219,7 @@ class  TestCubicSpline(unittest.TestCase):
         shifted = spline.position_shift(position)
         for q_orig, q_shift in zip(spline.q, shifted.q):
             self.assertEqual(q_orig + position, q_shift)
+        self.polys_coeffs_check(shifted)
 
     def test_get_time_from_dist(self):
         spline = self.make_test_spline_I()

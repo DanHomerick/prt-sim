@@ -239,7 +239,7 @@ class Passenger(PrtEvent):
         ### Track time spent in each mode of transit ###
         if self._loc is None: # Was walking
             self._walk_times[-1][1] = Sim.now()
-        elif hasattr(self._loc, 'v_mass'): # was in vehicle
+        elif hasattr(self._loc, 'vehicle_mass'): # was in vehicle
             self._ride_times[-1][1] = Sim.now()
         elif hasattr(self._loc, 'platforms'): # was at station
             self._wait_times[-1][1] = Sim.now()
@@ -254,7 +254,7 @@ class Passenger(PrtEvent):
         ### More time tracking ###
         if not self.trip_success:
             if loc is None: self._walk_times.append( [Sim.now(), None] )
-            elif hasattr(loc, 'v_mass'): self._ride_times.append( [Sim.now(), None, loc] ) # isinstance(loc, BaseVehicle)
+            elif hasattr(loc, 'vehicle_mass'): self._ride_times.append( [Sim.now(), None, loc] ) # isinstance(loc, BaseVehicle)
             elif hasattr(loc, 'platforms'): self._wait_times.append( [Sim.now(), None, loc] ) # isinstance(loc, TrackSegment)
             else: raise Exception("Unknown loc type")
 
@@ -292,7 +292,7 @@ class Passenger(PrtEvent):
         if self._loc is None:
             ps.loc_type = api.WALKING
             ps.locID = api.NONE_ID
-        elif hasattr(self._loc, 'v_mass'): # a vehicle
+        elif hasattr(self._loc, 'vehicle_mass'): # a vehicle
             ps.loc_type = api.VEHICLE
             ps.locID = self._loc.ID
         elif hasattr(self._loc, 'platforms'): # a station

@@ -400,6 +400,25 @@ class  TestTrajectorySolver(unittest.TestCase):
 ##        self.assertAlmostEqual(spline.v[-1], 0, self.PLACES)
 ##        self.assertAlmostEqual(spline.a[-1], 0, self.PLACES)
 
+    def test_target_position_X(self):
+        """Starts with 20.0001 velocity, ends with 20 velocity."""
+        solver = TrajectorySolver(60, 10, 6, 0, -10, -6)
+        initial = Knot(2.00000000000274,20.00000000111,2.273736e-13,1367.1)
+        final = Knot(997.62,20.0, 0, 1384.79)
+        spline = solver.target_position(initial, final, 20)
+##        self.plot_it(spline, solver, "test_target_position_X")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final, time=False)
+
+    def test_target_position_XI(self):
+        solver = TrajectorySolver(60, 10, 5, 0, -10, -5)
+        initial = Knot(1.9999999896260192, 8.5068000742251115, -0.022863034988063191, 447.29479530675786)
+        final = Knot(42.498999999999995, 2.3999999999999999, 0, None)
+        spline = solver.target_position(initial, final, initial.vel)
+##        self.plot_it(spline, solver, "test_target_position_XI")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final, time=False)
+
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
         solver = TrajectorySolver(40, 5, 2.5)
@@ -544,6 +563,26 @@ class  TestTrajectorySolver(unittest.TestCase):
 ##        self.plot_it(spline, solver, "test_target_velocity_no_delta_v_II")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, pos=False, time=False)
+
+    def test_target_acceleration_I(self):
+        """Standard usage"""
+        solver = TrajectorySolver(40, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(0,0,0,0)
+        final = Knot(3+1/3., 5, 5, 2)
+        spline = solver.target_acceleration(initial, final)
+        self.plot_it(spline, solver, "test_target_acceleration_I")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_acceleration_II(self):
+        """No change in accel"""
+        solver = TrajectorySolver(40, 5, 2.5, 0, -5, -2.5)
+        initial = Knot(0,0,3,0)
+        final = Knot(None, None, 3, None)
+        spline = solver.target_acceleration(initial, final)
+        self.plot_it(spline, solver, "test_target_acceleration_I")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
 
     def test_target_time_I(self):
         """Uses zero for accel and velocity endpoints."""
@@ -695,7 +734,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         initial = Knot(0.0, 0.0, 0, 0.0)
         final = Knot(57.926000000000002, 15.0, 0, 7.1870000000000003)
         spline = solver.target_time(initial, final)
-        self.plot_it(spline, solver, "test_target_time_XVI")
+##        self.plot_it(spline, solver, "test_target_time_XVI")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
@@ -719,13 +758,42 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
-    def test_target_time_XIIX(self):
-        """Check to see if this trajectory is actually infeasible."""
-        solver = TrajectorySolver(15, 10, 5.0, 0, -10, -5.0)
-        initial = Knot(52.494, 11.249728648794314, 6.0670212249379762, 2984.9179172292665)
-        final = Knot(302.44799999999998, 15.0, 0, 3001.7569876662833)
+##    def test_target_time_XIIX(self):
+##        """Check to see if this trajectory is actually infeasible."""
+##        solver = TrajectorySolver(15, 10, 5.0, 0, -10, -5.0)
+##        initial = Knot(52.494, 11.249728648794314, 6.0670212249379762, 2984.9179172292665)
+##        final = Knot(302.44799999999998, 15.0, 0, 3001.7569876662833)
+##        spline = solver.target_time(initial, final)
+##        self.plot_it(spline, solver, "test_target_time_XIIX")
+##        self.validate_spline(spline, solver)
+##        self.validate_endpoints(spline, initial, final)
+
+    def test_target_time_XIX(self):
+        """ negative time interval in spline. """
+        solver = TrajectorySolver(20, 10, 5, 0, -10, -5.0)
+        initial = Knot(2,19.2506,2.737,3.452)
+        final = Knot(701.952,20.0,0,39.3653)
+        spline = solver.target_time(initial, final, 20)
+##        self.plot_it(spline, solver, "test_target_time_XIX")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_time_XX(self):
+        """ Fatal Trajectory Error in simple spline. """
+        solver = TrajectorySolver(60, 10, 6, 0, -10, -6.0)
+        initial = Knot(35.570999922343617, 20.000000000263217, 4.5474735088646412e-13, 1660.7976499923104)
+        final = Knot(2593.1289999999999, 20.0, 0, 1789.7778999999914)
+        spline = solver.target_time(initial, final, 20)
+##        self.plot_it(spline, solver, "test_target_time_XX")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_time_XXI(self):
+        solver = TrajectorySolver(20, 7.2, 5.0, 0, -7.2, -5.0)
+        initial = Knot(9.8130000000001303, 18.114342061230673, 4.3424163075059123, 3.3492945162765952)
+        final = Knot(709.7650000000001, 20.0, 0, 38.72843888888891)
         spline = solver.target_time(initial, final)
-        self.plot_it(spline, solver, "test_target_time_XIIX")
+##        self.plot_it(spline, solver, "test_target_time_XXI")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final)
 
@@ -788,21 +856,22 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, time=False)
 
-    def test_slip(self):
-        original_solver = TrajectorySolver(20, 5, 2.5, 0, -5, -2.5)
-        original_spline = original_solver.target_position(Knot(0,0,0,0), Knot(3000,0,0,0))
-##        self.plot_it(original_spline, original_solver, "original_test_slip")
-
-        slip_dists = [-1000, -500, -30, -1, -0.25, 0.25, 1, 30, 500]
-        slip_solver = TrajectorySolver(30, 5, 2.5, 0, -5, -2.5) # higher max speed allows vehicle to slip ahead
-        ti = original_spline.t[3] # beginning of the constant velocity segment
-        for slip_dist in slip_dists:
-            slip_spline = slip_solver.slip(original_spline, ti+1, slip_dist)
-##            self.plot_it(slip_spline, slip_solver, "test_slip")
-            self.validate_spline(slip_spline, slip_solver)
-
-            self.assertAlmostEqual(original_spline.q[-4], slip_spline.q[-4], self.PLACES) # position at end of constant velocity segment unchanged
-            self.assertAlmostEqual(original_spline.t[-4] - slip_dist/20.0, slip_spline.t[-4], self.PLACES) # but arrival time is shifted by the correct amount
+# Deprecated code
+##    def test_slip(self):
+##        original_solver = TrajectorySolver(20, 5, 2.5, 0, -5, -2.5)
+##        original_spline = original_solver.target_position(Knot(0,0,0,0), Knot(3000,0,0,0))
+####        self.plot_it(original_spline, original_solver, "original_test_slip")
+##
+##        slip_dists = [-1000, -500, -30, -1, -0.25, 0.25, 1, 30, 500]
+##        slip_solver = TrajectorySolver(30, 5, 2.5, 0, -5, -2.5) # higher max speed allows vehicle to slip ahead
+##        ti = original_spline.t[3] # beginning of the constant velocity segment
+##        for slip_dist in slip_dists:
+##            slip_spline = slip_solver.slip(original_spline, ti+1, slip_dist)
+####            self.plot_it(slip_spline, slip_solver, "test_slip")
+##            self.validate_spline(slip_spline, slip_solver)
+##
+##            self.assertAlmostEqual(original_spline.q[-4], slip_spline.q[-4], self.PLACES) # position at end of constant velocity segment unchanged
+##            self.assertAlmostEqual(original_spline.t[-4] - slip_dist/20.0, slip_spline.t[-4], self.PLACES) # but arrival time is shifted by the correct amount
 
     def validate_spline(self, spline, solver):
         # all the timespans are non-negative

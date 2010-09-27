@@ -165,20 +165,23 @@ class MainWindow(wx.Frame):
         self.menubar_manager.sim_started()
 
         # Start the simulation running in a separate thread
-        sim_thread = threading.Thread(name='sim_thread',
-                                      target=main.run_sim,
-                                      args=[end_time, self.sim_end_callback])
 
-        sim_thread.setDaemon(True)
 
-        if common.config_manager.get_profile_path():
+        # Run without profiling (normal case)
+        if common.config_manager.get_profile_path() is None:
+            sim_thread = threading.Thread(name='sim_thread',
+                                          target=main.run_sim,
+                                          args=[end_time, self.sim_end_callback])
+        else: # Run with profiling
             if __debug__:
                 import warnings
                 warnings.warn("Profiling code that is in debug mode!")
-            import cProfile
-            cProfile.runctx('sim_thread.start()', globals(), locals(), common.config_manager.get_profile_path())
-        else:
-            sim_thread.start()
+            sim_thread = threading.Thread(name='sim_thread_profiled',
+                                          target=main.run_sim_profiled,
+                                          args=[end_time, self.sim_end_callback])
+
+        sim_thread.setDaemon(True)
+        sim_thread.start()
 
     def simmenu_stop_sim_handler(self, event):
         main.stop_sim()
@@ -235,27 +238,6 @@ class MainWindow(wx.Frame):
             common.interface.accept_connections( 1 )
             # Sim blocks, then resumes once connection is made.
             self.menubar_manager.controllers_connected()
-
-##    def simmenu_pause_handler(self, event):
-##        self.simmenu_speed(0)
-##
-##    def simmenu_1x_handler(self, event):
-##        self.simmenu_speed(1)
-##
-##    def simmenu_2x_handler(self, event):
-##        self.simmenu_speed(2)
-##
-##    def simmenu_4x_handler(self, event):
-##        self.simmenu_speed(4)
-##
-##    def simmenu_8x_handler(self, event):
-##        self.simmenu_speed(8)
-##
-##    def simmenu_32x_handler(self, event):
-##        self.simmenu_speed(32)
-##
-##    def simmenu_fast_handler(self, event):
-##        self.simmenu_speed(inf)
 
     def set_sim_speed(self, speed):
         try:

@@ -4,9 +4,10 @@ from __future__ import division
 import logging
 import warnings
 import heapq
-from itertools import izip
+import itertools
 
 from numpy import inf
+import numpy
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
 import enthought.traits.ui.table_column as ui_tc
@@ -21,29 +22,38 @@ from visual import NoWritebackOnCloseHandler
 
 def create_vehicle_class(
         model_name, length, vehicle_mass, max_pax_capacity,
+        frontal_area, drag_coefficient, powertrain_efficiency,
+        regenerative_braking_efficiency,
         jerk_max_norm, jerk_min_norm, jerk_max_emerg, jerk_min_emerg,
         accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
         vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg):
     """Creates a new vehicle class, which inherits from BaseVehicle, and which
-    has the function parameters as attributes.
+    has the function parameters as class level attributes.
     """
 
-    class_dict = {'model_name':traits.String(model_name),
-                 'length':traits.Float(length),
-                 'vehicle_mass':traits.Int(vehicle_mass),
-                 'max_pax_capacity':traits.Int(max_pax_capacity),
-                 'jerk_max_norm':traits.Float(jerk_max_norm),
-                 'jerk_min_norm':traits.Float(jerk_min_norm),
-                 'jerk_max_emerg':traits.Float(jerk_max_emerg),
-                 'jerk_min_emerg':traits.Float(jerk_min_emerg),
-                 'accel_max_norm':traits.Float(accel_max_norm),
-                 'accel_min_norm':traits.Float(accel_min_norm),
-                 'accel_max_emerg':traits.Float(accel_max_emerg),
-                 'accel_min_emerg':traits.Float(accel_min_emerg),
-                 'vel_max_norm':traits.Float(vel_max_norm),
-                 'vel_min_norm':traits.Float(vel_min_norm),
-                 'vel_max_emerg':traits.Float(vel_max_emerg),
-                 'vel_min_emerg':traits.Float(vel_min_emerg)
+    # Originally implemented as Traits, but that made the attributes only
+    # accessible from an instance, not from the class.
+    class_dict = {
+                 'model_name':model_name,
+                 'length':length,
+                 'vehicle_mass':vehicle_mass,
+                 'max_pax_capacity':max_pax_capacity,
+                 'frontal_area':frontal_area,
+                 'drag_coefficient':drag_coefficient,
+                 'powertrain_efficiency':powertrain_efficiency,
+                 'regenerative_braking_efficiency':regenerative_braking_efficiency,
+                 'jerk_max_norm':jerk_max_norm,
+                 'jerk_min_norm':jerk_min_norm,
+                 'jerk_max_emerg':jerk_max_emerg,
+                 'jerk_min_emerg':jerk_min_emerg,
+                 'accel_max_norm':accel_max_norm,
+                 'accel_min_norm':accel_min_norm,
+                 'accel_max_emerg':accel_max_emerg,
+                 'accel_min_emerg':accel_min_emerg,
+                 'vel_max_norm':vel_max_norm,
+                 'vel_min_norm':vel_min_norm,
+                 'vel_max_emerg':vel_max_emerg,
+                 'vel_min_emerg':vel_min_emerg
                 }
 
     return type(model_name, (BaseVehicle,), class_dict)
@@ -70,10 +80,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     # The CType indicates that the Type can be coerced from a string.
     ID              = traits.CInt     # Unique numeric ID.
     label           = traits.Str
-    length          = traits.CFloat # Length of vehicle, in meters.
-    v_mass          = traits.CInt   # mass of vehicle, in kg
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
-    total_mass      = traits.CInt   # mass of vehicle + passenger mass, in kg
     max_pax_capacity = traits.CInt
     _passengers       = traits.List(traits.Instance('events.Passenger'))
 
@@ -84,13 +91,14 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     ENTER_BERTH = 4
     EXIT_BERTH = 5
     NOTIFY_POSITION = 6
-    VEHICLE_STOPPED = 7
+    STOPPED = 7
+    SPEEDING = 8
 
     # A default view for vehicles.
     trait_view =  ui.View('ID', 'length',
+                          ui.Item(name='loc', label='Location'),
                           ui.Item(name='pos', label='Position'),
                           ui.Item(name='vel'),
-                          ui.Item(name='v_mass'),
                           ui.Item(name='passenger_mass'),
                           ui.Item(name='total_mass'),
                           ui.Item(name='max_pax_capacity', label='Max. Passenger Capacity'),
@@ -140,7 +148,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                                           expression='object.get_dist_ave_pax()',
                                           tooltip='Average number of passengers, weighted by distance')
                    ],
-        other_columns = [ui_tc.ObjectColumn(name='v_mass', label='Vehicle Mass',
+        other_columns = [ui_tc.ObjectColumn(name='vehicle_mass', label='Vehicle Mass',
                                             tooltip='Excludes passenger or cargo weight (kg)'),
                          ui_tc.ObjectColumn(name='passenger_mass', label='Passenger Mass',
                                             tooltip="Includes passengers' luggage (kg)"),
@@ -216,10 +224,9 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self._actions_queue = [] # contains 3-tuples: (time, action, data)
 
         self.total_pax = 0
-        self._pax_times = [(0,0)] # elements are (time, num_pax)
+        self._pax_times = [(Sim.now(),0)] # elements are (time, num_pax)
 
-        # attributes: max_speed, maxG, maxlatG
-        # forces: gravity (if z), drag, friction, braking, centripital, thrust
+        self._total_masses = [ (Sim.now(), self.vehicle_mass) ]
 
     def __str__(self):
         return 'vehicle' + str(self.ID)
@@ -345,8 +352,39 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
     accel = property(fget=get_accel)
 
+    def get_total_masses(self, times):
+        """Returns the vehicle's total mass (incl. passengers) at times."""
+        masses = []
+        old_mass = 0
+        sample_times = iter(times)
+        for time, mass in self._total_masses + [ (Sim.now(), self._total_masses[-1][1]) ]:
+            try:
+                while True:
+                    sample_time = sample_times.next()
+                    if sample_time < time:
+                        masses.append(old_mass)
+                    else:
+                        break
+
+                masses.append(mass)
+                old_mass = mass
+            except StopIteration:
+                break
+        assert len(masses) == len(times)
+        return masses
+
+    def get_total_mass(self):
+        """Returns the current total mass, calculated as
+          vehicle mass + passenger(s) mass
+        """
+        return self._total_masses[-1][1]
+    def set_total_mass(self, mass):
+        assert mass >= self.vehicle_mass
+        self._total_masses.append( (Sim.now(), mass) )
+    total_mass = property(fget=get_total_mass, fset=set_total_mass)
+
     def get_dist_travelled(self):
-        return self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(0.0).pos
+        return self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(self._spline.t[0]).pos
     dist_travelled = property(fget=get_dist_travelled)
 
     def get_empty_dist(self):
@@ -383,6 +421,46 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """Adds new locations to the planned itinerary."""
         assert locs[0] in common.digraph.neighbors(self._path[-1])
         self._path.extend(locs)
+
+    def _move_to(self, pos, loc):
+        """Abruptly moves the vehicle to a new position and location.
+        The vehicle's spline is unaffected; velocity and acceleration are
+        not changed. The vehicle's future path is cleared.
+        'pos' must be >= the vehicle's length.
+        """
+        assert pos >= self.length
+        follower = self.find_following_vehicle()
+
+        self.loc.vehicles.remove(self)
+
+        # insert the vehicle in loc.vehicles
+        for i in range(len(loc.vehicles)-1, -1, -1): # indexes in reverse order
+            i_pos = loc.vehicles[i].pos
+            if pos <= i_pos:
+                loc.vehicles.insert(i+1, self)
+                break
+        else:
+            loc.vehicles.insert(0, self)
+
+        # Change the position offset to alter the position.
+        self._pos_offset_nose -= (pos - self.pos)
+        self._pos_offset_tail = self._pos_offset_nose + self.length
+
+        # Add the new location to the path, and adjust the path index.
+        self._path = self._path[:self._path_idx_nose+1] + [loc]
+        self._path_idx_nose = len(self._path)-1
+        self._path_idx_tail = len(self._path)-1
+        assert self.loc is loc
+        assert abs(self.pos - pos) < 0.01 # loose sanity check
+        assert abs(self.tail_pos - (pos - self.length)) < 0.01 # loose sanity check
+
+        # Notify the vehicle behind me to clear any upcoming collisions
+        if follower is not None:
+            self.interrupt(follower)
+
+        # Interrupt this vehicle to allow its current hold time to be changed.
+        # Leads to the action queue being cleared and repopulated.
+        self.interrupt(self)
 
     def process_spline_msg(self, spline_msg):
         """Unpacks the contents of an api.Spline message,
@@ -474,7 +552,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         if follower is not None:
             self.interrupt(follower)
 
-        # Interrupt this vehicle to allow it's current hold time to be changed.
+        # Interrupt this vehicle to allow its current hold time to be changed.
         # Leads to the action queue being cleared and repopulated.
         self.interrupt(self)
 
@@ -583,6 +661,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                 for time, action, data in old_actions_queue:
                     if action == self.NOTIFY_POSITION:
                         self.notify_position(data[0], data[1])
+                    elif action == self.STOPPED:
+                        # If the vehicle is currently at the stop position, the
+                        # STOPPED event is skipped. This is to prevent a stop
+                        # from being ommitted due to an interrupt.
+                        if abs(self._spline.evaluate(time).pos - self.pos) <= 1E-4:
+                            self._actions_queue.append( (time, action, data) )
+                            self._actions_queue.sort()
 
                 delay = self._actions_queue[0][0] - Sim.now()
                 assert delay >= 0, delay
@@ -604,8 +689,11 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             elif action == self.NOTIFY_POSITION:
                 self._notify_position_handler(*data) # data is a 2-tuple
 
-            elif action == self.VEHICLE_STOPPED:
-                self._vehicle_stopped_handler()
+            elif action == self.STOPPED:
+                self._stopped_handler()
+
+            elif action == self.SPEEDING:
+                self._speeding_handler()
 
             else:
                 raise Exception("Unknown action type: %d for vehicle %d" % (action, self.ID))
@@ -616,25 +704,54 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def _traverse(self):
         # Queue up next TrackSegment boundary
         traverse_dist = self.loc.length - self.pos
+        assert traverse_dist >= -1E-3, (self.ID, traverse_dist, self.loc.length, self.loc.ID)
+
         try:
             traverse_time = self._spline.get_time_from_dist(traverse_dist, Sim.now())
         except cspline.OutOfBoundsError: # Current trajectory spline never has the vehicle leaving this TrackSegment
             traverse_time = inf
         heapq.heappush(self._actions_queue, (traverse_time, self.BOUNDARY, None))
+        assert traverse_time >= Sim.now() - 1E-5, (self.ID, traverse_time, self.loc.length, self.loc.ID)
 
-        # Add vehicle stopped notifications (if not currently stopped at the same position)
         if traverse_time != inf:
             segment_spline = self._spline.slice(Sim.now(), traverse_time)
         else:
-            segment_spline = self._spline.copy_right(Sim.now())
+            segment_spline = self._spline.slice(Sim.now(), common.config_manager.get_sim_end_time())
         extrema_velocties, extrema_times = segment_spline.get_extrema_velocities()
-        for vel, time in izip(extrema_velocties, extrema_times):
+        for vel, time in itertools.izip(extrema_velocties, extrema_times):
+            # Add stopped notification (if not currently stopped at the same position)
             if vel == 0 and time > Sim.now() and abs(segment_spline.evaluate(time).pos - self.pos) > 1E-4:
-                heapq.heappush(self._actions_queue, (time, self.VEHICLE_STOPPED, None))
+                heapq.heappush(self._actions_queue, (time, self.STOPPED, None))
                 assert abs(segment_spline.evaluate(time).accel) < 1E-5, (self.ID, vel, time, segment_spline)
 
-        assert traverse_dist >= -1E-3, (self.ID, traverse_dist, self.loc.length, self.loc.ID)
-        assert traverse_time >= Sim.now() - 1E-5, (self.ID, traverse_time, self.loc.length, self.loc.ID)
+        # Detect if there's an upcoming speed limit violation
+        speed_limit = min(self.loc.max_speed, self.vel_max_emerg) + 1E-4
+        if max(extrema_velocties) > speed_limit:
+            # Calculate times when the vehicle begins to exceed the speed limit.
+            # That is, want to find the times where the 1st derivative of a poly
+            # has a positive crossing of speed_limit.
+            speeding_times = []
+            speed_limit_poly = numpy.poly1d([speed_limit])
+            if segment_spline.v[0] >= speed_limit:
+                speeding_times.append(segment_spline.t[0])
+
+            for coeffs, (ti, tf) in zip(segment_spline.coeffs, pairwise(segment_spline.t)):
+                vel_poly = numpy.poly1d(coeffs).deriv()
+                coeffs = numpy.polysub(vel_poly, speed_limit_poly).coeffs
+                if len(coeffs) < 4:
+                    coeffs = [0]*(4-len(coeffs)) + list(coeffs) # pad to 4 elements
+                    assert len(coeffs) == 4
+                roots = utility.real_roots(*coeffs)
+                # Remove roots that are outside of the poly's valid times
+                roots = [r for r in roots if r >= ti and r <= tf]
+                for r in roots:
+                    knot = segment_spline.evaluate(r)
+                    if knot.accel > 1E-6:
+                        speeding_times.append(r)
+
+            for time in speeding_times:
+                heapq.heappush(self._actions_queue, (time, self.SPEEDING, None))
+
 
 ##        # Do some extra work to collect statistics about berth usages if the loc is a station platform
 ##        platform = common.platforms.get(self.loc.ID)
@@ -734,12 +851,22 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self.fill_VehicleStatus(sim_msg.v_status)
         common.interface.send(api.SIM_NOTIFY_VEHICLE_POSITION, sim_msg)
 
-    def _vehicle_stopped_handler(self):
+    def _stopped_handler(self):
         """Sends an api.SimNotifyVehicleStopped message."""
         notify_msg = api.SimNotifyVehicleStopped()
         self.fill_VehicleStatus(notify_msg.v_status)
         notify_msg.time = Sim.now()
         common.interface.send(api.SIM_NOTIFY_VEHICLE_STOPPED, notify_msg)
+
+    def _speeding_handler(self):
+        """Sends an api.SimNotifyVehicleSpeeding message."""
+        speed_limit = min(self.loc.max_speed, self.vel_max_emerg)
+        notify_msg = api.SimNotifyVehicleSpeeding()
+        self.fill_VehicleStatus(notify_msg.v_status)
+        notify_msg.time = Sim.now()
+        notify_msg.speed_limit = speed_limit
+        common.interface.send(api.SIM_NOTIFY_VEHICLE_SPEEDING, notify_msg)
+        logging.warn("T=%4.3f Vehicle: %d exceeded speed limit: %f on track seg: %d", Sim.now(), self.ID, speed_limit, self.loc.ID)
 
     def _collision_check(self):
         lv, dist = self.find_leading_vehicle(current_loc_only=True)

@@ -7,8 +7,8 @@ import common
 
 class ConfigManager(object):
     loglevels = {'DEBUG':logging.DEBUG, 'INFO':logging.INFO,
-              'WARNING':logging.WARNING, 'ERROR':logging.ERROR,
-              'CRITICAL':logging.CRITICAL}
+                 'WARNING':logging.WARNING, 'ERROR':logging.ERROR,
+                 'CRITICAL':logging.CRITICAL}
 
     def __init__(self):
         # Command line options
@@ -40,50 +40,50 @@ class ConfigManager(object):
         """Parse the command line arguments. Returns the 2-tuple (options, args) from optparse.OptionParser"""
         optpar = optparse.OptionParser(usage="usage: %prog [options] [CONFIG]")
         optpar.add_option("--disable_gui", action="store_true", dest="disable_gui",
-                  help="Console only. Do not launch a GUI.")
+                          help="Console only. Do not launch a GUI.")
         optpar.add_option("--config", dest="config_path", metavar="FILE",
-                  help="Specify a configuration FILE.")
+                          help="Specify a configuration FILE.")
         optpar.add_option("--start_controllers", action="store_true", dest="start_controllers",
-                  help="Start external controller specified in config file after startup.")
+                          help="Start external controller specified in config file after startup.")
         optpar.add_option("-s", "--start", action="store_true",
-                  help="Start simulation immediately. Implies --controller flag.")
+                          help="Start simulation immediately. Implies --controller flag.")
         optpar.add_option("--profile", dest="profile_path", metavar="FILE",
-                  help="Profile the sim's performance and store results in FILE (debug). "
-                       "Only profiles the Sim thread, not the viz thread or GUI thread.")
+                          help="Profile the sim's performance and store results in FILE (debug). "
+                          "Only profiles the Sim thread, not the viz thread or GUI thread.")
 
         group = optparse.OptionGroup(optpar, "Configuration Options",
-                  "These options override any settings specified in the configuration file.")
+                                     "These options override any settings specified in the configuration file.")
         group.add_option("--scenario",  dest="scenario_path",
-                  metavar="FILE", help="Specify a scenario FILE.")
+                         metavar="FILE", help="Specify a scenario FILE.")
         group.add_option("--passengers", dest="passengers_path",
-                  metavar="FILE", help="Specify a passengers FILE.")
+                         metavar="FILE", help="Specify a passengers FILE.")
         group.add_option("--port", type="int", dest="TCP_port",
-                  help="TCP port which controllers should connect to.")
+                         help="TCP port which controllers should connect to.")
         group.add_option("--sim_end_time", type="float", dest="sim_end_time",
-                  help="Number of seconds to simulate.")
+                         help="Number of seconds to simulate.")
         group.add_option("--disable_viz", action="store_true", dest="disable_viz",
-                  help="Disables the visualization of the sim, but does not affect whether the GUI is used.")
+                         help="Disables the visualization of the sim, but does not affect whether the GUI is used.")
         group.add_option("--fps", type="float", dest="fps", help="Target number of frames per second for the visualization.")
         group.add_option("--log_level", dest="log_level",
-                  choices=self.loglevels.keys(),
-                  help="Minimum level of importance for which events are logged. Choices are: %s" % ', '.join(self.loglevels.keys()))
+                         choices=self.loglevels.keys(),
+                         help="Minimum level of importance for which events are logged. Choices are: %s" % ', '.join(self.loglevels.keys()))
         group.add_option("--log", dest="log",
-                  metavar="FILE", help="Log details to FILE.")
+                         metavar="FILE", help="Log details to FILE.")
         group.add_option("--comm_log", dest="comm_log",
-                  metavar="FILE", help="Log communication messages to FILE.")
+                         metavar="FILE", help="Log communication messages to FILE.")
         group.add_option("--results", dest="results",
-                  metavar="FILE", help="Write results report to FILE. Use '-' for stdout.")
+                         metavar="FILE", help="Write results report to FILE. Use '-' for stdout.")
         group.add_option("--pax_load_time", type="float", dest="pax_load_time",
-                  help="Default passenger boarding time, in seconds.")
+                         help="Default passenger boarding time, in seconds.")
         group.add_option("--pax_unload_time", type="float", dest="pax_unload_time",
-                  help="Default passenger disembark time, in seconds.")
+                         help="Default passenger disembark time, in seconds.")
         group.add_option("--pax_will_share", dest="pax_will_share",
-                  choices=['yes', 'y', 'no', 'n'],
-                  help="Default passenger behavior. 'yes' means the passenger will share a vehicle, when given the opportunity. Choices are: yes, y, no, n")
+                         choices=['yes', 'y', 'no', 'n'],
+                         help="Default passenger behavior. 'yes' means the passenger will share a vehicle, when given the opportunity. Choices are: yes, y, no, n")
         group.add_option("--pax_weight", dest="pax_weight", type="int",
-                  help="Default passenger weight, including all luggage.")
+                         help="Default passenger weight, including all luggage.")
         group.add_option("--track_switch_time", type="float", dest="track_switch_time",
-                  help="Time for track-based switching to switch between lines.")
+                         help="Time for track-based switching to switch between lines.")
         optpar.add_option_group(group)
 
         return optpar.parse_args()
@@ -134,7 +134,10 @@ class ConfigManager(object):
         if self.options.comm_log != None:
             comm_logfile = self.options.comm_log
         else:
-            comm_logfile = self.config_dir + self.config_parser.get('Output Files', 'comm_log')
+            try:
+                comm_logfile = self.config_dir + self.config_parser.get('Output Files', 'comm_log')
+            except:
+                return None
         return comm_logfile
 
     def get_results_file(self):
