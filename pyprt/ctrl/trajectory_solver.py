@@ -209,20 +209,19 @@ class TrajectorySolver(object):
                 fnc = self.target_position_amax
                 spline = self.target_position_amax(knot_initial, knot_final)
             except TrajectoryError:
-                attempts=1
+                attempts = 0
                 durations = None
-                while True:
+                while attempts < max_attempts:
                     try:
                         fnc = self.target_position_none
                         spline = self.target_position_none(knot_initial, knot_final, durations)
                     except OptimizationError as err:
-                        if attempts > max_attempts:
-                            raise FatalTrajectoryError(knot_initial, knot_final, "Unable to find a viable trajectory.")
-                        else:
-                            durations = [random.random() for h in err.durations]
-                            attempts += 1
+                        durations = [random.random() for h in err.durations]
+                        attempts += 1
                     else:
                         break
+                if attempts == max_attempts:
+                    raise FatalTrajectoryError(knot_initial, knot_final, "Unable to find a viable trajectory.")
 
         # Additional error checking on the generated trajectory, ensuring that
         # the constraints were actually respected.
@@ -508,6 +507,10 @@ class TrajectorySolver(object):
             jn = self.j_max
             jx = self.j_min
 
+        an_2 = an*an
+        ax_2 = ax*ax
+        jn_2 = jn*jn
+
         h0 = (ax - a0)/jx
         k1 = self.create_knot_after(initial, h0, ax)
 
@@ -516,9 +519,10 @@ class TrajectorySolver(object):
         h4 = (final.accel-an)/jx
         k4 = self.create_knot_before(final, h4, an)
 
+
         # From v12 = v4 - v1 - v23 - v34 and v12 = ax*h1 we get:
         # h1 = alpha - an/ax*h3
-        alpha = (k4.vel-k1.vel)/ax + ax/(2*jn) - an**2/(2*ax*jn)
+        alpha = (k4.vel-k1.vel)/ax + ax/(2*jn) - an_2/(2*ax*jn)
 #        v2 = k1.vel + v12
 #        q23 = jn*h2**3/6 + ax*h2**2/2 + v2*h2
 
@@ -531,9 +535,9 @@ class TrajectorySolver(object):
 
 
         # Now, solve for h3 using quadratic formula
-        A = an/2 - an**2/(2*ax)
-        B = -k1.vel + alpha*an - alpha*ax + an+ax**2/(2*jn) + an*k1.vel/ax - an*ax/jn
-        C = k4.pos - k1.pos - alpha*k1.vel + (alpha*ax**2 + ax*k1.vel - an*k1.vel - alpha*an*ax)/jn - ax*alpha**2/2 - ax*(an - ax)**2/(2*jn**2) - (an - ax)**3/(6*jn**2)
+        A = an/2 - an_2/(2*ax)
+        B = -k1.vel + alpha*an - alpha*ax + (an_2+ax_2-2*an*ax)/(2*jn) + an*k1.vel/ax
+        C = k4.pos - k1.pos - alpha*k1.vel + (alpha*ax_2 + ax*k1.vel - an*k1.vel - alpha*an*ax)/jn - ax*alpha*alpha/2 - ax*(an - ax)**2/(2*jn_2) - (an - ax)**3/(6*jn_2)
 
         try:
             h3 = min(x for x in utility.quadratic_roots(A, B, C, self.t_threshold/2.0) if x >= 0)

@@ -1070,6 +1070,7 @@ class PrtController(BaseController):
                     old_dest = vehicle.trip.dest_station
                     vehicle.trip = self.v_manager.wave_off(vehicle)
                     vehicle.set_path(vehicle.trip.path)
+                    vehicle.run(speeed_limit=self.LINE_SPEED)
                     vehicle.num_wave_offs += 1
                     self.log.info("%5.3f Vehicle %d waved off from dest_station %d because NoBerthAvailable. Going to station %d instead.",
                                    self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
@@ -1105,6 +1106,7 @@ class PrtController(BaseController):
                         vehicle.set_path(vehicle.trip.path)
                         self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d due to lack of available berth. Going to station %d instead.",
                                   self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
+                vehicle.run(speed_limit=self.LINE_SPEED)
 
             # If the vehicle is empty, and the assigned berth is the entrance
             # berth, give it up and waive off so as to not clog up the station
@@ -1116,6 +1118,7 @@ class PrtController(BaseController):
                 old_dest.release_berth(vehicle)
                 vehicle.trip = self.v_manager.deadhead(vehicle, exclude=(old_dest,))
                 vehicle.set_path(vehicle.trip.path)
+                vehicle.run(speed_limit=self.LINE_SPEED)
                 self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d to avoid clogging entrance berth. Going to station %d instead.",
                               self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
@@ -2214,7 +2217,7 @@ class Vehicle(object):
             itinerary_msg.clear = True # Always replace the existing path, rather than appending to it.
             self.controller.send(api.CTRL_CMD_VEHICLE_ITINERARY, itinerary_msg)
 
-    def run(self, speed_limit=None, dist=None, final_speed=0):
+    def run(self, speed_limit=inf, dist=None, final_speed=0):
         """Commands the vehicle's trajectory. Obeys the speed_limit
         constraint, if supplied. Estimates the vehicle's current pose from the
         current spline.
@@ -2232,39 +2235,81 @@ class Vehicle(object):
         If a distance is specified, returns the scheduled arrival time.
         """
         initial_knot = self.estimate_pose(self.controller.current_time)
+        if dist is not None:
+            final_knot = Knot(initial_knot.pos + dist, final_speed, 0, None)
 
-        speed_zones = self.tracks.get_speed_zones(self.path)
-        print speed_zones
+        speed_zones = self.tracks.get_speed_zones(self.path[self._current_path_index:])
+        # Include other speed restrictions
+        # TODO: Is it worthwhile to merge speed zones if they end up with the same limit?
+        for spd, zone in speed_zones:
+            spd = min(self.v_max, speed_limit, spd)
+
+        speed_knots = [initial_knot]
+        spline = CubicSpline([initial_knot.pos],
+                             [initial_knot.vel],
+                             [initial_knot.accel],
+                             [],
+                             [initial_knot.time])
+        path_length = 0
 
 
-        # If no distance is specified, just follow the speed limits for the
-        # extent of the vehicle's path
+        # Create a spline that covers the entirety of the vehicle's path or
+        # to the end of the whichever speed zone 'dist' lands on, whichever
+        # is shorter.
+        for (curr_speed, curr_path_frag), (next_speed, next_path_frag) in pairwise(speed_zones):
+            path_length += self.tracks.get_path_length(curr_path_frag + [next_path_frag[0]])
+            knot = Knot(path_length, min(next_speed, curr_speed), 0, None)
+            try:
+                spline = spline.concat(self.traj_solver.target_position(
+                    speed_knots[-1], knot, max_speed=curr_speed))
+                knot.time = spline.t[-1]
+                speed_knots.append(knot)
+            except FatalTrajectoryError:
+                # In some cases, the vehicle just won't be able to reach the
+                # desired velocity exactly at the speed limit transition point.
+                pass
+
+            if dist is not None and path_length >= final_knot.pos:
+                break
+
+        # If 'dist' is not specified, extend the spline to cover the whole path.
         if dist is None:
-            spline = CubicSpline([initial_knot.pos], [initial_knot.vel], [initial_knot.accel], [], [initial_knot.time])
-            prev_knot = initial_knot
-            path_length = 0
-            for (curr_speed, curr_path_frag), (next_speed, next_path_frag) in pairwise(speed_zones):
-                path_length += self.tracks.get_path_length(curr_path_frag + [next_path_frag[0]])
-                knot = Knot(path_length, min(next_speed, curr_speed, self.v_max), 0, None)
-                spline = spline.concat(self.traj_solver.target_position(prev_knot, knot, max_speed=curr_speed))
-                prev_knot = knot
-                prev_knot.time = spline.t[-1]
-
             path_length += self.tracks.get_path_length(next_path_frag)
-            speed = min(next_speed, self.v_max)
-            knot = Knot(path_length, speed, 0, None)
-            spline = spline.concat(self.traj_solver.target_position(prev_knot, knot, max_speed=speed))
+            knot = Knot(path_length, next_speed, 0, None)
+            spline = spline.concat(self.traj_solver.target_position(
+                speed_knots[-1], knot, max_speed=curr_speed))
 
-        else: # TODO: Follow speed limits
-            spline = self.traj_solver.target_position(initial_knot,
-                                        Knot(dist + initial_knot.pos, final_speed, 0, None),
-                                        max_speed=speed_limit)
+        # If 'dist' is specified, end the spline with a segment that
+        # takes the vehicle to end knot. To do this, we try to
+        # connect the last speed knot with the end knot. If the trajectory
+        # fails, we iteratively try earlier and earlier speed knots as starting
+        # points.
+        else: # dist is not None:
+            end_spline = None
+            for i in range(len(speed_knots)-1, -1, -1): # iterate in reverse
+                # Use the lowest speed limit out of the speed zones we're traversing for the end spline
+                spd_limit = min(speed_zones[i:])[0] # tuple comparison primarily uses the first element
+                try:
+                    end_spline = self.traj_solver.target_position(speed_knots[i],
+                                                                  final_knot,
+                                                                  max_speed=spd_limit)
+                    final_knot.time = end_spline.t[-1]
+                except FatalTrajectoryError:
+                    continue
+                else:
+                    break
+
+            assert end_spline is not None
+            left_spline = spline.copy_left(speed_knots[i].time)
+            spline = left_spline.concat(end_spline)
 
         self.set_spline(spline)
 
         # If a distance was specified, return the arrival time.
         if dist is not None:
-            return spline.t[-2]
+            return final_knot.time
+        else:
+            return
 
     def enter_station(self, station):
         """Assumes that vehicle has a reserved berth already.
@@ -2282,39 +2327,41 @@ class Vehicle(object):
         self.station = station
         current_knot = self.estimate_pose(self.controller.current_time)
 
-        # Slow to station speed limit at the start of the UNLOAD segment
-        unload_dist, unload_path = self.tracks.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
-        unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
-        if current_knot.vel > TrajectorySolver.v_threshold: # Non-zero velocity
-            if current_knot.accel > 0:
-                accel_bleed = self.traj_solver.target_acceleration(current_knot, Knot(None, None, 0, None))
-                peak_vel_knot = Knot(accel_bleed.q[-1], accel_bleed.v[-1], accel_bleed.a[-1], accel_bleed.t[-1])
-                to_unload_spline = accel_bleed.concat(self.traj_solver.target_position(peak_vel_knot, unload_knot, max_speed=peak_vel_knot.vel))
-            else:
-                to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
-            unload_knot.time = to_unload_spline.t[-1]
-
-            # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
-            berth_dist, berth_path = self.tracks.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
-            berth_knot = Knot(unload_knot.pos + berth_dist + self.berth_pos, 0, 0, None)
-            to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
-
-            spline = to_unload_spline.concat(to_berth_spline)
-            path = unload_path + berth_path[1:] # don't duplicate the UNLOAD ts_id
-        else:
-            # When used during sim startup the vehicle is stationary and
-            # doesn't need a separate spline for the decel to station speed limit.
-            berth_dist, berth_path = self.tracks.get_path(self.ts_id, self.plat_ts)
-            berth_knot = Knot(berth_dist + self.berth_pos, 0, 0, None)
-            spline = self.traj_solver.target_position(current_knot, berth_knot, max_speed=self.controller.LINE_SPEED)
-            path = berth_path
-
-        stop_time = spline.t[-1]
-
-        self.set_spline(spline)
+        path_length, path = self.tracks.get_path(self.ts_id, self.plat_ts)
         self.set_path(path)
-
+        stop_time = self.run(dist=path_length - current_knot.pos + self.berth_pos, final_speed=0)
         return stop_time
+
+##        # Slow to station speed limit at the start of the UNLOAD segment
+##        unload_dist, unload_path = self.tracks.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
+##        unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
+##        if current_knot.vel > TrajectorySolver.v_threshold: # Non-zero velocity
+##            if current_knot.accel > 0:
+##                accel_bleed = self.traj_solver.target_acceleration(current_knot, Knot(None, None, 0, None))
+##                peak_vel_knot = Knot(accel_bleed.q[-1], accel_bleed.v[-1], accel_bleed.a[-1], accel_bleed.t[-1])
+##                to_unload_spline = accel_bleed.concat(self.traj_solver.target_position(peak_vel_knot, unload_knot, max_speed=peak_vel_knot.vel))
+##            else:
+##                to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
+##            unload_knot.time = to_unload_spline.t[-1]
+##
+##            # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
+##            berth_dist, berth_path = self.tracks.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
+##            berth_knot = Knot(unload_knot.pos + berth_dist + self.berth_pos, 0, 0, None)
+##            to_berth_spline = self.traj_solver.target_position(unload_knot, berth_knot, max_speed=station.SPEED_LIMIT)
+##
+##            spline = to_unload_spline.concat(to_berth_spline)
+##            path = unload_path + berth_path[1:] # don't duplicate the UNLOAD ts_id
+##        else:
+##            # When used during sim startup the vehicle is stationary and
+##            # doesn't need a separate spline for the decel to station speed limit.
+##            berth_dist, berth_path = self.tracks.get_path(self.ts_id, self.plat_ts)
+##            berth_knot = Knot(berth_dist + self.berth_pos, 0, 0, None)
+##            spline = self.traj_solver.target_position(current_knot, berth_knot, max_speed=self.controller.LINE_SPEED)
+##            path = berth_path
+##
+##        stop_time = spline.t[-1]
+##        self.set_spline(spline)
+##        return stop_time
 
     def send_spline(self):
         """Sends a the current vehicle spline to the sim."""
