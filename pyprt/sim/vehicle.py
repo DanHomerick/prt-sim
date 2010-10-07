@@ -227,7 +227,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         self.total_pax = 0
         self._pax_times = [(Sim.now(),0)] # elements are (time, num_pax)
-
+        self._operational_times = [(Sim.now(),True)] # Elements are (time, not_in_storage)
         self._total_masses = [ (Sim.now(), self.vehicle_mass) ]
 
     def __str__(self):
@@ -268,7 +268,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def get_time_ave_pax(self):
         """Returns the time-weighted average number of passengers onboard the
         vehicle from the start until now."""
-        if Sim.now() == 0: # guard against ZeroDivision
+        op_time = self.get_operational_time()
+        if op_time != 0: # guard against zero division
             return len(self._passengers)
 
         ave = 0
@@ -277,7 +278,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         t_final, cnt_final = self._pax_times[-1]
         ave += (Sim.now() - t_final) * cnt_final
-        return ave / Sim.now()
+        return ave / op_time
     time_ave_pax = property(get_time_ave_pax)
 
     def get_dist_ave_pax(self):
@@ -407,8 +408,14 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         return dist
     empty_dist = property(get_empty_dist)
 
+    def get_nonempty_dist(self):
+        """Returns the distance travelled with one or more passengers on board,
+        measured in meters."""
+        return self.get_dist_travelled() - self.get_empty_dist()
+    nonempty_dist = property(get_nonempty_dist)
+
     def get_pax_dist(self):
-        """Returns the passenger-meters travelled."""
+        """Returns the number of passenger-meters travelled."""
         dist = 0
         for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
             if cnt_i > 0:
@@ -420,6 +427,50 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                  self._spline.evaluate(t_final).pos * cnt_final
         return dist
     pax_dist = property(get_pax_dist)
+
+    def get_operational_time(self):
+        """Returns the total time spent in operation during the sim. That is,
+        time in which the vehicle was not in storage."""
+        time = 0
+        for (t_i, op), (t_f, op) in pairwise(self._operational_times):
+            if op:
+                time += t_f - t_i
+
+        t_final, op_final = self._operational_times[-1]
+        if op_final:
+            time += Sim.now() - t_final
+        return time
+    operational_time = property(get_operational_time)
+
+    def get_empty_time(self):
+        """Returns the operational time spent with no passengers on board."""
+        time = 0
+        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
+            if cnt_i == 0:
+                time += (t_f - t_i)
+        t_final, cnt_final = self._pax_times[-1]
+        if cnt_final == 0:
+            time += Sim.now() - t_final
+        return time
+    empty_time = property(get_empty_time)
+
+    def get_nonempty_time(self):
+        """Returns the operational time spent with one or more passengers on board"""
+        return self.get_operational_time() - self.get_empty_time()
+    nonempty_time = property(get_nonempty_time)
+
+    def get_passenger_time(self):
+        """Returns the number of passenger-seconds spent. That is, 10 seconds
+        with 2 passengers on board is 20 passenger-seconds."""
+        p_time = 0
+        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
+            if cnt_i > 0:
+                p_time += (t_f - t_i) * cnt_i
+        t_final, cnt_final = self._pax_times[-1]
+        if cnt_final > 0:
+            p_time += (Sim.now() - t_final) * cnt_final
+        return p_time
+    passenger_time = property(get_passenger_time)
 
     def clear_path(self):
         """Clears the planned itinerary."""

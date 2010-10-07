@@ -65,11 +65,18 @@ class SummaryReport(Report):
     def __init__(self):
         super(SummaryReport, self).__init__(title="Summary")
 
-    def update(self):
+    def update(self, pax_report, vehicle_report, station_report, power_report):
         """Returns a list of strings containing summary info."""
+        assert isinstance(pax_report, PaxReport)
+        assert isinstance(vehicle_report, VehicleReport)
+        assert isinstance(station_report, StationReport)
+        assert isinstance(power_report, PowerReport)
+
         KM_TO_MILES = 0.621371192
         lines = []
-        sim_hours = Sim.now()/3600.
+
+        lines.append("Hours Simulated:\t %.1f" % (Sim.now()/3600.))
+        lines.append("")
 
         # Passenger summary statistics
         if common.passengers: # some passengers were simulated
@@ -138,39 +145,79 @@ class SummaryReport(Report):
             lines.append("")
 
         # Vehicle summary statistics
-        v_total_dist = sum(v.get_dist_travelled() for v in common.vehicle_list)
-        total_km = v_total_dist/1000.
+        distances = [v.get_dist_travelled() for v in common.vehicle_list]
+        operational_times = [v.get_operational_time() for v in common.vehicle_list]
+        nonempty_distances = [v.get_nonempty_dist() for v in common.vehicle_list]
+        nonempty_times = [v.get_nonempty_time() for v in common.vehicle_list]
+        pax_distances = [v.get_pax_dist() for v in common.vehicle_list]
+        pax_counts = [v.total_pax for v in common.vehicle_list]
+
+        total_dist = sum(distances)
+        total_km = total_dist/1000.
         total_miles = total_km * KM_TO_MILES
+        total_nonempty_dist = sum(nonempty_distances)
+        total_nonempty_km = total_nonempty_dist/1000.
+        total_nonempty_miles = total_nonempty_km * KM_TO_MILES
+        total_pax_dist = sum(pax_distances)
+        total_pax_km = total_pax_dist/1000.
+        total_pax_miles = total_pax_km * KM_TO_MILES
+        total_time = sum(operational_times) # seconds
+        total_time_hours = total_time/3600.
+        total_nonempty_time = sum(nonempty_times) # seconds
+        total_nonempty_time_hours = total_nonempty_time/3600.
+
         mean_km = total_km/len(common.vehicle_list)
         mean_miles = mean_km * KM_TO_MILES
-        max_km = max(v.get_dist_travelled() for v in common.vehicle_list)/1000.
+        max_km = max(distances)/1000.
         max_miles = max_km * KM_TO_MILES
-        min_km = min(v.get_dist_travelled() for v in common.vehicle_list)/1000.
+        min_km = min(distances)/1000.
         min_miles = min_km * KM_TO_MILES
+
         try:
-            mean_vel_kph = total_km/sim_hours/len(common.vehicle_list)
-            mean_vel_mph = total_miles/sim_hours/len(common.vehicle_list)
+            mean_vel_kph = total_km/total_time_hours
+            mean_vel_mph = total_miles/total_time_hours
         except ZeroDivisionError:
             mean_vel_kph = 0
             mean_vel_mph = 0
-        total_pax = sum(v.total_pax for v in common.vehicle_list)
-        min_pax = min(v.total_pax for v in common.vehicle_list)
+
+        try:
+            mean_pax_vel_kph = total_nonempty_km/total_nonempty_time_hours
+            mean_pax_vel_mph = total_nonempty_miles/total_nonempty_time_hours
+        except ZeroDivisionError:
+            mean_pax_vel_kph = 0
+            mean_pax_vel_mph = 0
+
+        total_pax = sum(pax_counts)
+        min_pax = min(pax_counts)
         mean_pax = total_pax/len(common.vehicle_list)
-        max_pax = max(v.total_pax for v in common.vehicle_list)
+        max_pax = max(pax_counts)
+
         lines.append("Vehicle statistics")
         lines.append("Number of Vehicles:\t%d" % len(common.vehicle_list))
         lines.append("Total vehicle km travelled:\t%10.3f\t(%.3f miles)" % (total_km, total_miles))
         lines.append("Vehicle km travelled (Min/Mean/Max):\t%9.3f\t%9.3f\t%9.3f" % (min_km, mean_km, max_km))
         lines.append("Vehicle miles travelled (Min/Mean/Max):\t%9.3f\t%9.3f\t%9.3f" % (min_miles, mean_miles, max_miles))
         lines.append("Mean velocity:\t%10d km/hr\t(%d mph)" % (mean_vel_kph, mean_vel_mph))
+        lines.append("Mean velocity w/ passengers:\t%10d km/hr\t(%d mph)" % (mean_pax_vel_kph, mean_pax_vel_mph))
         lines.append("Total passengers carried:\t%10d" % total_pax)
         lines.append("Pax carried per vehicle (Min/Mean/Max):\t%9d\t%9.3f\t%9d" % (min_pax, mean_pax, max_pax))
+        lines.append("Passenger km travelled: %.1f\t(%.1f miles)" % (total_pax_km, total_pax_miles))
         lines.append("")
 
         # Station summary statistics
         lines.append("Station statistics")
         lines.append("Number of stations:\t%d" % len(common.station_list))
+        lines.append("")
 
+        # Power summary statistics
+        try:
+            lines.append("Power statistics")
+            total_energy = power_report.plot_data.get_data('total_energy').get_data()[-1]
+            lines.append("Total Energy:\t%.1f KW-hrs" % total_energy)
+            lines.append("Energy/Distance:\t%.1f Watt-hrs/km\t (%.1f Watt-hrs/mile)" \
+                         % ((total_energy*1000.)/total_km, (total_energy*1000.)/total_miles))
+        except (IndexError, ZeroDivisionError):
+            pass
 
         self._lines = lines
         self._text = self.LINE_DELIMETER.join(self._lines)
@@ -769,11 +816,14 @@ class Reports(traits.HasTraits):
         if self._last_update_time == Sim.now():
             return
 
-        self.summary_report.update()
         self.pax_report.update()
         self.vehicle_report.update()
         self.station_report.update()
         self.power_report.update()
+        self.summary_report.update(self.pax_report,
+                                   self.vehicle_report,
+                                   self.station_report,
+                                   self.power_report)
 
         self._last_update_time = Sim.now()
 

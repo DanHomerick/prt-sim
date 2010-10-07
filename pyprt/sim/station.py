@@ -447,6 +447,7 @@ class Storage(object):
         if len(self._storage_track.vehicles):
             v = self._storage_track.vehicles[0]
             v._move_to(pos, loc)
+            v._operational_times.append( (Sim.now(), True) )
 
         else:
             # create a new vehicle
@@ -487,6 +488,7 @@ class Storage(object):
         except IndexError:
             pos = vehicle.length + 1
         vehicle._move_to(pos, self._storage_track)
+        vehicle._operational_times.append( (Sim.now(), False) )
         self._num_pending_entry -= 1
         self._num_vehicles += 1
 
