@@ -11,6 +11,7 @@ import numpy
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
 import enthought.traits.ui.table_column as ui_tc
+from enthought.traits.ui.tabular_adapter import TabularAdapter
 import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
@@ -22,8 +23,8 @@ from visual import NoWritebackOnCloseHandler
 
 def create_vehicle_class(
         model_name, length, vehicle_mass, max_pax_capacity,
-        frontal_area, drag_coefficient, powertrain_efficiency,
-        regenerative_braking_efficiency,
+        frontal_area, drag_coefficient, rolling_coefficient,
+        powertrain_efficiency, regenerative_braking_efficiency,
         jerk_max_norm, jerk_min_norm, jerk_max_emerg, jerk_min_emerg,
         accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
         vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg):
@@ -40,6 +41,7 @@ def create_vehicle_class(
                  'max_pax_capacity':max_pax_capacity,
                  'frontal_area':frontal_area,
                  'drag_coefficient':drag_coefficient,
+                 'rolling_coefficient':rolling_coefficient,
                  'powertrain_efficiency':powertrain_efficiency,
                  'regenerative_braking_efficiency':regenerative_braking_efficiency,
                  'jerk_max_norm':jerk_max_norm,
@@ -261,6 +263,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def get_pax_count(self):
         """Return the current number of the passengers"""
         return len(self._passengers)
+    pax_count = property(get_pax_count)
 
     def get_time_ave_pax(self):
         """Returns the time-weighted average number of passengers onboard the
@@ -275,6 +278,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         t_final, cnt_final = self._pax_times[-1]
         ave += (Sim.now() - t_final) * cnt_final
         return ave / Sim.now()
+    time_ave_pax = property(get_time_ave_pax)
 
     def get_dist_ave_pax(self):
         """Returns the dist-weighted average number of passengers onboard the
@@ -291,11 +295,13 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         except ZeroDivisionError:
             result = len(self._passengers)
         return result
+    dist_ave_pax = property(get_dist_ave_pax)
 
     def get_max_pax(self):
         """Returns the max number of simultaneous passengers. Not the max
         passenger capacity!"""
         return max(pax_count for (time, pax_count) in self._pax_times)
+    max_pax = property(get_max_pax)
 
     def get_pos(self, time=None):
         """The vehicle's nose position, in meters, where the start of the current TrackSegment is 0."""
@@ -399,6 +405,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             dist += self._spline.evaluate(Sim.now()).pos - \
                  self._spline.evaluate(t_final).pos
         return dist
+    empty_dist = property(get_empty_dist)
 
     def get_pax_dist(self):
         """Returns the passenger-meters travelled."""
@@ -412,6 +419,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             dist += self._spline.evaluate(Sim.now()).pos - \
                  self._spline.evaluate(t_final).pos * cnt_final
         return dist
+    pax_dist = property(get_pax_dist)
 
     def clear_path(self):
         """Clears the planned itinerary."""
@@ -987,4 +995,56 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     def calc_energy_used(self):
         """Return the amount of energy used, in Joules"""
         pass
+
+
+class VehicleTabularAdapater(TabularAdapter):
+    """An adapter for table-based views of multiple vehicles."""
+
+    columns = [
+        ('ID', 'ID'),
+        ('Location', 'loc'),
+        ('Position', 'pos'),
+        ('Velocity', 'vel'),
+        ('Accel', 'accel'),
+        ('# Pax', 'pax_count'),
+        ('Max Pax', 'max_pax'),
+        ('Capacity', 'max_pax_capacity'),
+        ('Total Pax', 'total_pax'),
+        ('Empty Dist', 'empty_dist'),
+        ('Pax Dist', 'pax_dist'),
+        ('Total Dist', 'dist_travelled'),
+        ('Time-Weighted Ave Pax', 'time_ave_pax'),
+        ('Dist-Weighted Ave Pax', 'dist_ave_pax'),
+        ('Vehicle Mass', 'vehicle_mass')
+    ]
+
+    ID_width = traits.Float(40)
+
+    # Formatting
+    pos_format = traits.Constant('%.2f')
+    vel_format = traits.Constant('%.2f')
+    accel_format = traits.Constant('%.2f')
+    empty_dist_format = traits.Constant('%.1f')
+    pax_dist_format = traits.Constant('%.1f')
+    total_dist_format = traits.Constant('%.1f')
+    dist_travelled_format = traits.Constant('%.1f')
+    time_ave_pax_format = traits.Constant('%.1f')
+    dist_ave_pax_format = traits.Constant('%.1f')
+
+    # Tooltips
+    ID_tooltip = traits.Constant('Unique vehicle identifier')
+    loc_tooltip = traits.Constant('Current location')
+    pos_tooltip = traits.Constant('Current distance from start of location, in meters.')
+    vel_tooltip = traits.Constant('Current velocity, in m/s')
+    accel_tooltip = traits.Constant('Current accel, in m/s')
+    pax_count_tooltip = traits.Constant('Current number of passengers on board.')
+    max_pax_tooltip = traits.Constant('Greatest number of passengers that have been on board.')
+    max_pax_capacity_tooltip = traits.Constant('Passenger capacity')
+    total_pax_tooltip = traits.Constant('Total number of passengers carried')
+    empty_dist_tooltip = traits.Constant('Distance travelled with no passengers on board, in meters.')
+    pax_dist_tooltip = traits.Constant('(Distance travelled) * (number of passengers carried)')
+    dist_travelled_tooltip = traits.Constant('Total distance travelled, in meters')
+    time_ave_pax_tooltip = traits.Constant('Average number of passengers, weighted by time')
+    dist_ave_pax_tooltip = traits.Constant('Average number of passengers, weighted by distance')
+    vehicle_mass_tooltip = traits.Constant('Vehicle weight, in kg. Excludes passenger or cargo weight.')
 

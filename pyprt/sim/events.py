@@ -4,7 +4,9 @@ import heapq
 
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
+from enthought.traits.ui.tabular_adapter import TabularAdapter
 import enthought.traits.ui.table_column as ui_tc
+
 
 import common
 import pyprt.shared.api_pb2 as api
@@ -127,52 +129,52 @@ class Passenger(PrtEvent):
                           handler=NoWritebackOnCloseHandler()
                           )
 
-    # Subset of passenger data in table format.
-    table_editor = ui.TableEditor(
-            columns = [ui_tc.ObjectColumn(name='ID', label='ID'),
-                       ui_tc.ObjectColumn(name='src_station', label='Origin'),
-                       ui_tc.ObjectColumn(name='dest_station', label='Destination'),
-                       ui_tc.ExpressionColumn(label='Waiting',
-                                              expression='sec_to_hms(object.wait_time)',
-                                              globals={'sec_to_hms':sec_to_hms},
-                                              tooltip='Time spent waiting'),
-                       ui_tc.ExpressionColumn(label='Riding',
-                                              expression='sec_to_hms(object.ride_time)',
-                                              globals={'sec_to_hms':sec_to_hms},
-                                              tooltip='Time spent riding'),
-                       ui_tc.ExpressionColumn(label='Walking',
-                                              expression='sec_to_hms(object.walk_time)',
-                                              globals={'sec_to_hms':sec_to_hms},
-                                              tooltip='Time spent walking'),
-                       ui_tc.ExpressionColumn(label='Total',
-                                              expression='sec_to_hms(object.total_time)',
-                                              globals={'sec_to_hms':sec_to_hms},
-                                              tooltip='Total time spent on trip'),
-                       ui_tc.ObjectColumn(name='trip_success', label='Success',
-                                          tooltip='Sucessfully reached destination'),
-                       ui_tc.ObjectColumn(name='loc', label='Current Location')
-                      ],
-            other_columns = [ui_tc.ObjectColumn(name='label', label='Label'),
-                       ui_tc.ObjectColumn(name='will_share', label='Will Share',
-                                          tooltip='Willing to share vehicle when destinations match'),
-                       ui_tc.ObjectColumn(name='load_delay', label='Load Delay',
-                                          tooltip='Time that passenger takes to embark'),
-                       ui_tc.ObjectColumn(name='unload_delay', label='Unload Delay',
-                                          tooltip='Time that passenger takes to disembark'),
-                       ui_tc.ObjectColumn(name='mass', label='Mass',
-                                          tooltip='Includes luggage (kg)')
-                       ],
-                       # more...
-            deletable = False,
-            editable=False,
-            sortable = True,
-            sort_model = False,
-            auto_size = True,
-            orientation = 'vertical',
-            show_toolbar = True,
-            reorderable = False,
-            rows = 15,
-            row_factory = traits.This)
+##    # Subset of passenger data in table format.
+##    table_editor = ui.TableEditor(
+##            columns = [ui_tc.ObjectColumn(name='ID', label='ID'),
+##                       ui_tc.ObjectColumn(name='src_station', label='Origin'),
+##                       ui_tc.ObjectColumn(name='dest_station', label='Destination'),
+##                       ui_tc.ExpressionColumn(label='Waiting',
+##                                              expression='sec_to_hms(object.wait_time)',
+##                                              globals={'sec_to_hms':sec_to_hms},
+##                                              tooltip='Time spent waiting'),
+##                       ui_tc.ExpressionColumn(label='Riding',
+##                                              expression='sec_to_hms(object.ride_time)',
+##                                              globals={'sec_to_hms':sec_to_hms},
+##                                              tooltip='Time spent riding'),
+##                       ui_tc.ExpressionColumn(label='Walking',
+##                                              expression='sec_to_hms(object.walk_time)',
+##                                              globals={'sec_to_hms':sec_to_hms},
+##                                              tooltip='Time spent walking'),
+##                       ui_tc.ExpressionColumn(label='Total',
+##                                              expression='sec_to_hms(object.total_time)',
+##                                              globals={'sec_to_hms':sec_to_hms},
+##                                              tooltip='Total time spent on trip'),
+##                       ui_tc.ObjectColumn(name='trip_success', label='Success',
+##                                          tooltip='Sucessfully reached destination'),
+##                       ui_tc.ObjectColumn(name='loc', label='Current Location')
+##                      ],
+##            other_columns = [ui_tc.ObjectColumn(name='label', label='Label'),
+##                       ui_tc.ObjectColumn(name='will_share', label='Will Share',
+##                                          tooltip='Willing to share vehicle when destinations match'),
+##                       ui_tc.ObjectColumn(name='load_delay', label='Load Delay',
+##                                          tooltip='Time that passenger takes to embark'),
+##                       ui_tc.ObjectColumn(name='unload_delay', label='Unload Delay',
+##                                          tooltip='Time that passenger takes to disembark'),
+##                       ui_tc.ObjectColumn(name='mass', label='Mass',
+##                                          tooltip='Includes luggage (kg)')
+##                       ],
+##                       # more...
+##            deletable = False,
+##            editable=False,
+##            sortable = True,
+##            sort_model = False,
+##            auto_size = True,
+##            orientation = 'vertical',
+##            show_toolbar = True,
+##            reorderable = False,
+##            rows = 15,
+##            row_factory = traits.This)
 
     def __init__(self, time, ID, src_station, dest_station,
                  load_delay, unload_delay, will_share, mass):
@@ -306,6 +308,64 @@ class Passenger(PrtEvent):
         ps.creation_time = self._start_time
         ps.mass = self.mass
         ps.trip_success = self.trip_success
+
+class PassengerTabularAdapter(TabularAdapter):
+    """An adapter for table-based views of multiple passengers."""
+    columns = [ ('ID', 'ID'),
+                ('Origin', 'src_station'),
+                ('Destination', 'dest_station'),
+                ('Wait Time', 'wait_time'),
+                ('Ride Time', 'ride_time'),
+                ('Walk Time', 'walk_time'),
+                ('Total Time', 'total_time'),
+                ('Trip Success', 'trip_success'),
+                ('Current Location', 'loc'),
+                ('Load Delay', 'load_delay'),
+                ('Unload Delay', 'unload_delay'),
+                ('Mass', 'mass'),
+                ('Will Share', 'will_share')
+              ]
+
+    ID_width = traits.Float(40)
+
+    wait_time_text = traits.Property
+    ride_time_text = traits.Property
+    walk_time_text = traits.Property
+    total_time_text = traits.Property
+    load_delay_text = traits.Property
+    unload_delay_text = traits.Property
+
+    ID_tooltip = traits.Constant('Unique passenger identifier')
+    src_station_tooltip = traits.Constant("ID or label for the passenger's origin station.")
+    dest_station_tooltip = traits.Constant("ID or label for the passenger's destination station.")
+    wait_time_tooltip = traits.Constant('Time spent waiting at a station')
+    ride_time_tooltip = traits.Constant('Time spent riding in a vehicle')
+    walk_time_tooltip = traits.Constant('Time spent walking to a station')
+    total_time_tooltip = traits.Constant('Sum of time spent on trip')
+    loc_tooltip = traits.Constant('ID or label for a station or vehicle')
+    trip_success_tooltip = traits.Constant('Passenger has sucessfully reached its destination')
+    load_delay_tooltip = traits.Constant('Time that passenger requires to enter a vehicle')
+    unload_delay_tooltip = traits.Constant('Time that passenger requires to exit a vehicle')
+    mass_tooltip = traits.Constant('Total passenger weight, including luggage (kg)')
+    will_share_tooltip = traits.Constant('Whether the passenger will share a vehicle with another passenger if they have the same origin and destination stations.')
+
+    def _get_wait_time_text(self):
+        return sec_to_hms(self.item.wait_time)
+
+    def _get_ride_time_text(self):
+        return sec_to_hms(self.item.ride_time)
+
+    def _get_walk_time_text(self):
+        return sec_to_hms(self.item.walk_time)
+
+    def _get_total_time_text(self):
+        return sec_to_hms(self.item.total_time)
+
+    def _get_load_delay_text(self):
+        return sec_to_hms(self.item.load_delay)
+
+    def _get_unload_delay_text(self):
+        return sec_to_hms(self.item.unload_delay)
 
 def to_millisec(sec):
     """Convert from floating point seconds to integer milliseconds, rounding."""

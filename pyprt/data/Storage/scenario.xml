@@ -705,12 +705,12 @@
     </Station>
   </Stations>
   <VehicleModels>
-    <VehicleModel model_name="PRT_DEFAULT" length="4" passenger_capacity="3" mass="450" frontal_area="1.7" drag_coefficient="0.2" powertrain_efficiency="0.8" regenerative_braking_efficiency="0">
+    <VehicleModel model_name="PRT_DEFAULT" length="4" passenger_capacity="3" mass="450" frontal_area="1.7" drag_coefficient="0.2" rolling_coefficient="0.005" powertrain_efficiency="0.8" regenerative_braking_efficiency="0">
       <Jerk normal_max="5" normal_min="-5" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="5" normal_min="-5" emergency_max="5" emergency_min="-25"/>
       <Velocity normal_max="30" normal_min="0" emergency_max="45" emergency_min="0"/>
     </VehicleModel>
-    <VehicleModel model_name="Skytran" length="4" passenger_capacity="2" mass="450" frontal_area="1.7" drag_coefficient="0.1" powertrain_efficiency="0.9" regenerative_braking_efficiency="0.9">
+    <VehicleModel model_name="Skytran" length="4" passenger_capacity="2" mass="450" frontal_area="1.7" drag_coefficient="0.1" rolling_coefficient="0.005" powertrain_efficiency="0.9" regenerative_braking_efficiency="0.9">
       <Jerk normal_max="7" normal_min="-7" emergency_max="20" emergency_min="-20"/>
       <Acceleration normal_max="9" normal_min="-9" emergency_max="10" emergency_min="-25"/>
       <Velocity normal_max="67" normal_min="0" emergency_max="67" emergency_min="0"/>

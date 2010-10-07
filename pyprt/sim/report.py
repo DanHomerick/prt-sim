@@ -9,15 +9,17 @@ import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
 import enthought.chaco.api as chaco
 import enthought.chaco.tools.api as tools
+import enthought.enable.api as enable
 from enthought.enable.component_editor import ComponentEditor
+import enthought.traits.ui.menu as menu
 import SimPy.SimulationRT as Sim
 
 
 import common
 from pyprt.shared.utility import sec_to_hms
-from events import Passenger
-from vehicle import BaseVehicle
-from station import Station
+from events import Passenger, PassengerTabularAdapter
+from vehicle import BaseVehicle, VehicleTabularAdapater
+from station import Station, StationTabularAdapater
 from pyprt.shared.cubic_spline import OutOfBoundsError
 
 class Report(traits.HasTraits):
@@ -33,14 +35,36 @@ class Report(traits.HasTraits):
     def type_str(self, obj):
         return obj.__class__.__name__
 
+class SortHandler(ui.Handler):
+    column_clicked = traits.Any
+    reverse_sort = traits.Bool(False)
+
+    def _column_clicked_changed(self, event):
+        """ Sort the functions based on the clicked column.  Reverse the
+            order of the sort each time the column is clicked.
+        """
+
+        #### This is the list of the rows in the table.
+        values = event.editor.value
+
+        #### Reverse the sort order.
+        self.reverse_sort = not self.reverse_sort
+
+        # Sort by the clicked on column's field name and in the correct order.
+        event.editor._update_visible = True # Workaround for a bug
+        fields = [name for label, name in event.editor.adapter.columns]
+        field = fields[event.column]
+        values.sort(key=lambda x: getattr(x,field), reverse=self.reverse_sort)
+
 class SummaryReport(Report):
     """Summary statistics for all sections."""
 
+    _lines = traits.List(traits.Str)
+    _text = traits.Str
+
     def __init__(self):
         super(SummaryReport, self).__init__(title="Summary")
-        self._lines = []
 
-    # TODO: Stop using commmon
     def update(self):
         """Returns a list of strings containing summary info."""
         KM_TO_MILES = 0.621371192
@@ -50,27 +74,62 @@ class SummaryReport(Report):
         # Passenger summary statistics
         if common.passengers: # some passengers were simulated
             pax_list = common.passengers.values()
-            pax_list.sort()
 
             success_rate = sum(1 for p in pax_list if p.trip_success)/len(pax_list) * 100
             lines.append("Passenger Statistics")
             lines.append("Number of Passengers:  %d" % len(pax_list))
+
+            min_t, max_t, sum_t = 0, 0, 0
+            for p in pax_list:
+                t = p.wait_time
+                if t < min_t:
+                    min_t = t
+                if t > max_t:
+                    max_t = t
+                sum_t += t
             lines.append("Wait times (Min/Mean/Max):\t%s\t%s\t%s" % \
-                           (sec_to_hms(min(p.wait_time for p in pax_list)),
-                            sec_to_hms(sum(p.wait_time for p in pax_list)/len(pax_list)),
-                            sec_to_hms(max(p.wait_time for p in pax_list))))
+                           (sec_to_hms(min_t),
+                            sec_to_hms(sum_t/len(pax_list)),
+                            sec_to_hms(max_t)))
+
+            min_t, max_t, sum_t = 0, 0, 0
+            for p in pax_list:
+                t = p.walk_time
+                if t < min_t:
+                    min_t = t
+                if t > max_t:
+                    max_t = t
+                sum_t += t
             lines.append("Walk times (Min/Mean/Max):\t%s\t%s\t%s" % \
-                           (sec_to_hms(min(p.walk_time for p in pax_list)),
-                            sec_to_hms(sum(p.walk_time for p in pax_list)/len(pax_list)),
-                            sec_to_hms(max(p.walk_time for p in pax_list))))
+                           (sec_to_hms(min_t),
+                            sec_to_hms(sum_t/len(pax_list)),
+                            sec_to_hms(max_t)))
+
+            min_t, max_t, sum_t = 0, 0, 0
+            for p in pax_list:
+                t = p.ride_time
+                if t < min_t:
+                    min_t = t
+                if t > max_t:
+                    max_t = t
+                sum_t += t
             lines.append("Ride times (Min/Mean/Max):\t%s\t%s\t%s" % \
-                           (sec_to_hms(min(p.ride_time for p in pax_list)),
-                            sec_to_hms(sum(p.ride_time for p in pax_list)/len(pax_list)),
-                            sec_to_hms(max(p.ride_time for p in pax_list))))
+                           (sec_to_hms(min_t),
+                            sec_to_hms(sum_t/len(pax_list)),
+                            sec_to_hms(max_t)))
+
+            min_t, max_t, sum_t = 0, 0, 0
+            for p in pax_list:
+                t = p.total_time
+                if t < min_t:
+                    min_t = t
+                if t > max_t:
+                    max_t = t
+                sum_t += t
             lines.append("Total times (Min/Mean/Max):\t%s\t%s\t%s" % \
-                           (sec_to_hms(min(p.total_time for p in pax_list)),
-                            sec_to_hms(sum(p.total_time for p in pax_list)/len(pax_list)),
-                            sec_to_hms(max(p.total_time for p in pax_list))))
+                           (sec_to_hms(min_t),
+                            sec_to_hms(sum_t/len(pax_list)),
+                            sec_to_hms(max_t)))
             lines.append("%% Trip success:\t%5d" % success_rate)
             lines.append("")
 
@@ -114,21 +173,34 @@ class SummaryReport(Report):
 
 
         self._lines = lines
+        self._text = self.LINE_DELIMETER.join(self._lines)
 
     def __str__(self):
-        return self.LINE_DELIMETER.join(self._lines)
+        return self._text
 
 class PaxReport(Report):
     """List of details for all passengers in a gridview"""
 
-    passengers = traits.List # not kept up to date...
+    passengers = traits.List
 
-##    view = ui.View(ui.Item('passengers@', label='Passengers', editor=Passenger.table_editor))
+    traits_view = ui.View(
+                      ui.Group(
+                          ui.Item('passengers',
+                                  editor=ui.TabularEditor(
+                                      adapter=PassengerTabularAdapter(),
+                                      operations = [],
+                                      images = [],
+                                      editable=False,
+                                      column_clicked='handler.column_clicked'),
+                          show_label=False)
+                      ),
+                      handler=SortHandler(),
+                      kind='live'
+                  )
 
-
-    def __init__(self, pax_dict):
+    def __init__(self):
         super(PaxReport, self).__init__(title="Passengers")
-        self.pax_dict = pax_dict
+
         self._header = ["id",
                         "CreationTime",
                         "SrcStatId",
@@ -150,11 +222,13 @@ class PaxReport(Report):
         self._lines = []
 
     def update(self):
-        self.passengers = self.pax_dict.values()
-        self.passengers.sort()
+        # Check if the locally cached vehicle list has gotten stale.
+        if len(self.passengers) != len(common.passengers):
+            self.passengers = common.passengers.values()
+            self.passengers.sort()
 
         lines = []
-        for pax in self.pax_dict.itervalues():
+        for pax in self.passengers:
             assert isinstance(pax, Passenger)
             lines.append([str(pax.ID),
                         "%.3f" % pax.time,
@@ -184,9 +258,26 @@ class PaxReport(Report):
         return self.LINE_DELIMETER.join(line_strings)
 
 class VehicleReport(Report):
-    def __init__(self, v_list):
+
+    v_list = traits.List
+
+    traits_view = ui.View(
+                      ui.Group(
+                          ui.Item('v_list',
+                                  editor=ui.TabularEditor(
+                                      adapter=VehicleTabularAdapater(),
+                                      operations = [],
+                                      images = [],
+                                      editable=False,
+                                      column_clicked='handler.column_clicked'),
+                                  show_label=False)
+                      ),
+                      handler=SortHandler(),
+                      kind='live'
+                  )
+
+    def __init__(self):
         super(VehicleReport, self).__init__(title='Vehicles')
-        self._v_list = v_list
         self._units_notice = "All values reported in units of meters and seconds."
         self._header = ["id",
                         "Label",
@@ -212,12 +303,12 @@ class VehicleReport(Report):
 
     def update(self):
         # Check if the locally cached vehicle list has gotten stale.
-        if len(self._v_list) != len(common.vehicles):
-            self._v_list[:] = common.vehicles.values()
-            self._v_list.sort()
+        if len(self.v_list) != len(common.vehicles):
+            self.v_list = common.vehicles.values()
+            self.v_list.sort()
 
         lines = []
-        for v in self._v_list:
+        for v in self.v_list:
             assert isinstance(v, BaseVehicle)
             extrema_velocities, extrema_times = v._spline.get_extrema_velocities()
             max_vel = max(extrema_velocities)
@@ -256,9 +347,27 @@ class VehicleReport(Report):
         return self.LINE_DELIMETER.join(line_strings)
 
 class StationReport(Report):
-    def __init__(self, station_dict):
+    s_list = traits.List
+
+    traits_view = ui.View(
+                      ui.Group(
+                          ui.Item('s_list',
+                                  editor=ui.TabularEditor(
+                                      adapter=StationTabularAdapater(),
+                                      operations = [],
+                                      images = [],
+                                      editable=False,
+                                      column_clicked='handler.column_clicked'),
+                                  show_label=False)
+                      ),
+                      handler=SortHandler(),
+                      kind='live'
+                  )
+
+
+    def __init__(self):
         super(StationReport, self).__init__(title='Stations')
-        self.station_dict = station_dict
+
         self._header = ["id",
                        "Label",
                        "Platforms",
@@ -281,11 +390,12 @@ class StationReport(Report):
         self._lines = []
 
     def update(self):
-        s_list = self.station_dict.values()
-        s_list.sort()
+        if len(self.s_list) != len(common.stations):
+            self.s_list = common.stations.values()
+            self.s_list.sort()
 
         lines = []
-        for s in s_list:
+        for s in self.s_list:
             assert isinstance(s, Station)
             berths, unload, load, unload_load, queue = 0, 0, 0, 0, 0
             for platform in s.platforms:
@@ -337,12 +447,34 @@ class StationReport(Report):
             line_strings.append(line_str)
         return self.LINE_DELIMETER.join(line_strings)
 
-class PowerReport(Report):
-    def __init__(self, v_list):
+class PowerReport(enable.Component):
+
+    SAMPLE_INTERVAL = 1 # seconds
+
+    v_list = traits.List
+    plot_data = traits.Instance(chaco.ArrayPlotData)
+    plot_container = traits.Instance(enable.Component)
+    plots = traits.Dict
+
+    traits_view = ui.View(
+                     ui.HGroup(
+##                        ui.Item(name='v_list', editor=ui.EnumEditor(values=[str(v) for v in self.v_list])),
+                        ui.Item(name='plot_container', editor=enable.ComponentEditor(), show_label=False)
+                     ),
+                     kind='live'
+                  )
+
+    def __init__(self):
         super(PowerReport, self).__init__(title='Power')
-        self.v_list = v_list
-        self.plot_data = None
-        self.plot = None
+
+    def update(self):
+        # Check if the locally cached vehicle list has gotten stale.
+        if len(self.v_list) != len(common.vehicles):
+            self.v_list[:] = common.vehicles.values()
+            self.v_list.sort()
+
+        self.plot_data = self.make_plot_data(self.v_list)
+        self.plots, self.plot_container = self.make_plots(self.plot_data)
 
     def make_plot_data(self, v_list):
         """Returns a chaco.ArrayPlotData containing the following:
@@ -353,11 +485,12 @@ class PowerReport(Report):
 
         Parameters:
           v_list -- a sequence of Vehicle objects, sorted by ID
+
+        Does not support negative velocities.
         """
         end_time = min(common.Sim.now(), common.config_manager.get_sim_end_time())
-        num_samples = min(10000, end_time+1) # 10,000 samples, or once per second, whichever is less
-        sample_times = numpy.linspace(0, end_time, num_samples)
-        power_array = numpy.zeros( (len(v_list), num_samples), dtype=numpy.float32)
+        sample_times = numpy.arange(0, end_time+self.SAMPLE_INTERVAL, self.SAMPLE_INTERVAL)
+        power_array = numpy.zeros( (len(v_list), len(sample_times)), dtype=numpy.float32)
 
         air_density = common.air_density
         wind_speed = common.wind_speed
@@ -391,6 +524,14 @@ class PowerReport(Report):
                         pos = knot.pos - path_sum
                         loc = v._path[path_idx]
 
+                    # Power to overcome rolling resistance. Ignores effect of
+                    # track slope and assumes that rolling resistance is constant
+                    # at different velocities.
+                    if v.rolling_coefficient and knot.vel != 0: # No power use when stopped
+                        rolling_power = v.rolling_coefficient * g * mass
+                    else:
+                        rolling_power = 0 # Rolling resistance not modelled
+
                     # Power to overcome aero drag
                     if wind_speed and knot.vel != 0: # No power use when stopped
                         travel_angle = loc.get_direction(knot.pos - path_sum) # 0 is travelling TOWARDS the East
@@ -410,7 +551,7 @@ class PowerReport(Report):
                     last_elevation = elevation
 
                     # Adjust power usages by efficiency
-                    net_power = accel_power + aero_power + elevation_power
+                    net_power = accel_power + rolling_power + aero_power + elevation_power
                     if net_power > 0:
                         net_power /= v.powertrain_efficiency # low efficiency increases power required
                     elif net_power < 0:
@@ -431,86 +572,196 @@ class PowerReport(Report):
 
         net_total_power = positive_total_power + negative_total_power
 
-        return chaco.ArrayPlotData(sample_times=sample_times,
-                                   v_power=power_array,
-                                   positive_power=positive_power,
-                                   positive_total_power=positive_total_power,
-                                   negative_power=negative_power,
-                                   negative_total_power=negative_total_power,
-                                   net_total_power=net_total_power)
+        energy_array = numpy.cumsum(power_array, axis=1)
+        energy_array = numpy.divide(energy_array, 3600/self.SAMPLE_INTERVAL) # convert to KW-hours
+        total_energy_array = numpy.sum(energy_array, axis=0)
 
-    def make_plot(self, plot_data):
-        plot = chaco.Plot(plot_data)
-        plot.y_axis.title="Power (KW)"
-        plot.x_axis.title="Time (seconds)"
-        positive_plot = plot.plot(("sample_times", "positive_total_power"), type="line", color='black', line_width=2)
-        negative_plot = plot.plot(("sample_times", "negative_total_power"), type="line", color='red', line_width=2)
-        net_plot = plot.plot(("sample_times", "net_total_power"), type="line", color='purple', line_width=2)
+        return chaco.ArrayPlotData(
+            sample_times=chaco.ArrayDataSource(sample_times, sort_order="ascending"),
+            positive_total_power=chaco.ArrayDataSource(positive_total_power),
+            negative_total_power=chaco.ArrayDataSource(negative_total_power),
+            net_total_power=chaco.ArrayDataSource(net_total_power),
+            total_energy=chaco.ArrayDataSource(total_energy_array),
+            v_power=power_array,
+            positive_power=positive_power,
+            negative_power=negative_power,
+            energy_array=energy_array
+            )
 
-        # Zoom tool
-        plot.overlays.append(tools.SimpleZoom(plot, tool_mode='box', always_on=True))
+    def make_plots(self, plot_data):
+        """Create overlapping power and energy plots from the supplied plot_data.
+
+        Parameters:
+          plot_data -- A chaco.ArrayPlotData object. Expected to be created
+              by self.make_plot_data.
+
+        Return:
+          A 2-tuple containing:
+            - A dict containing plots, keyed by the plot name.
+            - A chaco.OverlayPlotContainer containing the plots.
+        """
+        times_mapper = chaco.LinearMapper(range=chaco.DataRange1D(plot_data.get_data('sample_times'), ))
+
+        graph_colors = {'positive_total_power':'black',
+                        'negative_total_power':'red',
+                        'net_total_power':'purple',
+                        'total_energy':'green'}
+
+        plots = {} # Dict of all plots
+
+        # Power graphs
+        power_names = ['positive_total_power',
+                             'negative_total_power',
+                             'net_total_power']
+        power_data_range = chaco.DataRange1D(*[plot_data.get_data(name) for name in power_names])
+        power_mapper = chaco.LinearMapper(range=power_data_range)
+
+        power_plots = {}
+        for plot_name in power_names:
+            plot = chaco.LinePlot(index=plot_data.get_data('sample_times'),
+                                  value=plot_data.get_data(plot_name),
+                                  index_mapper=times_mapper,
+                                  value_mapper=power_mapper,
+                                  border_visible=False,
+                                  bg_color='transparent',
+                                  line_style='solid',
+                                  color=graph_colors[plot_name],
+                                  line_width=2)
+            power_plots[plot_name] = plot
+            plots[plot_name] = plot
+
+        # Energy graphs -- use a different value scale than power
+        energy_plot_names = ['total_energy']
+        energy_data_range = chaco.DataRange1D(*[plot_data.get_data(name) for name in energy_plot_names])
+        energy_mapper = chaco.LinearMapper(range=energy_data_range)
+
+        energy_plots = {}
+        for plot_name in energy_plot_names:
+            plot = chaco.LinePlot(index=plot_data.get_data('sample_times'),
+                                  value=plot_data.get_data(plot_name),
+                                  index_mapper=times_mapper,
+                                  value_mapper=energy_mapper,
+                                  border_visible=False,
+                                  bg_color='transarent',
+                                  line_style='solid',
+                                  color=graph_colors[plot_name],
+                                  line_width=2)
+            energy_plots[plot_name] = plot
+            plots[plot_name] = plot
+
+
+        # Blank plot -- Holds the grid and axis, and acts as a placeholder when
+        # no other graphs are activated.
+        blank_values = chaco.ArrayDataSource(numpy.zeros( plot_data.get_data('sample_times').get_size() ))
+        blank_plot = chaco.LinePlot(index=plot_data.get_data('sample_times'),
+                                    value=blank_values,
+                                    index_mapper=times_mapper,
+                                    value_mapper=power_mapper,
+                                    border_visible=True,
+                                    bg_color='transparent',
+                                    line_width=0)
+        plots['blank_plot'] = plot
+
+        times_axis = chaco.PlotAxis(orientation='bottom',
+                                    title="Time (seconds)",
+                                    mapper=times_mapper,
+                                    component=blank_plot)
+        power_axis = chaco.PlotAxis(orientation='left',
+                                    title="Power (KW)",
+                                    mapper=power_mapper,
+                                    component=blank_plot)
+        energy_axis = chaco.PlotAxis(orientation='right',
+                                     title="Energy (KW-hrs)",
+                                     mapper=energy_mapper,
+                                     component=blank_plot)
+        blank_plot.underlays.append(times_axis)
+        blank_plot.underlays.append(power_axis)
+        blank_plot.underlays.append(energy_axis)
+
+        # Add zoom capability
+        blank_plot.overlays.append(tools.ZoomTool(blank_plot,
+                                   tool_mode='range',
+                                   axis='index',
+                                   always_on=True,
+                                   drag_button='left'))
+
+        plot_container = chaco.OverlayPlotContainer()
+        for plot in power_plots.itervalues():
+            plot_container.add(plot)
+        for plot in energy_plots.itervalues():
+            plot_container.add(plot)
+        plot_container.add(blank_plot)
+        plot_container.padding_left = 60
+        plot_container.padding_right = 60
+        plot_container.padding_top = 20
+        plot_container.padding_bottom = 50
 
         # Legend
-        legend = chaco.Legend(component=plot, padding=20, align="ur")
-        legend.tools.append(tools.LegendTool(legend, drag_button="left"))
-        legend.plots = {'Positive Power':positive_plot, 'Negative Power':negative_plot, 'Net Power':net_plot}
-        plot.overlays.append(legend)
+        legend = chaco.Legend(component=plot_container, padding=20, align="ur")
+        legend.tools.append(tools.LegendTool(legend, drag_button="right"))
+        legend.plots = {}
+        legend.plots.update(power_plots)
+        legend.plots.update(energy_plots)
+        plot_container.overlays.append(legend)
 
-        return plot
+        return plots, plot_container
 
-    def update(self):
-        # Check if the locally cached vehicle list has gotten stale.
-        if len(self.v_list) != len(common.vehicles):
-            self.v_list[:] = common.vehicles.values()
-            self.v_list.sort()
-
-        self.plot_data = self.make_plot_data(self.v_list)
-        self.plot = self.make_plot(self.plot_data)
+class ReportsHandler(ui.Handler):
+    def refresh(self, info):
+        info.object.update()
 
 class Reports(traits.HasTraits):
     """A user interface that displays all the reports in a tabbed notebook."""
 
     summary_report = traits.Instance(SummaryReport)
+    vehicle_report = traits.Instance(VehicleReport)
     pax_report = traits.Instance(PaxReport)
+    station_report = traits.Instance(StationReport)
     power_report = traits.Instance(PowerReport)
-    power_plot = traits.Instance(chaco.Plot)
 
-    @property
-    def passengers(self):
-        return self.pax_dict.values()
-
-    @property
-    def vehicles(self):
-        return self.v_list
-
-    @property
-    def stations(self):
-        return self.station_dict.values()
+    refresh = menu.Action(name="Refresh", action="refresh")
 
     view = ui.View(
-               ui.Tabbed(
-                   ui.Item('summary_report', label='Summary', style='readonly', editor=ui.TextEditor() ),
-                   ui.Item('passengers@', style='custom', editor=Passenger.table_editor),
-                   ui.Item('vehicles@', style='custom', editor=BaseVehicle.table_editor),
-                   ui.Item('stations@', style='custom', editor=Station.table_editor),
-                   ui.Item('power_plot', label='Power', editor=ComponentEditor()),
-                   show_labels=False,
-                ),
-               title = 'Simulation Reports',
-               kind='modal')
+                ui.Tabbed(
+                    ui.Item('summary_report',
+                            label='Summary',
+                            editor=ui.TextEditor(),
+                            style='readonly'),
+                    ui.Item('vehicle_report',
+                            label='Vehicles',
+                            editor=ui.InstanceEditor(),
+                            style='custom'
+                            ),
+                    ui.Item('pax_report',
+                            label='Passengers',
+                            editor=ui.InstanceEditor(),
+                            style='custom'
+                            ),
+                    ui.Item('station_report',
+                            label='Stations',
+                            editor=ui.InstanceEditor(),
+                            style='custom'
+                            ),
+                    ui.Item('power_report',
+                            label='Power',
+                            editor=ui.InstanceEditor(),
+                            style='custom'),
+                    show_labels=False,
+                 ),
+                title = 'Simulation Reports',
+                width=1000,
+                resizable=True,
+                handler=ReportsHandler(),
+                buttons= [], #[refresh], #TODO: Disabling the refresh button until I can get it to refresh all reports properly
+                kind='live')
 
-    def __init__(self, pax_dict, vehicle_dict, station_dict):
+    def __init__(self):
         super(Reports, self).__init__()
-        self.pax_dict = pax_dict
-        self.station_dict = station_dict
-        self.v_list = vehicle_dict.values()
-        self.v_list.sort()
-
         self.summary_report = SummaryReport()
-        self.pax_report = PaxReport(self.pax_dict)
-        self.vehicle_report = VehicleReport(self.v_list)
-        self.station_report = StationReport(station_dict)
-        self.power_report = PowerReport(self.v_list)
+        self.pax_report = PaxReport()
+        self.vehicle_report = VehicleReport()
+        self.station_report = StationReport()
+        self.power_report = PowerReport()
 
         self._last_update_time = None
 
@@ -523,7 +774,6 @@ class Reports(traits.HasTraits):
         self.vehicle_report.update()
         self.station_report.update()
         self.power_report.update()
-        self.power_plot = self.power_report.plot
 
         self._last_update_time = Sim.now()
 
@@ -550,6 +800,161 @@ class Reports(traits.HasTraits):
         out.write('\n\n')
         out.write(str(self.station_report))
 
+##### TESTING/DEBUGGING CODE #####
+
+class MockVehicle(object):
+    def __init__(self, id):
+        self.id = id
+
+    def __str__(self):
+        return str(self.id)
+
+class TestPlotter(traits.HasTraits):
+    plot = traits.Instance(enable.Component)
+    v_list = traits.List
+    vehicle_str = traits.Str
+    vehicle = traits.Instance(MockVehicle)
+
+    def __init__(self, v_list):
+        super(TestPlotter, self).__init__()
+        self.v_list = v_list
+        self.plot = self.make_plot(self.make_data())
+        self.view = self.make_view()
+        self.configure_traits(view=self.view)
+
+    def make_data(self):
+        x_data = chaco.ArrayDataSource(numpy.arange(0, 25, 1))
+        pow_data_1 = chaco.ArrayDataSource(numpy.arange(0, 25, 2))
+        pow_data_2 = chaco.ArrayDataSource(numpy.arange(100, 50, -1))
+        pow_data_3 = chaco.ArrayDataSource(numpy.arange(-100, 0, 2))
+        energy_data_1 = chaco.ArrayDataSource(numpy.arange(1000, 0, -3))
+
+        data = chaco.ArrayPlotData(
+            sample_times=x_data,
+            positive_total_power=pow_data_1,
+            negative_total_power=pow_data_2,
+            net_total_power=pow_data_3,
+            total_energy=energy_data_1
+        )
+
+        return data
+
+    def make_plot(self, plot_data):
+        times_mapper = chaco.LinearMapper(range=chaco.DataRange1D(plot_data.get_data('sample_times'), ))
+
+        graph_colors = {'positive_total_power':'black',
+                        'negative_total_power':'red',
+                        'net_total_power':'purple',
+                        'total_energy':'green'}
+
+        # Power graphs
+        power_names = ['positive_total_power',
+                             'negative_total_power',
+                             'net_total_power']
+        power_data_range = chaco.DataRange1D(*[plot_data.get_data(name) for name in power_names])
+        power_mapper = chaco.LinearMapper(range=power_data_range)
 
 
+        power_plots = {}
+        for plot_name in power_names:
+            plot = chaco.LinePlot(index=plot_data.get_data('sample_times'),
+                                  value=plot_data.get_data(plot_name),
+                                  index_mapper=times_mapper,
+                                  value_mapper=power_mapper,
+                                  border_visible=False,
+                                  bg_color='transparent',
+                                  line_style='solid',
+                                  color=graph_colors[plot_name],
+                                  line_width=2)
+            power_plots[plot_name] = plot
 
+        # Energy graphs -- use a different value scale than power
+        energy_plot_names = ['total_energy']
+        energy_data_range = chaco.DataRange1D(*[plot_data.get_data(name) for name in energy_plot_names])
+        energy_mapper = chaco.LinearMapper(range=energy_data_range)
+
+        energy_plots = {}
+        for plot_name in energy_plot_names:
+            plot = chaco.LinePlot(index=plot_data.get_data('sample_times'),
+                                  value=plot_data.get_data(plot_name),
+                                  index_mapper=times_mapper,
+                                  value_mapper=energy_mapper,
+                                  border_visible=False,
+                                  bg_color='transarent',
+                                  line_style='solid',
+                                  color=graph_colors[plot_name],
+                                  line_width=2)
+            energy_plots[plot_name] = plot
+
+
+        # Blank plot -- Holds the grid and axis, and acts as a placeholder when
+        # no other graphs are activated.
+        blank_values = chaco.ArrayDataSource(numpy.zeros( plot_data.get_data('sample_times').get_size() ))
+        blank_plot = chaco.LinePlot(index=plot_data.get_data('sample_times'),
+                                    value=blank_values,
+                                    index_mapper=times_mapper,
+                                    value_mapper=power_mapper,
+                                    border_visible=True,
+                                    bg_color='transparent',
+                                    line_width=0)
+        times_axis = chaco.PlotAxis(orientation='bottom',
+                                    title="Time (seconds)",
+                                    mapper=times_mapper,
+                                    component=blank_plot)
+        power_axis = chaco.PlotAxis(orientation='left',
+                                    title="Power (KW)",
+                                    mapper=power_mapper,
+                                    component=blank_plot)
+        energy_axis = chaco.PlotAxis(orientation='right',
+                                     title="Energy (KW-hrs)",
+                                     mapper=energy_mapper,
+                                     component=blank_plot)
+        blank_plot.underlays.append(times_axis)
+        blank_plot.underlays.append(power_axis)
+        blank_plot.underlays.append(energy_axis)
+
+        # Add zoom capability
+        blank_plot.overlays.append(tools.ZoomTool(plot,
+                                   tool_mode='range',
+                                   axis='index',
+                                   always_on=True,
+                                   drag_button='left'))
+
+        container = chaco.OverlayPlotContainer()
+        for plot in power_plots.itervalues():
+            container.add(plot)
+        for plot in energy_plots.itervalues():
+            container.add(plot)
+        container.add(blank_plot)
+        container.padding = 50
+
+        # Legend
+        legend = chaco.Legend(component=container, padding=20, align="ur")
+        legend.tools.append(tools.LegendTool(legend, drag_button="right"))
+        legend.plots = {}
+        legend.plots.update(power_plots)
+        legend.plots.update(energy_plots)
+        container.overlays.append(legend)
+
+        return container
+
+    def make_view(self):
+        return ui.View(
+                     ui.HGroup(
+                        ui.Item(name='v_list', editor=ui.EnumEditor(values=[str(v) for v in self.v_list])),
+                        ui.Item(name='plot', label="", editor=enable.ComponentEditor(), show_label=False)
+
+                     )
+                  )
+
+
+if __name__ == '__main__':
+    vehicles = [MockVehicle(0),
+                MockVehicle(1),
+                MockVehicle(2),
+                MockVehicle(3),
+                MockVehicle(4),
+                MockVehicle(5),
+                MockVehicle(6),
+                MockVehicle(7)]
+    t = TestPlotter(vehicles)

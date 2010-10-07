@@ -100,7 +100,11 @@ class Node(traits.HasTraits):
         is, no interpolation is done, and the left-hand value is returned.
         """
         idx = bisect.bisect_right(self.elevation_positions, position)
-        return self.elevations[idx-1]
+        try:
+            return self.elevations[idx-1]
+        except IndexError: # No elevation data was available.
+            assert len(self.elevations) == 0
+            return 0
 
 class TrackSegment(Node):
     def __init__(self, ID, x_start, y_start, x_end, y_end, length, max_speed,

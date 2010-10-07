@@ -51,22 +51,24 @@ class SplineExplorer(traits.HasTraits):
                              ui.Item(name='target_type', label='Target'),
 
                              ui.VGroup(
-                                 ui.Label('Initial Conditions:'),
                                  ui.Item(name='q_i', label='Position'),
                                  ui.Item(name='v_i', label='Velocity'),
                                  ui.Item(name='a_i', label='Acceleration'),
                                  ui.Item(name='t_i', label='Time'),
-                                 ui.Item(label=' 	'),
-                                 ui.Label('Final Conditions:'),
+                                 label='Initial Conditions',
+                                 show_border=True
+                             ),
+
+                             ui.VGroup(
                                  ui.Item(name='q_f', label='Position', enabled_when="target_type not in ('Velocity', 'Acceleration')"),
                                  ui.Item(name='v_f', label='Velocity', enabled_when="target_type != 'Acceleration'"),
                                  ui.Item(name='a_f', label='Acceleration'),
                                  ui.Item(name='t_f', label='Time', enabled_when="target_type == 'Time'"),
-                                 show_border = True
+                                 label='Final Conditions:',
+                                 show_border=True
                              ),
 
                              ui.VGroup(
-                                 ui.Label('Limits:'),
                                  ui.Item(name='v_min', label='Min Velocity'),
                                  ui.Item(name='v_max', label='Max Velocity'),
                                  ui.Item(name='a_min', label='Min Acceleration'),
@@ -74,6 +76,7 @@ class SplineExplorer(traits.HasTraits):
                                  ui.Item(name='j_min', label='Min Jerk'),
                                  ui.Item(name='j_max', label='Max Jerk'),
                                  ui.Item(name='mass', label='Vehicle Mass'),
+                                 label='Constraints',
                                  show_border=True
                              )
                          ),

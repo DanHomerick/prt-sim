@@ -72,7 +72,7 @@ class MainWindow(wx.Frame):
         if common.config_manager.get_start_controllers() == True:
             self.simmenu_connectcontroller_handler(None)
 
-        common.reports = report.Reports(common.passengers, common.vehicles, common.stations)
+        common.reports = report.Reports()
 
     def __set_properties(self):
         self.SetTitle("PRT Simulation")
@@ -297,7 +297,10 @@ class MainWindow(wx.Frame):
         legend = Legend(self, self.visualizer.station_colormap, self.visualizer.vehicle_colormap)
 
     def viewmenu_reports_handler(self, event):
-        common.reports.display()
+        # temp!
+        import cProfile
+        cProfile.run('common.reports.display()', 'reports_profile.dat')
+##        common.reports.display()
 
     def record_start_handler(self, event):
         # setup the timer

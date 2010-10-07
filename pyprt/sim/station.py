@@ -4,6 +4,7 @@ import logging
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
 import enthought.traits.ui.table_column as ui_tc
+from enthought.traits.ui.tabular_adapter import TabularAdapter
 import SimPy.SimulationRT as Sim
 
 import pyprt.shared.api_pb2 as api
@@ -11,6 +12,7 @@ import common
 from layout import TrackSegment
 from events import Passenger
 from visual import NoWritebackOnCloseHandler
+from pyprt.shared.utility import sec_to_hms
 
 class BerthError(Exception):
     pass
@@ -500,10 +502,10 @@ class Station(traits.HasTraits):
     traits_view = ui.View(ui.VGroup(
                            ui.Group(
                                 ui.Label('Waiting Passengers'),
-                                ui.Item(name='_passengers',
-                                        show_label = False,
-                                        editor=Passenger.table_editor
-                                        ),
+##                                ui.Item(name='_passengers',
+##                                        show_label = False,
+##                                        editor=Passenger.table_editor
+##                                        ),
                                 show_border = True)
                            ),
                        title='Station', # was: self.label
@@ -596,6 +598,10 @@ class Station(traits.HasTraits):
         self._passengers.remove(pax)
         self._pax_times.append( (Sim.now(), len(self._passengers)) )
 
+    def get_num_passengers(self):
+        return len(self._passengers)
+    num_passengers = property(get_num_passengers)
+
     def all_pax_wait_times(self):
         """Returns a list of wait times for all passengers, not just the current ones."""
         times = []
@@ -607,3 +613,119 @@ class Station(traits.HasTraits):
                     else:
                         times.append(end - start)
         return times
+
+    def curr_pax_wait_times(self):
+        """Returns a list of wait times for passengers currently waiting in the
+        station."""
+        times = []
+        for pax in self._passengers:
+            for start, end, loc in pax._wait_times:
+                if loc is self:
+                    if end is None:
+                        times.append(Sim.now() - start)
+                    else:
+                        times.append(end - start)
+        return times
+
+    def get_min_all_pax_wait(self):
+        try:
+            return min(self.all_pax_wait_times())
+        except ValueError: # Empty sequence
+            assert len(self.all_pax_wait_times()) == 0
+            return 0
+    min_all_pax_wait = property(get_min_all_pax_wait)
+
+    def get_mean_all_pax_wait(self):
+        try:
+            wait_times = self.all_pax_wait_times()
+            return sum(wait_times)/len(wait_times)
+        except ZeroDivisionError:
+            return 0
+    mean_all_pax_wait = property(get_mean_all_pax_wait)
+
+    def get_max_all_pax_wait(self):
+        try:
+            return max(self.all_pax_wait_times())
+        except ValueError: # Empty sequence
+            return 0
+    max_all_pax_wait = property(get_max_all_pax_wait)
+
+    def get_min_curr_pax_wait(self):
+        try:
+            return min(self.curr_pax_wait_times())
+        except ValueError: # Empty sequence
+            assert len(self.curr_pax_wait_times()) == 0
+            return 0
+    min_curr_pax_wait = property(get_min_curr_pax_wait)
+
+    def get_mean_curr_pax_wait(self):
+        try:
+            wait_times = self.curr_pax_wait_times()
+            return sum(wait_times)/len(wait_times)
+        except ZeroDivisionError:
+            return 0
+    mean_curr_pax_wait = property(get_mean_curr_pax_wait)
+
+    def get_max_curr_pax_wait(self):
+        try:
+            return max(self.curr_pax_wait_times())
+        except ValueError: # Empty sequence
+            return 0
+    max_curr_pax_wait = property(get_max_curr_pax_wait)
+
+class StationTabularAdapater(TabularAdapter):
+    columns = [
+        ('ID', 'ID'),
+        ('Label', 'label'),
+        ('Current # Pax', 'num_passengers'),
+        ('# Departures', '_pax_departures_count'),
+        ('# Arrivals', '_pax_arrivals_count'),
+        ('Current Pax Min Wait', 'min_curr_pax_wait'),
+        ('Current Pax Mean Wait', 'mean_curr_pax_wait'),
+        ('Current Pax Max Wait', 'max_curr_pax_wait'),
+        ('All Pax Min Wait', 'min_all_pax_wait'),
+        ('All Pax Mean Wait', 'mean_all_pax_wait'),
+        ('All Pax Max Wait', 'max_all_pax_wait')
+    ]
+
+    # Column widths, in pixels
+    ID_width = traits.Float(40)
+
+    # Tooltips
+    ID_tooltip = traits.Constant('Unique integer station id')
+    label_tooltip = traits.Constant('Optional station name')
+    num_passengers_tooltip = traits.Constant('Current number of passengers waiting in station.')
+    _pax_departures_count_tooltip = traits.Constant('Total number of passengers to depart from this station.')
+    _pax_arrivals_count_tooltip = traits.Constant('Total number of passengers to arrive at this station.')
+    min_curr_pax_wait_tooltip = traits.Constant('Minimum wait time for passengers currently in station')
+    mean_curr_pax_wait_tooltip = traits.Constant('Mean wait time for passengers currently in station')
+    max_curr_pax_wait_tooltip = traits.Constant('Maximum wait time for passengers currently in station')
+    min_all_pax_wait_tooltip = traits.Constant('Minimum wait time for passengers in this station, over the course of the whole simulation')
+    mean_all_pax_wait_tooltip = traits.Constant('Mean wait time for passengers in this station, over the course of the whole simulation')
+    max_all_pax_wait_tooltip = traits.Constant('Maximum wait time for passengers in this station, over the course of the whole simulation')
+
+    # Formatting expressions
+    min_curr_pax_wait_text = traits.Property
+    mean_curr_pax_wait_text = traits.Property
+    max_curr_pax_wait_text = traits.Property
+    min_all_pax_wait_text = traits.Property
+    mean_all_pax_wait_text = traits.Property
+    max_all_pax_wait_text = traits.Property
+
+    def _get_min_curr_pax_wait_text(self):
+        return sec_to_hms(self.item.min_curr_pax_wait)
+
+    def _get_mean_curr_pax_wait_text(self):
+        return sec_to_hms(self.item.mean_curr_pax_wait)
+
+    def _get_max_curr_pax_wait_text(self):
+        return sec_to_hms(self.item.max_curr_pax_wait)
+
+    def _get_min_all_pax_wait_text(self):
+        return sec_to_hms(self.item.min_all_pax_wait)
+
+    def _get_mean_all_pax_wait_text(self):
+        return sec_to_hms(self.item.mean_all_pax_wait)
+
+    def _get_max_all_pax_wait_text(self):
+        return sec_to_hms(self.item.max_all_pax_wait)

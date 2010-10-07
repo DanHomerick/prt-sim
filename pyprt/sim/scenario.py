@@ -1,6 +1,7 @@
 import logging
 import math
 import os.path
+import warnings
 
 from station import Berth
 import common
@@ -388,10 +389,33 @@ class ScenarioManager(object):
             length = float(vehicle_model_xml.getAttribute('length'))
             vehicle_mass = int(vehicle_model_xml.getAttribute('mass'))
             max_pax_capacity = int(vehicle_model_xml.getAttribute('passenger_capacity'))
-            frontal_area = float(vehicle_model_xml.getAttribute('frontal_area'))
-            drag_coefficient = float(vehicle_model_xml.getAttribute('drag_coefficient'))
-            powertrain_efficiency = float(vehicle_model_xml.getAttribute('powertrain_efficiency'))
-            regenerative_braking_efficiency = float(vehicle_model_xml.getAttribute('regenerative_braking_efficiency'))
+
+            # Optional data (power usage)
+            if vehicle_model_xml.hasAttribute('frontal_area'):
+                frontal_area = float(vehicle_model_xml.getAttribute('frontal_area'))
+            else:
+                frontal_area = 0
+
+            if vehicle_model_xml.hasAttribute('drag_coefficient'):
+                drag_coefficient = float(vehicle_model_xml.getAttribute('drag_coefficient'))
+            else:
+                drag_coefficient = 0
+
+            if vehicle_model_xml.hasAttribute('rolling_coefficient'):
+                rolling_coefficient = float(vehicle_model_xml.getAttribute('rolling_coefficient'))
+            else:
+                rolling_coefficient = 0
+
+            if vehicle_model_xml.hasAttribute('powertrain_efficiency'):
+                powertrain_efficiency = float(vehicle_model_xml.getAttribute('powertrain_efficiency'))
+            else:
+                powertrain_efficiency = 1.0
+
+            if vehicle_model_xml.hasAttribute('regenerative_braking_efficiency'):
+                regenerative_braking_efficiency = float(vehicle_model_xml.getAttribute('regenerative_braking_efficiency'))
+            else:
+                regenerative_braking_efficiency = 0
+
             jerk_max_norm = float(jerk_xml.getAttribute('normal_max'))
             jerk_min_norm = float(jerk_xml.getAttribute('normal_min'))
             jerk_max_emerg = float(jerk_xml.getAttribute('emergency_max'))
@@ -414,14 +438,16 @@ class ScenarioManager(object):
                 raise common.ScenarioError("Invalid vehicle mass: %s" % vehicle_mass)
             if max_pax_capacity < 0:
                 raise common.ScenarioError("Negative maximum vehicle passenger capacity: %s" % max_pax_capacity)
-            if frontal_area <= 0:
+            if frontal_area < 0:
                 raise common.ScenarioError("Frontal area must be positive: %f" % frontal_area)
-            if drag_coefficient <= 0:
+            if drag_coefficient < 0:
                 raise common.ScenarioError("drag_coefficient must be positive: %f" % drag_coefficient)
+            if rolling_coefficient < 0:
+                raise common.ScenarioError("rolling_coefficient must be positive: %f" % rolling_coefficient)
             if not (0 < powertrain_efficiency <= 1):
                 raise common.ScenarioError("powertrain_efficiency must be in the range (0,1]: %f" % powertrain_efficiency)
             if not (0 <= regenerative_braking_efficiency <= 1):
-                raise common.ScenarioError("regenerative_breaking_efficiency must be in the range (0,1]: %f" % regenerative_braking_efficiency)
+                raise common.ScenarioError("regenerative_breaking_efficiency must be in the range [0,1]: %f" % regenerative_braking_efficiency)
             if jerk_max_norm < 0:
                 raise common.ScenarioError("Negative jerk_max_norm: %s" % jerk_max_norm)
             if jerk_min_norm > 0:
@@ -458,8 +484,8 @@ class ScenarioManager(object):
                         "and cannot be more constrained than the normal values.")
             model = vehicle.create_vehicle_class(
                 model_name, length, vehicle_mass, max_pax_capacity,
-                frontal_area, drag_coefficient, powertrain_efficiency,
-                regenerative_braking_efficiency,
+                frontal_area, drag_coefficient, rolling_coefficient,
+                powertrain_efficiency, regenerative_braking_efficiency,
                 jerk_max_norm, jerk_min_norm, jerk_max_emerg, jerk_min_emerg,
                 accel_max_norm, accel_min_norm, accel_max_emerg, accel_min_emerg,
                 vel_max_norm, vel_min_norm, vel_max_emerg, vel_min_emerg

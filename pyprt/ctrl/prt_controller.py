@@ -1,4 +1,14 @@
 from __future__ import division
+
+if __name__ == '__main__':
+    # Ensure that other modules are imported from the same version of pyprt
+    import sys
+    import os.path
+    abs_file = os.path.abspath(__file__)
+    rel_pyprt_path = os.path.dirname(abs_file) + os.path.sep + os.path.pardir + os.path.sep + os.path.pardir
+    abs_pyprt_path = os.path.abspath(rel_pyprt_path)
+    sys.path.insert(0, abs_pyprt_path)
+
 import optparse
 from collections import defaultdict
 from collections import deque
@@ -918,8 +928,11 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         dists, paths = networkx.single_source_dijkstra(self.graph, station.merge)
         dists_stations = []
         for s in self.stations.itervalues():
-            dist = dists[s.merge]
-            dists_stations.append( (dist, s) )
+            try:
+                dist = dists[s.merge]
+                dists_stations.append( (dist, s) )
+            except KeyError: # Not all stations must be reachable
+                pass
         dists_stations.sort() # sort by distances, ascending
 
         for dist, station in dists_stations:

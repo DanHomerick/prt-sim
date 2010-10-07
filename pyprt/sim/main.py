@@ -1,3 +1,12 @@
+if __name__ == '__main__':
+    # Ensure that other modules are imported from the same version of pyprt
+    import sys
+    import os.path
+    abs_file = os.path.abspath(__file__)
+    rel_pyprt_path = os.path.dirname(abs_file) + os.path.sep + os.path.pardir + os.path.sep + os.path.pardir
+    abs_pyprt_path = os.path.abspath(rel_pyprt_path)
+    sys.path.insert(0, abs_pyprt_path)
+
 import Queue
 import logging
 
