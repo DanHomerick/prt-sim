@@ -141,16 +141,27 @@ class TrajectorySolver(object):
 
     def target_position(self, knot_initial, knot_final,
                         max_speed=None, fnc_info=False, max_attempts=10):
-        """Targets the position and velocity values in knot_final. The time
-        supplied by knot_final is ignored, and should be set to None.
+        """Targets the position and velocity values in knot_final.
 
-        Raises FatalTrajectoryError if it is unable to generate a valid spline.
-        Raises OptimizationError if a optimization routine was used and
-           the residual error is greater than 'error_threshold'. Exception
-           contains the residual error value and the final h array.
+        Parameters:
+          knot_initial -- A cubic_spline.Knot containing the initial conditions.
+          knot_final -- A cubic_spline.Knot containing the final conditions.
+              The time supplied by knot_final is ignored, and may be set to None.
+          max_speed -- An optional speed limit constraint. Has no effect if the
+              value is greater than the solver's v_max.
+          fnc_info -- When True, a reference to the target_position_X function
+              that was used to find the solution is returned with the spline.
+          max_attempts -- Used in the case where the spline is solved via
+              'target_position_none' function.
 
-        Returns a cubic_spline.CSpline. If fnc_info is True, then returns the
-        function used to find the solution in addition to the spline: (spline, fnc)
+        Raises:
+          FatalTrajectoryError if it is unable to generate a valid spline.
+
+        Returns:
+          A cubic_spline.CubicSpline.
+          If fnc_info is True, then returns the function used to find the
+            solution in addition to the spline: (spline, fnc)
+
         """
         knot_final = knot_final.copy() # don't alter the original
         knot_final.time = inf
@@ -159,6 +170,12 @@ class TrajectorySolver(object):
             max_speed = self.v_max
 
         max_speed = min(max_speed, self.v_max)
+
+        # Handle the case where initial and final knots are the same
+        if knot_final.pos == knot_initial.pos \
+           and knot_final.vel == knot_initial.vel \
+           and knot_final.accel == knot_initial.accel:
+            return CubicSpline([knot_initial.pos], [knot_initial.vel], [knot_initial.accel], [], [knot_initial.time])
 
         # Basic error checking. Bail if the initial or final conditions lie
         # outside of the velocity and/or acceleration constaints.
@@ -178,9 +195,8 @@ class TrajectorySolver(object):
                         self.a_min - self.a_threshold <= -knot_initial.accel <= self.a_max + self.a_threshold and
                         self.a_min - self.a_threshold <= -knot_final.accel <= self.a_max + self.a_threshold):
                     raise FatalTrajectoryError(knot_initial, knot_final, "Endpoint outside of solver's limit")
-        else: # knot_final.pos == knot_initial.pos
-            # Could return a spline, but in what form? 0 knots, 1 knot, 2 knots?
-            raise FatalTrajectoryError(knot_initial, knot_final, "You didn't bloody well want to move then, did ya?")
+        else:
+            raise FatalTrajectoryError(knot_initial, knot_final, "Cannot change velocity or acceleration without a change in position.")
 
         # Generate the spline
         try:
@@ -193,20 +209,19 @@ class TrajectorySolver(object):
                 fnc = self.target_position_amax
                 spline = self.target_position_amax(knot_initial, knot_final)
             except TrajectoryError:
-                attempts=1
+                attempts = 0
                 durations = None
-                while True:
+                while attempts < max_attempts:
                     try:
                         fnc = self.target_position_none
                         spline = self.target_position_none(knot_initial, knot_final, durations)
                     except OptimizationError as err:
-                        if attempts > max_attempts:
-                            raise FatalTrajectoryError(knot_initial, knot_final, "Unable to find a viable trajectory.")
-                        else:
-                            durations = [random.random() for h in err.durations]
-                            attempts += 1
+                        durations = [random.random() for h in err.durations]
+                        attempts += 1
                     else:
                         break
+                if attempts == max_attempts:
+                    raise FatalTrajectoryError(knot_initial, knot_final, "Unable to find a viable trajectory.")
 
         # Additional error checking on the generated trajectory, ensuring that
         # the constraints were actually respected.
@@ -492,6 +507,10 @@ class TrajectorySolver(object):
             jn = self.j_max
             jx = self.j_min
 
+        an_2 = an*an
+        ax_2 = ax*ax
+        jn_2 = jn*jn
+
         h0 = (ax - a0)/jx
         k1 = self.create_knot_after(initial, h0, ax)
 
@@ -500,9 +519,10 @@ class TrajectorySolver(object):
         h4 = (final.accel-an)/jx
         k4 = self.create_knot_before(final, h4, an)
 
+
         # From v12 = v4 - v1 - v23 - v34 and v12 = ax*h1 we get:
         # h1 = alpha - an/ax*h3
-        alpha = (k4.vel-k1.vel)/ax + ax/(2*jn) - an**2/(2*ax*jn)
+        alpha = (k4.vel-k1.vel)/ax + ax/(2*jn) - an_2/(2*ax*jn)
 #        v2 = k1.vel + v12
 #        q23 = jn*h2**3/6 + ax*h2**2/2 + v2*h2
 
@@ -515,9 +535,9 @@ class TrajectorySolver(object):
 
 
         # Now, solve for h3 using quadratic formula
-        A = an/2 - an**2/(2*ax)
-        B = -k1.vel + alpha*an - alpha*ax + an+ax**2/(2*jn) + an*k1.vel/ax - an*ax/jn
-        C = k4.pos - k1.pos - alpha*k1.vel + (alpha*ax**2 + ax*k1.vel - an*k1.vel - alpha*an*ax)/jn - ax*alpha**2/2 - ax*(an - ax)**2/(2*jn**2) - (an - ax)**3/(6*jn**2)
+        A = an/2 - an_2/(2*ax)
+        B = -k1.vel + alpha*an - alpha*ax + (an_2+ax_2-2*an*ax)/(2*jn) + an*k1.vel/ax
+        C = k4.pos - k1.pos - alpha*k1.vel + (alpha*ax_2 + ax*k1.vel - an*k1.vel - alpha*an*ax)/jn - ax*alpha*alpha/2 - ax*(an - ax)**2/(2*jn_2) - (an - ax)**3/(6*jn_2)
 
         try:
             h3 = min(x for x in utility.quadratic_roots(A, B, C, self.t_threshold/2.0) if x >= 0)

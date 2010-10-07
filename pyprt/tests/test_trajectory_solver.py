@@ -245,6 +245,15 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.assertAlmostEqual(spline.a[-1], -1, self.PLACES)
         self.assertAlmostEqual(spline.t[-1], 16.451805322, self.PLACES)
 
+    def test_target_position_amax_III(self):
+        solver = TrajectorySolver(30, 5, 5, 0, -5, -5)
+        initial = Knot(21.494, 0.0, 0, 0.0)
+        final = Knot(57.176000000000002, 3.5, 0, None)
+        spline = solver.target_position(initial, final, 25.0)
+        self.plot_it(spline, solver, "test_target_position_amax_III")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final, time=False)
+
     def test_target_position_none_I(self):
         """Zero endpoints"""
         solver = TrajectorySolver(30, 5, 2.5)
@@ -268,7 +277,6 @@ class  TestTrajectorySolver(unittest.TestCase):
         self.assertAlmostEqual(spline.a[-1], 0, 5)
         self.assertTrue(spline.t[-1] < 5)
 
-
     def test_target_position_none_III(self):
         """Travelling in reverse."""
         solver = TrajectorySolver(30, 5, 2.5, -30, -5, -2.5)
@@ -282,11 +290,14 @@ class  TestTrajectorySolver(unittest.TestCase):
 
 
     def test_target_position(self):
+        """No change from initial to final"""
         solver = TrajectorySolver(20, 5, 2.5)
-
-        # No change from initial to final
-        self.assertRaises(FatalTrajectoryError,
-                          solver.target_position, Knot(0,0,0,0), Knot(0,0,0,0) )
+        spline = solver.target_position(Knot(0,0,0,0), Knot(0,0,0,0))
+        self.assertEqual(spline.q, [0])
+        self.assertEqual(spline.v, [0])
+        self.assertEqual(spline.a, [0])
+        self.assertEqual(spline.j, [])
+        self.assertEqual(spline.t, [0])
 
     def test_target_position_II(self):
         """Can't backup due to v_min=0, but final position is behind start position."""
@@ -418,6 +429,7 @@ class  TestTrajectorySolver(unittest.TestCase):
 ##        self.plot_it(spline, solver, "test_target_position_XI")
         self.validate_spline(spline, solver)
         self.validate_endpoints(spline, initial, final, time=False)
+
 
     def test_target_velocity_I(self):
         """Accelerating. Reaches a_max"""
