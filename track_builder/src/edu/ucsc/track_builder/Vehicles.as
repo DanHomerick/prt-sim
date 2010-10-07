@@ -74,6 +74,43 @@ package edu.ucsc.track_builder
 			}
 			location = reverseDir ? tOverlay.segments[tOverlay.segments.length-1] : tOverlay.segments[0];
 			position = location.getPosition(latlng);  // update to provide user feedback
+			
+			// Check that there's no overlap with existing vehicles
+			var otherVehicleModel:VehicleModel;
+			var start:Number;
+			var end:Number;
+			for each (var otherVehicle:Vehicle in Globals.vehicles.vehicles) {
+				// Check that there's no conflict with vehicles on the same track segment
+				if (otherVehicle.location === location) {
+					// Find the range of vehicle positions which conflict with otherVehicle
+					otherVehicleModel = Globals.vehicleModels.getModelByName(otherVehicle.modelName);					
+					start = otherVehicle.position - otherVehicleModel.length;
+					end = otherVehicle.position + model.length;
+					if (position >= start && position <= end) {
+						throw new VehicleError("Conflicts with vehicle " + otherVehicle.toString());
+					}
+				}
+				// Check that tail of vehicle in next segment doesn't spill over to new vehicle's segment
+				else if (location.next_ids.indexOf(otherVehicle.location.id) != -1) {
+					otherVehicleModel = Globals.vehicleModels.getModelByName(otherVehicle.modelName);
+					if (otherVehicle.position < otherVehicleModel.length) {
+						start = location.length - (otherVehicleModel.length - otherVehicle.position);
+						// end = location.length 
+						if (position >= start) {
+							throw new VehicleError("Conflicts with vehicle " + otherVehicle.toString());
+						}
+					}				
+				}
+				// Tail of new vehicle will spill over to previous track segment 
+				else if (model.length > position
+				         && location.prev_ids.indexOf(otherVehicle.location.id) != -1) {
+					otherVehicleModel = Globals.vehicleModels.getModelByName(otherVehicle.modelName);	
+					if (otherVehicle.position > otherVehicle.location.length - (model.length - position)) {
+						throw new VehicleError("Conflicts with vehicle " + otherVehicle.toString());
+					}
+				}
+			}
+			
 			var id:String = preview ? 'previewVehicle' : IdGenerator.getVehicleId();
 			var vehicle:Vehicle = new Vehicle(id,
 											  velocity,
@@ -167,14 +204,6 @@ package edu.ucsc.track_builder
 		
 		public function validate():Array {
 			return new Array();
-//			/* Check that vehicles don't overlap. Doing it brute force, so there's O(n^2) comparisons.
-//			Optimization note: segregate vehicles by their location, then compare within locations. Would need to
-//			                   handle vehicles that staddle location boundary (or boundaries, for long vehicles) */
-//			for (var v:Vehicle in this.vehicles) {
-//				for (var w:Vehicle in this.vehicles) {
-//					if v.location == w.location:
-//						if v.model.length
-//			}	
 		}
 	}
 }

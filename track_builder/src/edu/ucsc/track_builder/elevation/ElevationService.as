@@ -36,7 +36,7 @@ package edu.ucsc.track_builder.elevation
 		loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onSecurityError);
 		protected static var loader_busy:Boolean = false;
 		
-		protected static var timer:Timer = new Timer(5000, 1); // Five second timer, one shot.
+		protected static var timer:Timer = new Timer(3000, 1); // Three second timer, one shot.
 		timer.addEventListener(TimerEvent.TIMER_COMPLETE, onTimerComplete);
 		
 		/** Associative array that holds latlngs pending retrieval from an online elevation provider.

@@ -78,5 +78,13 @@ package edu.ucsc.track_builder
 			                   xml.@model_name,
 			                   false);
 		}
+		
+		public function toString():String {
+			if (this.label) {
+				return this.label;
+			} else {
+				return this.id.toString();
+			}			
+		}
 	}
 }

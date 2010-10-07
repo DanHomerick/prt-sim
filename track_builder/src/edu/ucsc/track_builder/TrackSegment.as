@@ -550,14 +550,14 @@ package edu.ucsc.track_builder
 			                            length={length.toFixed(3)}>
 			                <Start lat={_start.lat().toFixed(7)} // 7 digits -> 1.11 cm accuracy. See: http://en.wikipedia.org/wiki/Decimal_degrees 
 			                       lng={_start.lng().toFixed(7)}
-			                       ground_level={startGround.toFixed(1)}
+			                       ground_level={startGround}
 			                       offset={_startOffset}
-			                       elevation={startElev.toFixed(1)}/>
+			                       elevation={startElev}/>
 			                <End lat={_end.lat().toFixed(7)}
 			                     lng={_end.lng().toFixed(7)}
-			                     ground_level={endGround.toFixed(1)}
+			                     ground_level={endGround}
 			                     offset={_endOffset}
-			                     elevation={endElev.toFixed(1)}/>
+			                     elevation={endElev}/>
 			                <ConnectsFrom/>
 							<ConnectsTo/>
 							<ParallelTo/>
@@ -608,14 +608,13 @@ package edu.ucsc.track_builder
 		/** Creates a new TrackSegment from the XML data. */ 
 		public static function fromXML(xml:XML):TrackSegment {
 			var otherId:String;
-
 			
 			// add the ground elevations to the Cache
-			
-			ElevationService.addToCache(new LatLng(xml.Start.@lat, xml.Start.@lng),
-			                            xml.Start.@ground_level)
-			ElevationService.addToCache(new LatLng(xml.End.@lat, xml.End.@lng),
-			                            xml.End.@ground_level)			                            
+			for each (var point_xml:XML in xml.Point) {
+				if (point_xml.@ground_level != 'NaN') {
+					ElevationService.addToCache(new LatLng(point_xml.@lat, point_xml.@lng), point_xml.@ground_level);
+				}
+			}                     
 			
 			var ts:TrackSegment = new TrackSegment(xml.@id,
 												   "@label" in xml ? xml.@label : "",

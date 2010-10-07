@@ -106,7 +106,9 @@ class ScenarioManager(object):
             elevation_positions = []
             for pt_xml in track_segment_xml.getElementsByTagName('Point'):
                 elevation_positions.append(float(pt_xml.getAttribute('position')))
-                elevations.append(float(pt_xml.getAttribute('ground_level')))
+                ele = float(pt_xml.getAttribute('ground_level'))
+                if not math.isnan(ele): # Just drop any NaN elevations
+                    elevations.append(ele)
 
             ts = layout.TrackSegment(ID=intId,
                                x_start=start_lng,

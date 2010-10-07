@@ -241,7 +241,7 @@ package edu.ucsc.track_builder
 				Undo.startCommand(Undo.USER);
 				if (event.target.label == "Delete") { // only one TrackSegment
 					Globals.tracks.remove(this.segments[0]);  // handles removing the overlay from the display and breaking track connections.
-				} else if (event.target.label == "All") { // Multiple TrackSegments
+				} else if (event.target.label == "All") { // Multiple TrackSegments, delete all
 					var segs:Vector.<TrackSegment> = this.segments.slice();
 					for each (var seg:TrackSegment in segs) {
 						Globals.tracks.remove(seg);
