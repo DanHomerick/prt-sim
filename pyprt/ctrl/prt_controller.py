@@ -334,6 +334,7 @@ class PrtController(BaseController):
                     vehicle.run(speed_limit=self.LINE_SPEED)
                     vehicle._launch_begun = True
                     vehicle.station.release_berth(vehicle)
+                    vehicle.station.launch_wait_times.append( (msg.time, vehicle, False) )
                     self.log.info("t:%5.3f Launched vehicle %d from station %d.",
                                   self.current_time, vehicle.id, vehicle.station.id)
                     vehicle.station.heartbeat()
@@ -365,6 +366,7 @@ class PrtController(BaseController):
                 vehicle.set_merge_slot(slot)
                 vehicle.set_spline(vehicle.merge_slot.spline)
                 vehicle._launch_begun = True
+                vehicle.station.launch_wait_times.append ( (launch_time, vehicle, False) )
                 self.log.info("t:%5.3f Launched vehicle %d from station %d.",
                               self.current_time, vehicle.id, vehicle.station.id)
 
@@ -382,6 +384,7 @@ class PrtController(BaseController):
                     vehicle.run(speed_limit=self.LINE_SPEED)
                     vehicle._launch_begun = True
                     vehicle.station.release_berth(vehicle)
+                    vehicle.station.launch_wait_times.append( (msg.time, vehicle, False) )
                     self.log.info("t:%5.3f Launched vehicle %d from station %d.",
                                   self.current_time, vehicle.id, vehicle.station.id)
                     vehicle.station.heartbeat()
@@ -1334,6 +1337,10 @@ class Station(object):
         self.passengers = deque()
         self.v_count = 0
 
+        # List of (time, vehicle, flag) 3-tuples where flag=True if the vehicle
+        # is in the LAUNCH_WAITING state and False otherwise.
+        self.launch_wait_times = []
+
         self.NUM_UNLOAD_BERTHS = len(unload_positions)
         self.NUM_QUEUE_BERTHS = len(queue_positions)
         self.NUM_LOAD_BERTHS = len(load_positions)
@@ -1667,15 +1674,30 @@ class Station(object):
                                         v.trip = trip
                                         v.set_path(v.trip.path)
                                         v.state = States.LAUNCH_WAITING
+                                        v.station.launch_wait_times.append( (self.controller.current_time, v, True) )
                                         self.controller.log.info("%5.3f Vehicle %d deadheading from station %d. Going to station %d.",
                                                       self.controller.current_time, v.id, self.id, v.trip.dest_station.id)
 
                     elif v.state is States.EXIT_WAITING:
                         if self.is_launch_berth(v.berth_id, v.platform_id):
                             v.state = States.LAUNCH_WAITING
+                            v.station.launch_wait_times.append( (self.controller.current_time, v, True) )
 
                     self.controller.request_v_status(v.id)
 
+    def get_launch_wait_times(self):
+        wait_times = []
+        for (time_i, vehicle_i, flag_i), (time_f, vehicle_f, flag_f) in pairwise(self.launch_wait_times):
+            if flag_i is True:
+                wait_times.append( time_f - time_i )
+                assert vehicle_i is vehicle_f
+                assert flag_f is False
+
+        if len(self.launch_wait_times) > 0:
+            if self.launch_wait_times[-1][2] is True:
+                wait_times.append( self.controller.current_time - self.launch_wait_times[-1][0] )
+
+        return wait_times
 
 class Passenger(object):
     def __init__(self, pax_id, origin_id, dest_id, origin_time):
@@ -3459,8 +3481,29 @@ def write_stats_report(vehicles, stations, file_path):
     """
     with open(file_path, 'w') as f:
         f.write("prt_controller.py Statistics\n\n")
-        f.write("Vehicle Stats\n")
 
+        f.write("Station Stats\n")
+        f.write("id, # Launches, Total Wait, Min Wait, Ave Wait, Max Wait\n")
+        s_list = stations.values()
+        s_list.sort()
+
+        for s in s_list:
+            wait_times = s.get_launch_wait_times();
+            if len(wait_times) > 0:
+                sum_time = sum(wait_times)
+                min_time = min(wait_times)
+                ave_time = sum_time/len(wait_times)
+                max_time = max(wait_times)
+            else:
+                sum_time = 0
+                min_time = 0
+                ave_time = 0
+                max_time = 0
+            f.write("%d, %d, %.1f, %.1f, %.1f, %.1f\n" \
+                    % (s.id, len(wait_times), sum_time, min_time, ave_time, max_time))
+        f.write("\n")
+
+        f.write("Vehicle Stats\n")
         states_string = ', '.join(States.strings)
         f.write("id, %s, total time, # Wave Offs\n" % states_string)
         v_list = vehicles.values()

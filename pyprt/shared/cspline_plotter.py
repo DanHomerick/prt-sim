@@ -94,6 +94,8 @@ class CSplinePlotter(traits.HasTraits):
         jerk_plot = main_plot.plot(("knot_times", "jerks"), type="line", color=colors['jerk'], line_width=2, render_style="connectedhold")
         if self.mass:
             power_plot = main_plot.plot(("sample_times", "powers"), type="line", color=colors['power'], line_width=2)
+        else:
+            power_plot = None
 
         # draw limits
         max_vel_plot = main_plot.plot(("endpoint_times", "max_vel"), color=colors['vel'], line_style='dash', line_width=0.60)
@@ -117,7 +119,10 @@ class CSplinePlotter(traits.HasTraits):
         legend.tools.append(tools.LegendTool(legend, drag_button="left"))
         self.container.overlays.append(legend)
 
-        legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot, 'power':power_plot}
+        if power_plot is not None:
+            legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot, 'power':power_plot}
+        else:
+            legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot}
 
         # Add title, if any
         if self.title:
