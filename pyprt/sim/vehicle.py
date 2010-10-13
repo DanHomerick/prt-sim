@@ -905,7 +905,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         assert isinstance(ctrl_setnotify_msg, api.CtrlSetnotifyVehiclePosition)
         assert utility.dist_eql(self.pos, ctrl_setnotify_msg.pos)
         sim_msg = api.SimNotifyVehiclePosition()
-        sim_msg.msgID = ctrl_setnotify_msg.msg_id
+        sim_msg.msgID = msg_id
         sim_msg.time = Sim.now()
         self.fill_VehicleStatus(sim_msg.v_status)
         common.interface.send(api.SIM_NOTIFY_VEHICLE_POSITION, sim_msg)

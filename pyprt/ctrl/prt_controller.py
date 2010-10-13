@@ -14,7 +14,6 @@ from collections import defaultdict
 from collections import deque
 import warnings
 import math
-import operator
 
 import networkx
 from numpy import arange, inf
@@ -81,7 +80,7 @@ class States(object):
 class PrtController(BaseController):
     LINE_SPEED = None  # in meter/sec. Set in main().
     HEADWAY = None     # in sec. Measured from tip-to-tail. Set in main()
-    HEARTBEAT_INTERVAL = 5.1  # in seconds. Choosen arbitrarily for testing
+    SWITCH_TIME = None # in sec. Set in main()
     DEMAND_THRESHOLD = 3
 
     def __init__(self, log_path, commlog_path, stats_path):
@@ -229,8 +228,8 @@ class PrtController(BaseController):
                 if vehicle.ts_id in (station.ts_ids[Station.UNLOAD],
                                      station.ts_ids[Station.QUEUE],
                                      station.ts_ids[Station.LOAD]):
+                    # TODO: Can this be handled by vehicle.enter_station?
                     vehicle.state = States.LOAD_ADVANCING
-                    vehicle.station = station
                     station.request_load_berth(vehicle)
                     berth_dist, berth_path = self.manager.get_path(vehicle.ts_id, vehicle.plat_ts)
                     initial = vehicle.estimate_pose(self.current_time)
@@ -240,39 +239,59 @@ class PrtController(BaseController):
                         vehicle.set_spline(spline)
                         vehicle.set_path(berth_path)
                     except FatalTrajectoryError: # may occur if vehicles cannot reverse and are too closely spaced.
-                        raise Exception("Unable to reserve a reachable berth for vehicle: %s" % str(vehicle))
+                        msg = api.CtrlScenarioError()
+                        msg.vehicleID = vehicle.id
+                        msg.stationID = station.id
+                        msg.error_message = \
+                           "Vehicle %d initial placement commits it to station %d but it is unable to find an available, reachable berth." \
+                            % (vehicle.id, station.id)
+                        self.send(api.CTRL_SCENARIO_ERROR, msg)
 
                 # Case 2. Approaching station.
                 elif vehicle.ts_id in (station.ts_ids[Station.OFF_RAMP_I],
                                        station.ts_ids[Station.OFF_RAMP_II],
                                        station.ts_ids[Station.DECEL]):
+                    try:
+                        vehicle.enter_station(station)
+                    except (NoBerthAvailableError, FatalTrajectoryError):
+                        msg = api.CtrlScenarioError()
+                        msg.vehicleID = vehicle.id
+                        msg.stationID = station.id
+                        msg.error_message = \
+                            "Vehicle %d initial placement commits it to station %d but it is unable to find an available, reachable berth." \
+                            % (vehicle.id, station.id)
+                        self.send(api.CTRL_SCENARIO_ERROR, msg)
                     vehicle.state = States.LOAD_ADVANCING
-                    station.request_load_berth(vehicle)
-                    vehicle.enter_station(station)
 
                 # Case 3. Outbound from a station.
                 elif vehicle.ts_id in (station.ts_ids[Station.ACCEL],
                                        station.ts_ids[Station.ON_RAMP_I],
                                        station.ts_ids[Station.ON_RAMP_II]):
-                    raise Exception("Unable to handle a vehicle starting on the "
-                                    "ACCEL or ONRAMP portions of the station. Please "
-                                    "relocate vehicle: %s" % str(vehicle))
+                    msg = api.CtrlScenarioError()
+                    msg.vehicleID = vehicle.id
+                    msg.stationID = station.id
+                    msg.error_message = \
+                        "Unable to handle a vehicle starting on the " + \
+                        "ACCEL or ONRAMP portions of the station. Please " + \
+                        "relocate vehicle: %s" % str(vehicle) \
+                        % (vehicle.id, station.id)
+                    self.send(api.CTRL_SCENARIO_ERROR, msg)
 
                 else:
                     raise Exception("Unexpected case: vehicle.ts_id: %d" % vehicle.ts_id)
 
             else: # Not in a station.
                 vehicle.state = States.RUNNING
+                vehicle.trip = self.manager.deadhead(vehicle)
 
-                # Assign trips to vehicles. Don't travel to a station when you
-                # are on it's "split" segment, since the vehicle is already
-                # past the enter/wave off decision point.
                 station = self.manager.split2station.get(vehicle.ts_id)
-                if station is None:
-                    vehicle.trip = self.manager.deadhead(vehicle)
-                else: # vehicle is on the station's "split" trackseg
+                if station: # vehicle is on the station's "split" trackseg
                     assert vehicle.ts_id == station.split
-                    vehicle.trip = self.manager.deadhead(vehicle, exclude=(station, ))
+                    seg_length, seg_path = self.manager.get_path(vehicle.ts_id, station.ts_ids[Station.OFF_RAMP_I])
+                    notify_pos = seg_length - self.LINE_SPEED*self.SWITCH_TIME
+                    if notify_pos <= vehicle.pos:
+                        # Go on to a different station
+                        vehicle.trip = self.manager.deadhead(vehicle, exclude=(station, ))
 
                 vehicle.set_path(vehicle.trip.path)
 
@@ -291,6 +310,13 @@ class PrtController(BaseController):
                 else:
                     # Case 4. Not in a Merge's zone of control.
                     vehicle.run(speed_limit=self.LINE_SPEED)
+
+
+                if station and notify_pos > vehicle.pos:
+                    notify_msg = api.CtrlSetnotifyVehiclePosition()
+                    notify_msg.vID = vehicle.id
+                    notify_msg.pos = notify_pos
+                    self.send(api.CTRL_SETNOTIFY_VEHICLE_POSITION, notify_msg)
 
 
         # Case 5. Within a Merge's zone of control.
@@ -438,64 +464,76 @@ class PrtController(BaseController):
         # Note: Some track networks will have one station's ON_RAMP_II lead straight into
         #       another station's "split" track seg, thus LAUNCHING is a viable state.
         station = self.manager.split2station.get(msg.trackID)
-        if vehicle.state in (States.RUNNING, States.LAUNCHING) and station:
-            # Has passengers and this is the dest station
-            if vehicle.pax and station is vehicle.trip.dest_station:
-                try:   # Reserve an unload berth
-                    vehicle.trip.dest_station.request_unload_berth(vehicle)
-                    assert vehicle.berth_id is not None
-                except NoBerthAvailableError: # none available, circle around and try again
-                    # plan a path to the ts prior from current (that is, loop around)
-                    old_dest = vehicle.trip.dest_station
+        if station and vehicle.state in (States.RUNNING, States.LAUNCHING):
+            seg_length, seg_path = self.manager.get_path(msg.trackID, station.ts_ids[Station.OFF_RAMP_I])
+            notify_pos = seg_length - self.LINE_SPEED*self.SWITCH_TIME
+            if notify_pos >= 0:
+                notify_msg = api.CtrlSetnotifyVehiclePosition()
+                notify_msg.vID = vehicle.id
+                notify_msg.pos = notify_pos
+                self.send(api.CTRL_SETNOTIFY_VEHICLE_POSITION, notify_msg)
+            else:
+                # TODO: Move check to scenario validation routine
+                error_msg = api.CtrlScenarioError()
+                error_msg.stationID = station.id
+                error_msg.error_message = "The track segment preceeding a station offramp switch must be at least LINE_SPEED*SWITCH_TIME = %.1f meters long but it is only %.1f meters long." \
+                         % (self.LINE_SPEED*self.SWITCH_TIME, seg_length)
+                self.send(api.CTRL_SCENARIO_ERROR, error_msg)
+
+    def on_SIM_NOTIFY_VEHICLE_POSITION(self, msg, msgID, msg_time):
+        vehicle = self.manager.vehicles[msg.v_status.vID]
+        assert isinstance(vehicle, Vehicle)
+        vehicle.update_vehicle(msg.v_status, msg.time)
+
+        # Note: Some track networks will have one station's ON_RAMP_II lead straight into
+        #       another station's "split" track seg, thus LAUNCHING is a viable state if
+        #       the segment is very short and the switch time is very small.
+        assert vehicle.state in (States.RUNNING, States.LAUNCHING)
+        station = self.manager.split2station.get(vehicle.ts_id)
+
+        # Vehicle needs to make choice to enter station or bypass.
+
+        if not vehicle.pax:
+            # Refresh the destination station, since demand for empties has
+            #   likely changed while travelling. This presents the possiblity
+            #   that empties will get caught in a game of 'keep away', where
+            #   their destination station keeps changing and they spend a lot
+            #   of time chasing new destinations rather than accomplishing
+            #   useful work. This shouldn't be much of a problem so long as
+            #   vehicles strongly favor nearby stations, which they currently do.
+            #
+            # TODO: This refreshes the empty's destination whenever it passes by a
+            #   station. The preferred approach would be to refresh whenever it
+            #   comes to a switch of any sort. That is, refresh whenever the vehicle
+            #   has the opportunity to act on the information.
+            vehicle.trip = self.manager.deadhead(vehicle)
+            vehicle.set_path(vehicle.trip.path)
+
+        if vehicle.trip.dest_station is station:
+            try:
+                vehicle.enter_station(station)
+                # If vehicle successfully gained entry to the station, update state.
+                if vehicle.pax:
+                    vehicle.state = States.UNLOAD_ADVANCING
+                else:
+                    vehicle.state = States.LOAD_ADVANCING
+
+            except (NoBerthAvailableError, FatalTrajectoryError):
+                if vehicle.station:
+                    vehicle.station.release_berth(vehicle)
+                old_dest = vehicle.trip.dest_station
+                if vehicle.pax:
+                    # Has passengers. Loop around to this station again
                     vehicle.trip = self.manager.wave_off(vehicle)
                     vehicle.set_path(vehicle.trip.path)
                     vehicle.num_wave_offs += 1
                     self.log.info("%5.3f Vehicle %d waved off from dest_station %d because NoBerthAvailable. Going to station %d instead.",
                                    self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
-
-            # Has passengers and not at dest station
-            elif vehicle.pax and station is not vehicle.trip.dest_station:
-                pass
-
-            # Empty vehicle, any station
-            else:
-                # Refresh the destination station, since demand for empties has
-                #   likely changed while travelling. This presents the possiblity
-                #   that empties will get caught in a game of 'keep away', where
-                #   their destination station keeps changing and they spend a lot
-                #   of time chasing new destinations rather than accomplishing
-                #   useful work. This shouldn't be much of a problem so long as
-                #   vehicles strongly favor nearby stations, which they currently do.
-                #
-                # TODO: This refreshes the empty's destination whenever it passes by a
-                #   station. The preferred approach would be to refresh whenever it
-                #   comes to a switch of any sort. That is, refresh whenever the vehicle
-                #   has the opportunity to act on the information.
-                vehicle.trip = self.manager.deadhead(vehicle)
-                vehicle.set_path(vehicle.trip.path)
-
-                if vehicle.trip.dest_station is station:
-                    try:
-                        vehicle.trip.dest_station.request_load_berth(vehicle)
-                        assert vehicle.berth_id is not None
-                    except NoBerthAvailableError:
-                        old_dest = vehicle.trip.dest_station
-                        vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
-                        vehicle.set_path(vehicle.trip.path)
-                        self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d due to lack of available berth. Going to station %d instead.",
-                                  self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
-
-            # If the vehicle is empty, and the assigned berth is the entrance
-            # berth, give it up and waive off so as to not clog up the station
-            # with an empty vehicle.
-            if vehicle.has_berth_reservation() and not vehicle.pax \
-                    and vehicle.platform_id == Station.UNLOAD_PLATFORM \
-                    and vehicle.berth_id == 0:
-                old_dest = vehicle.trip.dest_station
-                old_dest.release_berth(vehicle)
-                vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
-                vehicle.set_path(vehicle.trip.path)
-                self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d to avoid clogging entrance berth. Going to station %d instead.",
+                else:
+                    # Empty vehicle, may go to any station
+                    vehicle.trip = self.manager.deadhead(vehicle, exclude=(old_dest,))
+                    vehicle.set_path(vehicle.trip.path)
+                    self.log.info("%5.3f Empty vehicle %d bypassing dest_station %d due to lack of available berth. Going to station %d instead.",
                               self.current_time, vehicle.id, old_dest.id, vehicle.trip.dest_station.id)
 
     def on_SIM_NOTIFY_VEHICLE_EXIT(self, msg, msgID, msg_time):
@@ -503,20 +541,7 @@ class PrtController(BaseController):
         assert isinstance(vehicle, Vehicle)
         vehicle.update_vehicle(msg.v_status, msg.time)
 
-        if vehicle.state is States.RUNNING:
-            # Tail just cleared the main line by entering into a station.
-            station = self.manager.split2station.get(msg.trackID)
-            if station is not None and vehicle.ts_id in station.ts_ids: # don't check against OFF_RAMP_I explicitly, because nose may already be past it.
-                assert vehicle.berth_id is not None
-                if vehicle.pax:
-                    assert vehicle.platform_id == station.UNLOAD_PLATFORM
-                    vehicle.state = States.UNLOAD_ADVANCING
-                else:
-                    vehicle.state = States.LOAD_ADVANCING
-
-                vehicle.enter_station(station)
-
-        elif vehicle.state is States.LAUNCHING:
+        if vehicle.state is States.LAUNCHING:
             station = self.manager.track2station.get(msg.trackID)
             # Just joined the main line, entirely exiting the station zone
             if msg.trackID == station.ts_ids[Station.ON_RAMP_II]:
@@ -1376,6 +1401,28 @@ class Station(object):
             except IndexError: # whoops. I was at the head of the loading platform_id
                 return None
 
+    def get_vehicle(self, berth_id, platform_id):
+        """Returns the vehicle which has a reservation for the specified berth,
+        or returns None.
+        """
+        return self.reservations[platform_id][berth_id]
+
+    def get_lead_vehicle(self, vehicle):
+        """Returns the vehicle that is ahead of 'vehicle', in that the lead
+        vehicle has reserved a berth ahead. Returns None if no vehicles are ahead.
+        Assumes a linear station layout.
+        """
+        berth_id, platform_id = vehicle.berth_id, vehicle.platform_id
+        while True:
+            next_berth = self.get_next_berth(berth_id, platform_id)
+            if next_berth is not None:
+                berth_pos, berth_id, platform_id, ts_id = next_berth # unpack tuple
+                v = self.reservations[platform_id][berth_id]
+                if v is not None:
+                    return v
+            else:
+                return None
+
     def _request_berth_on_platform(self, vehicle, platform_id):
         """Finds an accessible, available berth which is as close to the station exit as
         possible, and reserves it for use by vehicle.
@@ -1412,10 +1459,12 @@ class Station(object):
             self.reservations[platform_id][choosen_idx] = vehicle
             berth_pos = self.berth_positions[platform_id][choosen_idx]
             plat_ts = self.ts_ids[platform_id+3]  # +3 maps platform_id to ts
+
             vehicle.berth_pos = berth_pos
             vehicle.berth_id = choosen_idx
             vehicle.platform_id = platform_id
             vehicle.plat_ts = plat_ts
+            vehicle.station = self
 
             self.v_count += 1
             assert 0 <= self.v_count <= self.NUM_BERTHS
@@ -1883,7 +1932,12 @@ class Vehicle(object):
     def estimate_pose(self, time, idx=None, path=None):
         """Returns a cubic_spline.Knot containing the vehicle's position,
         velocity, and acceleration at time. The position is translated
-        from path[0]'s coordinate frame to path[idx]'s coordinate frame."""
+        from path[0]'s coordinate frame to path[idx]'s coordinate frame.
+
+        Raises:
+          Allows a OutOfBoundsError from self._spline to go uncaught if
+          time is not within the spline's valid range.
+        """
         if path is None:
             path = self._path
         if idx is None:
@@ -1943,23 +1997,79 @@ class Vehicle(object):
             return spline.t[-2]
 
     def enter_station(self, station):
-        """Assumes that vehicle has a reserved berth already.
-        Slows the vehicle to the station's speed limit then brings the vehicle
-        to a halt at its reserved berth/platform. Will change the vehicle's
-        spline and path to accomplish this.
+        """Reserves a station berth, then changes the vehicle's spline and path
+        to go to the reserved berth. Relinquishes the vehicle's merge slot, if
+        it has one and the vehicle is successful in gaining entry to the station.
 
-        Returns: The time at which the vehicle will come to a halt within its
-                 reserved berth."""
+        Raises:
+          Does not catch a NoBerthAvailableError raised by self._get_station_reservation
+          Does not catch a FatalTrajectoryError raised by self._do_station_entry
+
+        Returns:
+          None
+        """
+        # Try to reserve a berth
+        self._get_station_reservation(station)
+
+        # Try to go to the reserved berth. May fail if another vehicle has
+        # entered station too recently.
+        self._do_station_entry(station)
+
         # If vehicle has a merge_slot, relinquish it.
         if self.merge_slot:
             self.merge_slot.relinquished = True
             self.set_merge_slot(None)
 
-        self.station = station
+    def _get_station_reservation(self, station):
+        """Attempts to get a reservation from station. Which station platform
+        depends on whether or not the vehicle is carrying passengers.
+
+        Raises:
+          Does not catch a NoBerthAvailableError raised by station.request_*_berth
+          Additionally, raises an NoBerthAvailableError if the vehicle is
+            empty and the reservation it received would block other vehicles
+            from entering the station.
+
+        Returns:
+          None
+        """
+        assert isinstance(station, Station)
+        assert station is self.trip.dest_station
+        if self.pax:
+            station.request_unload_berth(self)
+        else:
+            station.request_load_berth(self)
+
+        # If the vehicle is empty, and the assigned berth is the entrance
+        # berth, give it up and waive off so as to not clog up the station
+        # with an empty vehicle.
+        if self.has_berth_reservation() and not self.pax \
+                and self.platform_id == Station.UNLOAD_PLATFORM \
+                and self.berth_id == 0:
+            station.release_berth(self)
+            raise NoBerthAvailableError()
+
+    def _do_station_entry(self, station):
+        """Assumes that vehicle has a reserved berth already.
+        Slows the vehicle to the station's speed limit then brings the vehicle
+        to a halt at its reserved berth/platform. Will change the vehicle's
+        spline and path to accomplish this.
+
+        Raises: FatalTrajectoryError
+          Tries to generate a trajectory that does not conflict with the most
+          recent vehicle to enter the station. If a non-conflicting trajectory
+          cannot be found, a FatalTrajectoryError goes uncaught.
+
+        Returns: The time at which the vehicle will come to a halt within its
+                 reserved berth.
+        """
+        assert isinstance(station, Station)
+
         current_knot = self.estimate_pose(self.controller.current_time)
 
         # Slow to station speed limit at the start of the UNLOAD segment
-        unload_dist, unload_path = self.manager.get_path(self.ts_id, station.ts_ids[Station.UNLOAD])
+        unload_ts_id = station.ts_ids[Station.UNLOAD]
+        unload_dist, unload_path = self.manager.get_path(self.ts_id, unload_ts_id)
         unload_knot = Knot(unload_dist, station.SPEED_LIMIT, 0, None)
         if current_knot.vel > TrajectorySolver.v_threshold: # Non-zero velocity
             if current_knot.accel > 0:
@@ -1969,6 +2079,24 @@ class Vehicle(object):
             else:
                 to_unload_spline = self.traj_solver.target_position(current_knot, unload_knot, max_speed=current_knot.vel)
             unload_knot.time = to_unload_spline.t[-1]
+
+            # Check that the trajectory won't collide with another vehicle
+            # entering the station.
+            lead_vehicle = station.get_lead_vehicle(self)
+            if isinstance(lead_vehicle, Vehicle): # may also be None, or api.NONE_ID
+                assert isinstance(lead_vehicle, Vehicle)
+                min_sep_dist = lead_vehicle.length + self.controller.HEADWAY*station.SPEED_LIMIT
+                try:
+                    lead_vehicle_unload_path_idx = lead_vehicle.get_path().index(unload_ts_id)
+                    lead_vehicle_knot = lead_vehicle.estimate_pose(unload_knot.time, idx=lead_vehicle_unload_path_idx)
+                    if lead_vehicle_knot.pos <= min_sep_dist:
+                        unload_knot.time = lead_vehicle.spline.get_time_from_dist(min_sep_dist - lead_vehicle_knot.pos,
+                                                                                  now=unload_knot.time)
+                        to_unload_spline = self.traj_solver.target_time(current_knot, unload_knot, max_speed=self.controller.LINE_SPEED)
+                except (OutOfBoundsError, ValueError):
+                    # Lead vehicle has already cleared its old spline or its
+                    # path. No conflict.
+                    pass
 
             # Continue on to stop at the desired berth pos (works even if platform is other than UNLOAD).
             berth_dist, berth_path = self.manager.get_path(station.ts_ids[Station.UNLOAD], self.plat_ts)
@@ -3488,7 +3616,7 @@ def write_stats_report(vehicles, stations, file_path):
         s_list.sort()
 
         for s in s_list:
-            wait_times = s.get_launch_wait_times();
+            wait_times = s.get_launch_wait_times()
             if len(wait_times) > 0:
                 sum_time = sum(wait_times)
                 min_time = min(wait_times)
@@ -3526,6 +3654,7 @@ def write_stats_report(vehicles, stations, file_path):
 def main(options):
     PrtController.LINE_SPEED = options.line_speed
     PrtController.HEADWAY = options.headway
+    PrtController.SWITCH_TIME = options.switch_time
     Merge.LINE_SPEED = options.line_speed
     Merge.HEADWAY = options.headway
     Station.SPEED_LIMIT = options.station_speed
@@ -3552,6 +3681,8 @@ if __name__ == '__main__':
                 "Setting too high may negatively affect computation performance. Default is %default")
     options_parser.add_option("--headway", type="float", dest="headway", default="2.0",
                 help="The minimum following time for vehicles, in seconds. Measured from tip-to-tail.")
+    options_parser.add_option("--switch_time", type="float", dest="switch_time", default="0.1",
+                help="Time required to switch which path the vehicle will take at the next branching junction.")
     options_parser.add_option("--profile", dest="profile_path",
                 metavar="FILE", help="Log performance data to FILE. See 'http://docs.python.org/library/profile.html'")
     options, args = options_parser.parse_args()

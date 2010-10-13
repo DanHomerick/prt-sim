@@ -429,7 +429,7 @@ class ControlInterface(Sim.Process):
                     v = self.get_vehicle(msg.vID)
                     # send error message if vehicle has already passed the notification pos
                     # or if pos is beyond the end of the track
-                    if utility.dist_lt(v.pos, msg.pos) or utility.dist_gt(msg.pos, v.loc.length):
+                    if utility.dist_gt(v.pos, msg.pos) or utility.dist_gt(msg.pos, v.loc.length):
                         err_resp = api.SimMsgBodyInvalid()
                         err_resp.msgID = msgID
                         self.send(api.SIM_MSG_BODY_INVALID, err_resp)
