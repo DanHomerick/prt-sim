@@ -662,7 +662,6 @@ class PrtController(BaseController):
         write_stats_report(self.manager.vehicles, self.manager.stations, options.stats_file)
 
 
-
 class Manager(object): # Similar to VehicleManager in gtf_conroller class
     # TODO: Is there any reasonable way to handle multiple vehicle types, without
     #       just hardcoding a behavior to a particular name?
@@ -1393,13 +1392,15 @@ class Station(object):
         describing the berth following the arguments. Returns None if there
         is no next berth."""
 
-        try: # assume not at last berth on this platform_id
-            return (self.berth_positions[platform_id][berth_id+1], berth_id+1, platform_id, self.ts_ids[platform_id+3])
-        except IndexError: # whoops. That was the last berth.
-            try:
-                return (self.berth_positions[platform_id+1][0], 0, self.ts_ids[platform_id+4])
-            except IndexError: # whoops. I was at the head of the loading platform_id
-                return None
+        berth_id += 1
+        while True: # Use a loop since a platform may have 0 berths.
+            try: # assume not at last berth on this platform_id
+                return (self.berth_positions[platform_id][berth_id], berth_id, platform_id, self.ts_ids[platform_id+3])
+            except IndexError: # whoops. That was the last berth.
+                platform_id += 1
+                berth_id = 0
+                if platform_id == len(self.reservations):
+                    return None # Just went off the end of the last platform
 
     def get_vehicle(self, berth_id, platform_id):
         """Returns the vehicle which has a reservation for the specified berth,
@@ -1407,12 +1408,20 @@ class Station(object):
         """
         return self.reservations[platform_id][berth_id]
 
-    def get_lead_vehicle(self, vehicle):
+    def get_lead_vehicle(self, vehicle=None, berth_id=None, platform_id=None):
         """Returns the vehicle that is ahead of 'vehicle', in that the lead
         vehicle has reserved a berth ahead. Returns None if no vehicles are ahead.
         Assumes a linear station layout.
+
+        Parameters:
+          Supply either a 'vehicle' or a 'berth_id' and 'platform_id'.
+
+        Returns:
+          A Vehicle instance or None
         """
-        berth_id, platform_id = vehicle.berth_id, vehicle.platform_id
+        assert not (vehicle and (berth_id or platform_id)) # Only supply vehicle, or berth_id and platform_id
+        if vehicle:
+            berth_id, platform_id = vehicle.berth_id, vehicle.platform_id
         while True:
             next_berth = self.get_next_berth(berth_id, platform_id)
             if next_berth is not None:
@@ -1636,6 +1645,33 @@ class Station(object):
         # vehicle into. Start the search at the end closer to the exit.
         for platform_id, berth_id in reversed(self.storage_exits):
             if self.reservations[platform_id][berth_id] is None:
+                # Found an open slot to bring the vehicle into. Check that no
+                # vehicles are going to pass through the slot when travelling to
+                # their reserved berth.
+                lead_vehicle = self.get_lead_vehicle(berth_id=berth_id,
+                                                     platform_id=platform_id)
+                if isinstance(lead_vehicle, Vehicle):
+                    # Vehicle must be clear of the berth at the start of the
+                    # storage exit procedure.
+                    try:
+                        platform_ts_id = self.ts_ids[platform_id+3]
+                        lead_vehicle_path_idx = lead_vehicle.path.index(platform_ts_id)
+                        lv_knot = lead_vehicle.estimate_pose(time=self.controller.current_time,
+                                                             idx=lead_vehicle_path_idx)
+                        if lv_knot.pos <= self.berth_positions[platform_id][berth_id] \
+                                          + lead_vehicle.length:
+                            continue # Conflict
+                    except ValueError:
+                        # lv.path.index(platform_id) failed -- path was already
+                        # changed, indictating that vehicle has reached its berth.
+                        pass
+
+                # lead_vehicle may also be None (no berths reserved ahead) or
+                # api.NONE_ID, indicating that a storage call is occuring in the
+                # next occupied berth. In the case of NONE_ID, we can rely on
+                # the other storage call to have checked for vehicles passing
+                # through and do not need to check again.
+
                 self.reservations[platform_id][berth_id] = api.NONE_ID
                 break
         else:
@@ -2082,7 +2118,7 @@ class Vehicle(object):
 
             # Check that the trajectory won't collide with another vehicle
             # entering the station.
-            lead_vehicle = station.get_lead_vehicle(self)
+            lead_vehicle = station.get_lead_vehicle(vehicle=self)
             if isinstance(lead_vehicle, Vehicle): # may also be None, or api.NONE_ID
                 assert isinstance(lead_vehicle, Vehicle)
                 min_sep_dist = lead_vehicle.length + self.controller.HEADWAY*station.SPEED_LIMIT
