@@ -387,11 +387,11 @@ class MainWindow(wx.Frame):
             vehicles_occupied = 0
             total_vehicles = len(common.vehicles)
             total_seats = 0
-            for vehicle in common.vehicles.itervalues():
+            for vehicle in common.vehicle_list:
                 total_seats += vehicle.max_pax_capacity
                 if vehicle.passengers:
                     vehicles_occupied += 1
-                seats_occupied += len(vehicle.passengers)
+                    seats_occupied += len(vehicle.passengers)
             v_avail = total_vehicles - vehicles_occupied
             if total_vehicles > 0:
                 v_pct_utilized = vehicles_occupied / total_vehicles * 100

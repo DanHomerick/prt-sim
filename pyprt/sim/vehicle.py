@@ -209,8 +209,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         else: # compare my position to other's positions, and insert for correct ordering
             inserted = False
             for idx, other_v in enumerate(loc.vehicles): # iterate, starting with frontmost vehicle
-                if position > other_v.pos: # I'm ahead, so cut in front
-                    loc.vehicles.insert(idx, self)
+                if other_v.loc is loc and position > other_v.pos: # if other_v.loc != loc, then only other_v's tail is on loc.
+                    loc.vehicles.insert(idx, self) # I'm ahead, so insert before other_v in the list
                     inserted = True
                     break
             if not inserted:
