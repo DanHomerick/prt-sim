@@ -115,6 +115,9 @@ class InvalidTime(MsgError):
 class InvalidMsgType(MsgError):
     """Msg type is not found in the api."""
 
+class InvalidPosition(MsgError):
+    pass
+
 class InvalidTrackSegID(MsgError):
     pass
 

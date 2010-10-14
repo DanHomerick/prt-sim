@@ -9,6 +9,7 @@ import SimPy.SimulationRT as Sim
 import google.protobuf.text_format as text_format
 
 from pyprt.shared.utility import pairwise
+from pyprt.shared.cubic_spline import OutOfBoundsError
 import pyprt.shared.utility as utility
 import pyprt.shared.api_pb2 as api
 import common
@@ -430,11 +431,13 @@ class ControlInterface(Sim.Process):
                     # send error message if vehicle has already passed the notification pos
                     # or if pos is beyond the end of the track
                     if utility.dist_gt(v.pos, msg.pos) or utility.dist_gt(msg.pos, v.loc.length):
-                        err_resp = api.SimMsgBodyInvalid()
-                        err_resp.msgID = msgID
-                        self.send(api.SIM_MSG_BODY_INVALID, err_resp)
-                    else:
+                        raise common.InvalidPosition(msg.pos)
+
+                    try:
                         v.notify_position(msg, msgID)
+                    except OutOfBoundsError:
+                        # Spline does not reach position
+                        raise common.InvalidPosition(msg.pos)
 
                 elif msg_type == api.CTRL_SCENARIO_ERROR:
                     msg = api.CtrlScenarioError()
@@ -460,6 +463,11 @@ class ControlInterface(Sim.Process):
                 self.send(api.SIM_MSG_HDR_INVALID_TYPE, err_msg)
                 logging.error("Received invalid msg type: %s", msg_type)
                 common.errors += 1
+            except common.InvalidPosition as e:
+                logging.exception(e)
+                err_msg = api.SimMsgBodyInvalid() # TODO: Set up a specific msg type?
+                err_msg.msgID = msgID
+                self.send(api.SIM_MSG_BODY_INVALID, err_msg)
             except common.InvalidTrackSegID as e:
                 logging.exception(e)
                 err_msg = api.SimMsgBodyInvalidId()
@@ -648,13 +656,13 @@ class ControlInterface(Sim.Process):
         assert isinstance(spline, api.Spline)
         # Check that the times for the spline are in non-decreasing order
         if len(spline.times) == 0:
-            raise common.MsgTime
+            raise common.InvalidTime(0)
 
         for t1, t2 in pairwise(spline.times):
             if t2 < t1:
                 logging.info("T=%4.3f Spline times are not in non-decreasing order: %s",
                              Sim.now(), spline.times)
-                raise common.MsgTime
+                raise common.InvalidTime(t2)
 
     def validate_itinerary(self, vehicle, ids):
         if len(ids) == 0:

@@ -218,8 +218,10 @@ message CtrlRequestTotalStatus {
 // Requests that a SimNotifyVehiclePosition message be sent
 // when the vehicle's nose reaches pos on the current track
 // segment (as defined by nose_locID).
-// If pos has already been passed, a SimMsgBodyInvalid message
-// is sent in response.
+// Any of the following conditions will cause a SimMsgBodyInvalid message response:
+//   - vehicle's position is already past 'pos'
+//   - vehicle's trajectory does not reach 'pos' (e.g. vehicle is stopped)
+//   - 'pos' is negative, or is >= to the segment's length
 message CtrlSetnotifyVehiclePosition {
     required int32         vID = 1;
     required float         pos = 2;

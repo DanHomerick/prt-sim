@@ -283,41 +283,34 @@ class PrtController(BaseController):
             else: # Not in a station.
                 vehicle.state = States.RUNNING
                 vehicle.trip = self.manager.deadhead(vehicle)
+                vehicle.set_path(vehicle.trip.path)
+                vehicle.run(speed_limit=self.LINE_SPEED)
+
+                # Handle all the vehicles that are in a Merge's zone of control
+                # together at a later time.
+                merge = self.manager.track2merge.get(vehicle.ts_id)
+                if merge:
+                    # tail must be on inlet ts, not just nose. If just the nose
+                    # is on the inlet ts, let the normal code path assign a
+                    # merge slot in a few moments.
+                    if vehicle.ts_id not in merge.inlets \
+                       or (vehicle.ts_id in merge.inlets and vehicle.pos >= vehicle.length):
+                        merge2vehicles[merge].append(vehicle)
+                        continue
 
                 station = self.manager.split2station.get(vehicle.ts_id)
                 if station: # vehicle is on the station's "split" trackseg
                     assert vehicle.ts_id == station.split
                     seg_length, seg_path = self.manager.get_path(vehicle.ts_id, station.ts_ids[Station.OFF_RAMP_I])
                     notify_pos = seg_length - self.LINE_SPEED*self.SWITCH_TIME
-                    if notify_pos <= vehicle.pos:
+                    if notify_pos > vehicle.pos:
+                        notify_msg = api.CtrlSetnotifyVehiclePosition()
+                        notify_msg.vID = vehicle.id
+                        notify_msg.pos = notify_pos
+                        self.send(api.CTRL_SETNOTIFY_VEHICLE_POSITION, notify_msg)
+                    else: # notify_pos <= vehicle.pos
                         # Go on to a different station
                         vehicle.trip = self.manager.deadhead(vehicle, exclude=(station, ))
-
-                vehicle.set_path(vehicle.trip.path)
-
-                # Handle all the vehicles that are in a Merge's zone of control
-                # together at a later time. If not in a zone of control, just
-                # run at LINE_SPEED.
-                merge = self.manager.track2merge.get(vehicle.ts_id)
-                if merge:
-                    # tail must be on inlet ts, not just nose. If just the nose
-                    # is on the inlet ts, let the normal code path assign a
-                    # merge slot in a few moments.
-                    if vehicle.ts_id in merge.inlets and vehicle.pos < vehicle.length:
-                        vehicle.run(speed_limit=self.LINE_SPEED)
-                    else:
-                        merge2vehicles[merge].append(vehicle)
-                else:
-                    # Case 4. Not in a Merge's zone of control.
-                    vehicle.run(speed_limit=self.LINE_SPEED)
-
-
-                if station and notify_pos > vehicle.pos:
-                    notify_msg = api.CtrlSetnotifyVehiclePosition()
-                    notify_msg.vID = vehicle.id
-                    notify_msg.pos = notify_pos
-                    self.send(api.CTRL_SETNOTIFY_VEHICLE_POSITION, notify_msg)
-
 
         # Case 5. Within a Merge's zone of control.
         for m, v_list in merge2vehicles.items():
@@ -331,8 +324,11 @@ class PrtController(BaseController):
                 return cmp(v2_pos, v1_pos)
             v_list.sort(cmp=sort_by_pos)
             for v in v_list:
-                v.run(speed_limit=self.LINE_SPEED) # do_merge expects the vehicle to already have a spline.
                 try:
+                    # Route the vehicle to a destination that is beyond the merge.
+                    # Vehicle may reroute to a closer station in the course of regular operation.
+                    v.trip = self.manager.deadhead(v, m.stations)
+                    v.set_path(v.trip.path)
                     v.do_merge(m, 0.0)
                 except FatalTrajectoryError:
                     # TODO: Write a function dedicated to validating the scenario when it's received.
@@ -2234,7 +2230,7 @@ class Vehicle(object):
 
         return self.run(speed_limit=speed_limit, dist=dist, final_speed=0)
 
-    def do_merge(self, merge, now):
+    def do_merge(self, merge, now=None):
         """Aquire a MergeSlot from the Merge and use the MergeSlot's spline.
         If now is None, then the controller's current time is used.
 

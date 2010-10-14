@@ -690,8 +690,19 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             return True
 
     def notify_position(self, ctrl_setnotify_msg, msg_id):
+        """Causes vehicle to send an api.SimNotifyVehiclePosition message when
+        the vehicle reaches the designated position.
+
+        Raises:
+          cubic_spline.OutOfBoundsError: if the vehicle's spline does not
+            currently reach the designated position.
+
+        Returns:
+          None
+        """
+        assert utility.dist_ge(ctrl_setnotify_msg.pos, self.pos) # No support for vehicles travelling in reverse yet
         t = self._spline.get_time_from_dist(ctrl_setnotify_msg.pos - self.pos, Sim.now())
-        assert t is not None and t >= Sim.now()
+        assert t is not None
         heapq.heappush(self._actions_queue, (t, self.NOTIFY_POSITION, (ctrl_setnotify_msg, msg_id)))
 
     def ctrl_loop(self):
