@@ -359,11 +359,12 @@ class PrtController(BaseController):
                     vehicle.state = States.LAUNCHING
                     vehicle.run(speed_limit=self.LINE_SPEED)
                     vehicle._launch_begun = True
-                    vehicle.station.release_berth(vehicle)
-                    vehicle.station.launch_wait_times.append( (msg.time, vehicle, False) )
+                    station = vehicle.station
+                    station.release_berth(vehicle)
+                    station.launch_wait_times.append( (msg.time, vehicle, False) )
                     self.log.info("t:%5.3f Launched vehicle %d from station %d.",
-                                  self.current_time, vehicle.id, vehicle.station.id)
-                    vehicle.station.heartbeat()
+                                  self.current_time, vehicle.id, station.id)
+                    station.heartbeat()
 
                 else:
                     self.set_v_notification(vehicle, blocked_time)
@@ -397,8 +398,9 @@ class PrtController(BaseController):
                               self.current_time, vehicle.id, vehicle.station.id)
 
                 def release_and_heartbeat():
-                    vehicle.station.release_berth(vehicle)
-                    vehicle.station.heartbeat()
+                    station = vehicle.station
+                    station.release_berth(vehicle)
+                    station.heartbeat()
 
                 self.set_fnc_notification(release_and_heartbeat, tuple(), launch_time)
 
@@ -409,11 +411,12 @@ class PrtController(BaseController):
                     vehicle.send_path()
                     vehicle.run(speed_limit=self.LINE_SPEED)
                     vehicle._launch_begun = True
-                    vehicle.station.release_berth(vehicle)
-                    vehicle.station.launch_wait_times.append( (msg.time, vehicle, False) )
+                    station = vehicle.station
+                    station.release_berth(vehicle)
+                    station.launch_wait_times.append( (msg.time, vehicle, False) )
                     self.log.info("t:%5.3f Launched vehicle %d from station %d.",
-                                  self.current_time, vehicle.id, vehicle.station.id)
-                    vehicle.station.heartbeat()
+                                  self.current_time, vehicle.id, station.id)
+                    station.heartbeat()
                 else:
                     self.set_v_notification(vehicle, blocked_time)
                     self.log.info("t:%5.3f Delaying launch of vehicle %d from station %d until %.3f (%.3f delay)",
@@ -546,7 +549,6 @@ class PrtController(BaseController):
             # Just joined the main line, entirely exiting the station zone
             if msg.trackID == station.ts_ids[Station.ON_RAMP_II]:
                 vehicle.state = States.RUNNING
-                vehicle.station = None
 
         # Check if just entered a merge's zone of control.
         if vehicle.state is States.RUNNING: # may have been LAUNCHING at beginning of function
@@ -1569,6 +1571,7 @@ class Station(object):
         vehicle.berth_id = None
         vehicle.platform_id = None
         vehicle.plat_ts = None
+        vehicle.station = None
 
     def is_launch_berth(self, berth_id, platform_id):
         """Does berth have direct access to the main line? That is, a
