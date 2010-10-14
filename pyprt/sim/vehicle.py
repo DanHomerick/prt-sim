@@ -269,7 +269,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         """Returns the time-weighted average number of passengers onboard the
         vehicle from the start until now."""
         op_time = self.get_operational_time()
-        if op_time != 0: # guard against zero division
+        if op_time == 0: # guard against zero division
             return len(self._passengers)
 
         ave = 0
