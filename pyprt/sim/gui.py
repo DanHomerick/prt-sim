@@ -417,7 +417,7 @@ class MainWindow(wx.Frame):
         if SimPy.now() == common.config_manager.get_sim_end_time():
             self.show_message("Simulation Complete")
         else:
-            self.show_message("Simulation Halted at %f.3" % SimPy.now())
+            self.show_message("Simulation Halted at %.3f" % SimPy.now())
 
 # end of class MainWindow
 

@@ -177,12 +177,24 @@ class PrtController(BaseController):
         total_berths = sum(station.NUM_BERTHS for station in self.manager.stations.itervalues())
         total_vehicles = len(self.manager.vehicles)
         if total_vehicles >= total_berths + total_vacancies:
-            msg = api.CtrlScenarioError()
-            msg.error_message = \
+            error_msg = api.CtrlScenarioError()
+            error_msg.error_message = \
                 "Total number of vehicles must be less than the total number of " \
                 "station berths.\nVehicles: %d\nBerths: %d" % (total_vehicles, total_berths)
-            self.send(api.CTRL_SCENARIO_ERROR, msg)
-            self.log.error(msg.error_message)
+            self.send(api.CTRL_SCENARIO_ERROR, error_msg)
+            self.log.error(error_msg.error_message)
+
+        # TODO: Move check to scenario validation routine
+        min_split_length = self.LINE_SPEED*self.SWITCH_TIME
+        for s in self.manager.stations.itervalues():
+            seg_length, seg_path = self.manager.get_path(s.split, s.bypass)
+            if seg_length < min_split_length:
+                error_msg = api.CtrlScenarioError()
+                error_msg.stationID = s.id
+                error_msg.error_message = "The track segment preceeding station %d's offramp switch must be at least LINE_SPEED*SWITCH_TIME = %.1f meters long but it is only %.1f meters long. Segment id: %d" \
+                         % (s.id, min_split_length, seg_length, s.split)
+                self.send(api.CTRL_SCENARIO_ERROR, error_msg)
+                self.log.error(error_msg.error_message)
 
     def on_SIM_START(self, msg, msgID, msg_time):
         """This function is responsible for getting all the vehicles moving at
@@ -466,18 +478,11 @@ class PrtController(BaseController):
         if station and vehicle.state in (States.RUNNING, States.LAUNCHING):
             seg_length, seg_path = self.manager.get_path(msg.trackID, station.ts_ids[Station.OFF_RAMP_I])
             notify_pos = seg_length - self.LINE_SPEED*self.SWITCH_TIME
-            if notify_pos >= 0:
-                notify_msg = api.CtrlSetnotifyVehiclePosition()
-                notify_msg.vID = vehicle.id
-                notify_msg.pos = notify_pos
-                self.send(api.CTRL_SETNOTIFY_VEHICLE_POSITION, notify_msg)
-            else:
-                # TODO: Move check to scenario validation routine
-                error_msg = api.CtrlScenarioError()
-                error_msg.stationID = station.id
-                error_msg.error_message = "The track segment preceeding a station offramp switch must be at least LINE_SPEED*SWITCH_TIME = %.1f meters long but it is only %.1f meters long." \
-                         % (self.LINE_SPEED*self.SWITCH_TIME, seg_length)
-                self.send(api.CTRL_SCENARIO_ERROR, error_msg)
+            assert notify_pos >= 0
+            notify_msg = api.CtrlSetnotifyVehiclePosition()
+            notify_msg.vID = vehicle.id
+            notify_msg.pos = notify_pos
+            self.send(api.CTRL_SETNOTIFY_VEHICLE_POSITION, notify_msg)
 
     def on_SIM_NOTIFY_VEHICLE_POSITION(self, msg, msgID, msg_time):
         vehicle = self.manager.vehicles[msg.v_status.vID]
