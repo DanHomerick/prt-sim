@@ -387,7 +387,7 @@ class PrtController(BaseController):
                 vehicle.state = States.LAUNCHING
                 slot, launch_time = merge.create_station_merge_slot_II(vehicle.station, vehicle, self.current_time)
                 vehicle.set_merge_slot(slot)
-                vehicle.set_spline(vehicle.merge_slot.spline)
+                vehicle.set_spline(vehicle.merge_slot.spline.copy())
                 vehicle._launch_begun = True
                 vehicle.station.launch_wait_times.append ( (launch_time, vehicle, False) )
                 self.log.info("t:%5.3f Launched vehicle %d from station %d.",
@@ -1232,7 +1232,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
         The path is a list of ts_ids."""
         if idx == 0:
             return 0
-
+        assert 0 <= idx <= len(path)-1
         return sum(self.graph[a][b]['weight'] for a, b in pairwise(path[:idx+1]))
 
     def _build_station_tables(self):
@@ -2252,7 +2252,7 @@ class Vehicle(object):
                                                  self.traj_solver,
                                                  now)
             self.set_merge_slot(merge_slot)
-            self.set_spline(self.merge_slot.spline)
+            self.set_spline(self.merge_slot.spline.copy())
         except NotAtDecisionPoint:
             slot_assignment_dist = (merge.get_slot_assignment_position(self.ts_id) - self.estimate_pose(now).pos) + self.length # measured from rear of vehicle
             slot_assignment_time = self.spline.get_time_from_dist(slot_assignment_dist, now)
@@ -2887,7 +2887,7 @@ class Merge(object):
                     # Vehicle's nose is before the station-merge point when the launch vehicle reaches it.
                     # Do a quick check, and if it passes that, do a more accurate, expensive check
                     if self.offsets[slot.vehicle.ts_id] < station_merge_offset \
-                       and slot.vehicle.estimate_pose(now + min_launch_duration, self.outlet) < station_merge_offset:  # more accurate check
+                       and slot.spline.evaluate(now + min_launch_duration).pos - slot.spline.q[-1] < station_merge_offset:
                         break
                     else: # Vehicle's nose is past the station merge point and is a blocking vehicle.
                         blocking_slot_idx = i
@@ -2930,272 +2930,272 @@ class Merge(object):
 
 
 
-    def create_station_merge_slot(self, station, vehicle, now):
-        """Creates a non-conflicting MergeSlot for a vehicle that is launching
-        from a station located within the Merge's zone of control. The slot is
-        added to the Merge's reservation queue.
-
-        Returns a 2-tuple: (MergeSlot, launch_time)
-
-        It is up to the vehicle to alter its trajectory so as to hit the
-        MergeSlot, but the slot is guaranteed to be achievable by using the
-        included spline.
-        """
-
-        # Strategy is to find a pair of merge slots such that:
-        #   1. There is room enough between the slots to fit a new slot.
-        #   2. The vehicle leaving the station will not interfere with other
-        #      vehicles while achieving its merge slot.
-        # Note that the vehicle leaving the station has the option of remaining
-        # stopped at the station indefinitely, unlike at a regular merge.
-        #
-        # Nomenclature: Existing slots are considered in a pairwise
-        # manner. The slot or vehicle that is closer to the merge point is
-        # 'front', and the slot or vehicle that is further is 'rear'. When
-        # refering to parts of a vehicle, 'nose' and 'tail' are used.
-
-        assert isinstance(vehicle, Vehicle)
-        assert isinstance(station, Station)
-        assert station in self.stations
-
-        # Find which zone the station is in.
-        if station.merge in self.zone_ids[0]:
-            station_zone = 0
-        else:
-            assert station.merge in self.zone_ids[1]
-            station_zone = 1
-
-        # Vehicle's state, in its current coordinate frame.
-        initial = vehicle.estimate_pose(now)
-
-        station_merge_offset = self.offsets[station.merge] # reminder: offsets are negative
-        min_slot_size = self.HEADWAY + vehicle.length/self.LINE_SPEED # in seconds
-
-        # The launch vehicle cannot pass through another vehicle in the same
-        # zone while trying to reach its merge slot. Iterate over existing
-        # slots, starting closest to the main-merge and working back,
-        # to find the blocking vehicle closest to the station-merge. We
-        # can disregard any slots prior to the blocking vehicle's slot.
-        # Stop iteration once we reach a vehicle who's nose has not yet
-        # reached the station merge track segment.
-        blocking_slot_idx = None
-        for i, slot in enumerate(self.reservations):
-            if slot.vehicle.ts_id == self.outlet:
-                continue
-
-            if slot.zone == station_zone:
-                try:
-                    if self.offsets[slot.vehicle.ts_id] < station_merge_offset:
-                        break
-                    else:
-                        blocking_slot_idx = i
-                except KeyError:
-                    # Vehicle is just departing from a station, and has not yet
-                    # hit the main line.
-                    continue
-
-
-        # Bookend the reserved MergeSlots with a pair of dummy slots.
-        if blocking_slot_idx is None:
-            slots = [MergeSlot(0,0,None,None,None,-1,self)] + self.reservations + [MergeSlot(inf,inf,None,None,None,-1,self)]
-        else:
-            slots = self.reservations[blocking_slot_idx:] + [MergeSlot(inf,inf,None,None,None,-1,self)]
-
-        # Try constructing a launch spline and slot which disregards the world
-        # state -- launch immediately and travel to main-merge at line speed.
-        # Fastest possible arrival at the merge point.
-        # TODO: Figure out conditions where this couldn't be a viable solution in order to save some computation?
-        merge_dist, merge_path = self.manager.get_path(vehicle.ts_id, self.outlet)
-        onramp_dist, onramp_path = self.manager.get_path(vehicle.ts_id, station.merge)
-        blind_spline = vehicle.traj_solver.target_position(
-                initial,
-                Knot(merge_dist, self.LINE_SPEED, 0, None),
-                max_speed=self.LINE_SPEED)
-        blind_slot = MergeSlot(blind_spline.t[-1] - self.HEADWAY,
-                               blind_spline.t[-1] + vehicle.length/self.LINE_SPEED,
-                               station_zone,
-                               vehicle,
-                               blind_spline,
-                               vehicle.ts_id,
-                               self)
-
-        # Time at which the blind launch vehicle's tail is at the station merge point
-        blind_station_merge_time = blind_spline.get_time_from_dist(onramp_dist - initial.pos + vehicle.length, now)
-
-        # Iteration starts with slots closest to the main merge point and works back.
-        new_slot = None
-        for idx in xrange(len(slots)-1):
-            front_slot = slots[idx]
-            rear_slot = slots[idx+1]
-            assert isinstance(front_slot, MergeSlot)
-            assert isinstance(rear_slot, MergeSlot)
-
-            # Gap between slots must be large enough to fit a new slot.
-            if rear_slot.start_time - front_slot.end_time < min_slot_size:
-                continue
-
-            # If 'blind', the fastest possible approach, wouldn't be clear of the
-            # main merge point when rear_slot starts then the gap is unusable.
-            if blind_slot.end_time > rear_slot.start_time:
-                continue
-
-            # Optimistic case: No interference from anyone. Go immediately,
-            # travelling at full speed.
-            if blind_slot.start_time >= front_slot.end_time and \
-                    blind_slot.end_time <= rear_slot.start_time:
-                if self._is_rear_vehicle_conflict(idx+1, slots, station_zone, station.merge, blind_station_merge_time):
-                    continue
-                else:
-                    new_slot = blind_slot
-                    launch_time = now
-                    break
-
-            # In all other cases, we want to come onto the main line just
-            # behind the front_slot vehicle (or ghost of that vehicle, if it's
-            # in the other zone).
-            else:
-                # front_knot has a .pos that is the negative distance to main-merge
-                try:
-                    fs_outlet_idx = front_slot.vehicle.path.index(self.outlet)
-                    front_knot = front_slot.vehicle.estimate_pose(now, fs_outlet_idx)
-                except ValueError: # fs vehicle's path doesn't take it the the merge outlet
-                    # make a temporary path that would carry the vehicle to the outlet.
-                    try:
-                        tmp_idx = self.zone_ids[front_slot.zone].index(front_slot.vehicle.path[0])
-                        tmp_path = self.zone_ids[front_slot.zone][tmp_idx:] + [self.outlet]
-                    except ValueError:
-                        tmp_path_length, tmp_path = self.manager.get_path(front_slot.vehicle.path[0], self.outlet)
-                    front_knot = front_slot.vehicle.estimate_pose(now, idx=len(tmp_path)-1, path=tmp_path)
-
-                # Front is past the station-merge. Launch immediately.
-                if front_knot.pos > station_merge_offset:
-                    try:
-                        final = Knot(merge_dist, self.LINE_SPEED, 0, front_slot.end_time + self.HEADWAY)
-                        spline = vehicle.traj_solver.target_time(initial, final, max_speed=self.LINE_SPEED)
-                        launch_time = now
-                        station_merge_time = spline.get_time_from_dist(onramp_dist - initial.pos + vehicle.length, now)
-
-                        if self._is_rear_vehicle_conflict(idx+1, slots, station_zone, station.merge, station_merge_time):
-                            continue
-
-                        new_slot = MergeSlot(spline.t[-1] - self.HEADWAY,
-                                         spline.t[-1] + vehicle.length/self.LINE_SPEED,
-                                         station_zone,
-                                         vehicle,
-                                         spline,
-                                         vehicle.ts_id,
-                                         self)
-                        break
-                    except FatalTrajectoryError:
-                        new_slot = None
-                        continue
-
-                # Front vehicle is still approaching the station-merge.
-                else:
-                    # When the tail of front vehicle passes station-merge point
-                    front_station_merge_time = front_slot.spline.get_time_from_dist(
-                            station_merge_offset - front_knot.pos + front_slot.vehicle.length, now)
-
-                    front_station_merge_knot = front_slot.spline.evaluate(front_station_merge_time)
-
-                    onramp_knot = Knot(onramp_dist + vehicle.length, # measure from the tail of the vehicle to be consistant
-                                       front_station_merge_knot.vel,
-                                       0 if front_station_merge_knot.accel < TrajectorySolver.a_threshold else front_station_merge_knot.accel,
-                                       None)
-                    onramp_spline = vehicle.traj_solver.target_position(initial, onramp_knot, max_speed=onramp_knot.vel)
-
-                    wait_dur = (front_station_merge_time + self.HEADWAY) - onramp_spline.t[-1]
-                    wait_dur = max(0, wait_dur)
-                    launch_time = now + wait_dur
-
-                    if wait_dur > 0:
-                        # recreate the onramp_spline, waiting to accelerate until launch_time
-                        onramp_spline = CubicSpline([initial.pos] + onramp_spline.q,
-                                                    [0] + onramp_spline.v,
-                                                    [0] + onramp_spline.a,
-                                                    [0] + onramp_spline.j,
-                                                    [initial.time] + [time + wait_dur for time in onramp_spline.t])
-
-                    onramp_knot.time = onramp_spline.t[-1]
-                    final = Knot(merge_dist, self.LINE_SPEED, 0, front_slot.end_time + self.HEADWAY) #
-                    try:
-                        merge_spline = vehicle.traj_solver.target_time(onramp_knot, final, max_speed=self.LINE_SPEED)
-                        spline = onramp_spline.concat(merge_spline)
-
-                        new_slot = MergeSlot(spline.t[-1] - self.HEADWAY,
-                                            spline.t[-1] + vehicle.length/self.LINE_SPEED,
-                                            station_zone,
-                                            vehicle,
-                                            spline,
-                                            vehicle.ts_id,
-                                            self)
-                        break
-
-                    except FatalTrajectoryError:
-                        # The wait_dur was negative (too late to merge right after
-                        # the front vehicle passes the station-merge point), and
-                        # we weren't able to catch up to the front vehicle by the
-                        # main-merge point.
-                        assert (front_station_merge_time + self.HEADWAY) - onramp_spline.t[-1] < 0 # negative wait_dur
-                        assert wait_dur == 0 # assumed below that the onramp_spline wasn't changed
-
-                        # If the spot we're trying to slip into is large enough,
-                        # still mimic the front vehicle's trajectory. This will
-                        # leave an abs(wait_dur) sec gap in the reservations between
-                        # front_slot and new_slot
-                        gap_dur = onramp_spline.t[-1] - (front_station_merge_time + self.HEADWAY) # neg of the wait_dur
-
-                        # Gap between slots must be large enough to fit a new slot + gap_dur
-                        if rear_slot.start_time - front_slot.end_time >= min_slot_size + gap_dur:
-                            final.time += gap_dur
-                            merge_spline = vehicle.traj_solver.target_time(onramp_knot, final, max_speed=self.LINE_SPEED)
-                            spline = onramp_spline.concat(merge_spline)
-
-                            new_slot = MergeSlot(spline.t[-1] - self.HEADWAY,
-                                                 spline.t[-1] + vehicle.length/self.LINE_SPEED,
-                                                 station_zone,
-                                                 vehicle,
-                                                 spline,
-                                                 vehicle.ts_id,
-                                                 self)
-                            break
-                        else:
-                            new_slot = None
-                            continue
-
-        assert new_slot is not None
-
-        # DEBUG
-        onramp_dist, onramp_path = self.manager.get_path(vehicle.ts_id, station.merge)
-        station_merge_knot = Knot(onramp_dist, self.LINE_SPEED, 0, None)
-        onramp_spline = vehicle.traj_solver.target_position(initial, station_merge_knot, max_speed=self.LINE_SPEED)
-        station_merge_knot.time = onramp_spline.t[-1]
-
-        merge_dist, merge_path = self.manager.get_path(station.merge, self.outlet)
-        merge_knot = Knot(merge_dist, self.LINE_SPEED, 0, None)
-        merge_spline = vehicle.traj_solver.target_position(station_merge_knot, merge_knot, max_speed=self.LINE_SPEED)
-        merge_knot.time = merge_spline.t[-1]
-
-        no_wait_spline = onramp_spline.concat(merge_spline)
-        min_launch_duration = onramp_spline.t[-1] - onramp_spline.t[0]
-        min_to_merge_duration = merge_spline.t[-1] - merge_spline.t[0]
-        f_slot, r_slot = self._find_usable_gap(now, station, min_slot_size, min_launch_duration,
-                         min_to_merge_duration,  self.LINE_SPEED,
-                         self.HEADWAY, vehicle.length)
-        assert f_slot is front_slot
-        assert r_slot is rear_slot
-        # END DEBUG
-
-        try:
-            assert new_slot.end_time <= rear_slot.start_time + 2*TrajectorySolver.t_threshold
-            insert_idx = self.reservations.index(rear_slot)
-            self.reservations.insert(insert_idx, new_slot)
-        except ValueError:
-            # Rear slot wasn't in self.reservations; it was a dummy slot.
-            if __debug__ and self.reservations:
-                assert new_slot.start_time > self.reservations[-1].end_time - 2*TrajectorySolver.t_threshold
-            self.reservations.append(new_slot)
-        return new_slot, launch_time
+##    def create_station_merge_slot(self, station, vehicle, now):
+##        """Creates a non-conflicting MergeSlot for a vehicle that is launching
+##        from a station located within the Merge's zone of control. The slot is
+##        added to the Merge's reservation queue.
+##
+##        Returns a 2-tuple: (MergeSlot, launch_time)
+##
+##        It is up to the vehicle to alter its trajectory so as to hit the
+##        MergeSlot, but the slot is guaranteed to be achievable by using the
+##        included spline.
+##        """
+##
+##        # Strategy is to find a pair of merge slots such that:
+##        #   1. There is room enough between the slots to fit a new slot.
+##        #   2. The vehicle leaving the station will not interfere with other
+##        #      vehicles while achieving its merge slot.
+##        # Note that the vehicle leaving the station has the option of remaining
+##        # stopped at the station indefinitely, unlike at a regular merge.
+##        #
+##        # Nomenclature: Existing slots are considered in a pairwise
+##        # manner. The slot or vehicle that is closer to the merge point is
+##        # 'front', and the slot or vehicle that is further is 'rear'. When
+##        # refering to parts of a vehicle, 'nose' and 'tail' are used.
+##
+##        assert isinstance(vehicle, Vehicle)
+##        assert isinstance(station, Station)
+##        assert station in self.stations
+##
+##        # Find which zone the station is in.
+##        if station.merge in self.zone_ids[0]:
+##            station_zone = 0
+##        else:
+##            assert station.merge in self.zone_ids[1]
+##            station_zone = 1
+##
+##        # Vehicle's state, in its current coordinate frame.
+##        initial = vehicle.estimate_pose(now)
+##
+##        station_merge_offset = self.offsets[station.merge] # reminder: offsets are negative
+##        min_slot_size = self.HEADWAY + vehicle.length/self.LINE_SPEED # in seconds
+##
+##        # The launch vehicle cannot pass through another vehicle in the same
+##        # zone while trying to reach its merge slot. Iterate over existing
+##        # slots, starting closest to the main-merge and working back,
+##        # to find the blocking vehicle closest to the station-merge. We
+##        # can disregard any slots prior to the blocking vehicle's slot.
+##        # Stop iteration once we reach a vehicle who's nose has not yet
+##        # reached the station merge track segment.
+##        blocking_slot_idx = None
+##        for i, slot in enumerate(self.reservations):
+##            if slot.vehicle.ts_id == self.outlet:
+##                continue
+##
+##            if slot.zone == station_zone:
+##                try:
+##                    if self.offsets[slot.vehicle.ts_id] < station_merge_offset:
+##                        break
+##                    else:
+##                        blocking_slot_idx = i
+##                except KeyError:
+##                    # Vehicle is just departing from a station, and has not yet
+##                    # hit the main line.
+##                    continue
+##
+##
+##        # Bookend the reserved MergeSlots with a pair of dummy slots.
+##        if blocking_slot_idx is None:
+##            slots = [MergeSlot(0,0,None,None,None,-1,self)] + self.reservations + [MergeSlot(inf,inf,None,None,None,-1,self)]
+##        else:
+##            slots = self.reservations[blocking_slot_idx:] + [MergeSlot(inf,inf,None,None,None,-1,self)]
+##
+##        # Try constructing a launch spline and slot which disregards the world
+##        # state -- launch immediately and travel to main-merge at line speed.
+##        # Fastest possible arrival at the merge point.
+##        # TODO: Figure out conditions where this couldn't be a viable solution in order to save some computation?
+##        merge_dist, merge_path = self.manager.get_path(vehicle.ts_id, self.outlet)
+##        onramp_dist, onramp_path = self.manager.get_path(vehicle.ts_id, station.merge)
+##        blind_spline = vehicle.traj_solver.target_position(
+##                initial,
+##                Knot(merge_dist, self.LINE_SPEED, 0, None),
+##                max_speed=self.LINE_SPEED)
+##        blind_slot = MergeSlot(blind_spline.t[-1] - self.HEADWAY,
+##                               blind_spline.t[-1] + vehicle.length/self.LINE_SPEED,
+##                               station_zone,
+##                               vehicle,
+##                               blind_spline,
+##                               vehicle.ts_id,
+##                               self)
+##
+##        # Time at which the blind launch vehicle's tail is at the station merge point
+##        blind_station_merge_time = blind_spline.get_time_from_dist(onramp_dist - initial.pos + vehicle.length, now)
+##
+##        # Iteration starts with slots closest to the main merge point and works back.
+##        new_slot = None
+##        for idx in xrange(len(slots)-1):
+##            front_slot = slots[idx]
+##            rear_slot = slots[idx+1]
+##            assert isinstance(front_slot, MergeSlot)
+##            assert isinstance(rear_slot, MergeSlot)
+##
+##            # Gap between slots must be large enough to fit a new slot.
+##            if rear_slot.start_time - front_slot.end_time < min_slot_size:
+##                continue
+##
+##            # If 'blind', the fastest possible approach, wouldn't be clear of the
+##            # main merge point when rear_slot starts then the gap is unusable.
+##            if blind_slot.end_time > rear_slot.start_time:
+##                continue
+##
+##            # Optimistic case: No interference from anyone. Go immediately,
+##            # travelling at full speed.
+##            if blind_slot.start_time >= front_slot.end_time and \
+##                    blind_slot.end_time <= rear_slot.start_time:
+##                if self._is_rear_vehicle_conflict(idx+1, slots, station_zone, station.merge, blind_station_merge_time):
+##                    continue
+##                else:
+##                    new_slot = blind_slot
+##                    launch_time = now
+##                    break
+##
+##            # In all other cases, we want to come onto the main line just
+##            # behind the front_slot vehicle (or ghost of that vehicle, if it's
+##            # in the other zone).
+##            else:
+##                # front_knot has a .pos that is the negative distance to main-merge
+##                try:
+##                    fs_outlet_idx = front_slot.vehicle.path.index(self.outlet)
+##                    front_knot = front_slot.vehicle.estimate_pose(now, fs_outlet_idx)
+##                except ValueError: # fs vehicle's path doesn't take it the the merge outlet
+##                    # make a temporary path that would carry the vehicle to the outlet.
+##                    try:
+##                        tmp_idx = self.zone_ids[front_slot.zone].index(front_slot.vehicle.path[0])
+##                        tmp_path = self.zone_ids[front_slot.zone][tmp_idx:] + [self.outlet]
+##                    except ValueError:
+##                        tmp_path_length, tmp_path = self.manager.get_path(front_slot.vehicle.path[0], self.outlet)
+##                    front_knot = front_slot.vehicle.estimate_pose(now, idx=len(tmp_path)-1, path=tmp_path)
+##
+##                # Front is past the station-merge. Launch immediately.
+##                if front_knot.pos > station_merge_offset:
+##                    try:
+##                        final = Knot(merge_dist, self.LINE_SPEED, 0, front_slot.end_time + self.HEADWAY)
+##                        spline = vehicle.traj_solver.target_time(initial, final, max_speed=self.LINE_SPEED)
+##                        launch_time = now
+##                        station_merge_time = spline.get_time_from_dist(onramp_dist - initial.pos + vehicle.length, now)
+##
+##                        if self._is_rear_vehicle_conflict(idx+1, slots, station_zone, station.merge, station_merge_time):
+##                            continue
+##
+##                        new_slot = MergeSlot(spline.t[-1] - self.HEADWAY,
+##                                         spline.t[-1] + vehicle.length/self.LINE_SPEED,
+##                                         station_zone,
+##                                         vehicle,
+##                                         spline,
+##                                         vehicle.ts_id,
+##                                         self)
+##                        break
+##                    except FatalTrajectoryError:
+##                        new_slot = None
+##                        continue
+##
+##                # Front vehicle is still approaching the station-merge.
+##                else:
+##                    # When the tail of front vehicle passes station-merge point
+##                    front_station_merge_time = front_slot.spline.get_time_from_dist(
+##                            station_merge_offset - front_knot.pos + front_slot.vehicle.length, now)
+##
+##                    front_station_merge_knot = front_slot.spline.evaluate(front_station_merge_time)
+##
+##                    onramp_knot = Knot(onramp_dist + vehicle.length, # measure from the tail of the vehicle to be consistant
+##                                       front_station_merge_knot.vel,
+##                                       0 if front_station_merge_knot.accel < TrajectorySolver.a_threshold else front_station_merge_knot.accel,
+##                                       None)
+##                    onramp_spline = vehicle.traj_solver.target_position(initial, onramp_knot, max_speed=onramp_knot.vel)
+##
+##                    wait_dur = (front_station_merge_time + self.HEADWAY) - onramp_spline.t[-1]
+##                    wait_dur = max(0, wait_dur)
+##                    launch_time = now + wait_dur
+##
+##                    if wait_dur > 0:
+##                        # recreate the onramp_spline, waiting to accelerate until launch_time
+##                        onramp_spline = CubicSpline([initial.pos] + onramp_spline.q,
+##                                                    [0] + onramp_spline.v,
+##                                                    [0] + onramp_spline.a,
+##                                                    [0] + onramp_spline.j,
+##                                                    [initial.time] + [time + wait_dur for time in onramp_spline.t])
+##
+##                    onramp_knot.time = onramp_spline.t[-1]
+##                    final = Knot(merge_dist, self.LINE_SPEED, 0, front_slot.end_time + self.HEADWAY) #
+##                    try:
+##                        merge_spline = vehicle.traj_solver.target_time(onramp_knot, final, max_speed=self.LINE_SPEED)
+##                        spline = onramp_spline.concat(merge_spline)
+##
+##                        new_slot = MergeSlot(spline.t[-1] - self.HEADWAY,
+##                                            spline.t[-1] + vehicle.length/self.LINE_SPEED,
+##                                            station_zone,
+##                                            vehicle,
+##                                            spline,
+##                                            vehicle.ts_id,
+##                                            self)
+##                        break
+##
+##                    except FatalTrajectoryError:
+##                        # The wait_dur was negative (too late to merge right after
+##                        # the front vehicle passes the station-merge point), and
+##                        # we weren't able to catch up to the front vehicle by the
+##                        # main-merge point.
+##                        assert (front_station_merge_time + self.HEADWAY) - onramp_spline.t[-1] < 0 # negative wait_dur
+##                        assert wait_dur == 0 # assumed below that the onramp_spline wasn't changed
+##
+##                        # If the spot we're trying to slip into is large enough,
+##                        # still mimic the front vehicle's trajectory. This will
+##                        # leave an abs(wait_dur) sec gap in the reservations between
+##                        # front_slot and new_slot
+##                        gap_dur = onramp_spline.t[-1] - (front_station_merge_time + self.HEADWAY) # neg of the wait_dur
+##
+##                        # Gap between slots must be large enough to fit a new slot + gap_dur
+##                        if rear_slot.start_time - front_slot.end_time >= min_slot_size + gap_dur:
+##                            final.time += gap_dur
+##                            merge_spline = vehicle.traj_solver.target_time(onramp_knot, final, max_speed=self.LINE_SPEED)
+##                            spline = onramp_spline.concat(merge_spline)
+##
+##                            new_slot = MergeSlot(spline.t[-1] - self.HEADWAY,
+##                                                 spline.t[-1] + vehicle.length/self.LINE_SPEED,
+##                                                 station_zone,
+##                                                 vehicle,
+##                                                 spline,
+##                                                 vehicle.ts_id,
+##                                                 self)
+##                            break
+##                        else:
+##                            new_slot = None
+##                            continue
+##
+##        assert new_slot is not None
+##
+##        # DEBUG
+##        onramp_dist, onramp_path = self.manager.get_path(vehicle.ts_id, station.merge)
+##        station_merge_knot = Knot(onramp_dist, self.LINE_SPEED, 0, None)
+##        onramp_spline = vehicle.traj_solver.target_position(initial, station_merge_knot, max_speed=self.LINE_SPEED)
+##        station_merge_knot.time = onramp_spline.t[-1]
+##
+##        merge_dist, merge_path = self.manager.get_path(station.merge, self.outlet)
+##        merge_knot = Knot(merge_dist, self.LINE_SPEED, 0, None)
+##        merge_spline = vehicle.traj_solver.target_position(station_merge_knot, merge_knot, max_speed=self.LINE_SPEED)
+##        merge_knot.time = merge_spline.t[-1]
+##
+##        no_wait_spline = onramp_spline.concat(merge_spline)
+##        min_launch_duration = onramp_spline.t[-1] - onramp_spline.t[0]
+##        min_to_merge_duration = merge_spline.t[-1] - merge_spline.t[0]
+##        f_slot, r_slot = self._find_usable_gap(now, station, min_slot_size, min_launch_duration,
+##                         min_to_merge_duration,  self.LINE_SPEED,
+##                         self.HEADWAY, vehicle.length)
+##        assert f_slot is front_slot
+##        assert r_slot is rear_slot
+##        # END DEBUG
+##
+##        try:
+##            assert new_slot.end_time <= rear_slot.start_time + 2*TrajectorySolver.t_threshold
+##            insert_idx = self.reservations.index(rear_slot)
+##            self.reservations.insert(insert_idx, new_slot)
+##        except ValueError:
+##            # Rear slot wasn't in self.reservations; it was a dummy slot.
+##            if __debug__ and self.reservations:
+##                assert new_slot.start_time > self.reservations[-1].end_time - 2*TrajectorySolver.t_threshold
+##            self.reservations.append(new_slot)
+##        return new_slot, launch_time
 
     def _is_rear_vehicle_conflict(self, rear_slot_idx, slots, station_zone, station_merge_ts_id, launch_backend_merge_time):
         """A helper function for the 'create_station_merge_slot' function. Returns
@@ -3212,6 +3212,8 @@ class Merge(object):
             else:
                 try:
                     station_merge_path_idx = rear_slot.vehicle.path.index(station_merge_ts_id)
+                    # TODO: Don't use vehicle.estimate.pose, instead evaluate the spline at the appropriate time and do the position offset manually.
+                    #   Removes the need for the fake path hack.
                     rear_knot = rear_slot.vehicle.estimate_pose(launch_backend_merge_time + self.HEADWAY, station_merge_path_idx)
                 except ValueError: # fs vehicle's path doesn't take it the the station_merge.
                     # make a temporary path that would carry the vehicle to the outlet.
@@ -3532,7 +3534,8 @@ class MergeSlot(object):
         zone: Which zone of the Merge controller the vehicle is approaching from.
         vehicle: The Vehicle instance for which the MergeSlot has been created.
         spline: The spline generated to check that the reserved start and end
-            times can be viably achieved by the vehicle.
+            times can be viably achieved by the vehicle. The spline must run
+            to the end of the merge's zone of control and no further.
         spline_coordinate_frame: The id of the tracksegment that is the spline's
             coordinate frame.
         merge: The Merge instance for which the MergeSlot has been created.
@@ -3545,6 +3548,8 @@ class MergeSlot(object):
         assert start_time >= 0
         assert end_time >= 0
         assert end_time >= start_time
+        if __debug__ and spline is not None:
+            assert spline.t[-1] < end_time + 50 # Ensure that the spline wasn't lengthened to the end of the simulation.
         assert zone in (0,1,None)
         assert isinstance(vehicle, Vehicle) or vehicle is None
         assert isinstance(spline, CubicSpline) or spline is None
