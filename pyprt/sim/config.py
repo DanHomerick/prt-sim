@@ -1,102 +1,102 @@
 import os
-import optparse
+import sys
 import ConfigParser
 import logging
 
-import common
-
 class ConfigManager(object):
-    loglevels = {'DEBUG':logging.DEBUG, 'INFO':logging.INFO,
+    LOGLEVELS = {'DEBUG':logging.DEBUG, 'INFO':logging.INFO,
                  'WARNING':logging.WARNING, 'ERROR':logging.ERROR,
                  'CRITICAL':logging.CRITICAL}
 
-    def __init__(self):
-        # Command line options
-        self.options, positional_args = self.read_args()
+    APP_NAME = "PRT Simulator" # Used in Windows registry
 
-        if len(positional_args) > 1 or (len(positional_args) == 1 and self.options.config_path is not None):
-            raise ConfigParser.Error("Unrecognized command line arguments: %s" % positional_args)
+    def __init__(self, options, positional_args):
+        """Takes the output of an OptionParser.parse_args() call as inputs."""
+        self.options = options
+
+        if len(positional_args) > 1:
+            raise ConfigParser.Error("Expected no more than one positional command line argument, but was supplied with: %s" % positional_args)
+
+        self.config_path = None
+        self.config_parser = None
+        self.config_dir = None
 
         # Config file
-        self.config_path = None
         if len(positional_args) == 1:
-            self.config_path = os.path.abspath(positional_args[0])
-        elif self.options.config_path != None:
-            self.config_path = os.path.abspath(self.options.config_path)
-        else: # Fallback to a default.
-            from pyprt.sim import __path__ as sim_path
-            self.config_path = sim_path[0] + '/default.cfg'
+            self.set_config_file(positional_args[0])
+            self.initialize_logging()
+        elif options.config_path != None:
+            self.set_config_file(options.config_path)
+            self.initialize_logging()
 
-        from pyprt import __path__ as pyprt_path
-        self.config_parser = ConfigParser.SafeConfigParser({'pyprt':pyprt_path[0]})
-        self.config_dir = os.path.dirname(os.path.abspath(self.config_path)) + os.path.sep
+    def initialize_logging(self):
+        logfile = self.get_log_file()
+        loglevel = self.get_log_level()
+
+        if os.path.basename(logfile) == "stdout":
+            from sys import stdout
+            logging.basicConfig(format='%(filename)10s %(funcName)20s %(lineno)d' \
+                            '%(levelname)8s %(message)s',
+                            stream=stdout,
+                            level=loglevel)
+        else:
+            logging.basicConfig(format='%(filename)10s %(funcName)20s %(lineno)d' \
+                            '%(levelname)8s %(message)s',
+                            filename=logfile,
+                            filemode='w',
+                            level=loglevel)
+
+    def get_scenarios_path(self):
+        """The 'scenarios' path depends on the platform and installation type."""
+        if hasattr(sys, 'frozen'): # Frozen executable (installed)
+            if sys.platform == 'win32':
+                try:
+                    import _winreg
+                    subkey = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, "Software\\" + self.APP_NAME)
+                    path = _winreg.QueryValueEx(subkey, "ScenariosPath")[0]
+                except WindowsError:
+                    # Frozen but not installed? FOR DEBUGGING PURPOSES ONLY!
+                    # Assume that I'm operating in the prt-sim/dist folder created by bb_freeze_setup.py
+                    path = os.path.abspath('../pyprt/scenarios') # WARNING: FRAGILE
+                    return path
+
+            elif sys.platform == 'darwin': # Mac OS X
+                raise NotImplementedError
+            else:
+                raise NotImplementedError
+
+        else:
+            from pyprt import __path__ as pyprt_path
+            pyprt_path = pyprt_path[0]
+            path = os.path.join(pyprt_path, 'scenarios')
+
+        return path
+
+    def get_default_config_path(self):
+        """Returns the fully qualified path to the default config file."""
+        return os.path.join(self.get_scenarios_path(), 'default.cfg')
+
+    def set_config_file(self, filename):
+        filename = os.path.abspath(filename)
+        self.config_path = filename
+        self.config_dir = os.path.dirname(filename) + os.path.sep
+        self.config_parser = ConfigParser.SafeConfigParser()
+
         # Parse the config file
         if not self.config_parser.read(self.config_path): # returned an empty list
             raise ConfigParser.Error("Unable to read config file: " + self.config_path)
 
-        self.logfile = None
-
-    def read_args(self):
-        """Parse the command line arguments. Returns the 2-tuple (options, args) from optparse.OptionParser"""
-        optpar = optparse.OptionParser(usage="usage: %prog [options] [CONFIG]")
-        optpar.add_option("--disable_gui", action="store_true", dest="disable_gui",
-                          help="Console only. Do not launch a GUI.")
-        optpar.add_option("--config", dest="config_path", metavar="FILE",
-                          help="Specify a configuration FILE.")
-        optpar.add_option("--start_controllers", action="store_true", dest="start_controllers",
-                          help="Start external controller specified in config file after startup.")
-        optpar.add_option("-s", "--start", action="store_true",
-                          help="Start simulation immediately. Implies --controller flag.")
-        optpar.add_option("--profile", dest="profile_path", metavar="FILE",
-                          help="Profile the sim's performance and store results in FILE (debug). "
-                          "Only profiles the Sim thread, not the viz thread or GUI thread.")
-
-        group = optparse.OptionGroup(optpar, "Configuration Options",
-                                     "These options override any settings specified in the configuration file.")
-        group.add_option("--scenario",  dest="scenario_path",
-                         metavar="FILE", help="Specify a scenario FILE.")
-        group.add_option("--passengers", dest="passengers_path",
-                         metavar="FILE", help="Specify a passengers FILE.")
-        group.add_option("--port", type="int", dest="TCP_port",
-                         help="TCP port which controllers should connect to.")
-        group.add_option("--sim_end_time", type="float", dest="sim_end_time",
-                         help="Number of seconds to simulate.")
-        group.add_option("--disable_viz", action="store_true", dest="disable_viz",
-                         help="Disables the visualization of the sim, but does not affect whether the GUI is used.")
-        group.add_option("--fps", type="float", dest="fps", help="Target number of frames per second for the visualization.")
-        group.add_option("--log_level", dest="log_level",
-                         choices=self.loglevels.keys(),
-                         help="Minimum level of importance for which events are logged. Choices are: %s" % ', '.join(self.loglevels.keys()))
-        group.add_option("--log", dest="log",
-                         metavar="FILE", help="Log details to FILE.")
-        group.add_option("--comm_log", dest="comm_log",
-                         metavar="FILE", help="Log communication messages to FILE.")
-        group.add_option("--results", dest="results",
-                         metavar="FILE", help="Write results report to FILE. Use '-' for stdout.")
-        group.add_option("--pax_load_time", type="float", dest="pax_load_time",
-                         help="Default passenger boarding time, in seconds.")
-        group.add_option("--pax_unload_time", type="float", dest="pax_unload_time",
-                         help="Default passenger disembark time, in seconds.")
-        group.add_option("--pax_will_share", dest="pax_will_share",
-                         choices=['yes', 'y', 'no', 'n'],
-                         help="Default passenger behavior. 'yes' means the passenger will share a vehicle, when given the opportunity. Choices are: yes, y, no, n")
-        group.add_option("--pax_weight", dest="pax_weight", type="int",
-                         help="Default passenger weight, including all luggage.")
-        group.add_option("--track_switch_time", type="float", dest="track_switch_time",
-                         help="Time for track-based switching to switch between lines.")
-        optpar.add_option_group(group)
-
-        return optpar.parse_args()
-
     def get_disable_gui(self):
         if self.options.disable_gui:
             return True
-        else:
+        elif self.config_parser:
             try:
-                return self.config_parser.getboolean("GUI", "disable_gui")
+                disable_gui = self.config_parser.getboolean("GUI", "disable_gui")
             except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-                logging.warn('No "disable_gui" setting found. Defaulting to False.')
-                return False
+                disable_gui = None
+        else:
+            disable_gui = None
+        return disable_gui
 
     def get_config_dir(self):
         return self.config_dir
@@ -105,124 +105,260 @@ class ConfigManager(object):
         return self.options.profile_path
 
     def get_scenario_path(self):
+        """Returns the fully qualified path to the scenario file, if it has been
+        specified. Otherwise returns None.
+        """
         if self.options.scenario_path != None:
             return self.options.scenario_path
-        else:
+        elif self.config_parser:
             try:
-                return self.config_dir + self.config_parser.get("Input Files", "scenario")
+                return os.path.join(self.config_dir, self.config_parser.get("Input Files", "scenario"))
             except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
                 return None
+        else:
+            return None
+
+    def set_scenario_path(self, path):
+        self.options.scenario_path = path
 
     def get_log_level(self):
-        """Returns an integer loglevel"""
+        """Returns an integer loglevel if it has been set. Otherwise returns
+        the value for DEBUG."""
         if self.options.log_level != None:
             loglevelstr = self.options.log_level
+        elif self.config_parser:
+            try:
+                loglevelstr = self.config_parser.get('Simulation', 'log_level')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                loglevelstr = 'DEBUG'
         else:
-            loglevelstr = self.config_parser.get('Simulation', 'log_level')
+            loglevelstr = 'DEBUG'
 
-        loglevel = self.loglevels[loglevelstr]
-        return loglevel
+        return self.LOGLEVELS[loglevelstr]
 
     def get_log_file(self):
         if self.options.log != None:
             logfile = self.options.log
+        elif self.config_parser:
+            try:
+                logfile = os.path.join(self.config_dir, self.config_parser.get('Output Files', 'log'))
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                logfile = None
         else:
-            logfile = self.config_dir + self.config_parser.get('Output Files', 'log')
+            logfile = None
         return logfile
 
     def get_comm_log_file(self):
         if self.options.comm_log != None:
             comm_logfile = self.options.comm_log
-        else:
+        elif self.config_parser:
             try:
-                comm_logfile = self.config_dir + self.config_parser.get('Output Files', 'comm_log')
-            except:
-                return None
+                comm_logfile = os.path.join(self.config_dir, self.config_parser.get('Output Files', 'comm_log'))
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                comm_logfile = None
+        else:
+            comm_logfile = None
         return comm_logfile
 
     def get_results_file(self):
         if self.options.results != None:
             resultsfile = self.options.results
+        elif self.config_parser:
+            try:
+                resultsfile = os.path.join(self.config_dir, self.config_parser.get('Output Files', 'results'))
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                resultsfile = None
         else:
-            resultsfile = self.config_dir + self.config_parser.get('Output Files', 'results')
+            resultsfile = None
         return resultsfile
 
     def get_passengers_path(self):
         if self.options.passengers_path != None:
-            return self.options.passengers_path
-        else:
+            pax_path = self.options.passengers_path
+        elif self.config_parser:
             try:
-                return self.config_dir + self.config_parser.get('Input Files', 'passengers')
+                pax_path = os.path.join(self.config_dir, self.config_parser.get('Input Files', 'passengers'))
             except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-                return None
+                pax_path = None
+        else:
+            pax_path = None
+        return pax_path
 
     def get_pax_load_time(self):
         if self.options.pax_load_time != None:
-            return self.options.pax_load_time
+            pax_load = self.options.pax_load_time
+        elif self.config_parser:
+            try:
+                pax_load = self.config_parser.getfloat('Passenger', 'pax_load_time')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                pax_load = None
         else:
-            return self.config_parser.getfloat('Passenger', 'pax_load_time')
+            pax_load = None
+        return pax_load
 
     def get_pax_unload_time(self):
         if self.options.pax_unload_time != None:
-            return self.options.pax_unload_time
+            pax_unload = self.options.pax_unload_time
+        elif self.config_parser:
+            try:
+                pax_unload = self.config_parser.getfloat('Passenger', 'pax_unload_time')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                pax_unload = None
         else:
-            return self.config_parser.getfloat('Passenger', 'pax_unload_time')
+            pax_unload = None
+        return pax_unload
 
     def get_pax_will_share(self):
         if self.options.pax_will_share != None:
-            if self.options.pax_will_share == 'yes' or 'y':
-                return True
+            if self.options.pax_will_share.lower() == 'yes' or 'y' or '1':
+                will_share = True
             else:
-                return False
+                will_share = False
+        elif self.config_parser:
+            try:
+                will_share = self.config_parser.getboolean('Passenger', 'will_share')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                will_share = None
         else:
-            return self.config_parser.getboolean('Passenger', 'will_share')
+            will_share = None
+        return will_share
 
     def get_pax_weight(self):
         if self.options.pax_weight != None:
-            return self.options.pax_weight
+            pax_weight = self.options.pax_weight
+        elif self.config_parser:
+            try:
+                pax_weight = self.config_parser.getint('Passenger', 'weight')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                pax_weight = None
         else:
-            return self.config_parser.getint('Passenger', 'weight')
+            pax_weight = None
+        return pax_weight
 
     def get_TCP_port(self):
         if self.options.TCP_port != None:
-            return self.options.TCP_port
+            port = self.options.TCP_port
+        elif self.config_parser:
+            try:
+                port = self.config_parser.getint('Simulation', 'TCP_port')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                port = None
         else:
-            return self.config_parser.getint('Simulation', 'TCP_port')
+            port = None
+        return port
 
-    def get_controllers(self):
-        """Returns a list of strings that, when executed on the command line,
-        will execute the controller programs."""
+    def get_controller_commands(self):
+        """Returns a list of strings, each of which may be given to
+        subprocess.Popen to start one controller.
+        """
+        CTRL_TYPES = ('PRT', 'GTF', 'CUSTOM')
+        ctrl_exes = self._get_controller_executables()
+
         items = self.config_parser.items('Controllers')
-        # the pyprt path expansion gets included in the returned items. :(
-        return [value for (name, value) in items if name != 'pyprt']
+        cmd_dict = {}  # keyed by num, value is executable string
+        args_dict = {} # keyed by num, value is arguments string
+        for (name, value) in items:
+            try:
+                prefix, num = name.split('_')
+                num = int(num)
+                if prefix == 'ctrl':
+                    if value.upper() in CTRL_TYPES:
+                        cmd_dict[num] = ctrl_exes[value.upper()]
+                    else:
+                        raise ConfigParser.Error("Acceptable values for a 'ctrl_N' entry in the [Controllers] section of a configuration file are 'PRT', 'GTF', or 'CUSTOM' but the value '%s' was supplied." % value)
+                elif prefix == 'args':
+                    args_dict[num] = value
+            except ValueError:
+                pass
+
+        result = []
+        for key, value in cmd_dict.iteritems():
+            try:
+                result.append(value + ' ' + args_dict[key])
+            except IndexError:
+                result.append(value)
+
+        return result
+
+    def _get_controller_executables(self):
+        """Returns a dict containing the keys 'PRT' and 'GTF'.
+        Values are path_to_executable strings (with additional arguments if necessary).
+        """
+
+        result = {}
+        if hasattr(sys, 'frozen'):
+            if sys.platform == 'win32': # Frozen for Windows
+                # Assume that the controllers are installed in the same dir as the sim
+                sim = sys.executable
+                sim_path = os.path.dirname(sim)
+                result['PRT'] = os.path.join(sim_path, 'prt_controller.exe')
+                result['GTF'] = os.path.join(sim_path, 'gtf_controller.exe')
+
+            elif sys.platform == 'darwin': # Frozen for Mac OS X
+                raise NotImplementedError # TODO: Support this
+            else:
+                raise NotImplementedError
+
+        else:
+            # Executed from an egg or SVN checkout
+            from pyprt.ctrl import __path__ as tmp_path
+            ctrl_path = tmp_path[0]
+            python = sys.executable
+            result['PRT'] = python + ' ' + os.path.join(ctrl_path, 'prt_controller.py')
+            result['GTF'] = python + ' ' + os.path.join(ctrl_path, 'gtf_controller.py')
+
+        if self.config_parser.has_option('Controllers', 'custom'):
+            result['CUSTOM'] = self.config_parser.get('Controllers', 'custom')
+
+        return result
 
     def get_start_controllers(self):
         return self.options.start_controllers
 
     def get_sim_end_time(self):
         if self.options.sim_end_time != None:
-            return self.options.sim_end_time
+            end_time = self.options.sim_end_time
+        elif self.config_parser:
+            try:
+                end_time = self.config_parser.getfloat('Simulation', 'sim_end_time')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                end_time = None
         else:
-            return self.config_parser.getfloat('Simulation', 'sim_end_time')
+            end_time = None
+        return end_time
 
     def get_disable_viz(self):
         if self.options.disable_viz != None:
-            return self.options.disable_viz
-        else:
+            disable_viz = self.options.disable_viz
+        elif self.config_parser:
             try:
-                return self.config_parser.getboolean("Visualization", "disable_viz")
+                disable_viz = self.config_parser.getboolean("Visualization", "disable_viz")
             except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-                logging.warn('No "disable_viz" setting found. Defaulting to False.')
-                return False
+                disable_viz = None
+        else:
+            disable_viz = None
+        return disable_viz
 
     def get_fps(self):
         if self.options.fps != None:
-            return self.options.fps
+            fps =  self.options.fps
+        elif self.config_parser:
+            try:
+                fps = self.config_parser.getfloat('Visualization', 'fps')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                fps = None
         else:
-            return self.config_parser.getfloat('Visualization', 'fps')
+            fps = None
+        return fps
 
     def get_track_switch_time(self):
         if self.options.track_switch_time != None:
-            return self.options.track_switch_time
+            switch_time = self.options.track_switch_time
+        elif self.config_parser:
+            try:
+                switch_time = self.config_parser.getfloat('Switch', 'track_switch_time')
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                switch_time = None
         else:
-            return self.config_parser.getfloat('Switch', 'track_switch_time')
+            switch_time = None
+        return switch_time

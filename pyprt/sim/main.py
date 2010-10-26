@@ -1,39 +1,40 @@
-if __name__ == '__main__':
-    # Ensure that other modules are imported from the same version of pyprt
-    import sys
-    import os.path
-    abs_file = os.path.abspath(__file__)
-    rel_pyprt_path = os.path.dirname(abs_file) + os.path.sep + os.path.pardir + os.path.sep + os.path.pardir
-    abs_pyprt_path = os.path.abspath(rel_pyprt_path)
-    sys.path.insert(0, abs_pyprt_path)
+##if __name__ == '__main__':
+##    # Ensure that other modules are imported from the same version of pyprt
+##    import sys
+##    import os.path
+##    abs_file = os.path.abspath(__file__)
+##    rel_pyprt_path = os.path.dirname(abs_file) + os.path.sep + os.path.pardir + os.path.sep + os.path.pardir
+##    abs_pyprt_path = os.path.abspath(rel_pyprt_path)
+##    sys.path.insert(0, abs_pyprt_path)
 
 import Queue
 import logging
+import optparse
 
-import common
+# Use the 'wxPython' backend rather than 'PyQt'
+from enthought.etsconfig.api import ETSConfig
+ETSConfig.toolkit = 'wx'
+
+# The program entry point must use absolute imports
+import pyprt.sim.common as common
 import pyprt.shared.api_pb2 as api
 import SimPy.SimulationRT as SimPy
+import pyprt.sim.config as config
 
 def main():
-    import config
+    options, pos_args = read_args()
+    common.config_manager = config.ConfigManager(options, pos_args)
 
-    common.config_manager = config.ConfigManager()
-    scenario_path = common.config_manager.get_scenario_path()
-
-    initialize_logging(common.config_manager)
-
-    import events
+    import pyprt.sim.events as events
     common.event_manager = events.EventManager()
 
-    import comm
-    common.interface = comm.ControlInterface(log=common.config_manager.get_comm_log_file())
-
-    import scenario
+    import pyprt.sim.scenario as scenario
     common.scenario_manager = scenario.ScenarioManager()
 
     ###    Start GUI, unless otherwise specified    ###
     disable_gui = common.config_manager.get_disable_gui()
     if disable_gui:
+        scenario_path = common.config_manager.get_scenario_path()
         if scenario_path is None:
             print "A scenario file must be specified in either the configuration " \
                   "file or as an argument in order to run without a GUI."
@@ -44,7 +45,7 @@ def main():
 
 
     if not disable_gui:
-        import gui
+        import pyprt.sim.gui as gui
 
         # Should switch over to holding the Sim as an object, instead of a
         # treating it as a magic variable at some point. But not yet.
@@ -53,27 +54,12 @@ def main():
         common.gui = gui_app
         gui_app.MainLoop()
 
-
-def initialize_logging(config_manager):
-    from sys import stdout
-    logfile = config_manager.get_log_file()
-    loglevel = config_manager.get_log_level()
-
-    if logfile == "stdout":
-        logging.basicConfig(format='%(filename)10s %(funcName)20s %(lineno)d' \
-                        '%(levelname)8s %(message)s',
-                        stream=stdout,
-                        level=loglevel)
-    else:
-        logging.basicConfig(format='%(filename)10s %(funcName)20s %(lineno)d' \
-                        '%(levelname)8s %(message)s',
-                        filename=logfile,
-                        filemode='w',
-                        level=loglevel)
-
 def run_console_only():
-    # TODO: IMPLEMENT
-    pass
+    # TODO: IMPLEMENT and DEBUG
+
+    import pyprt.sim.comm as comm
+    common.interface = comm.ControlInterface(log=common.config_manager.get_comm_log_file())
+    common.config_manager.initialize_logging()
 
 def run_sim_profiled(end_time, callback, *args):
     import cProfile
@@ -151,7 +137,7 @@ def run_sim(end_time, callback, *args):
 
     if not common.config_manager.get_disable_gui():
         import wx
-        import gui
+        import pyprt.sim.gui as gui
         evt = gui.SimulationEndEvent(end_time=SimPy.now())
         wx.PostEvent(common.gui, evt)
 
@@ -161,6 +147,59 @@ def stop_sim():
     """Stop the simulation and perform any housekeeping tasks."""
     SimPy.stopSimulation()
 
+def read_args():
+    """Parse the command line arguments. Returns the 2-tuple (options, args) from optparse.OptionParser"""
+    log_levels_list = config.ConfigManager.LOGLEVELS.keys()
+
+    optpar = optparse.OptionParser(usage="usage: %prog [options] [CONFIG]")
+    optpar.add_option("--disable_gui", action="store_true", dest="disable_gui",
+                      help="Console only. Do not launch a GUI.")
+    optpar.add_option("--config", dest="config_path", metavar="FILE",
+                      help="Specify a configuration FILE.")
+    optpar.add_option("--start_controllers", action="store_true", dest="start_controllers",
+                      help="Start external controller specified in config file after startup.")
+    optpar.add_option("-s", "--start", action="store_true",
+                      help="Start simulation immediately. Implies --controller flag.")
+    optpar.add_option("--profile", dest="profile_path", metavar="FILE",
+                      help="Profile the sim's performance and store results in FILE (debug). "
+                      "Only profiles the Sim thread, not the viz thread or GUI thread.")
+
+    group = optparse.OptionGroup(optpar, "Configuration Options",
+                                 "These options override any settings specified in the configuration file.")
+    group.add_option("--scenario",  dest="scenario_path",
+                     metavar="FILE", help="Specify a scenario FILE.")
+    group.add_option("--passengers", dest="passengers_path",
+                     metavar="FILE", help="Specify a passengers FILE.")
+    group.add_option("--port", type="int", dest="TCP_port",
+                     help="TCP port which controllers should connect to.")
+    group.add_option("--sim_end_time", type="float", dest="sim_end_time",
+                     help="Number of seconds to simulate.")
+    group.add_option("--disable_viz", action="store_true", dest="disable_viz",
+                     help="Disables the visualization of the sim, but does not affect whether the GUI is used.")
+    group.add_option("--fps", type="float", dest="fps", help="Target number of frames per second for the visualization.")
+    group.add_option("--log_level", dest="log_level",
+                     choices=log_levels_list,
+                     help="Minimum level of importance for which events are logged. Choices are: %s" % ', '.join(log_levels_list))
+    group.add_option("--log", dest="log",
+                     metavar="FILE", help="Log details to FILE.")
+    group.add_option("--comm_log", dest="comm_log",
+                     metavar="FILE", help="Log communication messages to FILE.")
+    group.add_option("--results", dest="results",
+                     metavar="FILE", help="Write results report to FILE. Use '-' for stdout.")
+    group.add_option("--pax_load_time", type="float", dest="pax_load_time",
+                     help="Default passenger boarding time, in seconds.")
+    group.add_option("--pax_unload_time", type="float", dest="pax_unload_time",
+                     help="Default passenger disembark time, in seconds.")
+    group.add_option("--pax_will_share", dest="pax_will_share",
+                     choices=['yes', 'y', 'no', 'n'],
+                     help="Default passenger behavior. 'yes' means the passenger will share a vehicle, when given the opportunity. Choices are: yes, y, no, n")
+    group.add_option("--pax_weight", dest="pax_weight", type="int",
+                     help="Default passenger weight, including all luggage.")
+    group.add_option("--track_switch_time", type="float", dest="track_switch_time",
+                     help="Time for track-based switching to switch between lines.")
+    optpar.add_option_group(group)
+
+    return optpar.parse_args()
 
 if __name__ == '__main__':
     main()

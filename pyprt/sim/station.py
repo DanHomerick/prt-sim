@@ -389,7 +389,7 @@ class Berth(Sim.Process, traits.HasTraits):
 class Platform(traits.HasTraits):
     ID = traits.Int
     berths = traits.List(traits.Instance(Berth))
-    track_segment = traits.Instance('layout.TrackSegment')
+    track_segment = traits.Instance(TrackSegment)
 
     def __init__(self, ID, track_segment):
         traits.HasTraits.__init__(self)
@@ -496,7 +496,7 @@ class Storage(object):
 
 class Station(traits.HasTraits):
     platforms = traits.List(traits.Instance(Platform))
-    track_segments = traits.Set(traits.Instance('layout.TrackSegment'))
+    track_segments = traits.Set(traits.Instance(TrackSegment))
 
     # Passengers waiting at the station.
     _passengers = traits.List(traits.Instance(Passenger))

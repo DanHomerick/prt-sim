@@ -112,7 +112,7 @@ class ControlInterface(Sim.Process):
         """log is either a filename, or an open file. If a filename, and the
         file already exists, it will be overwritten."""
         Sim.Process.__init__(self, name='CtrlInterface')
-        if isinstance(log, str):
+        if isinstance(log, basestring): # unicode or ascii
             if __debug__:
                 self.log = open(log, 'w', buffering=1) # flush each line
             else:
@@ -195,9 +195,16 @@ class ControlInterface(Sim.Process):
             self.TCP_server_socket.close()
 
         # wait until all send queues are empty
-        while [True for q in self.sendQs if not q.empty()]:
-            time.sleep(0.001)
-            print "waiting on sendQs"
+        wait = True
+        wait_start = time.clock()
+        wait_end = wait_start + 1.0 # Wait no more than 1 second
+        while wait:
+            if len([True for q in self.sendQs if not q.empty()]) != 0 \
+               and time.clock() < wait_end:
+                time.sleep(0.010)
+                wait = True
+            else:
+                wait = False
 
         for sock in self.TCP_client_sockets:
             try:

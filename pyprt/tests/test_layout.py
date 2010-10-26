@@ -16,7 +16,7 @@ class StationTest(unittest.TestCase):
         self.s = layout.Station(ID=1, length=68, max_speed=100, x=0, y=0, label='', v_adv_time=0.5,
                  unload_size=3, queue_size=3, load_size=3, storage_size=5,
                  policy='QUEUE')
-       
+
     def test_advance_queue_no_vehicles(self):
         # No vehicles, no change
         q = self.s.queue
@@ -83,5 +83,6 @@ class StationTest(unittest.TestCase):
         self.assertEqual(b2.vehicle, 'V2')
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(StationTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
+##    suite = unittest.TestLoader().loadTestsFromTestCase(StationTest)
+##    unittest.TextTestRunner(verbosity=2).run(suite)

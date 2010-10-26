@@ -16,13 +16,13 @@ class Berth(Sim.Process, traits.HasTraits):
     label = traits.Str
     platform_index = traits.Int
     station_id = traits.Int
-    vehicle = traits.Instance('vehicle.BaseVehicle', None)
+    vehicle = traits.Instance('pyprt.sim.vehicle.BaseVehicle', None)
 
     _busy = traits.Bool
     _unload = traits.Bool
     _load = traits.Bool
     _msg_id = traits.Int
-    _pax = traits.List(traits.Instance('events.Passenger'))
+    _pax = traits.List(traits.Instance('pyprt.sim.events.Passenger'))
 
     traits_view =  ui.View(ui.HGroup(ui.Item(name='vehicle',
                                              editor = ui.TextEditor()),
@@ -135,7 +135,7 @@ class Berth(Sim.Process, traits.HasTraits):
 
 class Platform(traits.HasTraits):
     berths = traits.List(traits.Instance(Berth))
-    track_segment = traits.Instance('layout.TrackSegment')
+    track_segment = traits.Instance('pyprt.sim.layout.TrackSegment')
     berth_length = traits.CFloat
     unloading = traits.CBool
     loading = traits.CBool
@@ -236,10 +236,10 @@ class Station(traits.HasTraits):
     """
 
     platforms = traits.List(traits.Instance(Platform))
-    track_segments = traits.List(traits.Instance('layout.TrackSegment'))
+    track_segments = traits.List(traits.Instance('pyprt.sim.layout.TrackSegment'))
 
     # Passengers waiting at the station.
-    passengers = traits.List(traits.Instance('events.Passenger'))
+    passengers = traits.List(traits.Instance('pyprt.sim.events.Passenger'))
 
     def __init__(self, ID, label, platforms, track_segments, **tr):
 #        Sim.Process.__init__(self, name=self.label)

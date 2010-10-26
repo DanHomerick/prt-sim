@@ -1,13 +1,13 @@
 from __future__ import division
 
-if __name__ == '__main__':
-    # Ensure that other modules are imported from the same version of pyprt
-    import sys
-    import os.path
-    abs_file = os.path.abspath(__file__)
-    rel_pyprt_path = os.path.dirname(abs_file) + os.path.sep + os.path.pardir + os.path.sep + os.path.pardir
-    abs_pyprt_path = os.path.abspath(rel_pyprt_path)
-    sys.path.insert(0, abs_pyprt_path)
+##if __name__ == '__main__':
+##    # Ensure that other modules are imported from the same version of pyprt
+##    import sys
+##    import os.path
+##    abs_file = os.path.abspath(__file__)
+##    rel_pyprt_path = os.path.dirname(abs_file) + os.path.sep + os.path.pardir + os.path.sep + os.path.pardir
+##    abs_pyprt_path = os.path.abspath(rel_pyprt_path)
+##    sys.path.insert(0, abs_pyprt_path)
 
 import optparse
 from collections import defaultdict
@@ -20,7 +20,7 @@ from numpy import arange, inf
 
 import pyprt.shared.api_pb2 as api
 from pyprt.ctrl.base_controller import BaseController
-from trajectory_solver import TrajectorySolver, FatalTrajectoryError
+from pyprt.ctrl.trajectory_solver import TrajectorySolver, FatalTrajectoryError
 from pyprt.shared.cubic_spline import Knot, CubicSpline, OutOfBoundsError
 from pyprt.shared.utility import pairwise, is_string_false, is_string_true, sec_to_hms
 ##from pyprt.shared.utility import deque # extension of collections.deque which includes 'insert' method
@@ -337,9 +337,13 @@ class PrtController(BaseController):
             v_list.sort(cmp=sort_by_pos)
             for v in v_list:
                 try:
-                    # Route the vehicle to a destination that is beyond the merge.
+                    # Route the vehicle to a destination that is beyond the
+                    # merge point (or in the merge's other zone).
                     # Vehicle may reroute to a closer station in the course of regular operation.
-                    v.trip = self.manager.deadhead(v, m.stations)
+                    zone = 0 if v.ts_id in m.zone_ids[0] else 1
+                    exclude = [s for s in m.stations
+                               if s.bypass in m.zone_ids[zone]]
+                    v.trip = self.manager.deadhead(v, exclude)
                     v.set_path(v.trip.path)
                     v.do_merge(m, 0.0)
                 except FatalTrajectoryError:
@@ -2074,7 +2078,8 @@ class Vehicle(object):
           None
         """
         assert isinstance(station, Station)
-        assert station is self.trip.dest_station
+        if self.trip is not None:
+            assert station is self.trip.dest_station
         if self.pax:
             station.request_unload_berth(self)
         else:
@@ -2150,7 +2155,7 @@ class Vehicle(object):
             # doesn't need a separate spline for the decel to station speed limit.
             berth_dist, berth_path = self.manager.get_path(self.ts_id, self.plat_ts)
             berth_knot = Knot(berth_dist + self.berth_pos, 0, 0, None)
-            spline = self.traj_solver.target_position(current_knot, berth_knot, max_speed=self.controller.LINE_SPEED)
+            spline = self.traj_solver.target_position(current_knot, berth_knot, max_speed=station.SPEED_LIMIT)
             path = berth_path
 
         stop_time = spline.t[-1]
@@ -2479,7 +2484,11 @@ class Merge(object):
 
     def get_slot_assignment_position(self, ts_id):
         """Returns the position at which a vehicle is assigned a MergeSlot,
-        in the coordinate frame of the track segment specified by ts_id."""
+        in the coordinate frame of the track segment specified by ts_id.
+        The convention is that a vehicle is assigned a MergeSlot when the rear
+        of the vehicle reaches this point (so as to be sure it's clear of
+        the previous switch or merge before undergoing a velocity change).
+        """
         try:
             offset = self.offsets[ts_id]
             return self._decision_point - offset
@@ -2684,8 +2693,8 @@ class Merge(object):
                 #        This faces the same issues, and may use the same solution
                 #        as outlined below.
                 #
-                # 2. The front vehicle is past the station_merge point. The wait
-                #    time is necessary only because we choose to travel at full
+                # 2. The front vehicle is past the station_merge point. A waiting
+                #    time is necessary only if we choose to travel at full
                 #    speed and the front vehicle is travelling slower. Like a driver
                 #    with a Porche on a windy road, the launch vehicle waits by the
                 #    side of the road to allow a gap to develop, then races forward

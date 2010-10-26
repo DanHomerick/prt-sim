@@ -84,7 +84,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     label           = traits.Str
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     max_pax_capacity = traits.CInt
-    _passengers       = traits.List(traits.Instance('events.Passenger'))
+    _passengers       = traits.List(traits.Instance('pyprt.sim.events.Passenger'))
 
     # Action consts
     BOUNDARY = 1

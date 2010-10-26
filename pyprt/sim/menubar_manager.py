@@ -18,16 +18,26 @@ class MenuBarManager(object):
 
         ### File Menu ###
         self.filemenu = wx.Menu()
-        self.open_scenario = wx.MenuItem(self.filemenu, wx.ID_OPEN, "Open Scenario...", "", wx.ITEM_NORMAL)
+        self.open_config = wx.MenuItem(self.filemenu, wx.NewId(), "Open Configuration file...", "", wx.ITEM_NORMAL)
+        self.open_scenario = wx.MenuItem(self.filemenu, wx.ID_OPEN, "Open Scenario file...", "", wx.ITEM_NORMAL)
+        self.open_passengers = wx.MenuItem(self.filemenu, wx.NewId(), "Open Passenger file...", "", wx.ITEM_NORMAL)
 #        self.saveconfig = wx.MenuItem(self.filemenu, wx.FD_SAVE, "Save Config...", "", wx.ITEM_NORMAL)
         self.savesnapshot = wx.MenuItem(self.filemenu, wx.NewId(), "Save Snapshot...", "", wx.ITEM_NORMAL)
         self.exit = wx.MenuItem(self.filemenu, wx.ID_EXIT, "", "", wx.ITEM_NORMAL)
 
-        self.filemenu.AppendItem(self.open_scenario)
+        self.filemenu.AppendItem(self.open_config)
 #        self.filemenu.AppendItem(self.saveconfig)
+        self.filemenu.AppendSeparator()
+        self.filemenu.AppendItem(self.open_scenario)
+        self.filemenu.AppendItem(self.open_passengers)
+        self.filemenu.AppendSeparator()
         self.filemenu.AppendItem(self.savesnapshot)
         self.filemenu.AppendItem(self.exit)
         self.menubar.Append(self.filemenu, "&File")
+
+        # TODO: Complete implementation and testing of non-config-file based startup.
+        self.open_scenario.Enable(False)
+        self.open_passengers.Enable(False)
 
         ### Sim Menu ###
         self.simmenu = wx.Menu()
@@ -104,6 +114,7 @@ class MenuBarManager(object):
 
         ### Binding Handlers ###
         pw = self.parent_window
+        pw.Bind(wx.EVT_MENU, pw.filemenu_open_config_handler, self.open_config)
         pw.Bind(wx.EVT_MENU, pw.filemenu_open_scenario_handler, self.open_scenario)
 #        pw.Bind(wx.EVT_MENU, pw.filemenu_saveconfig_handler, self.saveconfig)
         pw.Bind(wx.EVT_MENU, pw.filemenu_savesnapshot_handler, self.savesnapshot)
@@ -160,7 +171,7 @@ class MenuBarManager(object):
         for menu in [self.savesnapshot, #self.saveconfig,# # file menu
                      self.connectcontroller, self.start_sim, self.stop_sim, self.pause_sim, # sim menu
                      self.speed_halfx, self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speed_fast, # sim menu cont.
-                     self.vehicle, self.station, self.switch, self.track, self.passenger, self.legend, self.reports, # view menu
+                     self.zoom_in, self.zoom_out, self.vehicle, self.station, self.switch, self.track, self.passenger, self.legend, self.reports, # view menu
                      self.record_start, self.record_stop]: # record menu
             menu.Enable(False)
 
@@ -168,7 +179,7 @@ class MenuBarManager(object):
         """Enable connectcontroller and the view menu."""
         for menu in [self.savesnapshot, # file menu
                      self.connectcontroller, # sim menu
-                     self.vehicle, self.station, self.switch, self.track, self.passenger, self.legend]: # view menu
+                     self.zoom_in, self.zoom_out, self.vehicle, self.station, self.switch, self.track, self.passenger, self.legend]: # view menu
             menu.Enable(True)
 
     def controllers_connected(self):
@@ -182,7 +193,7 @@ class MenuBarManager(object):
         """Allow the speed to be adjusted and the sim to be stopped or paused."""
         for menu in [self.stop_sim, self.pause_sim, # sim menu]
                      self.speed_halfx, self.speed1x, self.speed2x, self.speed4x, self.speed8x, self.speed32x, self.speed_fast,  # sim menu cont.
-                     self.reports]: # view menu
+                     self.zoom_in, self.zoom_out, self.reports]: # view menu
             menu.Enable(True)
         self.speed1x.Check(True)
         self._current_speed_menu = self.speed1x

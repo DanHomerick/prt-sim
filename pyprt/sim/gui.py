@@ -1,18 +1,16 @@
-#!/usr/bin/env python
 from __future__ import division # always use floating point division, unless specified otherwise
 
-# TODO: Disable some menu options until a config file is loaded.
-
-import wx
-import wx.lib.newevent
 import threading
 import subprocess
 import time
 import logging
+import os
 from ConfigParser import NoSectionError
+from ConfigParser import Error as ConfigError
 
-import numpy
-from numpy import inf
+import wx
+import wx.lib.newevent
+from numpy import inf, arange
 import enthought.chaco.api as chaco
 
 # This Window object allows the plot to look like a generic Panel to WX.
@@ -66,7 +64,7 @@ class MainWindow(wx.Frame):
 
         # If the scenario file has already been specified, load it.
         scenario_path = common.config_manager.get_scenario_path()
-        if scenario_path != None:
+        if scenario_path is not None:
             self.load_scenario(scenario_path)
 
         if common.config_manager.get_start_controllers() == True:
@@ -87,34 +85,55 @@ class MainWindow(wx.Frame):
         self.Layout()
 
     def load_scenario(self, filename):
-        if filename:
-            manager = common.scenario_manager
-            manager.load_scenario(filename)
+        manager = common.scenario_manager
+        manager.load_scenario(filename)
 
-            # adjust the window size to match the image.
-            self.SetSize(wx.Size(common.img_width+7, common.img_height+76)) # width, height, 76 for menu bar and 7 for border
-            my_size = self.GetSize()
-            display_size = wx.GetDisplaySize()
-##            if (my_size[0] > display_size[0] or my_size[1] > display_size[1]): # if too big
-##                self.SetSize(wx.Size(common.img_width/2, common.img_height/2)) # use half-resolution
+        # adjust the window size to match the image.
+        self.SetSize(wx.Size(common.img_width+7, common.img_height+76)) # width, height, 76 for menu bar and 7 for border
+        my_size = self.GetSize()
+        display_size = wx.GetDisplaySize()
+##        if (my_size[0] > display_size[0] or my_size[1] > display_size[1]): # if too big
+##            self.SetSize(wx.Size(common.img_width/2, common.img_height/2)) # use half-resolution
 
-            # Create the Visualizer
-            max_pax_capacity = max(v.max_pax_capacity for v in common.vehicles.itervalues())
-            self.visualizer = visual.Visualizer(common.digraph, max_pax_capacity)
-            self.chaco_window.component = self.visualizer.plot
+        # Create the Visualizer
+        max_pax_capacity = max(v.max_pax_capacity for v in common.vehicles.itervalues())
+        self.visualizer = visual.Visualizer(common.digraph, max_pax_capacity)
+        self.chaco_window.component = self.visualizer.plot
 
-            # update what options are enabled in the menu
-            self.menubar_manager.config_loaded()
+        # update what options are enabled in the menu
+        self.menubar_manager.config_loaded()
 
-        # else they hit 'cancel', do nothing
+    def filemenu_open_config_handler(self, event):
+        """Load configuration info from file."""
+        default_path = common.config_manager.get_scenarios_path()
+        default_file = os.path.join('default.cfg')
 
-    def filemenu_open_scenario_handler(self, event): # wxGlade: MainWindow.<event_handler>
+        config_path = wx.FileSelector(flags=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+                                   wildcard='config files (*.ini)|*.ini|all files (*.*)|*.*',
+                                   default_path=default_path,
+                                   default_filename=default_file)
+
+        wx.BeginBusyCursor()
+        common.config_manager.set_config_file(config_path)
+        common.config_manager.initialize_logging()
+
+        # If the config file specifies a scenario, load it.
+        scenario_path = common.config_manager.get_scenario_path()
+        if scenario_path is not None:
+            self.load_scenario(scenario_path)
+
+        wx.EndBusyCursor()
+
+    def filemenu_open_scenario_handler(self, event):
         """Load the scenario from file."""
         filename = wx.FileSelector(flags=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
                                    wildcard='xml files (*.xml)|*.xml|all files (*.*)|*.*',
-                                   default_path='../tests/',
+                                   default_path='../scenarios/',
                                    default_filename='scenario.xml')
-        self.load_scenario(filename)
+
+        if filename: # Empty string if user clicked 'cancel'
+            common.config_manager.set_scenario_path(filename)
+            self.load_scenario(filename)
 
     def filemenu_saveconfig_handler(self, event):
         print "Event handler `filemenu_saveconfig_handler' not implemented"
@@ -166,7 +185,6 @@ class MainWindow(wx.Frame):
 
         # Start the simulation running in a separate thread
 
-
         # Run without profiling (normal case)
         if common.config_manager.get_profile_path() is None:
             sim_thread = threading.Thread(name='sim_thread',
@@ -186,51 +204,58 @@ class MainWindow(wx.Frame):
     def simmenu_stop_sim_handler(self, event):
         main.stop_sim()
 
-    def simmenu_connectcontroller_handler(self, event): # wxGlade: MainWindow.<event_handler>
-        if common.interface:
+    def simmenu_connectcontroller_handler(self, event):
+        import pyprt.sim.comm as comm
+        common.interface = comm.ControlInterface(log=common.config_manager.get_comm_log_file())
+        TCP_port = common.config_manager.get_TCP_port()
+
+        try:
+            controllers = common.config_manager.get_controller_commands()
             TCP_port = common.config_manager.get_TCP_port()
-##            # NumberEntryDialog has a bug that caps the default to a max of 100, always.
-##            dialog = wx.NumberEntryDialog(self,
-##                              message='Choose connection port (TCP)',
-##                              prompt='Port:',
-##                              caption='Connect External Controller...',
-##                              value=TCP_port,
-##                              min=2,
-##                              max=65535)
-##            if dialog.ShowModal() == wx.ID_OK:
-##                TCP_port = dialog.GetValue()
-##                # Modal is no good. Need a non-blocking dialog box. Also, style=wx.CANCEL gives an 'OK' button.
-###                waiting_dialog = wx.MessageDialog(self,
-###                                    message='Waiting for controller to connect on port: %s' % TCP_port,
-###                                    style=wx.CANCEL)
-###                waiting_dialog.ShowModal()
-##                common.interface.connect(TCP_port)
-            common.interface.setup_server_sockets(TCP_port=TCP_port)
-            controllers = common.config_manager.get_controllers()
-            for cmd in controllers:
-                cmd = cmd.split()
-                try:
-                    ctrl_proc = subprocess.Popen(cmd,
-                                                 cwd=common.config_manager.get_config_dir())
-                except OSError:
-                    self.show_message('Failed to open controller using command: %s' % cmd)
-                    return
+            if len(controllers) == 0:
+                raise ConfigError
+        except ConfigError:
+            # Controller info not found in config file. Ask user.
+            controller_window = ControllerChoiceDialog(self)
+            controller_window.ShowModal()
+            # TODO ...
 
-            common.interface.accept_connections( len(controllers) )
+##        dialog = wx.NumberEntryDialog(self,
+##                          message='Choose TCP Listen Port',
+##                          prompt='Port:',
+##                          caption='Connect External Controller...',
+##                          value=TCP_port,
+##                          min=49152, # Dynamic/Private port range. See: http://www.iana.org/assignments/port-numbers
+##                          max=65535)
 
-            # update what menu options are enabled
-            self.menubar_manager.controllers_connected()
+        common.interface.setup_server_sockets(TCP_port=TCP_port)
+        for cmd in controllers:
+            cmd = cmd.split()
+            try:
+                ctrl_proc = subprocess.Popen(cmd,
+                                             cwd=common.config_manager.get_config_dir(),
+                                             bufsize=0) # 0=unbuffered, -1=system default
+            except OSError:
+                self.show_message('Failed to open controller using command: %s' % cmd)
+                return
 
-        else:
-            self.show_message('A configuration file must be loaded first.')
+        wx.BeginBusyCursor()
+        common.interface.accept_connections( len(controllers) )
+        wx.EndBusyCursor()
+
+        # update what menu options are enabled
+        self.menubar_manager.controllers_connected()
 
     def open_port_handler(self, event):
+        import pyprt.sim.comm as comm
+        common.interface = comm.ControlInterface(log=common.config_manager.get_comm_log_file())
+
         dialog = wx.NumberEntryDialog(self,
                                       message="Debugging Tool.\nOpens the specified TCP port.\nThe sim will block until a controller\nconnects at the specified port.\n\nChoose connection port (TCP)",
                                       prompt='Port:',
                                       caption='Connect External Controller...',
                                       value=common.config_manager.get_TCP_port(),
-                                      min=2,
+                                      min=49152, # Dynamic/Private port range. See: http://www.iana.org/assignments/port-numbers
                                       max=65535)
         if dialog.ShowModal() == wx.ID_OK:
             port_num = dialog.GetValue()
@@ -421,6 +446,73 @@ class MainWindow(wx.Frame):
 
 # end of class MainWindow
 
+class ControllerChoiceDialog(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self,
+                          parent=parent,
+                          title='Connect Controllers',
+                          size=(-1,-1) # default sizes
+                          )
+
+        port_text = wx.StaticText(self, label="TCP Port:")
+        port_spin = wx.SpinCtrl(self,
+                                initial=common.config_manager.get_TCP_port(),
+                                min=49152,
+                                max=65535)
+
+        command_text = wx.StaticText(self, label="Command")
+        command_list = common.config_manager.get_controllers()
+        command_combobox = wx.ComboBox(self, choices=command_list, style=wx.CB_DROPDOWN)
+        self.Bind(wx.EVT_COMBOBOX, self.onComboBox, command_combobox)
+
+        port_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        port_sizer.Add(port_text, proportion=1, flag=wx.EXPAND)
+        port_sizer.Add(port_spin, proportion=1, flag=wx.EXPAND)
+
+        static_box = wx.StaticBox(self, label="Controller")
+        static_box_sizer = wx.StaticBoxSizer(static_box, wx.VERTICAL)
+        static_box_sizer.Add(command_text, proportion=1, flag=wx.EXPAND)
+        static_box_sizer.Add(command_combobox, proportion=1, flag=wx.EXPAND)
+
+        button_sizer = self.CreateSeparatedButtonSizer(wx.OK | wx.CANCEL)
+
+        v_sizer = wx.BoxSizer(wx.VERTICAL)
+        v_sizer.Add(port_sizer)
+        v_sizer.Add(static_box_sizer)
+        v_sizer.AddSpacer(5)
+        v_sizer.Add(button_sizer)
+
+        padding_sizer = wx.BoxSizer(wx.VERTICAL)
+        padding_sizer.Add(v_sizer, flag=wx.ALL, border=10)
+
+        self.SetAutoLayout(True)
+        self.SetSizerAndFit(padding_sizer)
+
+        # TODOs
+        # list control containing known controllers
+        # browse button that allows you to choose a process
+        # TextCtrl that allows you to specify arguments
+        # Okay | Cancel buttons
+
+    def onComboBox(self, event):
+        print "Caught event: %s" % str(event)
+
+
+##class ConfigurationWindow(wx.Frame):
+##    def __init__(self, parent):
+##        wx.Frame.__init__(self,
+##                          parent=parent,
+##                          title="Edit Configuration",
+##                          style=wx.DEFAULT_FRAME_STYLE
+##                          )
+##
+##        notebook = wx.Notebook(self)
+##        notebook.AddPage(
+##
+##        self.notebook = notebook
+##
+##        self.Layout()
+
 class Legend(wx.Frame):
 
     def __init__(self, parent, station_colormap, vehicle_colormap):
@@ -457,7 +549,7 @@ class Legend(wx.Frame):
                                          orientation='top',
                                          title=title,
                                          title_spacing = 20,
-                                         positions = numpy.arange(0.5, max_range+1.5), #offset to the middle of each color
+                                         positions = arange(0.5, max_range+1.5), #offset to the middle of each color
                                          labels = labels)
         colorbar.overlays.append(colorbar._axis)
         return colorbar

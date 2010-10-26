@@ -7,7 +7,6 @@ import enthought.traits.ui.api as ui
 from enthought.traits.ui.tabular_adapter import TabularAdapter
 import enthought.traits.ui.table_column as ui_tc
 
-
 import common
 import pyprt.shared.api_pb2 as api
 from pyprt.shared.utility import sec_to_hms
@@ -109,8 +108,8 @@ class PrtEvent(traits.HasTraits):
 class Passenger(PrtEvent):
     """A passenger."""
     mass = traits.Int()
-    _loc = traits.Either(traits.Instance('station.Station'),
-                         traits.Instance('vehicle.BaseVehicle'), None)
+    _loc = traits.Either(traits.Instance('pyprt.sim.station.Station'),
+                         traits.Instance('pyprt.sim.vehicle.BaseVehicle'), None)
 
     traits_view = ui.View(ui.Item(name='label'),
                           ui.Item(name='ID'),

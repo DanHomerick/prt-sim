@@ -1,81 +1,54 @@
-# It's not viable to use setuptools's dependency resolution to auto-install
-# many of the C/C++ wrapper projects. The situation is especially bad under
-# Windows, but it dosen't work well even when compilers are already installed.
-### Bootstraps setuptools, for the case where it's not already installed.
-##import ez_setup
-##ez_setup.use_setuptools()
-##
-##from setuptools import setup
-##from distutils.core import setup
-from cx_Freeze import setup, Executable
+# Gets setuptools if it's not already installed.
+# See: http://peak.telecommunity.com/DevCenter/setuptools#using-setuptools-without-bundling-it
+import ez_setup
+ez_setup.use_setuptools()
 
-# setuptools format:
-install_requires = [
-          'SimPy >= 2.0.1',
-          'protobuf >= 2.3.0',
-          'networkx >= 1.0.1',
-          'numpy >= 1.4.0',  # requires c and fortran compilers. Used binary installer on windows.
-          'chaco >= 3.2.0',  # requires numpy as an unlisted requirement
-          'traits >= 3.2.0', # easy_install worked
-          'scipy >= 0.7.1',  # installed from binary installer on windows
-          'Sphinx'
-          'wxPython >= 2.8.10.1'     # not compatible with easy_install. Used binary installer on windows.
+from setuptools import setup
 
-          ],
+setup(name='pyprt',
+      version='0.1',
+      description='A Personal Rapid Transit (PRT) simulator.',
+##      long_description='TODO',
+      author='Dan Homerick',
+      author_email='danhomerick@gmail.com',
+      url='http://code.google.com/p/prt-sim/',
+      keywords="PRT Personal Rapid Transit Simulator",
+      packages=['pyprt'],
+      scripts=['pyprt/scripts/spline_explorer.py',
+               'pyprt/scripts/spline_explorer.bat'],
+      requires=['Python (>=2.6)',
+                'SimPy (>=2.0.1)',
+                'protobuf (>=2.3.0)',
+                'networkx (>=1.3)',
+                'numpy (>=1.3.0)',
+                'scipy (>=0.7.1)',
+                'enthought.traits (>=3.2.0)',
+                'enthought.chaco (>=3.2.0)',
+                'wx (>=2.8)'],
+      install_requires=['SimPy >= 2.0.1',
+                        'protobuf >= 2.3.0',
+                        'networkx >= 1.3',
+                        'numpy >= 1.3.0',
+                        'scipy >= 0.7.1',
+                        'traits >= 3.2.0',
+                        'chaco >= 3.2.0',
+##                        'wxPython >= 2.8' # Not suitable for easy_install installation
+                        ],
+      include_package_data=True, # includes files under SVN control when True
+##      test_suite="pyprt.tests", # TODO (Include package data, if needed)
+      classifiers=['Development Status :: 3 - Alpha',
+                   'Intended Audience :: Science/Research',
+                   'Intended Audience :: End Users/Desktop',
+                   'License :: OSI Approved :: GNU General Public License (GPL)',
+                   'Natural Language :: English',
+                   'Operating System :: MacOS :: MacOS X',
+                   'Operating System :: Microsoft :: Windows',
+                   'Operating System :: POSIX',
+                   'Programming Language :: Python :: 2.6',
+                   'Topic :: Scientific/Engineering'],
+      entry_points = {
+          'gui_scripts' : ['prt_simulator = pyprt.sim.main:main'],
+          'console_scripts' : []
+      }
 
-### distutils format:
-##requires = [
-##    'Python (>= 2.6)',
-##    'SimPy (>=2.0.1)',
-##    'protobuf (>=2.3.0)',
-##    'networkx (>=1.0.1)',
-##    'numpy (>=1.3.0)',
-##    'scipy (>=0.7.1)',
-##    'traits (>=3.2.0)',
-##    'chaco (>=3.2.0)',
-##    'wx (>=2.8.10)'
-##    ]
-
-setup(name="pyprt",
-      version="0.1.1",
-      description="A Personal Rapid Transit simulator",
-      author="Dan Homerick",
-      author_email="danhomerick@gmail.com",
-      url="http://code.google.com/p/prt-sim/",
-      packages=['pyprt', 'pyprt.sim', 'pyprt.ctrl', 'pyprt.tests', 'pyprt.shared'],
-##      requires=requires, # distutils style
-      install_requires = install_requires, # setuptools style
-
-##      scripts=['./scripts/pyprt.py'],
-      data_files=[('data', ['pyprt/data/default.cfg'])],
-      executables = [Executable("pyprt/sim/main.py")] # cx_Freeze
-
-      )
-
-
-##setup(
-##    name = "HelloWorld",
-##    version = "0.1",
-##    packages = find_packages(),
-##    scripts = ['say_hello.py'],
-##
-##    # Project uses reStructuredText, so ensure that the docutils get
-##    # installed or upgraded on the target machine
-##    install_requires = ['docutils>=0.3'],
-##
-##    package_data = {
-##        # If any package contains *.txt or *.rst files, include them:
-##        '': ['*.txt', '*.rst'],
-##        # And include any *.msg files found in the 'hello' package, too:
-##        'hello': ['*.msg'],
-##    }
-##
-##    # metadata for upload to PyPI
-##    author = "Me",
-##    author_email = "me@example.com",
-##    description = "This is an Example Package",
-##    license = "PSF",
-##    keywords = "hello world example examples",
-##    url = "http://example.com/HelloWorld/",   # project home page, if any
-##
-##    # could also include long_description, download_url, classifiers, etc.
+    )

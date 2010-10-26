@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import enthought.traits.api as traits
 import enthought.traits.ui.api as ui
 import enthought.traits.ui.menu as menu
