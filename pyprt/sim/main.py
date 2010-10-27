@@ -129,7 +129,6 @@ def run_sim(end_time, callback, *args):
     common.interface.send(api.SIM_END, end_msg)
 
     # Disconnect from the controller(s)
-    print "Disconnecting"
     common.interface.disconnect()
 
     # Write the results to a file

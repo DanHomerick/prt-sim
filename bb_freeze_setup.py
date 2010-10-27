@@ -15,9 +15,9 @@ excludes = ['nose',
 freezer = Freezer('dist', includes=includes, excludes=excludes)
 
 # Switch gui_only to True for a release (Broken currently. Unknown why.)
-freezer.addScript('pyprt/sim/main.py', gui_only=False)
-freezer.addScript('pyprt/ctrl/prt_controller.py', gui_only=False)
-freezer.addScript('pyprt/ctrl/gtf_controller.py', gui_only=False)
+freezer.addScript('pyprt/sim/main.py', gui_only=True)
+freezer.addScript('pyprt/ctrl/prt_controller.py', gui_only=True)
+freezer.addScript('pyprt/ctrl/gtf_controller.py', gui_only=True)
 freezer.include_py = False
 
 freezer()

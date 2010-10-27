@@ -44,7 +44,6 @@ real_time = False  # A flag indicating that we're using the RT version of SimPy
 errors = 0
 
 #def reset():
-#    print "Clearing previous configuration" # temp debug
 #    common.digraph = None
 #    common.interface = None
 #    common.vehicle_viz_data_collector = None

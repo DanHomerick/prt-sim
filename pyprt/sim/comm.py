@@ -83,7 +83,6 @@ def receive(sock, queue, comm_idx):
         body = ''.join(body) # concatenate strings
 
         queue.put( (comm_idx, msg_type, msgID, msg_time, body) )
-#        print "received and enqueued. msg_type:", msg_type, "msgID:", msgID
 
 def transmit(sock, queue):
     """A function that is responsible for transmitting messages over a single,
@@ -166,7 +165,6 @@ class ControlInterface(Sim.Process):
 
         for idx in xrange(num_TCP_clients):
             sock, address = self.TCP_server_socket.accept()
-            print "Established TCP connection with", sock.getsockname()
             self.TCP_client_sockets.append(sock)
             self.resume_list.append(False) # wait for a resume before commencing
             receive_thread = threading.Thread(target = receive,
@@ -239,7 +237,6 @@ class ControlInterface(Sim.Process):
         """Expects a numeric msg_type and a msg_str in the format specified by api.proto
         """
         comm_idx, msg_type, msgID, msg_time, msg_str = self.receiveQ.get(block=True)
-#        print "pulled from receive queue. msg_type:", msg_type, "msgID:", msgID
 
         if msg_time == ms_now():
             try:
@@ -595,18 +592,18 @@ class ControlInterface(Sim.Process):
             Sim.reactivate(self, prior=False)
 
         if self.log != os.devnull:
-            print >> self.log, "Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
-                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
+            self.log.write("Now:%s, SENT, %s, MsgType:%d, MsgID:%d, MsgTime:%d\n" %\
+                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time))
             text_format.PrintMessage(msg, out=self.log)
-            print >> self.log, "--"
+            self.log.write("--\n")
 
     def log_rcvd_msg(self, msg_type, msgID, msg_time, msg):
         # log msg
         if self.log != os.devnull:
-            print >> self.log, "Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d" %\
-                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time)
+            self.log.write("Now:%s, RCVD, %s, MsgType:%d, MsgID:%d, MsgTime:%d\n" %\
+                  (time.time(), msg.DESCRIPTOR.name, msg_type, msgID, msg_time))
             text_format.PrintMessage(msg, out=self.log)
-            print >> self.log, "--"
+            self.log.write("--/n")
 
     def get_trackSeg(self, ID):
         """"Return the TrackSegment object specified by the ID.

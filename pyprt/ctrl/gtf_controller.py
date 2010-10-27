@@ -1101,9 +1101,6 @@ class PassengerManager(object):
                             del path_dict[n]
 
                     paths[node] = path_dict # use a dict of dicts structure
-
-#        print "LEN(PATHS)", len(paths)
-#        print sum([len(path) for path in paths.itervalues()])
         return paths
 
 class Node(object):

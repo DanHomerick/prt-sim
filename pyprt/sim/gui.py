@@ -5,6 +5,7 @@ import subprocess
 import time
 import logging
 import os
+import sys
 from ConfigParser import NoSectionError
 from ConfigParser import Error as ConfigError
 
@@ -136,18 +137,17 @@ class MainWindow(wx.Frame):
             self.load_scenario(filename)
 
     def filemenu_saveconfig_handler(self, event):
-        print "Event handler `filemenu_saveconfig_handler' not implemented"
         event.Skip()
 
     def filemenu_savesnapshot_handler(self, event):
         if self.visualizer:
             filename = wx.FileSelector(flags=wx.FD_SAVE |  wx.FD_OVERWRITE_PROMPT,
                                        wildcard='png (*.png)|*.png|gif (*.gif)|*.gif|jpeg (*.jpg)|*.jpg|bitmap (*.bmp)|*.bmp|any (*.*)|*.*')
-            print "Save snapshot filename:", filename
-            try:
-                self.visualizer.save_plot(filename)
-            except Exception, e:
-                self.show_message('An error occurred while saving: ' + filename)
+            if filename:
+                try:
+                    self.visualizer.save_plot(filename)
+                except Exception, e:
+                    self.show_message('An error occurred while saving: ' + filename)
         else:
             self.show_message('A configuration file must be loaded first.')
 
@@ -218,6 +218,7 @@ class MainWindow(wx.Frame):
             # Controller info not found in config file. Ask user.
             controller_window = ControllerChoiceDialog(self)
             controller_window.ShowModal()
+
             # TODO ...
 
 ##        dialog = wx.NumberEntryDialog(self,
@@ -231,13 +232,21 @@ class MainWindow(wx.Frame):
         common.interface.setup_server_sockets(TCP_port=TCP_port)
         for cmd in controllers:
             cmd = cmd.split()
-            try:
-                ctrl_proc = subprocess.Popen(cmd,
-                                             cwd=common.config_manager.get_config_dir(),
-                                             bufsize=0) # 0=unbuffered, -1=system default
-            except OSError:
-                self.show_message('Failed to open controller using command: %s' % cmd)
-                return
+            if sys.platform == 'win32':
+                try:
+                    ctrl_proc = subprocess.Popen(cmd,
+                                                 cwd=common.config_manager.get_config_dir(),
+                                                 bufsize=0 # 0=unbuffered, -1=system default
+                                                 )
+                except OSError:
+                    self.show_message('Failed to open controller using command: %s' % cmd)
+                    return
+
+            elif sys.platform == 'darwin': # Mac OS X
+                raise NotImplementedError
+
+            else:
+                raise NotImplementedError
 
         wx.BeginBusyCursor()
         common.interface.accept_connections( len(controllers) )
@@ -267,19 +276,16 @@ class MainWindow(wx.Frame):
     def set_sim_speed(self, speed):
         try:
             SimPy.rtset(speed)
-            print 'Speed set to', speed, 'X'
         except AttributeError:
             self.show_message('Start simulation first.')
 
     def viewmenu_zoom_in_handler(self, event):
-        print "Zoom in handler" # DEBUG
         self.visualizer.zoom_tool.zoom_in()
 
     def viewmenu_zoom_out_handler(self, event):
-        print "Zoom out handler" # DEBUG
         self.visualizer.zoom_tool.zoom_out()
 
-    def viewmenu_vehicle_handler(self, event): # wxGlade: MaSimPyinWindow.<event_handler>
+    def viewmenu_vehicle_handler(self, event):
         labels = [str(v) for v in common.vehicle_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Vehicles', labels)
         dialog.ShowModal()
@@ -287,7 +293,7 @@ class MainWindow(wx.Frame):
         for i in selections:
             common.vehicle_list[i].edit_traits()
 
-    def viewmenu_station_handler(self, event): # wxGlade: MainWindow.<event_handler>
+    def viewmenu_station_handler(self, event):
         labels = [str(s) for s in common.station_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Stations', labels)
         dialog.ShowModal()
@@ -296,7 +302,7 @@ class MainWindow(wx.Frame):
             s = common.station_list[i]
             s.edit_traits()
 
-    def viewmenu_switch_handler(self, event): # wxGlade: MainWindow.<event_handler>
+    def viewmenu_switch_handler(self, event):
         labels = [str(sw) for sw in common.switch_list]
         dialog = wx.MultiChoiceDialog(self, '', 'View Stations', labels)
         dialog.ShowModal()
@@ -304,8 +310,7 @@ class MainWindow(wx.Frame):
         for i in selections:
             common.switch_list[i].edit_traits()
 
-    def viewmenu_track_handler(self, event): # wxGlade: MainWindow.<event_handler>
-        print "Event handler `viewmenu_track_handler' not implemented"
+    def viewmenu_track_handler(self, event):
         event.Skip()
 
     def viewmenu_passenger_handler(self, event):
@@ -384,9 +389,6 @@ class MainWindow(wx.Frame):
 
         if common.interface:
             common.interface.disconnect()
-
-        for t in threading.enumerate():
-            print t.getName()
 
         self.Destroy()
 
