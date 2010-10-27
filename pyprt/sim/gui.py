@@ -87,7 +87,16 @@ class MainWindow(wx.Frame):
 
     def load_scenario(self, filename):
         manager = common.scenario_manager
-        manager.load_scenario(filename)
+
+        try:
+            manager.load_scenario(filename)
+        except common.ScenarioError as err:
+            msg_dialog = wx.MessageDialog(parent=self,
+                                          message="The following error occurred while loading the scenario:\n%s\n\n%s" % (filename, err.msg),
+                                          caption='Scenario Error',
+                                          style=wx.ICON_ERROR)
+            msg_dialog.ShowModal()
+            return
 
         # adjust the window size to match the image.
         self.SetSize(wx.Size(common.img_width+7, common.img_height+76)) # width, height, 76 for menu bar and 7 for border

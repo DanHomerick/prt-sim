@@ -170,12 +170,15 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
 
 
-    def __init__(self, ID, loc, position, vel, label="", **tr):
+    def __init__(self, ID, loc, position, vel, label="", digraph=None, **tr):
         assert not isinstance(position, basestring)
         assert not isinstance(vel, basestring)
         assert position <= loc.length
         Sim.Process.__init__(self, name='vehicle'+str(ID))
         traits.HasTraits.__init__(self, **tr)
+
+        if digraph is None:
+            digraph = common.digraph
 
         self.ID = ID
         self.label = (label if label else str(ID)+'_'+self.__class__.__name__)
@@ -190,7 +193,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             # work back from nose's position, extending path, until tail loc is found
             dist_remaining = self.length - position
             while dist_remaining > 0:
-                prev_loc = common.digraph.predecessors(self._path[-1])[0] # arbitrarily choose prev loc if downstream of a merge
+                prev_loc = digraph.predecessors(self._path[-1])[0] # arbitrarily choose prev loc if downstream of a merge
                 self._path.append(prev_loc)
                 offset += prev_loc.length
                 dist_remaining -= prev_loc.length

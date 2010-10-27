@@ -17,32 +17,35 @@ class ScenarioManager(object):
     def load_scenario(self, xml_path):
         """Loads the scenario, storing the resulting data structures in various
         common variables (TODO: change to functional style?).
-        Sets self.scenario_loaded to True upon success."""
+        Sets self.scenario_loaded to True upon success.
+
+        Raises:
+          common.ScenarioError -- various reasons
+        """
         import xml.dom.minidom
         doc = xml.dom.minidom.parse(xml_path)
 
         # Track Segments
         tracks_xml = doc.getElementsByTagName('TrackSegments')[0]
-        common.track_segments = self.load_track_segments(tracks_xml)
-        common.digraph = self.build_graph(tracks_xml, common.track_segments)
+        track_segments = self.load_track_segments(tracks_xml)
+        digraph = self.build_graph(tracks_xml, track_segments)
 
         # Fill in the next fields for the TrackSegments. Arbitrarily choosen
         # when there is more then one neighbor.
-        graph = common.digraph
-        for n in graph.nodes_iter():
-            neighbors = graph.neighbors(n)
+        for n in digraph.nodes_iter():
+            neighbors = digraph.neighbors(n)
             if neighbors:
                 n.next_loc = neighbors[0]
             # else n.next_loc is left as None
 
         # Vehicles
-        common.vehicle_models = self.load_vehicle_models(doc.getElementsByTagName('VehicleModels')[0])
-        common.vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], common.vehicle_models)
+        vehicle_models = self.load_vehicle_models(doc.getElementsByTagName('VehicleModels')[0])
+        vehicles = self.load_vehicles(doc.getElementsByTagName('Vehicles')[0], vehicle_models, track_segments, digraph)
 
         # Stations
-        common.stations = self.load_stations(doc.getElementsByTagName('Stations')[0])
+        stations = self.load_stations(doc.getElementsByTagName('Stations')[0], track_segments)
         # mapping from track_segment ids to Platform instances
-        common.platforms = dict((p.track_segment.ID, p) for s in common.stations.itervalues() for p in s.platforms)
+        platforms = dict((p.track_segment.ID, p) for s in stations.itervalues() for p in s.platforms)
 
         # Passengers
         passengers_path = common.config_manager.get_passengers_path()
@@ -53,11 +56,11 @@ class ScenarioManager(object):
             default_unload_time = common.config_manager.get_pax_unload_time()
             default_will_share = common.config_manager.get_pax_will_share()
             default_mass = common.config_manager.get_pax_weight()
-            pax_list = self.load_passengers(passengers_path, default_load_time, default_unload_time, default_will_share, default_mass)
+            pax_list = self.load_passengers(passengers_path, stations, default_load_time, default_unload_time, default_will_share, default_mass)
             common.event_manager.clear_events()
             common.event_manager.add_events(pax_list)
 
-        # Background Image
+        # Background Image (TODO: Change to functional style?)
         self.load_image_meta(doc.getElementsByTagName('Image')[0], xml_path) # only one element
 
         # Air Density and Wind
@@ -73,12 +76,18 @@ class ScenarioManager(object):
             common.wind_speed = 0
             common.wind_direction = 0
 
-        # TODO: Necessary?
-        common.station_list = sorted(s for s in common.stations.itervalues()) # by ID
+        # Only update the object state once loading has sucessfully completed.
+        common.track_segments = track_segments
+        common.digraph = digraph
+        common.vehicle_models = vehicle_models
+        common.vehicles = vehicles
+        common.stations = stations
+        common.platforms
+        common.station_list = sorted(s for s in stations.itervalues()) # by ID
         common.switch_list.sort()
-        common.vehicle_list = sorted(v for v in common.vehicles.itervalues())
-
+        common.vehicle_list = sorted(v for v in vehicles.itervalues())
         self.scenario_loaded = True
+
         doc.unlink() # facilitates garbage collection on the XML data
 
     def load_track_segments(self, track_segments_xml):
@@ -151,7 +160,7 @@ class ScenarioManager(object):
 
         return graph
 
-    def load_vehicles(self, vehicles_xml, vehicle_classes):
+    def load_vehicles(self, vehicles_xml, vehicle_classes, track_segments, digraph):
         all_vehicles = dict()
 
         for vehicle_xml in vehicles_xml.getElementsByTagName('Vehicle'):
@@ -160,7 +169,7 @@ class ScenarioManager(object):
             v_model = vehicle_xml.getAttribute('model_name')
             eId = vehicle_xml.getAttribute('location')
             e_intId = int(eId.split("_")[0])
-            loc = common.track_segments[e_intId] # look up edge by id
+            loc = track_segments[e_intId] # look up edge by id
             position = float(vehicle_xml.getAttribute('position'))
 
             if position > loc.length:
@@ -171,13 +180,14 @@ class ScenarioManager(object):
                                 ID=v_intId,
                                 loc=loc,
                                 position=position,
-                                vel=float(vehicle_xml.getAttribute('velocity'))
+                                vel=float(vehicle_xml.getAttribute('velocity')),
+                                digraph=digraph
                             )
             all_vehicles[v.ID] = v
         return all_vehicles
 
 
-    def load_stations(self, stations_xml):
+    def load_stations(self, stations_xml, track_segments):
         all_stations = dict()
         for station_xml in stations_xml.getElementsByTagName('Station'):
             station_label = station_xml.getAttribute('label')
@@ -195,10 +205,10 @@ class ScenarioManager(object):
                 storage_exit_delay = 0
 
             # Get the TrackSegments
-            track_segments = set() # using a set because 'TrackSegmentID' includes the duplicate ts from Platform
+            track_segs = set() # using a set because 'TrackSegmentID' includes the duplicate ts from Platform
             for track_id_xml in station_xml.getElementsByTagName('TrackSegmentID'):
                 track_id = self._to_numeric_id(track_id_xml)
-                track_segments.add(common.track_segments[track_id])
+                track_segs.add(track_segments[track_id])
 
             # Make the Storage objects and place them in a dict keyed by model_name
             storage_dict = {}
@@ -238,7 +248,7 @@ class ScenarioManager(object):
 
             station_ = station.Station(station_id,
                                        station_label,
-                                       track_segments,
+                                       track_segs,
                                        storage_entrance_delay,
                                        storage_exit_delay,
                                        storage_dict)
@@ -248,7 +258,7 @@ class ScenarioManager(object):
             platforms = [None]*len(platforms_xml)
             for platform_xml in platforms_xml:
                 platform_trackseg_id = self._to_numeric_id(platform_xml.getElementsByTagName('TrackSegmentID')[0])
-                platform_trackseg = common.track_segments[platform_trackseg_id]
+                platform_trackseg = track_segments[platform_trackseg_id]
                 platform_index = int(platform_xml.getAttribute('index'))
                 platform = station.Platform(platform_index, platform_trackseg)
 
@@ -274,7 +284,7 @@ class ScenarioManager(object):
             all_stations[station_.ID] = station_
         return all_stations
 
-    def load_passengers(self, filename, default_load_time, default_unload_time, default_will_share, default_mass):
+    def load_passengers(self, filename, stations, default_load_time, default_unload_time, default_will_share, default_mass):
         """Load the list of passenger creation events. See /doc/samplePassenger.tsv
         for format. Station labels may be used in place of station IDs."""
         f = open(filename, 'rU')
@@ -283,7 +293,7 @@ class ScenarioManager(object):
 
         # generate dict mapping both ids and labels to stations
         aliases = {}
-        for station in common.stations.values():
+        for station in stations.values():
             aliases[station.label] = station # the label
             aliases[str(station.ID)] = station # the integer id, in string form
 
@@ -469,11 +479,11 @@ class ScenarioManager(object):
             if vel_max_norm < 0:
                 raise common.ScenarioError("Negative vel_max_norm: %s" % vel_max_norm)
             if vel_min_norm != 0:
-                raise common.ScenarioError("vel_min_norm may not be non-zero (in this version): %s" % vel_min_norm)
+                raise common.ScenarioError("vel_min_norm may not be non-zero: %s" % vel_min_norm)
             if vel_max_emerg < 0:
                 raise common.ScenarioError("Negative vel_max_emerg: %s" % vel_max_emerg)
             if vel_min_emerg != 0:
-                raise common.ScenarioError("vel_min_emerg may not be non-zero (in this version): %s" % vel_min_emerg)
+                raise common.ScenarioError("vel_min_emerg may not be non-zero: %s" % vel_min_emerg)
             for type_str, norm, emerg in zip(
                     ('jerk', 'jerk', 'accel', 'accel', 'vel', 'vel'),
                     (jerk_max_norm, jerk_min_norm, accel_max_norm, accel_min_norm, vel_max_norm, vel_min_norm),
