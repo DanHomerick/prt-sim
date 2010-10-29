@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "PRT Simulator"
-#define MyAppVersion "0.1"
+#define MyAppVersion "0.1.1"
 #define MyAppPublisher "UC Santa Cruz"
 #define MyAppURL "http://code.google.com/p/prt-sim/"
 #define MyAppExeName "main.exe"

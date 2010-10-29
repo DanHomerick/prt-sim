@@ -116,7 +116,7 @@ class MainWindow(wx.Frame):
     def filemenu_open_config_handler(self, event):
         """Load configuration info from file."""
         default_path = common.config_manager.get_scenarios_path()
-        default_file = os.path.join('default.cfg')
+        default_file = os.path.join('config.ini')
 
         config_path = wx.FileSelector(flags=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
                                    wildcard='config files (*.ini)|*.ini|all files (*.*)|*.*',
