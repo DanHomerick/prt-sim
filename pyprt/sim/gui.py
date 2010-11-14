@@ -252,7 +252,14 @@ class MainWindow(wx.Frame):
                     return
 
             elif sys.platform == 'darwin': # Mac OS X
-                raise NotImplementedError
+                try:
+                    ctrl_proc = subprocess.Popen(cmd,
+                                                 cwd=common.config_manager.get_config_dir(),
+                                                 bufsize=0 # 0=unbuffered, -1=system default
+                                                 )
+                except OSError:
+                    self.show_message('Failed to open controller using command: %s' % cmd)
+                    return
 
             else:
                 raise NotImplementedError
