@@ -2,6 +2,7 @@ import optparse
 import socket
 import logging
 import struct
+from sys import stderr
 
 import google.protobuf.text_format as text_format
 
@@ -172,7 +173,12 @@ class BaseController(object):
     def connect(self, server, port):
         self.server = server
         self.port = port
-        self.sock.connect((server, port))
+        try:
+            self.sock.connect( (server, port) )
+        except socket.error, msg:
+            stderr.write("Failed to connect to %s:%d\n" % (server, port))
+            stderr.write(str(msg))
+            return
         self.log.info("Connected to server: %s:%d", server, port)
         self.talk()
 

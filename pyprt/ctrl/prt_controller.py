@@ -1620,7 +1620,7 @@ class Station(object):
             # there are more vehicles than can fit in LOAD + QUEUE, demand
             # becomes negative.
             berth_demand = (self.NUM_QUEUE_BERTHS + self.NUM_LOAD_BERTHS - self.v_count) \
-                            * 1/(self.NUM_QUEUE_BERTHS + self.NUM_LOAD_BERTHS + 1)
+                            / (self.NUM_QUEUE_BERTHS + self.NUM_LOAD_BERTHS + 1.0)
             return berth_demand
 
         else:

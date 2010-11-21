@@ -111,19 +111,30 @@ class TestCubicSpline(unittest.TestCase):
         self.assertTrue(0 in times)
         self.assertTrue(14.806248474865697 in times)
 
-    def test__get_idx_from_time(self):
+    def test__get_index_from_time(self):
         spline = self.make_test_spline_I()
-        self.assertEquals(spline._get_idx_from_time(1.0), 0)
-        self.assertEquals(spline._get_idx_from_time(2.5), 1)
-        self.assertEquals(spline._get_idx_from_time(13.0), 4)
-        self.assertEquals(spline._get_idx_from_time(9.0), 2)
+        self.assertEquals(spline._get_index_from_time(1.0), 0)
+        self.assertEquals(spline._get_index_from_time(2.5), 1)
+        self.assertEquals(spline._get_index_from_time(13.0), 4)
+        self.assertEquals(spline._get_index_from_time(9.0), 2)
 
-        self.assertEquals(spline._get_idx_from_time(0), 0)
-        self.assertEquals(spline._get_idx_from_time(14.806248474865697), 4)
-        self.assertEquals(spline._get_idx_from_time(2.0), 1)
+        self.assertEquals(spline._get_index_from_time(0), 0)
+        self.assertEquals(spline._get_index_from_time(14.806248474865697), 4)
+        self.assertEquals(spline._get_index_from_time(2.0), 1)
 
-        self.assertRaises(OutOfBoundsError, spline._get_idx_from_time, 15)
-        self.assertRaises(OutOfBoundsError, spline._get_idx_from_time, -1)
+        self.assertRaises(OutOfBoundsError, spline._get_index_from_time, 15)
+        self.assertRaises(OutOfBoundsError, spline._get_index_from_time, -1)
+
+    def test__get_indexes_from_time(self):
+        spline = self.make_test_spline_I()
+        times = [0, 1.0, 2.0, 2.5, 9.0, 13.0, 14.8062484748656979]
+        indexes = spline._get_indexes_from_times(times)
+        expected = [0, 0, 1, 1, 2, 4, 4]
+        for i, j in zip(indexes, expected):
+            self.assertEquals(i, j)
+
+        self.assertRaises(OutOfBoundsError, spline._get_index_from_time, [0, 15])
+        self.assertRaises(OutOfBoundsError, spline._get_index_from_time, [-1, 5])
 
     def test_copy_left(self):
         orig_spline = self.make_test_spline_I()
@@ -261,6 +272,19 @@ class TestCubicSpline(unittest.TestCase):
         self.assertEquals(knot.vel, 0.125)
         self.assertEquals(knot.accel, 0.5)
         self.assertEquals(knot.time, 0.5)
+
+    def test_evaluate_sequence(self):
+        spline = CubicSpline(
+            [0, 1/6, 1], # pos
+            [0, 1/2, 1], # vel
+            [0, 1, 0], # accel
+            [1, -1], # jerk
+            [0, 1, 2]) # time
+        times = [0, 0.5, 1, 1.25, 1.5, 1.75, 2.0]
+        knots = spline.evaluate_sequence(times)
+        expected_accels = [0, 0.5, 1, 0.75, 0.5, 0.25, 0]
+        for knot, expected in zip(knots, expected_accels):
+            self.assertEquals(knot.accel, expected)
 
     def test_find_intersection(self):
         # spline2 starts behind spline1, but ends in the same place.

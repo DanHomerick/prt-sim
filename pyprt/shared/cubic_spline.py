@@ -42,7 +42,13 @@ class OutOfBoundsError(SplineError):
         return 'start:%s, end:%s, value:%s' % (self.start, self.end, self.value)
 
 class CubicSpline(object):
-    """Knots is a list of Knot instances. acceleration_min should be negative."""
+    """Knots is a list of Knot instances. acceleration_min should be negative.
+
+    The spline is valid on the range [start_time, end_time].
+    Each spline polynomial is valid on [start_knot_time, end_knot_time).
+    Except for the last polynomial which is valid on [start_knot_time, end_knot_time].
+    Where '[' is inclusive and '(' is exclusive.
+    """
     TIME_EPSILON = 0.0001
     DIST_EPSILON = 0.001
 
@@ -200,7 +206,7 @@ class CubicSpline(object):
         if time < t[0] or time > t[-1]:
             raise OutOfBoundsError(t[0], t[-1], time)
 
-        i = self._get_idx_from_time(time)
+        i = self._get_index_from_time(time)
 
         # Time is almost exactly on a knot. Also captures case where spline has only one time.
         if abs(self.t[i] - time) < 1E-6:
@@ -221,10 +227,49 @@ class CubicSpline(object):
 
         return Knot(qt, vt, at, time)
 
+    def evaluate_sequence(self, times):
+        """Similar to evaluate, but more efficient when evaluating multiple times.
+
+        Parameters:
+          times -- A sequence of times to evaluate the spline at. The times must
+            be in ascending order.
+
+        Returns:
+          A sequence of Knots.
+        """
+        if not len(times): # empty list
+            return []
+
+        indexes = self._get_indexes_from_times(times)
+        knots = []
+        for time, i in zip(times, indexes):
+            t = self.t[i]
+
+            # Time is almost exactly on a knot. Also captures case where spline has only one time.
+            if (time - t) < 1E-6:
+                knots.append(Knot(self.q[i], self.v[i], self.a[i], time))
+                continue
+
+            j = self.j[i]
+            a = self.a[i]
+            v = self.v[i]
+            q = self.q[i]
+
+            delta_t = time - t
+            delta_t__2 = delta_t * delta_t
+            delta_t__3 = delta_t__2 * delta_t
+
+            at = j*delta_t + a
+            vt = j*delta_t__2/2 + a*delta_t + v
+            qt = delta_t__3*(j/6) + delta_t__2*(a/2) + v*delta_t + q
+            knots.append(Knot(qt, vt, at, time))
+
+        return knots
+
     def get_time_from_dist(self, dist, now):
         """Returns the time at which the vehicle will have travelled forward by
         dist meters. Now is the current time, in seconds."""
-        idx = self._get_idx_from_time(now)
+        idx = self._get_index_from_time(now)
         target_pos = self.evaluate(now).pos + dist
         end_pos = self.q[idx+1]
         # Iterate over knots until we reach the polynomial containing target_pos
@@ -375,13 +420,12 @@ class CubicSpline(object):
             knot = self.evaluate(start_time)
             return CubicSpline([knot.pos], [knot.vel], [knot.accel], [], [knot.time])
 
-        start_idx = self._get_idx_from_time(start_time) + 1 # right idx
-        end_idx = self._get_idx_from_time(end_time)
+        start_idx = self._get_index_from_time(start_time) + 1 # right idx
+        end_idx = self._get_index_from_time(end_time)
         if self.t[end_idx] != end_time:
             end_idx += 1 # one past, for array splice
 
-        start_knot = self.evaluate(start_time)
-        end_knot = self.evaluate(end_time)
+        start_knot, end_knot = self.evaluate_sequence( (start_time, end_time) )
 
         spline = CubicSpline([start_knot.pos] + self.q[start_idx:end_idx] + [end_knot.pos],
                              [start_knot.vel] + self.v[start_idx:end_idx] + [end_knot.vel],
@@ -419,7 +463,7 @@ class CubicSpline(object):
             poly_msg.coeffs.extend( c )
             spline_msg.times.append(tf)
 
-    def _get_idx_from_time(self, time):
+    def _get_index_from_time(self, time):
         """Returns the left index corresponding to time."""
         if time < self.t[0] or time > self.t[-1]:
             raise OutOfBoundsError(self.t[0], self.t[-1], time)
@@ -431,6 +475,32 @@ class CubicSpline(object):
                 else:
                     return idx
 
+    def _get_indexes_from_times(self, times):
+        """Returns a sequence containing the left indexes corresponding to each
+        time in times. More efficient than repeatedly calling _get_index_from_time.
+        Times must be in ascending order.
+        """
+        if not len(times):
+            return []
+
+        if times[0] < self.t[0]:
+            raise OutOfBoundsError(self.t[0], self.t[-1], times[0])
+        if times[-1] > self.t[-1]:
+            raise OutOfBoundsError(self.t[0], self.t[-1], times[-1])
+
+        indexes = [ self._get_index_from_time(times[0]) ]
+        index = indexes[-1]
+        for t in times[1:]:
+            while t > self.t[index]: # increment index until it's a right index for t
+                index += 1
+
+            if t == self.t[index] and index != len(self.t)-1:
+                indexes.append(index)
+
+            else:
+                indexes.append(max(index-1,0))
+        return indexes
+
     def find_intersection(self, other, start_time, end_time,
                            dist):
         """Finds position intersections that occur between self and other (spline), in
@@ -440,10 +510,10 @@ class CubicSpline(object):
         """
         assert isinstance(other, CubicSpline)
         try:
-            self_idx_start = self._get_idx_from_time(start_time)
-            self_idx_end = self._get_idx_from_time(end_time)+1 # returns left index, want right
-            other_idx_start = other._get_idx_from_time(start_time)
-            other_idx_end = other._get_idx_from_time(end_time)+1 # returns left index, want right
+            self_idx_start = self._get_index_from_time(start_time)
+            self_idx_end = self._get_index_from_time(end_time)+1 # returns left index, want right
+            other_idx_start = other._get_index_from_time(start_time)
+            other_idx_end = other._get_index_from_time(end_time)+1 # returns left index, want right
         except OutOfBoundsError:
             return None
 

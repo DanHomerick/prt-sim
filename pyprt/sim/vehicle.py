@@ -85,6 +85,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
     passenger_mass  = traits.CInt   # total mass of passengers and luggage, in kg
     max_pax_capacity = traits.CInt
     _passengers       = traits.List(traits.Instance('pyprt.sim.events.Passenger'))
+    _stats           = traits.Instance('pyprt.sim.vehicle.VehicleStatistics')
 
     # Action consts
     BOUNDARY = 1
@@ -232,6 +233,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self._pax_times = [(Sim.now(),0)] # elements are (time, num_pax)
         self._operational_times = [(Sim.now(),True)] # Elements are (time, not_in_storage)
         self._total_masses = [ (Sim.now(), self.vehicle_mass) ]
+        self._stats = VehicleStatistics(Sim.now(),0,0,0,0,0,0,0,0,0,0,0,0)
 
     def __str__(self):
         return 'vehicle' + str(self.ID)
@@ -268,43 +270,28 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         return len(self._passengers)
     pax_count = property(get_pax_count)
 
-    def get_time_ave_pax(self):
+    def get_time_ave_pax(self, update=False):
         """Returns the time-weighted average number of passengers onboard the
-        vehicle from the start until now."""
-        op_time = self.get_operational_time()
-        if op_time == 0: # guard against zero division
-            return len(self._passengers)
-
-        ave = 0
-        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
-            ave += (t_f - t_i) * cnt_i
-
-        t_final, cnt_final = self._pax_times[-1]
-        ave += (Sim.now() - t_final) * cnt_final
-        return ave / op_time
+        vehicle over the course of the simulation."""
+        if update:
+            self.update_stats()
+        return self._stats.time_ave_pax
     time_ave_pax = property(get_time_ave_pax)
 
-    def get_dist_ave_pax(self):
+    def get_dist_ave_pax(self, update=False):
         """Returns the dist-weighted average number of passengers onboard the
-        vehicle from start until now."""
-        ave = 0
-        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
-            ave += (self._spline.evaluate(t_f).pos - self._spline.evaluate(t_i).pos) * cnt_i
-
-        t_final, cnt_final = self._pax_times[-1]
-        ave += (self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(t_final).pos) * cnt_final
-
-        try:
-            result = ave/self.get_dist_travelled()
-        except ZeroDivisionError:
-            result = len(self._passengers)
-        return result
+        vehicle over the course of the simulation."""
+        if update:
+            self.update_stats()
+        return self._stats.dist_ave_pax
     dist_ave_pax = property(get_dist_ave_pax)
 
-    def get_max_pax(self):
+    def get_max_pax(self, update=False):
         """Returns the max number of simultaneous passengers. Not the max
         passenger capacity!"""
-        return max(pax_count for (time, pax_count) in self._pax_times)
+        if update:
+            self.update_stats()
+        return self._stats.max_pax
     max_pax = property(get_max_pax)
 
     def get_pos(self, time=None):
@@ -393,86 +380,69 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         self._total_masses.append( (Sim.now(), mass) )
     total_mass = property(fget=get_total_mass, fset=set_total_mass)
 
-    def get_dist_travelled(self):
-        return self._spline.evaluate(Sim.now()).pos - self._spline.evaluate(self._spline.t[0]).pos
+    def get_dist_travelled(self, update=False):
+        if update:
+            self.update_stats()
+        return self._stats.dist_travelled
     dist_travelled = property(fget=get_dist_travelled)
 
-    def get_empty_dist(self):
+    def get_empty_dist(self, update=False):
         """Returns the deadhead distance, in m."""
-        dist = 0
-        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
-            if cnt_i == 0:
-                dist += self._spline.evaluate(t_f).pos - self._spline.evaluate(t_i).pos
-
-        t_final, cnt_final = self._pax_times[-1]
-        if cnt_final == 0:
-            dist += self._spline.evaluate(Sim.now()).pos - \
-                 self._spline.evaluate(t_final).pos
-        return dist
+        if update:
+            self.update_stats()
+        return self._stats.empty_dist
     empty_dist = property(get_empty_dist)
 
-    def get_nonempty_dist(self):
+    def get_nonempty_dist(self, update=False):
         """Returns the distance travelled with one or more passengers on board,
         measured in meters."""
-        return self.get_dist_travelled() - self.get_empty_dist()
+        if update:
+            self.update_stats()
+        return self._stats.nonempty_dist
     nonempty_dist = property(get_nonempty_dist)
 
-    def get_pax_dist(self):
+    def get_pax_dist(self, update=False):
         """Returns the number of passenger-meters travelled."""
-        dist = 0
-        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
-            if cnt_i > 0:
-                dist += (self._spline.evaluate(t_f).pos - self._spline.evaluate(t_i).pos) * cnt_i
-
-        t_final, cnt_final = self._pax_times[-1]
-        if cnt_final > 0:
-            dist += self._spline.evaluate(Sim.now()).pos - \
-                 self._spline.evaluate(t_final).pos * cnt_final
-        return dist
+        if update:
+            self.update_stats()
+        return self._stats.pax_dist
     pax_dist = property(get_pax_dist)
 
-    def get_operational_time(self):
+    def get_operational_time(self, update=False):
         """Returns the total time spent in operation during the sim. That is,
         time in which the vehicle was not in storage."""
-        time = 0
-        for (t_i, op), (t_f, op) in pairwise(self._operational_times):
-            if op:
-                time += t_f - t_i
-
-        t_final, op_final = self._operational_times[-1]
-        if op_final:
-            time += Sim.now() - t_final
-        return time
+        if update:
+            self.update_stats()
+        return self._stats.operational_time
     operational_time = property(get_operational_time)
 
-    def get_empty_time(self):
+    def get_pax_time(self, update=False):
+        """Returns passenger-seconds. i.e. 10 seconds with 2 passengers = 20"""
+        if update:
+            self.update_stats()
+        return self._stats.pax_time
+    pax_time = property(get_pax_time)
+
+    def get_empty_time(self, update=False):
         """Returns the operational time spent with no passengers on board."""
-        time = 0
-        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
-            if cnt_i == 0:
-                time += (t_f - t_i)
-        t_final, cnt_final = self._pax_times[-1]
-        if cnt_final == 0:
-            time += Sim.now() - t_final
-        return time
+        if update:
+            self.update_stats()
+        return self._stats.empty_time
     empty_time = property(get_empty_time)
 
-    def get_nonempty_time(self):
+    def get_nonempty_time(self, update=False):
         """Returns the operational time spent with one or more passengers on board"""
-        return self.get_operational_time() - self.get_empty_time()
+        if update:
+            self.update_stats()
+        return self._stats.nonempty_time
     nonempty_time = property(get_nonempty_time)
 
-    def get_passenger_time(self):
+    def get_passenger_time(self, update=False):
         """Returns the number of passenger-seconds spent. That is, 10 seconds
         with 2 passengers on board is 20 passenger-seconds."""
-        p_time = 0
-        for (t_i, cnt_i), (t_f, cnt_f) in pairwise(self._pax_times):
-            if cnt_i > 0:
-                p_time += (t_f - t_i) * cnt_i
-        t_final, cnt_final = self._pax_times[-1]
-        if cnt_final > 0:
-            p_time += (Sim.now() - t_final) * cnt_final
-        return p_time
+        if update:
+            self.update_stats()
+        return self._stats.pax_time
     passenger_time = property(get_passenger_time)
 
     def clear_path(self):
@@ -1057,10 +1027,82 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             vs.lvID = lv.ID
             vs.lv_distance = dist
 
+    def update_stats(self):
+        """Replaces self._stats with a new VehicleStatistics object containing
+        updated statistics. Also returns the new object."""
+        # Do nothing if the statistics are already up to date.
+        if self._stats.timestamp == Sim.now():
+            return self._stats
+
+        # Calculate vehicle's operational time (not in storage).
+        op_time = 0
+        for (t_i, op_i), (t_f, op_f) in pairwise(self._operational_times):
+            if op_i:
+                op_time += t_f - t_i
+        if len(self._operational_times):
+            t_f, op_f = self._operational_times[-1]
+            if op_f:
+                op_time += Sim.now() - t_f
+
+        dist_travelled = self._spline.evaluate(Sim.now()).pos - self._spline.q[0]
+
+        p_times = []
+        p_counts = []
+        for time, count in self._pax_times:
+            p_times.append(time)
+            p_counts.append(count)
+        p_times.append(Sim.now())
+        p_counts.append(self.get_pax_count())
+        p_knots = self._spline.evaluate_sequence(p_times)
+
+        pax_time = 0
+        nonempty_time = 0
+        pax_dist = 0
+        nonempty_dist = 0
+        max_pax = 0
+        for (t_i, c_i, k_i), (t_f, c_f, k_f) in pairwise(zip(p_times, p_counts, p_knots)): # time, count, knot
+            if c_i > 0:
+                delta_time = t_f - t_i
+                delta_dist = k_f.pos - k_i.pos
+                pax_time += delta_time * c_i
+                nonempty_time += delta_time
+                pax_dist += delta_dist * c_i
+                nonempty_dist += delta_dist
+                max_pax = max(max_pax, c_i)
+
+        empty_time = op_time - nonempty_time
+        empty_dist = dist_travelled - nonempty_dist
+        if op_time:
+            time_ave_pax = pax_time/op_time
+        else:
+            time_ave_pax = self.get_pax_count()
+
+        if dist_travelled:
+            dist_ave_pax = pax_dist/dist_travelled
+        else:
+            dist_ave_pax = self.get_pax_count()
+
+        stats = VehicleStatistics(
+            Sim.now(),
+            op_time,
+            pax_time,
+            empty_time,
+            nonempty_time,
+            time_ave_pax,
+            dist_travelled,
+            pax_dist,
+            empty_dist,
+            nonempty_dist,
+            dist_ave_pax,
+            self.total_pax,
+            max_pax)
+
+        self._stats = stats
+        return stats
+
     def calc_energy_used(self):
         """Return the amount of energy used, in Joules"""
         pass
-
 
 class VehicleTabularAdapater(TabularAdapter):
     """An adapter for table-based views of multiple vehicles."""
@@ -1072,15 +1114,20 @@ class VehicleTabularAdapater(TabularAdapter):
         ('Velocity', 'vel'),
         ('Accel', 'accel'),
         ('# Pax', 'pax_count'),
-        ('Max Pax', 'max_pax'),
         ('Capacity', 'max_pax_capacity'),
+        ('Max Pax', 'max_pax'),
         ('Total Pax', 'total_pax'),
-        ('Empty Dist', 'empty_dist'),
-        ('Pax Dist', 'pax_dist'),
         ('Total Dist', 'dist_travelled'),
-        ('Time-Weighted Ave Pax', 'time_ave_pax'),
+        ('Pax Dist', 'pax_dist'),
+        ('Empty Dist', 'empty_dist'),
+##        ('NonEmpty Dist', 'nonempty_dist'),
         ('Dist-Weighted Ave Pax', 'dist_ave_pax'),
-        ('Vehicle Mass', 'vehicle_mass')
+        ('Op Time', 'operational_time'),
+        ('Pax Time', 'pax_time'),
+        ('Empty Time', 'empty_time'),
+##        ('NonEmpty Time', 'nonempty_time'),
+        ('Time-Weighted Ave Pax', 'time_ave_pax'),
+        ('Vehicle Mass', 'vehicle_mass'),
     ]
 
     ID_width = traits.Float(40)
@@ -1089,12 +1136,16 @@ class VehicleTabularAdapater(TabularAdapter):
     pos_format = traits.Constant('%.2f')
     vel_format = traits.Constant('%.2f')
     accel_format = traits.Constant('%.2f')
-    empty_dist_format = traits.Constant('%.1f')
-    pax_dist_format = traits.Constant('%.1f')
-    total_dist_format = traits.Constant('%.1f')
     dist_travelled_format = traits.Constant('%.1f')
-    time_ave_pax_format = traits.Constant('%.1f')
+    pax_dist_format = traits.Constant('%.1f')
+    empty_dist_format = traits.Constant('%.1f')
+##    nonempty_dist_format = traits.Constant('%.1f')
     dist_ave_pax_format = traits.Constant('%.1f')
+    operational_time_format = traits.Constant('%.1f')
+    pax_time_format = traits.Constant('%.1f')
+    empty_time_format = traits.Constant('%.1f')
+##    nonempty_time_format = traits.Constant('%.1f')
+    time_ave_pax_format = traits.Constant('%.1f')
 
     # Tooltips
     ID_tooltip = traits.Constant('Unique vehicle identifier')
@@ -1103,13 +1154,63 @@ class VehicleTabularAdapater(TabularAdapter):
     vel_tooltip = traits.Constant('Current velocity, in m/s')
     accel_tooltip = traits.Constant('Current accel, in m/s')
     pax_count_tooltip = traits.Constant('Current number of passengers on board.')
-    max_pax_tooltip = traits.Constant('Greatest number of passengers that have been on board.')
     max_pax_capacity_tooltip = traits.Constant('Passenger capacity')
+    max_pax_tooltip = traits.Constant('Greatest number of passengers that have been on board.')
     total_pax_tooltip = traits.Constant('Total number of passengers carried')
-    empty_dist_tooltip = traits.Constant('Distance travelled with no passengers on board, in meters.')
-    pax_dist_tooltip = traits.Constant('(Distance travelled) * (number of passengers carried)')
     dist_travelled_tooltip = traits.Constant('Total distance travelled, in meters')
-    time_ave_pax_tooltip = traits.Constant('Average number of passengers, weighted by time')
+    pax_dist_tooltip = traits.Constant('(Distance travelled) * (number of passengers carried)')
+    empty_dist_tooltip = traits.Constant('Distance travelled with no passengers on board, in meters.')
     dist_ave_pax_tooltip = traits.Constant('Average number of passengers, weighted by distance')
+    operational_time_tooltip = traits.Constant('Total time that vehicle has been in service (i.e. not in storage).')
+    pax_time_tooltip = traits.Constant('(Op Time) * (number of passengers carried)')
+    empty_time_tooltip = traits.Constant('Op Time spent while empty')
+    time_ave_pax_tooltip = traits.Constant('Average number of passengers, weighted by time')
     vehicle_mass_tooltip = traits.Constant('Vehicle weight, in kg. Excludes passenger or cargo weight.')
 
+class VehicleStatistics(object):
+    """A data holding class that contains a variety of vehicle statistics:
+    timestamp -- Sim time at which the statistics were calculated.
+    operational_time -- Number of seconds simulated in which the vehicle was not
+      in storage.
+    pax_time -- Passenger-seconds. i.e. 10 seconds with 2 passengers = 20
+    empty_time -- Number of operational seconds in which the vehicle had no
+      passengers on board.
+    nonempty_time -- Number of operational seconds in which the vehicle had
+      one or more passengers on board.
+    time_ave_pax -- Time-weighted average number of passengers on board during
+      vehicle's operational time.
+    dist_travelled -- Meters travelled.
+    pax_dist -- Passengers-meters travelled. i.e. 10 meters with 2 passengers = 20
+    empty_dist -- Meters travelled without passengers on board.
+    nonempty_dist -- Meters travelled with one or more passengers on board
+    dist_ave_pax -- Distance-weighted average number of passengers on board.
+    total_pax -- Number of passengers carried.
+    max_pax -- Greatest number of passengers on board at any one time.
+    """
+    def __init__(self,
+                 timestamp,
+                 operational_time,
+                 pax_time,
+                 empty_time,
+                 nonempty_time,
+                 time_ave_pax,
+                 dist_travelled,
+                 pax_dist,
+                 empty_dist,
+                 nonempty_dist,
+                 dist_ave_pax,
+                 total_pax,
+                 max_pax):
+        self.timestamp = timestamp
+        self.operational_time = operational_time
+        self.pax_time = pax_time
+        self.empty_time = empty_time
+        self.nonempty_time = nonempty_time
+        self.time_ave_pax = time_ave_pax
+        self.dist_travelled = dist_travelled
+        self.pax_dist = pax_dist
+        self.empty_dist = empty_dist
+        self.nonempty_dist = nonempty_dist
+        self.dist_ave_pax = dist_ave_pax
+        self.total_pax = total_pax
+        self.max_pax = max_pax

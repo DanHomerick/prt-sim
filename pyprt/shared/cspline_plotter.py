@@ -50,8 +50,8 @@ class CSplinePlotter(traits.HasTraits):
         positions = []
         velocities = []
         powers = []
-        for t in sample_times:
-            sample = self.cspline.evaluate(t)
+        samples = self.cspline.evaluate_sequence(sample_times)
+        for sample in samples:
             positions.append(sample.pos)
             velocities.append(sample.vel)
             if self.mass:

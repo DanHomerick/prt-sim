@@ -16,7 +16,7 @@ import SimPy.SimulationRT as Sim
 
 
 import common
-from pyprt.shared.utility import sec_to_hms
+from pyprt.shared.utility import sec_to_hms, pairwise
 from events import Passenger, PassengerTabularAdapter
 from vehicle import BaseVehicle, VehicleTabularAdapater
 from station import Station, StationTabularAdapater
@@ -357,6 +357,7 @@ class VehicleReport(Report):
         lines = []
         for v in self.v_list:
             assert isinstance(v, BaseVehicle)
+            v.update_stats()
             extrema_velocities, extrema_times = v._spline.get_extrema_velocities()
             max_vel = max(extrema_velocities)
             min_vel = min(extrema_velocities)
@@ -369,12 +370,12 @@ class VehicleReport(Report):
                           "%.3f" % v.vel,
                           "%.3f" % v.accel,
                           str(v.total_pax),
-                          str(v.get_max_pax()),
-                          "%.2f" % v.get_time_ave_pax(),
-                          "%.2f" % v.get_dist_ave_pax(),
-                          "%d" % v.get_dist_travelled(),
-                          "%d" % v.get_empty_dist(),
-                          "%d" % v.get_pax_dist(),
+                          str(v.max_pax),
+                          "%.2f" % v.time_ave_pax,
+                          "%.2f" % v.dist_ave_pax,
+                          "%d" % v.dist_travelled,
+                          "%d" % v.empty_dist,
+                          "%d" % v.pax_dist,
                           "%.3f" % max_vel,
                           "%.3f" % min_vel,
                           "%.3f" % v._spline.get_max_acceleration(),
@@ -549,65 +550,85 @@ class PowerReport(enable.Component):
 
         for v_idx, v in enumerate(v_list):
             masses = v.get_total_masses(sample_times)
+
+            # The sample times may be out of the vehicle spline's valid range,
+            # since the vehicle may not have been created at the beginning of
+            # the simulation.
+            v_start_time = v._spline.t[0]
+            v_end_time = v._spline.t[-1]
+            for idx, t in enumerate(sample_times):
+                if t >= v_start_time:
+                    v_start_idx = idx # left index
+                    break
+            for idx in xrange(len(sample_times)-1,-1,-1):
+                if sample_times[idx] <= v_end_time:
+                    v_end_idx = idx+1 # right index
+                    break
+
+            v_sample_times = sample_times[v_start_idx:v_end_idx]
+            v_knots = v._spline.evaluate_sequence(v_sample_times)
+
+            knots = [None] * len(sample_times)
+            knots[v_start_idx:v_end_idx] = v_knots
+
             CdA = v.frontal_area * v.drag_coefficient
 
             path_idx = 0
             path_sum = 0
             loc = v._path[path_idx]
 
-            last_elevation = loc.get_elevation(v._spline.evaluate(v._spline.t[0]).pos)
+            last_elevation = loc.get_elevation(v_knots[0].pos)
 
-            for sample_idx, (t, mass) in enumerate(itertools.izip(sample_times, masses)):
-                try:
-                    knot = v._spline.evaluate(t)
-                    # Power to accelerate / decelerate
-                    accel_power = mass * knot.accel * knot.vel
-
-                    # Track where we are on the vehicle's path
-                    pos = knot.pos - path_sum
-                    if pos >= loc.length:
-                        path_sum += loc.length
-                        path_idx += 1
-                        pos = knot.pos - path_sum
-                        loc = v._path[path_idx]
-
-                    # Power to overcome rolling resistance. Ignores effect of
-                    # track slope and assumes that rolling resistance is constant
-                    # at different velocities.
-                    if v.rolling_coefficient and knot.vel != 0: # No power use when stopped
-                        rolling_power = v.rolling_coefficient * g * mass
-                    else:
-                        rolling_power = 0 # Rolling resistance not modelled
-
-                    # Power to overcome aero drag
-                    if wind_speed and knot.vel != 0: # No power use when stopped
-                        travel_angle = loc.get_direction(knot.pos - path_sum) # 0 is travelling TOWARDS the East
-                        incidence_angle = wind_angle - travel_angle
-                        if PI_2 <= incidence_angle <= PI_3_2: # tail wind
-                            vel = knot.vel - math.cos(incidence_angle)*wind_speed
-                        else: # head wind
-                            vel = knot.vel + math.cos(incidence_angle)*wind_speed
-                    else:
-                        vel = knot.vel
-                    aero_power = 0.5 * air_density * vel*vel*vel * CdA
-
-                    # Power from elevation changes
-                    elevation = loc.get_elevation(pos)
-                    delta_elevation = elevation - last_elevation
-                    elevation_power = g * delta_elevation
-                    last_elevation = elevation
-
-                    # Adjust power usages by efficiency
-                    net_power = accel_power + rolling_power + aero_power + elevation_power
-                    if net_power > 0:
-                        net_power /= v.powertrain_efficiency # low efficiency increases power required
-                    elif net_power < 0:
-                        net_power *= v.regenerative_braking_efficiency # low efficiency decreases power recovered
-
-                    power_array[v_idx, sample_idx] = net_power
-
-                except OutOfBoundsError:
+            for sample_idx, (t, mass, knot) in enumerate(itertools.izip(sample_times, masses, knots)):
+                if knot is None:
                     power_array[v_idx, sample_idx] = 0
+                    continue
+
+                # Power to accelerate / decelerate
+                accel_power = mass * knot.accel * knot.vel
+
+                # Track where we are on the vehicle's path
+                pos = knot.pos - path_sum
+                if pos >= loc.length:
+                    path_sum += loc.length
+                    path_idx += 1
+                    pos = knot.pos - path_sum
+                    loc = v._path[path_idx]
+
+                # Power to overcome rolling resistance. Ignores effect of
+                # track slope and assumes that rolling resistance is constant
+                # at different velocities.
+                if v.rolling_coefficient and knot.vel != 0: # No power use when stopped
+                    rolling_power = v.rolling_coefficient * g * mass
+                else:
+                    rolling_power = 0 # Rolling resistance not modelled
+
+                # Power to overcome aero drag
+                if wind_speed and knot.vel != 0: # No power use when stopped
+                    travel_angle = loc.get_direction(knot.pos - path_sum) # 0 is travelling TOWARDS the East
+                    incidence_angle = wind_angle - travel_angle
+                    if PI_2 <= incidence_angle <= PI_3_2: # tail wind
+                        vel = knot.vel - math.cos(incidence_angle)*wind_speed
+                    else: # head wind
+                        vel = knot.vel + math.cos(incidence_angle)*wind_speed
+                else:
+                    vel = knot.vel
+                aero_power = 0.5 * air_density * vel*vel*vel * CdA
+
+                # Power from elevation changes
+                elevation = loc.get_elevation(pos)
+                delta_elevation = elevation - last_elevation
+                elevation_power = g * delta_elevation
+                last_elevation = elevation
+
+                # Adjust power usages by efficiency
+                net_power = accel_power + rolling_power + aero_power + elevation_power
+                if net_power > 0:
+                    net_power /= v.powertrain_efficiency # low efficiency increases power required
+                elif net_power < 0:
+                    net_power *= v.regenerative_braking_efficiency # low efficiency decreases power recovered
+
+                power_array[v_idx, sample_idx] = net_power
 
         power_array = numpy.divide(power_array, 1000.0) # convert from Watts to KW
 
