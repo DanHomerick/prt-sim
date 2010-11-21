@@ -1129,7 +1129,7 @@ class Manager(object): # Similar to VehicleManager in gtf_conroller class
 
         # assume that vehicle is on the ts just prior to the station offramp
         merge_dist = (self.graph[vehicle.ts_id][station.ts_ids[Station.ACCEL]]['weight'] - vehicle.pos) + station.onramp_length
-        assert line_speed_dist <= merge_dist, "Onramp is too short for vehicle to achieve line speed before merge. Adjust onramp length, or vehicle's max accel and jerk in the scenario's XML file. %.4f, %.4f" % (line_speed_dist, merge_dist)
+        assert line_speed_dist <= merge_dist, "Onramp for station %d ts %d is too short for vehicle to achieve line speed before merge. Adjust onramp length, or vehicle's max accel and jerk in the scenario's XML file. line_speed_dist=%.4f, merge_dist=%.4f" % (station.id, Station.ACCEL, line_speed_dist, merge_dist)
 
         merge_delay = vehicle.get_time_to_line_speed() + (merge_dist - line_speed_dist)/PrtController.LINE_SPEED
 
@@ -3648,7 +3648,7 @@ class Switch(object):
                         break
 
                 else: # len(down_nodes) == 0:
-                    raise Exception("Not able to handle dead end track.")
+                    raise Exception("Not able to handle dead end track, trackSegment %d" % down_node)
 
 def write_stats_report(vehicles, stations, file_path):
     """Writes controller specific statistics to file found at file_path.
