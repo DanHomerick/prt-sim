@@ -57,7 +57,10 @@ class CSplinePlotter(traits.HasTraits):
             if self.mass:
                 powers.append(self.mass * sample.accel * sample.vel/1000.0) # In KWs
         accelerations = numpy.array(self.cspline.a[start_idx:end_idx+1])
-        jerks = numpy.array(self.cspline.j[start_idx:end_idx] + [self.cspline.j[end_idx-1]])
+        if len(self.cspline.j):
+            jerks = numpy.array(self.cspline.j[start_idx:end_idx] + [self.cspline.j[end_idx-1]])
+        else:
+            jerks = []
 
         max_vel = numpy.array([self.v_max for t in endpoint_times])
         min_vel = numpy.array([self.v_min for t in endpoint_times])

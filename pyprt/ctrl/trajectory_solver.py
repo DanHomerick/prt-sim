@@ -75,7 +75,7 @@ class TrajectorySolver(object):
     q_threshold = 0.0005
     v_threshold = 0.000005   # == 0.00001 miles per hour
     a_threshold = 0.000005
-    t_threshold = 0.0005
+    t_threshold = 0.000005
 
     def __init__(self, velocity_max, acceleration_max, jerk_max,
                  velocity_min=None, acceleration_min=None, jerk_min=None):
@@ -1072,6 +1072,18 @@ class TrajectorySolver(object):
                     too_tight.append(HUMP_TWO)
 
             raise ConstraintsError(too_tight=too_tight)
+
+        # At this point we've satisfied the constraints and have a solution,
+        # but the knot times may not be strictly non-descending, due to the
+        # t_threshold slop. Nudge the times so that they will be.
+        t_prev = t[0]
+        for idx, t_curr in enumerate(t):
+            if t_curr < t_prev:
+                # Apportion half the error to each time.
+                t_curr = (t_curr + t_prev) / 2.0
+                t[idx-1] = t_curr
+                t[idx] = t_curr
+            t_prev = t_curr
 
         return CubicSpline(q, v, a, j, t)
 

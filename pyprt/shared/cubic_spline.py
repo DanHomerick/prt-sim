@@ -241,19 +241,21 @@ class CubicSpline(object):
             return []
 
         indexes = self._get_indexes_from_times(times)
+        prev_index = -1
         knots = []
         for time, i in zip(times, indexes):
-            t = self.t[i]
+            if i != prev_index:
+                t = self.t[i]
 
-            # Time is almost exactly on a knot. Also captures case where spline has only one time.
-            if (time - t) < 1E-6:
-                knots.append(Knot(self.q[i], self.v[i], self.a[i], time))
-                continue
+                # Time is almost exactly on a knot. Also captures case where spline has only one time.
+                if (time - t) < 1E-6:
+                    knots.append(Knot(self.q[i], self.v[i], self.a[i], time))
+                    continue
 
-            j = self.j[i]
-            a = self.a[i]
-            v = self.v[i]
-            q = self.q[i]
+                j = self.j[i]
+                a = self.a[i]
+                v = self.v[i]
+                q = self.q[i]
 
             delta_t = time - t
             delta_t__2 = delta_t * delta_t
@@ -261,7 +263,7 @@ class CubicSpline(object):
 
             at = j*delta_t + a
             vt = j*delta_t__2/2 + a*delta_t + v
-            qt = delta_t__3*(j/6) + delta_t__2*(a/2) + v*delta_t + q
+            qt = j*delta_t__3/6 + a*delta_t__2/2 + v*delta_t + q
             knots.append(Knot(qt, vt, at, time))
 
         return knots
@@ -501,13 +503,19 @@ class CubicSpline(object):
                 indexes.append(max(index-1,0))
         return indexes
 
-    def find_intersection(self, other, start_time, end_time,
-                           dist):
+    def find_intersection(self, other, start_time, end_time, dist):
         """Finds position intersections that occur between self and other (spline), in
         the time range from start_time to end_time. Dist is the relative distance
         between between self and other at start_time. Returns the time of the
         earliest intersection, or None if no intersections occur.
         """
+        # OPTIMIZATION NOTE:
+        # This question/answer: http://stackoverflow.com/questions/109364/bezier-clipping
+        # suggests that testing for an intersection could be done faster by
+        # using a sylvester matrix and checking whether its determinant is zero.
+        # Not a high priority to implement, as intersection checking does not
+        # appear to be a bottleneck at this time.
+
         assert isinstance(other, CubicSpline)
         try:
             self_idx_start = self._get_index_from_time(start_time)

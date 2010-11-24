@@ -594,7 +594,7 @@ class  TestTrajectorySolver(unittest.TestCase):
         spline = solver.target_acceleration(initial, final)
         self.plot_it(spline, solver, "test_target_acceleration_I")
         self.validate_spline(spline, solver)
-        self.validate_endpoints(spline, initial, final)
+        self.validate_endpoints(spline, initial, final, pos=False, vel=False, time=False )
 
     def test_target_time_I(self):
         """Uses zero for accel and velocity endpoints."""
@@ -804,6 +804,15 @@ class  TestTrajectorySolver(unittest.TestCase):
         solver = TrajectorySolver(20, 7.2, 5.0, 0, -7.2, -5.0)
         initial = Knot(9.8130000000001303, 18.114342061230673, 4.3424163075059123, 3.3492945162765952)
         final = Knot(709.7650000000001, 20.0, 0, 38.72843888888891)
+        spline = solver.target_time(initial, final)
+##        self.plot_it(spline, solver, "test_target_time_XXI")
+        self.validate_spline(spline, solver)
+        self.validate_endpoints(spline, initial, final)
+
+    def test_target_time_XXII(self):
+        solver = TrajectorySolver(67.0, 9.0, 7.0, 0, -9.0, -7.0)
+        initial = Knot(41.653999342612224, 44.0, 0.0, 5425.3539044854588)
+        final = Knot(196.25800000000001, 2.3999999999999999, 0, 5432.6250864545336)
         spline = solver.target_time(initial, final)
 ##        self.plot_it(spline, solver, "test_target_time_XXI")
         self.validate_spline(spline, solver)
