@@ -584,9 +584,6 @@ class PowerReport(enable.Component):
                     power_array[v_idx, sample_idx] = 0
                     continue
 
-                # Power to accelerate / decelerate
-                accel_power = mass * knot.accel * knot.vel
-
                 # Track where we are on the vehicle's path
                 pos = knot.pos - path_sum
                 if pos >= loc.length:
@@ -595,13 +592,17 @@ class PowerReport(enable.Component):
                     pos = knot.pos - path_sum
                     loc = v._path[path_idx]
 
-                # Power to overcome rolling resistance. Ignores effect of
+                # Power required to overcome rolling resistance. Ignores effect of
                 # track slope and assumes that rolling resistance is constant
                 # at different velocities.
-                if v.rolling_coefficient and knot.vel != 0: # No power use when stopped
-                    rolling_power = v.rolling_coefficient * g * mass
+                if v.rolling_coefficient:
+                    rolling_power = v.rolling_coefficient * g * mass * knot.vel # Force * velocity
                 else:
                     rolling_power = 0 # Rolling resistance not modelled
+
+
+                # Power to accelerate / decelerate (change in kinetic energy)
+                accel_power = mass * knot.accel * knot.vel
 
                 # Power to overcome aero drag
                 if wind_speed and knot.vel != 0: # No power use when stopped
@@ -615,7 +616,7 @@ class PowerReport(enable.Component):
                     vel = knot.vel
                 aero_power = 0.5 * air_density * vel*vel*vel * CdA
 
-                # Power from elevation changes
+                # Power from elevation changes (change in potential energy)
                 elevation = loc.get_elevation(pos)
                 delta_elevation = elevation - last_elevation
                 elevation_power = g * delta_elevation
