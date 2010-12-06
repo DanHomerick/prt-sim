@@ -17,7 +17,9 @@ class CSplinePlotter(traits.HasTraits):
 
     def __init__(self, cubic_spline, velocity_max=0, acceleration_max=0, jerk_max=0,
                  velocity_min=None, acceleration_min=None, jerk_min=None, title="",
-                 start_idx=0, end_idx=-1, mass=None):
+                 start_idx=0, end_idx=-1, mass=None,
+                 plot_pos=True, plot_vel=True, plot_accel=True, plot_jerk=True, plot_power=True
+                 ):
         """If a 'mass' argument is supplied, then the power will be plotted."""
 
         super(CSplinePlotter, self).__init__()
@@ -32,10 +34,15 @@ class CSplinePlotter(traits.HasTraits):
         self.a_min = -self.a_max if acceleration_min is None else acceleration_min
         self.j_min = -self.j_max if jerk_min is None else jerk_min
         self.title = title
-
         self.mass = mass
 
-        self.container = chaco.OverlayPlotContainer(padding=50, fill_padding=True, bgcolor="lightgray")
+        self.plot_pos = plot_pos
+        self.plot_vel = plot_vel
+        self.plot_accel = plot_accel
+        self.plot_jerk = plot_jerk
+        self.plot_power = plot_power and mass is not None
+
+        self.container = chaco.OverlayPlotContainer(padding=52, fill_padding=True, bgcolor="transparent")
         self.make_plotdata(start_idx, end_idx)
         self.make_plots()
 
@@ -52,12 +59,16 @@ class CSplinePlotter(traits.HasTraits):
         powers = []
         samples = self.cspline.evaluate_sequence(sample_times)
         for sample in samples:
-            positions.append(sample.pos)
-            velocities.append(sample.vel)
-            if self.mass:
-                powers.append(self.mass * sample.accel * sample.vel/1000.0) # In KWs
-        accelerations = numpy.array(self.cspline.a[start_idx:end_idx+1])
-        if len(self.cspline.j):
+            if self.plot_pos: positions.append(sample.pos)
+            if self.plot_vel: velocities.append(sample.vel)
+            if self.plot_power: powers.append(self.mass * sample.accel * sample.vel/1000.0) # In KWs
+
+        if self.plot_accel:
+            accelerations = numpy.array(self.cspline.a[start_idx:end_idx+1])
+        else:
+            accelerations = []
+
+        if self.plot_jerk and len(self.cspline.j):
             jerks = numpy.array(self.cspline.j[start_idx:end_idx] + [self.cspline.j[end_idx-1]])
         else:
             jerks = []
@@ -88,44 +99,55 @@ class CSplinePlotter(traits.HasTraits):
                                             )
 
     def make_plots(self):
-        colors = {'pos':'black', 'vel':'blue', 'accel':'red', 'jerk':'green', 'power':'purple'}
-
         main_plot = chaco.Plot(self.plotdata, padding=0)
-        main_plot.y_axis.title="Velocity (m/s), Accel (m/s2), Jerk (m/s3), Power (KW)"
-        vel_plot = main_plot.plot(("sample_times", "velocities"), type="line", color=colors['vel'], line_width=2)
-        accel_plot = main_plot.plot(("knot_times", "accelerations"), type="line", color=colors['accel'], line_width=2)
-        jerk_plot = main_plot.plot(("knot_times", "jerks"), type="line", color=colors['jerk'], line_width=2, render_style="connectedhold")
-        if self.mass:
-            power_plot = main_plot.plot(("sample_times", "powers"), type="line", color=colors['power'], line_width=2)
-        else:
-            power_plot = None
 
-        # draw limits
-        max_vel_plot = main_plot.plot(("endpoint_times", "max_vel"), color=colors['vel'], line_style='dash', line_width=0.60)
-        min_vel_plot = main_plot.plot(("endpoint_times", "min_vel"), color=colors['vel'], line_style='dash', line_width=0.60)
-        max_accel_plot = main_plot.plot(("endpoint_times", "max_accel"), color=colors['accel'], line_style='dash', line_width=0.55)
-        min_accel_plot = main_plot.plot(("endpoint_times", "min_accel"), color=colors['accel'], line_style='dash', line_width=0.55)
-        max_jerk_plot = main_plot.plot(("endpoint_times", "max_jerk"), color=colors['jerk'], line_style='dash', line_width=0.45)
-        min_jerk_plot = main_plot.plot(("endpoint_times", "min_jerk"), color=colors['jerk'], line_style='dash', line_width=0.45)
+        colors = {'pos':'black', 'vel':'blue', 'accel':'red', 'jerk':'green', 'power':'purple'}
+        left_y_axis_title_list = []
+        legend_dict = {}
+        if self.plot_vel:
+            vel_plot = main_plot.plot(("sample_times", "velocities"), type="line", color=colors['vel'], line_width=2)
+            max_vel_plot = main_plot.plot(("endpoint_times", "max_vel"), color=colors['vel'], line_style='dash', line_width=0.60)
+            min_vel_plot = main_plot.plot(("endpoint_times", "min_vel"), color=colors['vel'], line_style='dash', line_width=0.60)
+            left_y_axis_title_list.append("Velocity (m/s)")
+            legend_dict['vel'] = vel_plot
+
+        if self.plot_accel:
+            accel_plot = main_plot.plot(("knot_times", "accelerations"), type="line", color=colors['accel'], line_width=2)
+            max_accel_plot = main_plot.plot(("endpoint_times", "max_accel"), color=colors['accel'], line_style='dash', line_width=0.55)
+            min_accel_plot = main_plot.plot(("endpoint_times", "min_accel"), color=colors['accel'], line_style='dash', line_width=0.55)
+            left_y_axis_title_list.append("Accel (m/s2)")
+            legend_dict['accel'] = accel_plot
+
+        if self.plot_jerk:
+            jerk_plot = main_plot.plot(("knot_times", "jerks"), type="line", color=colors['jerk'], line_width=2, render_style="connectedhold")
+            max_jerk_plot = main_plot.plot(("endpoint_times", "max_jerk"), color=colors['jerk'], line_style='dash', line_width=0.45)
+            min_jerk_plot = main_plot.plot(("endpoint_times", "min_jerk"), color=colors['jerk'], line_style='dash', line_width=0.45)
+            left_y_axis_title_list.append("Jerk (m/s3)")
+            legend_dict['jerk'] = jerk_plot
+
+        if self.plot_power:
+            power_plot = main_plot.plot(("sample_times", "powers"), type="line", color=colors['power'], line_width=2)
+            left_y_axis_title_list.append("Power (KW)")
+            legend_dict['power'] = power_plot
+
+        main_plot.y_axis.title=", ".join(left_y_axis_title_list)
         self.container.add(main_plot)
 
         # plot positions (on a separate scale from the others)
-        pos_plot = chaco.create_line_plot([self.plotdata.arrays["sample_times"], self.plotdata.arrays["positions"]], color=colors['pos'], width=2)
-        self.container.add(pos_plot)
+        if self.plot_pos:
+            pos_plot = chaco.create_line_plot([self.plotdata.arrays["sample_times"], self.plotdata.arrays["positions"]], color=colors['pos'], width=2)
+            legend_dict['pos'] = pos_plot
+            self.container.add(pos_plot)
 
-        # add a second y-axis for the positions
-        pos_y_axis = chaco.PlotAxis(pos_plot, orientation="right", title="Position (meters)")
-        self.container.overlays.append(pos_y_axis)
+            # add a second y-axis for the positions
+            pos_y_axis = chaco.PlotAxis(pos_plot, orientation="right", title="Position (meters)")
+            self.container.overlays.append(pos_y_axis)
 
         # make Legend
         legend = chaco.Legend(component=self.container, padding=20, align="ul")
+        legend.plots = legend_dict
         legend.tools.append(tools.LegendTool(legend, drag_button="left"))
         self.container.overlays.append(legend)
-
-        if power_plot is not None:
-            legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot, 'power':power_plot}
-        else:
-            legend.plots = {'pos':pos_plot, 'vel':vel_plot, 'accel':accel_plot, 'jerk':jerk_plot}
 
         # Add title, if any
         if self.title:
@@ -134,5 +156,3 @@ class CSplinePlotter(traits.HasTraits):
 
     def display_plot(self):
         self.configure_traits()
-
-
