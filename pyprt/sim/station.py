@@ -332,7 +332,7 @@ class Berth(Sim.Process, traits.HasTraits):
         self.station._pax_departures_count += 1
         self.station.remove_passenger(pax)
         pax.trip_boarded = Sim.now()
-        logging.info("T=%4.3f %s loaded into %s (%d out of %d) at station %s, platform %s, berth %s ",
+        logging.info("T=%4.3f %s loaded into Vehicle %s (%d out of %d) at station %s, platform %s, berth %s ",
                      Sim.now(), pax, vehicle.ID, vehicle.get_pax_count(), vehicle.max_pax_capacity,  self.station.ID, self.platform.ID, self.ID )
 
         # Notify that embark of this passenger is complete
@@ -384,6 +384,8 @@ class Berth(Sim.Process, traits.HasTraits):
         vehicle.fill_VehicleStatus(cmd_complete.v_status)
         common.interface.send(api.SIM_COMPLETE_STORAGE_EXIT,
                               cmd_complete)
+        logging.info("T=%4.3f Exit from Storage: Vehicle: %s, Berth: %s, Platform: %s, Station: %s",
+                             Sim.now(),vehicle.ID, self.ID, self.platform.ID, self.station.ID)
 
 
 class Platform(traits.HasTraits):
@@ -493,6 +495,8 @@ class Storage(object):
         self._num_vehicles += 1
 
         assert 0 <= self._num_pending_entry + self._num_vehicles <= self.max_capacity
+    def get_stored_vehicle_count(self):
+        return self._num_vehicles
 
 class Station(traits.HasTraits):
     platforms = traits.List(traits.Instance(Platform))
@@ -603,6 +607,13 @@ class Station(traits.HasTraits):
     def get_num_passengers(self):
         return len(self._passengers)
     num_passengers = property(get_num_passengers)
+
+
+    def get_stored_vehicle_count(self, vehicle_model):
+        sv_count = 0
+        store = self._storage_dict[vehicle_model]
+        sv_count += store.get_stored_vehicle_count()
+        return sv_count
 
     def all_pax_wait_times(self):
         """Returns a list of wait times for all passengers, not just the current ones."""
