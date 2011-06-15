@@ -103,6 +103,8 @@ class Node(traits.HasTraits):
         try:
             return self.elevations[idx-1]
         except IndexError: # No elevation data was available.
+            if len(self.elevations) != 0:
+                print self, "missing elevations at idx-1", idx, " pos ", position, self.elevations, self.elevation_positions
             assert len(self.elevations) == 0
             return 0
 
