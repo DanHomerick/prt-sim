@@ -241,7 +241,7 @@ class Passenger(PrtEvent):
         if self._loc is None: # Was walking
             self._walk_times[-1][1] = Sim.now()
         elif hasattr(self._loc, 'vehicle_mass'): # was in vehicle
-            self._ride_times[-1][1] = Sim.now()
+            self._ride_times.append( [Sim.now(), None, loc] ) # isinstance(loc, BaseVehicle)
         elif hasattr(self._loc, 'platforms'): # was at station
             self._wait_times[-1][1] = Sim.now()
         else:
