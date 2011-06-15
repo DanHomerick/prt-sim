@@ -414,12 +414,19 @@ class MainWindow(wx.Frame):
             pax_waiting = 0
             total_wait = 0
             max_wait = 0
+            trip_success = 0
+            trip_failed = 0
             for stat in common.station_list: # collected in 'seconds'
                 for pax in stat._passengers:
                     pax_waiting += 1
                     pax_wait = pax.wait_time # don't force it to calc the wait time twice
                     total_wait += pax_wait
                     max_wait = max(pax_wait, max_wait)
+                for pax in stat._all_passengers:
+                    if pax.trip_success:
+                        trip_success += 1
+                    else:
+                        trip_failed += 1
             if pax_waiting == 0:
                 pax_ave_wait = 0
             else:
@@ -446,8 +453,8 @@ class MainWindow(wx.Frame):
                 seats_pct_utilized = 0
 
             self.statusbar.SetFields(['SimTime: %.3f RealTime: %.3f' % (SimPy.now(), time.time() - self.start_time), # timers
-                                      'PASSENGERS Waiting: %d Ave Wait: %.1f min Max Wait: %.1f min' % (pax_waiting, pax_ave_wait/60, max_wait/60), # report in minutes
-                                      'VEHICLES Available: %d %%Utilized: %.1f %%Seats Utilized: %.1f' % (v_avail, v_pct_utilized, seats_pct_utilized)])
+                                      'PAX Waiting: %d Avg: %.1f Max: %.1f Trips: done %d active %d' % (pax_waiting, pax_ave_wait/60, max_wait/60, trip_success, trip_failed), # report in minutes
+                                      'VEHICLES Avail: %d %%Utilized: %.1f %%Seats Utilized: %.1f' % (v_avail, v_pct_utilized, seats_pct_utilized)])
 
     def show_message(self, message):
         """Displays a message in a modal dialog box with an OK button.
