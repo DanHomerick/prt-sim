@@ -535,7 +535,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
             # slamming to an ungraceful halt, or doing a 'stop and go' between
             # knots will be caught by self._validate_spline(), but will not
             # be corrected by this code.
-            if (abs(new_knot.vel) < 1E-5 and abs(new_knot.accel) < 1E-5) or \
+            if (abs(new_knot.vel) < 1E-4 and abs(new_knot.accel) < 1E-4) or \
                                  (new_knot.vel < 0 and new_knot.accel < 0):
                 logging.debug("Clipped vel and accel to 0. Vehicle %d, original knot: %s", self.ID, new_knot)
                 new_knot.vel = 0
@@ -553,8 +553,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
                     # track segment as the coordinate frame
                     errors[0] += self._pos_offset_nose
                 error_str = ", ".join(msg + "%.6f"%error for (msg, error) in zip(['Pos: ', 'Vel: ', 'Accel: '], errors))
-                logging.debug("Vehicle %d, spline check::Times: %s to %s. Errors: %s",
-                              self.ID, t_initial, t_final, error_str)
+                logging.debug("Vehicle %d, %s spline check::Times: %4.2f to %4.2f. Errors: %s",
+                              self.ID, self.get_loc(), t_initial, t_final, error_str)
 
         self._validate_spline(spline)
 
@@ -686,6 +686,8 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
         # main loop
         while True:
             delay = self._actions_queue[0][0] - Sim.now()
+            if delay < 0:
+                print "vehicle ", self.ID
             assert delay >= 0, delay
             yield Sim.hold, self, delay
 
@@ -719,6 +721,9 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
             # Handle the next scheduled action
             time, action, data = heapq.heappop(self._actions_queue)
+            logging.debug("T=%4.3f vehicle %s action %s.", Sim.now(), self.ID, action)
+            if not utility.time_eql(time, Sim.now()):
+                print "Fatal time error vehicle",self.ID, self.get_loc()
             assert utility.time_eql(time, Sim.now())
             if action == self.BOUNDARY:
                 self._boundary_handler()
@@ -873,7 +878,7 @@ class BaseVehicle(Sim.Process, traits.HasTraits):
 
         else:
             assert isinstance(other_vehicle, BaseVehicle)
-            logging.warn("T=%4.3f Vehicle %s collided with vehicle %s.", Sim.now(), self.ID, other_vehicle.ID)
+            logging.warn("T=%4.3f Vehicle %s collided with vehicle %s at %s.", Sim.now(), self.ID, other_vehicle.ID, self.loc)
             msg = api.SimNotifyVehicleCollision()
             other_vehicle.fill_VehicleStatus(msg.v1_status)
             self.fill_VehicleStatus(msg.v2_status)
