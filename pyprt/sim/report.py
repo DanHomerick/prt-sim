@@ -75,7 +75,7 @@ class SummaryReport(Report):
         KM_TO_MILES = 0.621371192
         lines = []
 
-        lines.append("Hours Simulated:\t %.1f" % (Sim.now()/3600.))
+        lines.append("Minutes Simulated:\t %.1f" % (Sim.now()/60.))
         lines.append("")
 
         # Passenger summary statistics
