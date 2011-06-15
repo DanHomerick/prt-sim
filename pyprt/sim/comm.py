@@ -355,7 +355,8 @@ class ControlInterface(Sim.Process):
                             and position <= b.end_pos:
                         b.exit_storage(position, model.model_name, msg, msgID)
                     else:
-                        raise common.InvalidBerthID, b.ID
+                        raise common.InvalidBerthID(" bad berth %s busy %s veh_len %d berth %s station %s plat %s " % 
+                                (b.ID, b.is_busy(), model.length, msg.berthID, msg.sID, msg.platformID))
 
                 # REQUESTS
                 elif msg_type == api.CTRL_REQUEST_VEHICLE_STATUS:
