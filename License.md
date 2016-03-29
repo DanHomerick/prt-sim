@@ -1,0 +1,1 @@
+This project is being licensed under the [GPLv3](http://www.opensource.org/licenses/gpl-3.0.html)  license but I am open to dual licensing it under a more permissive license. If you find the GPL to be unworkable, please [contact](Contact.md) me.
